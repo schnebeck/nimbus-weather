@@ -310,7 +310,6 @@
     <string name="history_row_gust">Stärkste Böe</string>
     <string name="history_model_value">Vorhersage %1$s</string>
     <string name="history_at">um %1$s</string>
-    <string name="history_hours_value">%1$s Std.</string>
     <string name="history_temp_chart">Temperaturverlauf</string>
     <string name="history_legend_measured">Messung</string>
     <string name="history_legend_model">Vorhersage (%1$s)</string>
@@ -392,5 +391,5 @@
     <string name="history_source_pending">Noch keine Messwerte der DWD-Station %1$s für diesen Tag – Vorhersagewerte (%2$s)</string>
     <string name="sunshine_short">Sonne</string>
     <string name="legend_precip">Niederschlag %1$s</string>
-    <string name="legend_sunshine">Sonnenschein %1$s Std. (Balken: Minuten je Stunde)</string>
+    <string name="legend_sunshine">Sonnenschein %1$s (Balken: Minuten je Stunde)</string>
 </resources>

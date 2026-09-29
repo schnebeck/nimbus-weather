@@ -38,8 +38,8 @@ Mindestversion: Android 8.0 (API 26). Google Play Services werden nicht benötig
   Windstriche bei Wind), Temperatur mit Einheit (°C/°F) und Max/Min untereinander wie an einer
   Wetterstation (auch im Rückblick und in der Ortsliste), DWD-Warnungen, Niederschlag der nächsten 3 Stunden (15-Min.-Schritte),
   Stundenvorhersage mit Sonnenauf-/-untergang, 10-Tage-Vorhersage mit Temperaturbalken
-  (antippen → **Meteogramm** 00–24 Uhr: Temperatur, Niederschlag, eigene Sonnenschein-Zeile (Minuten je Stunde,
-  Tagessumme rechts), Legende mit Tagessummen von Niederschlag und Sonnenschein, Symbole, Wind, Nachtschattierung; Balken mittig zur Stunde;
+  (antippen → **Meteogramm** 00–24 Uhr: Temperatur, Niederschlag, eigene Sonnenschein-Zeile direkt unter dem Diagramm
+  (Minuten je Stunde; Tagessumme als Std:Min in der Legende), darunter die Windzeile – beide mit Symbol links, Legende mit Tagessummen von Niederschlag und Sonnenschein, Symbole, Wind, Nachtschattierung; Balken mittig zur Stunde;
   Einheiten in den Ecken, Achsen nur mit Zahlen, Zeitachse 00–24 – maximale Diagrammbreite; langes Drücken blendet einen verschiebbaren Cursor ein, der nach 10 s Nichtbenutzung
   ausblendet, darunter alle Werte der gewählten Stunde), **Niederschlagskarte 24 h** (Wahrscheinlichkeit und Menge pro Stunde, von „Jetzt“ bis +24 h mit Nachtschattierung),
   Niederschlagswahrscheinlichkeit in Stunden- und Tagesvorhersage immer angezeigt (unter 10 % blass),

@@ -320,7 +320,6 @@
     <string name="history_row_gust">Strongest gust</string>
     <string name="history_model_value">Forecast %1$s</string>
     <string name="history_at">at %1$s</string>
-    <string name="history_hours_value">%1$s h</string>
     <string name="history_temp_chart">Temperature</string>
     <string name="history_legend_measured">Measured</string>
     <string name="history_legend_model">Forecast (%1$s)</string>
@@ -402,5 +401,5 @@
     <string name="history_source_pending">No readings from DWD station %1$s for this day yet – forecast values (%2$s)</string>
     <string name="sunshine_short">Sun</string>
     <string name="legend_precip">Precipitation %1$s</string>
-    <string name="legend_sunshine">Sunshine %1$s h (bars: minutes per hour)</string>
+    <string name="legend_sunshine">Sunshine %1$s (bars: minutes per hour)</string>
 </resources>

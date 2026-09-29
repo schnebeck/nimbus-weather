@@ -193,19 +193,19 @@ fun Meteogram(points: List<MeteoPoint>, start: Long, end: Long, nights: List<Lon
     val dayPts = pts.filter { it.time > start }
     val sunTotalMin = dayPts.mapNotNull { it.sunshine }.takeIf { it.isNotEmpty() }?.sum()
     val precipTotal = dayPts.mapNotNull { it.precipitation }.takeIf { it.isNotEmpty() }?.sum()
-    val sunTotal = sunTotalMin?.let { Units.oneDecimal(it / 60.0) + "\u202Fh" }
     val axisR = with(density) {
         listOf(
             (0..2).maxOf { measurer.measure(precipLabel(it), labelStyle).size.width },
             measurer.measure(pUnit, unitStyle).size.width,
-            sunTotal?.let { measurer.measure(it, labelStyle).size.width } ?: 0,
         ).max().toDp()
     } + gap
     val labelsH = 14.dp
     val iconsH = 30.dp
     val plotH = 120.dp
     val windH = 26.dp
-    val sunH = if (sunTotalMin != null) 20.dp else 0.dp
+    // The sunshine row keeps a small gap to the plot, where the lowest axis numbers reach down.
+    val sunGap = 6.dp
+    val sunH = if (sunTotalMin != null) 20.dp + sunGap else 0.dp
 
     Column(modifier) {
         BoxWithConstraints(Modifier.fillMaxWidth().height(labelsH + iconsH + plotH + windH + sunH)) {
@@ -236,7 +236,7 @@ fun Meteogram(points: List<MeteoPoint>, start: Long, end: Long, nights: List<Lon
                 fun x(t: Long) = l + (r - l) * ((t - start) / span)
                 fun yT(v: Double) = (bottom - (v - tLo) / (tHi - tLo) * (bottom - top)).toFloat()
                 fun yP(v: Double) = (bottom - v / precipMax * (bottom - top)).toFloat()
-                val below = windH.toPx() + sunH.toPx()   // wind arrows and sunshine row under the plot
+                val below = sunH.toPx() + windH.toPx()   // sunshine row and wind arrows under the plot
 
                 drawRect(DayTint, Offset(l, top), Size(r - l, bottom - top + below))
                 nights.forEach { n ->
@@ -270,10 +270,10 @@ fun Meteogram(points: List<MeteoPoint>, start: Long, end: Long, nights: List<Lon
                 // the hour before the time stamp, as delivered by the models and stations.
                 val hourW = (r - l) / (span / 3_600_000f)
                 clipRect(left = l, right = r) {
-                    // Sunshine row below the wind arrows: minutes per hour, full row height = 60 min
+                    // Sunshine row right below the plot: minutes per hour, full row height = 60 min
                     if (sunTotalMin != null) {
-                        val rowTop = bottom + windH.toPx() + 2.dp.toPx()
-                        val rowBottom = bottom + below - 2.dp.toPx()
+                        val rowTop = bottom + sunGap.toPx() + 2.dp.toPx()
+                        val rowBottom = bottom + sunH.toPx() - 2.dp.toPx()
                         drawRect(SunTrack, Offset(l, rowTop), Size(r - l, rowBottom - rowTop))
                         pts.forEach { h ->
                             val m = (h.sunshine ?: 0.0).coerceIn(0.0, 60.0)
@@ -308,9 +308,9 @@ fun Meteogram(points: List<MeteoPoint>, start: Long, end: Long, nights: List<Lon
                     startY = top, endY = bottom,
                 )
                 drawPath(path, brush, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round))
-                // Sunshine row labels: sun glyph on the left, the day's total on the right
-                if (sunTotalMin != null && sunTotal != null) {
-                    val cy = bottom + windH.toPx() + sunH.toPx() / 2
+                // Sunshine row label: sun glyph on the left (the day's total is in the legend)
+                if (sunTotalMin != null) {
+                    val cy = bottom + sunGap.toPx() + (sunH - sunGap).toPx() / 2
                     val c = Offset((l - gap.toPx()) / 2f, cy)
                     val rr = 3.dp.toPx()
                     drawCircle(NimbusColors.Secondary, rr, c)
@@ -319,11 +319,10 @@ fun Meteogram(points: List<MeteoPoint>, start: Long, end: Long, nights: List<Lon
                         val d = Offset(kotlin.math.cos(a).toFloat(), kotlin.math.sin(a).toFloat())
                         drawLine(NimbusColors.Secondary, c + d * (rr + 1.5.dp.toPx()), c + d * (rr + 3.5.dp.toPx()), 1.2.dp.toPx(), StrokeCap.Round)
                     }
-                    val st = measurer.measure(sunTotal, labelStyle)
-                    drawText(st, topLeft = Offset(r + gap.toPx(), cy - st.size.height / 2f))
                 }
                 // Wind arrows every 3 h, pointing where the wind blows to
-                val windY = bottom + windH.toPx() / 2
+                val windY = bottom + sunH.toPx() + windH.toPx() / 2
+                drawWindGlyph(Offset((l - gap.toPx()) / 2f, windY), NimbusColors.Secondary)
                 blocks.forEach { (centre, h) ->
                     val dir = h.windDirection ?: return@forEach
                     val kmh = h.windSpeed ?: 0.0
@@ -360,6 +359,36 @@ fun Meteogram(points: List<MeteoPoint>, start: Long, end: Long, nights: List<Lon
     }
 }
 
+/** Small "wind" symbol (three strokes, two with a curl) as the label of the wind row. */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawWindGlyph(c: Offset, color: Color) {
+    val u = 1.dp.toPx()
+    val w = 1.2.dp.toPx()
+    val x0 = c.x - 6 * u
+    val style = Stroke(w, cap = StrokeCap.Round)
+    val rr = 1.7f * u
+    // upper stroke curling up
+    val y1 = c.y - 3 * u
+    drawPath(Path().apply {
+        moveTo(x0, y1); lineTo(x0 + 8 * u, y1)
+        arcTo(androidx.compose.ui.geometry.Rect(Offset(x0 + 8 * u, y1 - rr), rr), 90f, -250f, false)
+    }, color, style = style)
+    // middle stroke, straight and longest
+    drawLine(color, Offset(x0 - 1 * u, c.y), Offset(x0 + 11 * u, c.y), w, StrokeCap.Round)
+    // lower stroke curling down
+    val y3 = c.y + 3 * u
+    drawPath(Path().apply {
+        moveTo(x0 + 1 * u, y3); lineTo(x0 + 6 * u, y3)
+        arcTo(androidx.compose.ui.geometry.Rect(Offset(x0 + 6 * u, y3 + rr), rr), -90f, 250f, false)
+    }, color, style = style)
+}
+
+/** A duration in minutes as "9:54 h" / "9:54 Std." */
+@Composable
+fun hoursMinutes(minutes: Double): String {
+    val m = minutes.roundToInt()
+    return stringResource(R.string.duration_h_min, m / 60, m % 60)
+}
+
 /** What the bars mean, with the day's totals – readable without the cursor. */
 @Composable
 private fun BarLegend(precipTotal: Double?, sunMinutes: Double?) {
@@ -377,7 +406,7 @@ private fun BarLegend(precipTotal: Double?, sunMinutes: Double?) {
     ) {
         val unit = stringResource(Texts.precipUnit(s.precipitationUnit))
         item(PrecipBar, stringResource(R.string.legend_precip, Units.precipitationNumber(precipTotal ?: 0.0, s.precipitationUnit) + NBSP + unit))
-        if (sunMinutes != null) item(SunFill, stringResource(R.string.legend_sunshine, Units.oneDecimal(sunMinutes / 60.0)))
+        if (sunMinutes != null) item(SunFill, stringResource(R.string.legend_sunshine, hoursMinutes(sunMinutes)))
     }
 }
 

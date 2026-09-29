@@ -212,7 +212,7 @@ private fun SummaryCard(sum: DaySummary, history: History, settings: Settings, t
         )
         sum.sunshineHours?.let {
             HairlineDivider(Modifier.padding(vertical = 6.dp))
-            SummaryRow(stringResource(R.string.history_row_sun), stringResource(R.string.history_hours_value, Units.oneDecimal(it)), null)
+            SummaryRow(stringResource(R.string.history_row_sun), hoursMinutes(it * 60.0), null)
         }
         sum.maxGust?.let { g ->
             HairlineDivider(Modifier.padding(vertical = 6.dp))

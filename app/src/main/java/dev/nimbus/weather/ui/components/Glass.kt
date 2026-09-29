@@ -1,3 +1,20 @@
+/*
+ * Nimbus - app/src/main/java/dev/nimbus/weather/ui/components/Glass.kt
+ * Translucent cards, card headers and dividers used on all pages.
+ *
+ *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
+ *   Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
+ *   Written by Anthropic Claude Opus 5.5 - AI generated content.
+ *
+ *   Free software under the GNU General Public License, version 3 or later.
+ *   There is no warranty, to the extent permitted by law. The full text is in
+ *   LICENSES/GPL-3.0-or-later.txt.
+ *
+ * SPDX-FileCopyrightText: (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
+ * SPDX-FileContributor: Anthropic Claude Opus 5.5 (AI generated content)
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 package dev.nimbus.weather.ui.components
 
 import androidx.compose.foundation.border
@@ -30,7 +47,7 @@ import dev.nimbus.weather.ui.theme.NimbusColors
 
 val CardShape = RoundedCornerShape(18.dp)
 
-/** Frosted translucent card like the iOS weather modules. */
+/** Frosted translucent card, the building block of all weather modules. */
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,

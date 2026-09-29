@@ -1,3 +1,26 @@
+/*
+ * Nimbus - app/src/main/java/dev/nimbus/weather/util/Moon.kt
+ * Moon phase, illumination, rise and set, and the course of the sun.
+ *
+ *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
+ *   Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
+ *   Written by Anthropic Claude Opus 5.5 - AI generated content.
+ *
+ *   Moon and sun positions are a port of SunCalc,
+ *   Copyright (c) 2014, Vladimir Agafonkin, under the BSD 2-Clause License
+ *   (LICENSES/BSD-2-Clause.txt). The full moon dates follow the formulas
+ *   of Jean Meeus, "Astronomical Algorithms".
+ *
+ *   Free software under the GNU General Public License, version 3 or later.
+ *   There is no warranty, to the extent permitted by law. The full text is in
+ *   LICENSES/GPL-3.0-or-later.txt.
+ *
+ * SPDX-FileCopyrightText: (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
+ * SPDX-FileCopyrightText: (C) 2014 Vladimir Agafonkin (SunCalc)
+ * SPDX-FileContributor: Anthropic Claude Opus 5.5 (AI generated content)
+ * SPDX-License-Identifier: GPL-3.0-or-later AND BSD-2-Clause
+ */
+
 package dev.nimbus.weather.util
 
 import kotlin.math.PI

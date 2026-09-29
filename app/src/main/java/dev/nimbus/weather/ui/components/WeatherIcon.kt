@@ -1,3 +1,20 @@
+/*
+ * Nimbus - app/src/main/java/dev/nimbus/weather/ui/components/WeatherIcon.kt
+ * Multicolour weather symbols drawn on a canvas, incl. the combined wind symbol.
+ *
+ *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
+ *   Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
+ *   Written by Anthropic Claude Opus 5.5 - AI generated content.
+ *
+ *   Free software under the GNU General Public License, version 3 or later.
+ *   There is no warranty, to the extent permitted by law. The full text is in
+ *   LICENSES/GPL-3.0-or-later.txt.
+ *
+ * SPDX-FileCopyrightText: (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
+ * SPDX-FileContributor: Anthropic Claude Opus 5.5 (AI generated content)
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 package dev.nimbus.weather.ui.components
 
 import androidx.compose.foundation.Canvas
@@ -33,7 +50,7 @@ private val CloudDark = Color(0xFF8E9AA8)
 private val DropBlue = Color(0xFF5DB8FF)
 private val BoltYellow = Color(0xFFFFCF33)
 
-/** Multicolour weather glyph in the style of the iOS weather symbols, drawn with Canvas. */
+/** Multicolour weather glyph, drawn with Canvas. */
 @Composable
 fun WeatherIcon(
     condition: Condition, isDay: Boolean, size: Dp = 28.dp, modifier: Modifier = Modifier,
@@ -77,7 +94,7 @@ private fun DrawScope.drawWindStreaks(s: Float, wind: Float) {
         val path = Path().apply {
             moveTo(x0, y)
             lineTo(x0 + len, y)
-            // curl at the end, like the iOS "wind" symbol
+            // curl at the end, like the common "wind" symbol
             val r = s * 0.07f
             cubicTo(x0 + len + r * 1.4f, y, x0 + len + r * 1.4f, y - r * 2f, x0 + len + r * 0.2f, y - r * 2f)
         }

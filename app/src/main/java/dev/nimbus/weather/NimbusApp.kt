@@ -44,7 +44,7 @@ class AppContainer(app: Application) {
     /** Client used by MapLibre for map and radar tiles; recolors radar images on the fly. */
     val mapHttp: OkHttpClient = http.newBuilder()
         // Map tiles come from few hosts; OkHttp's default of 5 parallel requests per host is too low.
-        .dispatcher(okhttp3.Dispatcher().apply { maxRequests = 32; maxRequestsPerHost = 10 })
+        .dispatcher(okhttp3.Dispatcher().apply { maxRequests = 32; maxRequestsPerHost = 12 })
         .cache(Cache(File(app.cacheDir, "maptiles"), 80L * 1024 * 1024))
         .addInterceptor { chain ->
             chain.proceed(chain.request().newBuilder().header("User-Agent", USER_AGENT).build())

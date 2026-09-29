@@ -52,6 +52,19 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
             ),
             fieldBelow,
         )
+        // Isolines as vector lines: crisp at every zoom level.
+        style.addSource(GeoJsonSource(ISO))
+        style.addLayerBelow(
+            org.maplibre.android.style.layers.LineLayer(ISO, ISO).withProperties(
+                PropertyFactory.lineColor("#FFFFFF"),
+                PropertyFactory.lineOpacity(0.75f),
+                PropertyFactory.lineWidth(Expression.interpolate(Expression.linear(), Expression.zoom(), Expression.stop(5, 0.8f), Expression.stop(10, 1.6f))),
+                PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+                PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
+                PropertyFactory.visibility(Property.NONE),
+            ),
+            fieldBelow,
+        )
         style.addImage(ARROW, arrowBitmap(), true)
         style.addSource(GeoJsonSource(WIND))
         style.addLayer(
@@ -75,8 +88,8 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
                 PropertyFactory.iconIgnorePlacement(true),
                 PropertyFactory.textAllowOverlap(true),
                 PropertyFactory.textIgnorePlacement(true),
-                PropertyFactory.iconOpacity(thinOut()),
-                PropertyFactory.textOpacity(thinOut()),
+                PropertyFactory.iconOpacity(thinOut(thinZoom(WeatherGrid.STEP))),
+                PropertyFactory.textOpacity(thinOut(thinZoom(WeatherGrid.STEP))),
                 PropertyFactory.visibility(Property.NONE),
             ),
         )
@@ -93,7 +106,7 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
                 // both layers may overlap – otherwise MapLibre's collision check hides one of them.
                 PropertyFactory.textAllowOverlap(true),
                 PropertyFactory.textIgnorePlacement(true),
-                PropertyFactory.textOpacity(thinOut()),
+                PropertyFactory.textOpacity(thinOut(thinZoom(WeatherGrid.STEP))),
                 PropertyFactory.visibility(Property.NONE),
             ),
         )
@@ -103,7 +116,8 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
         showTemperature = temperature
         showWind = wind
         val s = style ?: return
-        s.getLayer(FIELD)?.setProperties(PropertyFactory.rasterOpacity(if (temperature) 0.4f else 0f))
+        s.getLayer(FIELD)?.setProperties(PropertyFactory.rasterOpacity(if (temperature) 0.6f else 0f))
+        s.getLayer(ISO)?.setProperties(PropertyFactory.visibility(if (temperature) Property.VISIBLE else Property.NONE))
         s.getLayer(TEMP)?.setProperties(
             PropertyFactory.visibility(if (temperature) Property.VISIBLE else Property.NONE),
             // With wind arrows at the same points the temperature moves up a bit.
@@ -112,23 +126,39 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
         s.getLayer(WIND)?.setProperties(PropertyFactory.visibility(if (wind) Property.VISIBLE else Property.NONE))
     }
 
+    val currentStep: Double? get() = grid?.step
+
     fun setGrid(g: WeatherGrid) {
         if (g === grid) return
         grid = g
         hour = -1
+        // Thin out labels once the grid points get closer than ~90 dp on screen.
+        val thin = thinOut(thinZoom(g.step))
+        style?.getLayer(WIND)?.setProperties(PropertyFactory.iconOpacity(thin), PropertyFactory.textOpacity(thin))
+        style?.getLayer(TEMP)?.setProperties(PropertyFactory.textOpacity(thin))
         (style?.getSource(FIELD) as? ImageSource)?.setCoordinates(
             LatLngQuad(LatLng(g.lat1, g.lon0), LatLng(g.lat1, g.lon1), LatLng(g.lat0, g.lon1), LatLng(g.lat0, g.lon0)),
         )
     }
 
     /** Shows the hour closest to [timeMs]; cheap if the hour did not change. */
-    fun update(timeMs: Long) {
+    /** Shows the hour closest to [timeMs]; the field and isolines are computed off the UI thread. */
+    suspend fun update(timeMs: Long) {
         val g = grid ?: return
-        val s = style ?: return
         val h = g.hourIndex(timeMs)
         if (h == hour) return
         hour = h
-        (s.getSource(FIELD) as? ImageSource)?.setImage(fieldBitmap(g, h))
+        val (bitmap, iso) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            fieldBitmap(g, h) to Isolines.compute(g, g.temp[h], BAND)
+        }
+        val s = style ?: return
+        if (g !== grid || h != hour) return          // superseded while computing
+        (s.getSource(FIELD) as? ImageSource)?.setImage(bitmap)
+        (s.getSource(ISO) as? GeoJsonSource)?.setGeoJson(
+            FeatureCollection.fromFeatures(iso.map {
+                Feature.fromGeometry(org.maplibre.geojson.LineString.fromLngLats(listOf(Point.fromLngLat(it.lon1, it.lat1), Point.fromLngLat(it.lon2, it.lat2))))
+            }),
+        )
         val temps = ArrayList<Feature>(g.rows * g.cols)
         val winds = ArrayList<Feature>(g.rows * g.cols)
         for (r in 0 until g.rows) for (c in 0 until g.cols) {
@@ -159,13 +189,22 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
         const val TEMP = "ov-temp"
         const val WIND = "ov-wind"
         const val ARROW = "ov-arrow"
+        const val ISO = "ov-isolines"
 
-        /** Below zoom 5.5 only every second grid point (in both directions) is shown. */
-        private fun thinOut(): Expression = Expression.step(
+        /** Zoom at which points [step]° apart are ~90 dp apart (MapLibre world = 512 · 2^zoom dp). */
+        fun thinZoom(step: Double): Double = kotlin.math.log2(90.0 * 360.0 / (512.0 * step))
+
+        /** Below [zoom] only every second grid point (in both directions) is shown. */
+        private fun thinOut(zoom: Double): Expression = Expression.step(
             Expression.zoom(),
             Expression.switchCase(Expression.get("major"), Expression.literal(1f), Expression.literal(0f)),
-            Expression.stop(5.5, Expression.literal(1f)),
+            Expression.stop(zoom, Expression.literal(1f)),
         )
+
+        /** Width of the temperature bands (areas of equal temperature) in °C. */
+        const val BAND = 2.0
+
+        fun band(t: Double): Int = kotlin.math.floor(t / BAND).toInt()
 
         /** Wind colour by speed (km/h): calm white → Bft 6 yellow → gale orange → storm red. */
         private fun windColor(): Expression = Expression.step(
@@ -196,21 +235,30 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
         private fun mercY(lat: Double) = ln(tan(Math.PI / 4 + Math.toRadians(lat) / 2))
         private fun latOf(y: Double) = Math.toDegrees(2 * atan(exp(y)) - Math.PI / 2)
 
-        /** Smooth temperature colour field, sampled in Mercator space so it lines up with the map. */
+        /**
+         * Temperature as areas of equal temperature: colour bands of [BAND] °C, sampled in Mercator
+         * space so it lines up with the map. The isolines are drawn separately as vectors.
+         */
         fun fieldBitmap(g: WeatherGrid, hour: Int): Bitmap {
-            val w = 160
-            val h = 160
+            val w = 512
+            val h = 640
             val field = g.temp[hour]
             val yTop = mercY(g.lat1)
             val yBottom = mercY(g.lat0)
-            val px = IntArray(w * h)
+            val bands = IntArray(w * h) { Int.MIN_VALUE }
+            val lons = DoubleArray(w) { g.lon0 + (g.lon1 - g.lon0) * (it + 0.5) / w }
             for (row in 0 until h) {
                 val lat = latOf(yTop + (yBottom - yTop) * (row + 0.5) / h)
                 for (col in 0 until w) {
-                    val lon = g.lon0 + (g.lon1 - g.lon0) * (col + 0.5) / w
-                    val t = g.sample(field, lat, lon)
-                    px[row * w + col] = if (t == null) 0 else Insights.temperatureColor(t.toDouble()).toArgb()
+                    g.sample(field, lat, lons[col])?.let { bands[row * w + col] = band(it.toDouble()) }
                 }
+            }
+            val colors = HashMap<Int, Int>()
+            val px = IntArray(w * h)
+            for (i in bands.indices) {
+                val b = bands[i]
+                if (b == Int.MIN_VALUE) continue
+                px[i] = colors.getOrPut(b) { Insights.temperatureColor((b + 0.5) * BAND).toArgb() }
             }
             return Bitmap.createBitmap(px, w, h, Bitmap.Config.ARGB_8888)
         }

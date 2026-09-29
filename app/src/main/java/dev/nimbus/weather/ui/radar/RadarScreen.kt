@@ -62,6 +62,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import dev.nimbus.weather.BuildConfig
 import dev.nimbus.weather.NimbusApp
 import dev.nimbus.weather.R
 import dev.nimbus.weather.data.model.Place
@@ -92,6 +93,9 @@ import java.util.TimeZone
 const val STYLE_URL = "https://tiles.openfreemap.org/styles/dark"
 const val RADAR_ZOOM = 6.6
 private const val FRAME_MS = 450L
+private const val MIN_FRAMES_TO_PLAY = 5
+private const val LOAD_POLL_MS = 250L
+private const val BATCH_TIMEOUT_MS = 8000L
 /**
  * MapLibre loads the tiles of every layer whose visibility is "visible" – even at opacity 0.
  * Layers that must not load yet are therefore switched to visibility "none".
@@ -111,7 +115,26 @@ private class RadarMapController {
     var warnings = false
     /** Frames whose tiles are being loaded ("warm"); grows in small batches, see [warmNextBatch]. */
     private val warm = HashSet<Int>()
+    /** Frames whose tiles are complete: everything that was warm when the map last became idle. */
+    private val loaded = HashSet<Int>()
+    /** Load order: from "now" outwards (now, −10 min, +10 min, −20 min …). */
+    private var order: List<Int> = emptyList()
+    private var nowIndex = 0
     val allWarm: Boolean get() = frames.isNotEmpty() && warm.size >= frames.size
+    val allLoaded: Boolean get() = frames.isNotEmpty() && loaded.size >= frames.size
+
+    /** The map is idle: all warm frames have their tiles. */
+    fun markIdle() { loaded += warm }
+
+    /** Contiguous range of loaded frames around "now" – the part of the loop that can play. */
+    fun playableRange(): IntRange {
+        if (nowIndex !in loaded) return IntRange.EMPTY
+        var lo = nowIndex
+        var hi = nowIndex
+        while (lo - 1 in loaded) lo--
+        while (hi + 1 in loaded) hi++
+        return lo..hi
+    }
     /** Frame opacity; 1 when the temperature field is shown so colours do not mix. */
     var frameOpacity = 0.85f
 
@@ -120,12 +143,12 @@ private class RadarMapController {
         this.style = style
         val below = style.layers.firstOrNull { it is SymbolLayer }?.id
         fun add(layer: RasterLayer) = if (below != null) style.addLayerBelow(layer, below) else style.addLayer(layer)
-        style.addSource(RasterSource("sat", TileSet("2.2.0", RadarSources.dwdTileUrl(RadarSources.SAT_LAYER, null)).apply { maxZoom = 9f }, 512))
+        style.addSource(RasterSource("sat", TileSet("2.2.0", RadarSources.dwdTileUrl(RadarSources.SAT_LAYER, null)).apply { maxZoom = 9f }, 512).apply { prefetchZoomDelta = 0 })
         add(RasterLayer("sat", "sat").withProperties(PropertyFactory.rasterOpacity(0f), PropertyFactory.rasterFadeDuration(0f), PropertyFactory.visibility(Property.NONE)))
         style.addSource(RasterSource("warn", TileSet("2.2.0", RadarSources.dwdTileUrl(RadarSources.WARN_LAYER, null)).apply {
             maxZoom = 10f
             setBounds(5.5f, 47.0f, 15.5f, 55.2f)
-        }, 512))
+        }, 512).apply { prefetchZoomDelta = 0 })
         add(RasterLayer("warn", "warn").withProperties(PropertyFactory.rasterOpacity(0f), PropertyFactory.rasterFadeDuration(0f), PropertyFactory.visibility(Property.NONE)))
     }
 
@@ -141,12 +164,23 @@ private class RadarMapController {
         frames = timeline.frames
         shown = -1
         warm.clear()
+        loaded.clear()
+        nowIndex = timeline.nowIndex
+        order = buildList {
+            add(nowIndex)
+            for (d in 1..frames.size) {
+                if (nowIndex - d >= 0) add(nowIndex - d)
+                if (nowIndex + d <= frames.lastIndex) add(nowIndex + d)
+            }
+        }
         fun add(layer: RasterLayer) = style.addLayerBelow(layer, "warn")
 
         timeline.frames.forEachIndexed { i, f ->
             f.rainViewerPath?.let { path ->
                 val ts = TileSet("2.2.0", RadarSources.rainViewerTileUrl(timeline.rainViewerHost, path)).apply { maxZoom = 7f }
-                style.addSource(RasterSource("rv$i", ts, 512))
+                // No low-zoom placeholder tiles (default: 4 levels lower): with ~50 radar sources
+                // they would multiply the requests and delay the frames that are actually shown.
+                style.addSource(RasterSource("rv$i", ts, 512).apply { prefetchZoomDelta = 0 })
                 add(
                     RasterLayer("rv$i", "rv$i").withProperties(
                         PropertyFactory.rasterOpacity(0f), PropertyFactory.rasterFadeDuration(0f),
@@ -161,7 +195,7 @@ private class RadarMapController {
                     minZoom = 3f
                     setBounds(1.4f, 45.6f, 18.8f, 56.3f)
                 }
-                style.addSource(RasterSource("dwd$i", ts, 512))
+                style.addSource(RasterSource("dwd$i", ts, 512).apply { prefetchZoomDelta = 0 })
                 add(
                     RasterLayer("dwd$i", "dwd$i").withProperties(
                         PropertyFactory.rasterOpacity(0f), PropertyFactory.rasterFadeDuration(0f),
@@ -210,18 +244,11 @@ private class RadarMapController {
      * so the base map and the visible frame always load first and never starve behind ~300
      * radar tiles in MapLibre's request queue.
      */
-    fun warmNextBatch(size: Int = 4) {
+    fun warmNextBatch(size: Int = 8) {
         val s = style ?: return
-        if (frames.isEmpty()) return
-        val start = shown.coerceAtLeast(0)
-        var added = 0
-        for (k in 1..frames.size) {
-            val i = (start + k) % frames.size
-            if (i !in warm) {
-                warm += i
-                setState(s, i, true, 0f)
-                if (++added == size) break
-            }
+        order.filter { it !in warm }.take(size).forEach { i ->
+            warm += i
+            setState(s, i, true, 0f)
         }
     }
 
@@ -252,7 +279,9 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
     var showTemp by rememberSaveable { mutableStateOf(false) }
     var showWind by rememberSaveable { mutableStateOf(false) }
     val overlays = remember { WeatherOverlays(temperatureUnit) }
+    var gridCheck by remember { mutableIntStateOf(0) }
     val tf = remember { TimeFormat(TimeZone.getDefault().id, DateFormat.is24HourFormat(context)) }
+    val openedAt = remember { System.currentTimeMillis() }
 
     val mapView = remember {
         val options = MapLibreMapOptions.createFromAttributes(context).textureMode(true)
@@ -299,32 +328,38 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
                 overlays.install(style, fieldBelow = "sat")
                 overlays.setVisible(showTemp, showWind)
                 // Panned far away: load the temperature/wind grid for the new area.
-                map.addOnCameraIdleListener {
-                    val c = map.cameraPosition.target ?: return@addOnCameraIdleListener
-                    if (WeatherGridStore.gridFor(c.latitude, c.longitude)?.contains(c.latitude, c.longitude, 1.5) != true) {
-                        scope.launch {
-                            WeatherGridStore.ensure(container.http, c.latitude, c.longitude)?.let {
-                                overlays.setGrid(it)
-                                timeline?.let { tl -> overlays.update(tl.frames[frame.coerceIn(0, tl.frames.lastIndex)].time) }
-                            }
-                        }
-                    }
-                }
+                map.addOnCameraIdleListener { gridCheck++ }
                 place?.let { controller.addLocation(style, it) }
                 controller.setOverlays(satellite, warnings)
                 // Base map + visible frame first; each time the map is idle the next frames are
                 // warmed up. The loop starts once all frames are loaded.
-                mapView.addOnDidBecomeIdleListener {
-                    if (controller.frames.isEmpty()) return@addOnDidBecomeIdleListener
-                    if (!controller.allWarm) controller.warmNextBatch()
-                    else if (!ready) { ready = true; playing = true }
-                }
-                // Fallback for maps that never become idle (e.g. endless tile errors).
+                // Frames are loaded batch by batch, from "now" outwards: the next batch is requested
+                // only when the map reports all tiles of the previous one loaded, so the frames next
+                // to "now" are complete early. The loop starts with the first few and grows.
+                // "fully" = every tile of every visible layer is loaded (MapLibre render flag).
+                var fullyRendered = false
+                mapView.addOnDidFinishRenderingFrameListener { fully, _, _ -> fullyRendered = fully }
                 scope.launch {
-                    while (!ready) {
-                        delay(6000)
-                        if (controller.allWarm) { ready = true; playing = true } else controller.warmNextBatch()
+                    var waited = 0L
+                    while (!controller.allLoaded) {
+                        delay(LOAD_POLL_MS)
+                        if (controller.frames.isEmpty()) continue
+                        waited += LOAD_POLL_MS
+                        // Wait at least one poll after a batch so the flag reflects the new layers;
+                        // a tile that never answers must not stall the rest: move on after a while.
+                        if ((fullyRendered && waited > LOAD_POLL_MS) || waited >= BATCH_TIMEOUT_MS) {
+                            controller.markIdle()
+                            fullyRendered = false
+                            controller.warmNextBatch()
+                            waited = 0
+                        }
+                        if (!ready && (controller.playableRange().count() >= MIN_FRAMES_TO_PLAY || controller.allLoaded)) {
+                            ready = true
+                            playing = true
+                            if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "loop starts after ${System.currentTimeMillis() - openedAt} ms")
+                        }
                     }
+                    if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "all frames after ${System.currentTimeMillis() - openedAt} ms")
                 }
                 styleReady = true
             }
@@ -351,6 +386,18 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
     LaunchedEffect(frame, timeline) {
         timeline?.let { tl -> overlays.update(tl.frames[frame.coerceIn(0, tl.frames.lastIndex)].time) }
     }
+    // After panning or zooming: a grid that matches the zoom and covers the view. Finer grids are
+    // only fetched while an overlay is shown (each costs 99 API calls); otherwise the coarse one.
+    LaunchedEffect(gridCheck, showTemp, showWind, styleReady) {
+        if (!styleReady) return@LaunchedEffect
+        val cam = controller.map?.cameraPosition ?: return@LaunchedEffect
+        val c = cam.target ?: return@LaunchedEffect
+        val step = if (showTemp || showWind) WeatherGrid.stepForZoom(cam.zoom) else WeatherGrid.STEP
+        WeatherGridStore.ensure(container.http, c.latitude, c.longitude, step)?.let {
+            overlays.setGrid(it)
+            timeline?.let { tl -> overlays.update(tl.frames[frame.coerceIn(0, tl.frames.lastIndex)].time) }
+        }
+    }
     LaunchedEffect(showTemp, showWind, styleReady) {
         if (!styleReady) return@LaunchedEffect
         overlays.setVisible(showTemp, showWind)
@@ -367,11 +414,13 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
     LaunchedEffect(frame) { controller.show(frame) }
     LaunchedEffect(satellite, warnings) { controller.setOverlays(satellite, warnings) }
     LaunchedEffect(playing, timeline) {
-        val tl = timeline ?: return@LaunchedEffect
+        timeline ?: return@LaunchedEffect
         while (playing) {
-            val last = frame >= tl.frames.lastIndex
+            // Play only the loaded part of the loop; it grows while the remaining frames load.
+            val range = controller.playableRange().takeIf { !it.isEmpty() } ?: (frame..frame)
+            val last = frame >= range.last
             delay(if (last) 1400L else FRAME_MS)
-            frame = if (last) 0 else frame + 1
+            frame = if (last || frame !in range) range.first else frame + 1
         }
     }
 
@@ -559,12 +608,19 @@ private fun Legend(showTemp: Boolean, unit: dev.nimbus.weather.data.model.Temper
     }
     if (showTemp) {
         Spacer(Modifier.height(4.dp))
-        val temps = listOf(-15.0, -5.0, 3.0, 10.0, 17.0, 24.0, 31.0, 38.0)
+        // Discrete bands like on the map (areas of equal temperature).
         Canvas(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp))) {
-            drawRect(Brush.horizontalGradient(temps.map { dev.nimbus.weather.ui.main.Insights.temperatureColor(it) }))
+            val bands = (-10 until 20)        // -20 °C … 40 °C in 2 °C steps; labels at thirds
+            val bw = size.width / bands.count()
+            bands.forEachIndexed { i, b ->
+                drawRect(
+                    dev.nimbus.weather.ui.main.Insights.temperatureColor((b + 0.5) * WeatherOverlays.BAND),
+                    androidx.compose.ui.geometry.Offset(i * bw, 0f), androidx.compose.ui.geometry.Size(bw + 0.5f, size.height),
+                )
+            }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            listOf(-15.0, 0.0, 15.0, 30.0).forEach {
+            listOf(-20.0, 0.0, 20.0, 40.0).forEach {
                 Text(dev.nimbus.weather.util.Units.temp(it, unit), fontSize = 10.sp, color = NimbusColors.Tertiary)
             }
         }

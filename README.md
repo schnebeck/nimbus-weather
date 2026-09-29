@@ -10,8 +10,8 @@ Die fertigen, signierten APKs liegen in `dist/`:
 
 | Datei | Für |
 |---|---|
-| `Nimbus-1.3.0-arm64.apk` (13 MB) | praktisch alle Android-Handys seit ca. 2017 |
-| `Nimbus-1.3.0-universal.apk` (44 MB) | alle Geräte inkl. 32-Bit-ARM und x86 |
+| `Nimbus-1.4.0-arm64.apk` (13 MB) | praktisch alle Android-Handys seit ca. 2017 |
+| `Nimbus-1.4.0-universal.apk` (44 MB) | alle Geräte inkl. 32-Bit-ARM und x86 |
 
 APK aufs Handy kopieren, öffnen, „Installation aus unbekannten Quellen“ für den Dateimanager erlauben.
 Mindestversion: Android 8.0 (API 26). Google Play Services werden nicht benötigt.
@@ -50,8 +50,10 @@ Mindestversion: Android 8.0 (API 26). Google Play Services werden nicht benötig
   RainViewer für Europa, beide auf **eine gemeinsame Farbskala** umgerechnet (dBZ-basiert):
   **Regen (über 0 °C) weiß → grau → hellblau → dunkelblau**, **Schnee (ab 0 °C) blassrosa → dunkelviolett**,
   Schneeregen (0–1 °C) als Mischfarbe – entschieden pro Pixel über die 2-m-Temperatur zur Zeit des Radarbilds.
-  Overlays **Temperatur** (Farbfeld + Werte) und **Wind** (Pfeile nach Stärke gefärbt, km/h),
-  passend zur Stunde auf der Zeitleiste; Satellit (Meteosat), DWD-Warnkarte.
+  Overlays **Temperatur** (Flächen gleicher Temperatur in 2-°C-Stufen mit Isolinien + Werte) und **Wind**
+  (Pfeile nach Stärke gefärbt, km/h), passend zur Stunde auf der Zeitleiste; das Werteraster wird beim Zoomen
+  feiner (1° → 0,5° → 0,25° → 0,125°, je 99 Punkte); Satellit (Meteosat), DWD-Warnkarte.
+  Die Radarschleife lädt vom aktuellen Bild ausgehend in Gruppen und startet, sobald 5 Bilder da sind.
   Rückblick 2 h / 6 h / 24 h (DWD hält 3 Tage vor), Kartenbeschriftung in App-Sprache.
   Vergangene Radarbilder werden bis zu 3 Tage gecacht; im WLAN wird die Radarschleife für den
   angezeigten Ort **im Hintergrund vorgeladen**.
@@ -76,7 +78,7 @@ Mindestversion: Android 8.0 (API 26). Google Play Services werden nicht benötig
 | Pollen Europa, Zusammensetzung, Verlauf | Copernicus CAMS via Open-Meteo | 6 Arten, stündlich, ~3 Tage |
 | Community-Messnetz | [Sensor.Community](https://sensor.community) | Median aller Außensensoren, Ausreißer gefiltert |
 | Modellvergleich | Open-Meteo (ICON-D2, ICON-EU, ECMWF, AROME/ARPEGE, UKMO, KNMI, MET Norway, GFS) | |
-| Temperatur-/Windgitter (Radar-Overlays, Regen/Schnee) | Open-Meteo, 9 × 11 Punkte im 1°-Raster | 1 h gecacht (Speicher + Datei) |
+| Temperatur-/Windgitter (Radar-Overlays, Regen/Schnee) | Open-Meteo, 11 × 9 Punkte, 1° bis 0,125° je nach Zoom | 1 h gecacht (Speicher + Datei); feine Gitter nur bei eingeschaltetem Overlay |
 | Rückblick (Messungen) | DWD-Stationen via Bright Sky `/weather` | MOSMIX-Vorhersagewerte werden herausgefiltert |
 | Rückblick (Vorhersage) | Open-Meteo `past_days=2`, gewähltes Modell | |
 | Mond | lokal berechnet (Meeus, SunCalc) | gegen US Naval Observatory getestet |
@@ -91,7 +93,7 @@ Voraussetzungen: JDK 21, Android SDK mit Plattform 37 und Build-Tools 36.
 
 ```bash
 echo "sdk.dir=$HOME/Android/Sdk" > local.properties
-./gradlew testDebugUnitTest      # 71 Unit-Tests
+./gradlew testDebugUnitTest      # 73 Unit-Tests
 ./gradlew assembleRelease        # APKs in app/build/outputs/apk/release/
 ```
 

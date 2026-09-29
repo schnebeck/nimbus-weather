@@ -217,8 +217,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             updatePlace(placeId) { it.copy(historyLoading = true, historyError = false) }
             val model = _state.value.settings.model.openMeteoId
-            val inGermany = dev.nimbus.weather.data.repo.WeatherRepository.isInDwdArea(place.latitude, place.longitude) &&
-                _state.value.settings.useStationObservations
+            // Station data is always loaded for the look back, independent of the "use station
+            // measurements" setting (that only decides what the current conditions show): the
+            // comparison measurement vs. forecast is the point of the history.
+            val inGermany = dev.nimbus.weather.data.repo.WeatherRepository.isInDwdArea(place.latitude, place.longitude)
             val result = runCatching { container.history.load(place.latitude, place.longitude, model, inGermany) }
             updatePlace(placeId) {
                 it.copy(history = result.getOrNull() ?: it.history, historyLoading = false, historyError = result.isFailure)

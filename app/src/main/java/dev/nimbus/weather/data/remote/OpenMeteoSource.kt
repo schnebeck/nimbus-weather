@@ -102,7 +102,8 @@ class OpenMeteoSource(
             .addQueryParameter("timezone", "auto")
             .addQueryParameter("timeformat", "unixtime")
             .addQueryParameter("forecast_days", "10")
-            .addQueryParameter("past_hours", "1")
+            // 24 past hours: the day meteogram of "today" starts at midnight
+            .addQueryParameter("past_hours", "24")
             .addQueryParameter("forecast_hours", "240")
             .addQueryParameter("wind_speed_unit", "kmh")
             .addQueryParameter("current", CURRENT)

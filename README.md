@@ -10,8 +10,8 @@ Die fertigen, signierten APKs liegen in `dist/`:
 
 | Datei | Für |
 |---|---|
-| `Nimbus-1.4.1-arm64.apk` (13 MB) | praktisch alle Android-Handys seit ca. 2017 |
-| `Nimbus-1.4.1-universal.apk` (44 MB) | alle Geräte inkl. 32-Bit-ARM und x86 |
+| `Nimbus-1.5.0-arm64.apk` (13 MB) | praktisch alle Android-Handys seit ca. 2017 |
+| `Nimbus-1.5.0-universal.apk` (44 MB) | alle Geräte inkl. 32-Bit-ARM und x86 |
 
 APK aufs Handy kopieren, öffnen, „Installation aus unbekannten Quellen“ für den Dateimanager erlauben.
 Mindestversion: Android 8.0 (API 26). Google Play Services werden nicht benötigt.
@@ -28,14 +28,16 @@ Mindestversion: Android 8.0 (API 26). Google Play Services werden nicht benötig
   oben rechts „Radar“. **Wischen nach rechts** führt in den **Rückblick**: „Heute bisher“, „Gestern“,
   „Vorgestern“ – gemessene DWD-Stationswerte (Temperatur, Niederschlag, Sonne, Wind, Stundenwerte) neben der
   Vorhersage des gewählten Modells für dieselben Stunden, inkl. mittlerer Abweichung (außerhalb Deutschlands
-  nur Modellwerte). Die Daten werden beim Wischen nachgeladen, nicht dauerhaft gespeichert.
+  nur Modellwerte). Die Stationswerte werden immer geladen, unabhängig von der Einstellung für die
+  aktuellen Werte. Die Daten werden beim Wischen nachgeladen, nicht dauerhaft gespeichert.
 - **Hintergrund-Aktualisierung** stündlich (WorkManager, nur mit Netz und ausreichend Akku) für alle Orte;
   der aktuelle Standort wird dabei an seiner zuletzt bekannten Position aktualisiert.
 - **Wetterseite** wie bei Apple:
   großer, beim Scrollen einklappender Kopfbereich mit **Kombisymbol** (Sonne/Mond, Wolken, Regen/Schnee,
   Windstriche bei Wind), DWD-Warnungen, Niederschlag der nächsten 3 Stunden (15-Min.-Schritte),
   Stundenvorhersage mit Sonnenauf-/-untergang, 10-Tage-Vorhersage mit Temperaturbalken
-  (antippen → Tagesverlauf), **Niederschlagskarte 24 h** (Wahrscheinlichkeit und Menge pro Stunde),
+  (antippen → **Meteogramm** 00–24 Uhr: Temperatur, Niederschlag, Symbole, Wind, Nachtschattierung;
+  ein verschiebbarer Cursor zeigt darunter alle Werte der gewählten Stunde), **Niederschlagskarte 24 h** (Wahrscheinlichkeit und Menge pro Stunde),
   Niederschlagswahrscheinlichkeit in Stunden- und Tagesvorhersage immer angezeigt (unter 10 % blass),
   Radar-Vorschau, Kacheln für Gefühlt, UV, Wind (Kompass), Luftfeuchte/Taupunkt, Sichtweite (mit Angabe
   „gemessen an DWD-Station“ bzw. „Modellwert“), Luftdruck (Tendenz),

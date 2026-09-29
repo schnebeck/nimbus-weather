@@ -90,10 +90,16 @@ private val blossomColors = listOf(Color(0xFFFFFFFF), Color(0xFFFBD3E2), Color(0
  */
 internal fun DrawScope.drawAmbient(
     ambient: Ambient, pollen: Float, t: Double, w: Float, h: Float, dp: Float,
-    wind: Float, night: Float, autumnProgress: Float, shapes: AmbientShapes,
+    wind: Float, night: Float, autumnProgress: Float, shapes: AmbientShapes, air: WindTravel,
 ) {
+    // Positions use the integrated wind travel ([WindTravel]), never time × current speed:
+    // with gusts the speed changes every frame, and t × Δspeed made particles jump.
+    // [wind] is the mean wind (no gusts): it sets particle counts and the base direction.
     val windAbs = abs(wind)
     val dir = if (wind >= 0f) 1f else -1f
+    val wd = air.distance.toFloat()          // ∫ gusting wind dt, signed
+    val wa = air.absDistance.toFloat()       // ∫ |gusting wind| dt
+    val tf = t.toFloat()
     when (ambient) {
         Ambient.LEAVES -> {
             val count = (8 + 26 * windAbs).toInt()
@@ -106,14 +112,14 @@ internal fun DrawScope.drawAmbient(
             for (i in 0 until count) {
                 val depth = rnd(i, 61)
                 val size = (6f + 7f * depth) * dp
-                val fall = (28f + 40f * depth + 30f * windAbs) * dp
-                val drift = dir * (15f + 190f * windAbs) * (0.6f + 0.6f * depth) * dp
+                val fallDist = ((24f + 34f * depth) * tf + 30f * wa) * dp
+                val driftDist = (dir * 12f * tf + 150f * wd) * (0.6f + 0.6f * depth) * dp
                 val margin = size * 3
-                val y = (rnd(i, 62) * (h + margin) + t * fall).wrap((h + margin).toDouble()).toFloat() - margin
+                val y = (rnd(i, 62) * (h + margin) + fallDist).toDouble().wrap((h + margin).toDouble()).toFloat() - margin
                 val sway = sin(t * (0.9 + rnd(i, 63)) + i * 1.7).toFloat() * (18f + 16f * depth) * dp
-                val x = (rnd(i, 64) * (w + margin * 2) + t * drift + sway).wrap((w + margin * 2).toDouble()).toFloat() - margin
-                val spin = (t * (40 + 160 * rnd(i, 65)) * (if (i % 2 == 0) 1 else -1) + 360 * rnd(i, 66)).toFloat()
-                val flip = cos(t * (1.5 + 2.5 * rnd(i, 67)) + i).toFloat()          // fake 3D tumbling
+                val x = (rnd(i, 64) * (w + margin * 2) + driftDist + sway).toDouble().wrap((w + margin * 2).toDouble()).toFloat() - margin
+                val spin = (t * (30 + 110 * rnd(i, 65)) * (if (i % 2 == 0) 1 else -1) + 360 * rnd(i, 66)).toFloat()
+                val flip = cos(t * (1.0 + 1.6 * rnd(i, 67)) + i).toFloat()          // fake 3D tumbling
                 val base = palette[(rnd(i, 68) * palette.size).toInt().coerceIn(0, palette.size - 1)]
                 val color = lerp(Color.Black, base, shade)
                 drawIntoCanvas { c ->
@@ -126,12 +132,12 @@ internal fun DrawScope.drawAmbient(
             for (i in 0 until count) {
                 val depth = rnd(i, 71)
                 val size = (3f + 3.5f * depth) * dp
-                val fall = (14f + 22f * depth) * dp
-                val drift = dir * (12f + 150f * windAbs) * (0.5f + 0.7f * depth) * dp
+                val fallDist = (14f + 22f * depth) * tf * dp
+                val driftDist = (dir * 12f * tf + 150f * wd) * (0.5f + 0.7f * depth) * dp
                 val margin = 40f * dp
-                val y = (rnd(i, 72) * (h + margin) + t * fall).wrap((h + margin).toDouble()).toFloat() - margin / 2
+                val y = (rnd(i, 72) * (h + margin) + fallDist).toDouble().wrap((h + margin).toDouble()).toFloat() - margin / 2
                 val sway = sin(t * (1.1 + rnd(i, 73)) + i).toFloat() * 22f * dp
-                val x = (rnd(i, 74) * (w + margin * 2) + t * drift + sway).wrap((w + margin * 2).toDouble()).toFloat() - margin
+                val x = (rnd(i, 74) * (w + margin * 2) + driftDist + sway).toDouble().wrap((w + margin * 2).toDouble()).toFloat() - margin
                 val spin = (t * (60 + 120 * rnd(i, 75)) + 360 * rnd(i, 76)).toFloat()
                 val flip = sin(t * (2.0 + 2.0 * rnd(i, 77)) + i).toFloat()
                 drawIntoCanvas { c ->
@@ -147,11 +153,11 @@ internal fun DrawScope.drawAmbient(
             for (i in 0 until count) {
                 val depth = rnd(i, 81)
                 val r = (5f + 5f * depth) * dp
-                val drift = dir * (10f + 120f * windAbs) * (0.5f + 0.6f * depth) * dp
+                val driftDist = (dir * 10f * tf + 120f * wd) * (0.5f + 0.6f * depth) * dp
                 val margin = 60f * dp
                 val bob = sin(t * (0.4 + 0.3 * rnd(i, 82)) + i).toFloat() * 40f * dp
                 val y = (rnd(i, 83) * h * 0.85f + t * 6f * dp * (rnd(i, 84) - 0.4f) + bob).toDouble().wrap(h.toDouble()).toFloat()
-                val x = (rnd(i, 85) * (w + margin * 2) + t * drift).wrap((w + margin * 2).toDouble()).toFloat() - margin
+                val x = (rnd(i, 85) * (w + margin * 2) + driftDist).toDouble().wrap((w + margin * 2).toDouble()).toFloat() - margin
                 val a = 0.75f * (1f - 0.6f * night)
                 val tilt = sin(t * 0.8 + i).toFloat() * 0.35f
                 // stalk + seed
@@ -171,7 +177,7 @@ internal fun DrawScope.drawAmbient(
             for (i in 0 until 22) {
                 val cx = rnd(i, 91) * w
                 val cy = h * (0.45f + 0.5f * rnd(i, 92))
-                val x = cx + sin(t * (0.3 + 0.4 * rnd(i, 93)) + i).toFloat() * 40f * dp + t.toFloat() * wind * 8f * dp % w
+                val x = cx + sin(t * (0.3 + 0.4 * rnd(i, 93)) + i).toFloat() * 40f * dp + wd * 8f * dp % w
                 val y = cy + cos(t * (0.25 + 0.35 * rnd(i, 94)) + i * 2).toFloat() * 26f * dp
                 val blink = sin(t * (0.8 + 1.2 * rnd(i, 95)) + i * 3).toFloat()
                 val a = (blink * 1.6f - 0.4f).coerceIn(0f, 1f) * night
@@ -186,7 +192,7 @@ internal fun DrawScope.drawAmbient(
                 val depth = rnd(i, 101)
                 val fall = (4f + 10f * depth) * dp
                 val y = (rnd(i, 102) * h + t * fall).toDouble().wrap(h.toDouble()).toFloat()
-                val x = (rnd(i, 103) * w + t * wind * 30f * dp + sin(t * 0.5 + i).toFloat() * 10f * dp).toDouble().wrap(w.toDouble()).toFloat()
+                val x = (rnd(i, 103) * w + wd * 30f * dp + sin(t * 0.5 + i).toFloat() * 10f * dp).toDouble().wrap(w.toDouble()).toFloat()
                 val tw = sin(t * (1.5 + 3 * rnd(i, 104)) + i * 1.3).toFloat()
                 val a = (tw * 1.4f - 0.3f).coerceIn(0f, 1f) * 0.9f
                 if (a <= 0.02f) continue
@@ -206,12 +212,31 @@ internal fun DrawScope.drawAmbient(
         val color = Color(0xFFFFE9A6)
         for (i in 0 until count) {
             val depth = rnd(i, 111)
-            val drift = dir * (6f + 90f * windAbs) * (0.4f + 0.8f * depth) * dp
+            val driftDist = (dir * 6f * tf + 90f * wd) * (0.4f + 0.8f * depth) * dp
             val wig = sin(t * (1.3 + rnd(i, 112) * 2) + i).toFloat() * 6f * dp
-            val x = (rnd(i, 113) * w + t * drift + wig).toDouble().wrap(w.toDouble()).toFloat()
+            val x = (rnd(i, 113) * w + driftDist + wig).toDouble().wrap(w.toDouble()).toFloat()
             val y = (rnd(i, 114) * h + t * (3f + 4f * depth) * dp + cos(t * 0.9 + i).toFloat() * 8f * dp).toDouble().wrap(h.toDouble()).toFloat()
             val a = (0.35f + 0.4f * depth) * (1f - 0.6f * night)
             drawCircle(color, (0.9f + 1.4f * depth) * dp, Offset(x, y), alpha = a)
         }
+    }
+}
+
+/**
+ * Wind travel integrated frame by frame: gusts change the wind speed continuously, and only the
+ * integral keeps particle positions continuous.
+ */
+class WindTravel {
+    var distance = 0.0
+        private set
+    var absDistance = 0.0
+        private set
+    private var lastT = Double.NaN
+
+    fun advance(t: Double, wind: Float) {
+        val dt = if (lastT.isNaN()) 0.0 else (t - lastT).coerceIn(0.0, 0.1)   // no jump after pauses
+        lastT = t
+        distance += wind * dt
+        absDistance += kotlin.math.abs(wind) * dt
     }
 }

@@ -197,6 +197,7 @@ fun WeatherBackground(scene: SkyScene, animate: Boolean, modifier: Modifier = Mo
     val starAlpha = (1f - scene.cloudiness * 1.1f).coerceIn(0f, 1f)
     val wind = scene.wind
     val gustiness = scene.gustiness
+    val air = remember { WindTravel() }
     val ambient = scene.ambient
     val pollen = scene.visiblePollen
 
@@ -232,6 +233,7 @@ fun WeatherBackground(scene: SkyScene, animate: Boolean, modifier: Modifier = Mo
                 val gustWave = (0.5 + 0.5 * sin(t * 0.9) * sin(t * 0.37 + 1.3)).toFloat()
                 val gust = 1f + gustiness * 1.6f * gustWave * gustWave
                 val effWind = (wind * gust).coerceIn(-1.4f, 1.4f)
+                air.advance(t, effWind)
                 drawRect(skyBrush)
 
                 // --- stars & moon (night) ---
@@ -310,7 +312,7 @@ fun WeatherBackground(scene: SkyScene, animate: Boolean, modifier: Modifier = Mo
 
                 // --- seasonal particles & pollen (dry weather only) ---
                 if (ambient != Ambient.NONE || pollen > 0f) {
-                    drawAmbient(ambient, pollen, t, w, h, dp, effWind, night, scene.autumnProgress, ambientShapes)
+                    drawAmbient(ambient, pollen, t, w, h, dp, wind, night, scene.autumnProgress, ambientShapes, air)
                 }
 
                 // --- lightning ---

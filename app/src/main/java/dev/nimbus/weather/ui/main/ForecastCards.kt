@@ -210,7 +210,10 @@ fun DailyCard(data: WeatherData, now: Long) {
                 currentTemp = if (isToday) data.current.temperature else null,
                 expanded = expanded == d.date,
                 onClick = { expanded = if (expanded == d.date) null else d.date },
-                hours = if (expanded == d.date) data.hourly.filter { tf.isSameDay(it.time, d.date) } else emptyList(),
+                // 00:00 of the next day closes the curve at 24 h
+                hours = if (expanded == d.date) data.hourly.filter { it.time in d.date..d.date + 24 * 3_600_000L } else emptyList(),
+                daily = data.daily,
+                now = now,
             )
         }
     }
@@ -219,7 +222,7 @@ fun DailyCard(data: WeatherData, now: Long) {
 @Composable
 private fun DayRow(
     day: DailyPoint, label: String, min: Double, max: Double, currentTemp: Double?,
-    expanded: Boolean, onClick: () -> Unit, hours: List<HourlyPoint>,
+    expanded: Boolean, onClick: () -> Unit, hours: List<HourlyPoint>, daily: List<DailyPoint>, now: Long,
 ) {
     val settings = LocalSettings.current
     Column(Modifier.fillMaxWidth().clickable(onClick = onClick).animateContentSize()) {
@@ -240,7 +243,7 @@ private fun DayRow(
             )
         }
         if (expanded && hours.isNotEmpty()) {
-            DayTemperatureChart(hours, Modifier.fillMaxWidth().height(110.dp).padding(bottom = 10.dp))
+            Meteogram(hours, day.date, day.date + 24 * 3_600_000L, daily, now, Modifier.fillMaxWidth().padding(bottom = 12.dp))
         }
     }
 }
@@ -266,45 +269,6 @@ fun TemperatureRangeBar(low: Double, high: Double, min: Double, max: Double, cur
     }
 }
 
-@Composable
-private fun DayTemperatureChart(hours: List<HourlyPoint>, modifier: Modifier) {
-    val tf = LocalTimeFormat.current
-    val settings = LocalSettings.current
-    val labels = hours.filterIndexed { i, _ -> i % 6 == 0 }.map { tf.hour(it.time) }
-    Column(modifier) {
-        Canvas(Modifier.fillMaxWidth().weight(1f)) {
-            if (hours.size < 2) return@Canvas
-            val temps = hours.map { Units.temperature(it.temperature, settings.temperatureUnit) }
-            val lo = temps.min() - 1
-            val hi = temps.max() + 1
-            val dx = size.width / (hours.size - 1)
-            fun y(v: Double) = (size.height * (1 - (v - lo) / (hi - lo))).toFloat()
-            // precipitation bars
-            val maxP = hours.maxOf { it.precipitation ?: 0.0 }.coerceAtLeast(2.0)
-            hours.forEachIndexed { i, h ->
-                val p = h.precipitation ?: 0.0
-                if (p > 0.05) {
-                    val bh = (p / maxP * size.height * 0.5).toFloat()
-                    drawRect(PrecipBlue.copy(alpha = 0.45f), Offset(i * dx - dx * 0.35f, size.height - bh), Size(dx * 0.7f, bh))
-                }
-            }
-            val path = androidx.compose.ui.graphics.Path()
-            temps.forEachIndexed { i, t -> if (i == 0) path.moveTo(0f, y(t)) else path.lineTo(i * dx, y(t)) }
-            drawPath(
-                path,
-                Brush.verticalGradient(listOf(Insights.temperatureColor(hours.maxOf { it.temperature }), Insights.temperatureColor(hours.minOf { it.temperature }))),
-                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.5.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round),
-            )
-            for (k in 1..3) {
-                val x = size.width * k / 4
-                drawLine(Color(0x22FFFFFF), Offset(x, 0f), Offset(x, size.height), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f)))
-            }
-        }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            labels.forEach { Text(it, fontSize = 11.sp, color = NimbusColors.Tertiary) }
-        }
-    }
-}
 
 // ---------------------------------------------------------------------------------------
 // Nowcast (next 3 hours, 15-minute resolution)

@@ -226,7 +226,8 @@ fun RadarPreviewCard(data: WeatherData, onOpen: () -> Unit) {
                     val frame = timeline?.frames?.getOrNull(timeline.nowIndex)
                     radarTime = frame?.time
                     val key = "${data.place.id}|${frame?.time}|$wDp|${context.resources.configuration.locales[0].language}"
-                    PreviewCache.get(key)?.let { image = it; return@launch }
+                    PreviewCache.get(key)?.let { image = it; dev.nimbus.weather.ui.radar.RadarPrefetcher.previewRendered(); return@launch }
+                    dev.nimbus.weather.ui.radar.RadarPrefetcher.previewStarted()
                     if (cancelled) return@launch
                     val style = dev.nimbus.weather.ui.radar.MapStyle.builder(
                         (context.applicationContext as NimbusApp).container.mapHttp,
@@ -238,7 +239,8 @@ fun RadarPreviewCard(data: WeatherData, onOpen: () -> Unit) {
                         snap.start({ snapshot ->
                             PreviewCache.put(key, snapshot.bitmap)
                             image = snapshot.bitmap
-                        }, { _ -> })
+                            dev.nimbus.weather.ui.radar.RadarPrefetcher.previewRendered()
+                        }, { _ -> dev.nimbus.weather.ui.radar.RadarPrefetcher.previewRendered() })
                     }
                 }
                 onDispose {
@@ -248,7 +250,7 @@ fun RadarPreviewCard(data: WeatherData, onOpen: () -> Unit) {
                 }
             }
             val bmp = image
-            Canvas(Modifier.fillMaxSize().background(Color(0xFF1B1F26))) {
+            Canvas(Modifier.fillMaxSize().background(Color(0xFF55657A))) {
                 if (bmp != null) {
                     drawImage(
                         bmp.asImageBitmap(), srcOffset = IntOffset.Zero, srcSize = IntSize(bmp.width, bmp.height),
@@ -266,7 +268,7 @@ fun RadarPreviewCard(data: WeatherData, onOpen: () -> Unit) {
             radarTime?.let {
                 Text(
                     tf.time(it), Modifier.align(Alignment.TopStart).padding(10.dp)
-                        .clip(RoundedCornerShape(8.dp)).background(Color(0x99000000)).padding(horizontal = 8.dp, vertical = 3.dp),
+                        .clip(RoundedCornerShape(8.dp)).background(Color(0x8C1C2636)).padding(horizontal = 8.dp, vertical = 3.dp),
                     fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.SemiBold,
                 )
             }
@@ -274,7 +276,7 @@ fun RadarPreviewCard(data: WeatherData, onOpen: () -> Unit) {
                 stringResource(R.string.open_radar) + " ›",
                 // Top right: the bottom edge carries the map attribution.
                 Modifier.align(Alignment.TopEnd).padding(10.dp)
-                    .clip(RoundedCornerShape(8.dp)).background(Color(0x99000000)).padding(horizontal = 8.dp, vertical = 3.dp),
+                    .clip(RoundedCornerShape(8.dp)).background(Color(0x8C1C2636)).padding(horizontal = 8.dp, vertical = 3.dp),
                 fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.SemiBold,
             )
         }

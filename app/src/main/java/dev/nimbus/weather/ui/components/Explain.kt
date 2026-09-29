@@ -55,6 +55,8 @@ enum class Term(@StringRes val title: Int, @StringRes val body: Int) {
     MOON(R.string.term_moon_title, R.string.term_moon_body),
     HOURLY(R.string.term_hourly_title, R.string.term_hourly_body),
     DAILY(R.string.term_daily_title, R.string.term_daily_body),
+    OUTLOOK(R.string.term_outlook_title, R.string.term_outlook_body),
+    HISTORY(R.string.term_history_title, R.string.term_history_body),
 }
 
 /** Opens the explanation sheet for a term; provided by [ExplainHost]. */

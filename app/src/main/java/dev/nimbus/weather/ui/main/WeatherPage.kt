@@ -213,6 +213,7 @@ private fun WeatherContent(
             item(key = "header-space") { Spacer(Modifier.height(ExpandedHeader + statusTop - 12.dp)) }
             if (stale) item(key = "offline") { OfflineBanner(data) }
             if (data.alerts.isNotEmpty()) item(key = "alerts") { AlertsCard(data.alerts) }
+            item(key = "outlook") { OutlookCard(data, now) }
             if (showNowcast) item(key = "nowcast") { NowcastCard(nowcastPoints, now, raining) }
             item(key = "hourly") { HourlyCard(data, now) }
             item(key = "daily") { DailyCard(data, now) }

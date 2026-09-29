@@ -30,6 +30,9 @@ data class PlaceState(
     val loading: Boolean = false,
     val error: Boolean = false,
     val models: List<ModelSeries>? = null,
+    val history: dev.nimbus.weather.data.remote.History? = null,
+    val historyLoading: Boolean = false,
+    val historyError: Boolean = false,
 )
 
 enum class LocationStatus { UNKNOWN, LOADING, AVAILABLE, DENIED, UNAVAILABLE }
@@ -123,8 +126,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onResume() {
         if (!_state.value.initialized) return
-        refreshLocation()
-        _state.value.pages.forEach { load(it, force = false) }
+        viewModelScope.launch {
+            // Take over what the hourly background refresh stored in the meantime.
+            _state.value.pages.forEach { p ->
+                val cached = store.cachedWeather(p.id) ?: return@forEach
+                val current = _state.value.states[p.id]?.data
+                if (current == null || cached.fetchedAt > current.fetchedAt) updatePlace(p.id) { it.copy(data = cached) }
+            }
+            refreshLocation()
+            _state.value.pages.forEach { load(it, force = false) }
+        }
     }
 
     fun onLocationPermissionResult(granted: Boolean) {
@@ -195,6 +206,24 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun refresh(placeId: String) {
         val place = _state.value.pages.firstOrNull { it.id == placeId } ?: return
         if (place.isCurrentLocation) refreshLocation(force = true) else load(place, force = true)
+    }
+
+    /** Past 48 h for the place, fetched on demand when the user swipes back; kept for 30 min. */
+    fun loadHistory(placeId: String, force: Boolean = false) {
+        val st = _state.value.states[placeId] ?: return
+        val place = st.data?.place ?: _state.value.pages.firstOrNull { it.id == placeId } ?: return
+        val h = st.history
+        if (!force && (st.historyLoading || (h != null && System.currentTimeMillis() - h.fetchedAt < 30 * 60_000L))) return
+        viewModelScope.launch {
+            updatePlace(placeId) { it.copy(historyLoading = true, historyError = false) }
+            val model = _state.value.settings.model.openMeteoId
+            val inGermany = dev.nimbus.weather.data.repo.WeatherRepository.isInDwdArea(place.latitude, place.longitude) &&
+                _state.value.settings.useStationObservations
+            val result = runCatching { container.history.load(place.latitude, place.longitude, model, inGermany) }
+            updatePlace(placeId) {
+                it.copy(history = result.getOrNull() ?: it.history, historyLoading = false, historyError = result.isFailure)
+            }
+        }
     }
 
     fun loadModels(placeId: String) {

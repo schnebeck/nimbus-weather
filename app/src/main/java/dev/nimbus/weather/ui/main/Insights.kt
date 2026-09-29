@@ -69,12 +69,14 @@ object Insights {
         else HourlyChange(current, hours.firstOrNull()?.isDay ?: true, null)
     }
 
-    /** Chance of precipitation as shown in the forecasts: from 10 %, rounded to 10 %; else null. */
+    /** Chance of precipitation as shown in the forecasts, rounded to 10 %; null only without data. */
     fun chanceLabel(probability: Double?): Int? {
         val p = probability ?: return null
-        val r = (Math.round(p / 10.0) * 10).toInt()
-        return if (r >= 10) r else null
+        return (Math.round(p / 10.0) * 10).toInt().coerceIn(0, 100)
     }
+
+    /** Below this the value is shown dimmed: technically possible, practically dry. */
+    const val CHANCE_RELEVANT = 10
 
     fun maxGust(hours: List<HourlyPoint>): Double? = hours.take(12).mapNotNull { it.windGust }.maxOrNull()
 

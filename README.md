@@ -10,8 +10,8 @@ Die fertigen, signierten APKs liegen in `dist/`:
 
 | Datei | Für |
 |---|---|
-| `Nimbus-1.1.0-arm64.apk` (13 MB) | praktisch alle Android-Handys seit ca. 2017 |
-| `Nimbus-1.1.0-universal.apk` (44 MB) | alle Geräte inkl. 32-Bit-ARM und x86 |
+| `Nimbus-1.3.0-arm64.apk` (13 MB) | praktisch alle Android-Handys seit ca. 2017 |
+| `Nimbus-1.3.0-universal.apk` (44 MB) | alle Geräte inkl. 32-Bit-ARM und x86 |
 
 APK aufs Handy kopieren, öffnen, „Installation aus unbekannten Quellen“ für den Dateimanager erlauben.
 Mindestversion: Android 8.0 (API 26). Google Play Services werden nicht benötigt.
@@ -24,12 +24,19 @@ Mindestversion: Android 8.0 (API 26). Google Play Services werden nicht benötig
 - **Jahreszeiten-Partikel** bei trockenem Wetter: Blüten (Frühling), Pusteblumen-Samen und Glühwürmchen
   (Sommer), fallende Blätter mit Herbstfärbung (Herbst), Eiskristalle bei Frost (Winter). Südhalbkugel gespiegelt.
   **Pollen** schweben entsprechend der echten CAMS-Pollenbelastung.
-- **Wetterseite** wie bei Apple: oben links Menü (Orte, Einstellungen), oben rechts „Radar“;
+- **Bedienung:** Orte (aktueller Standort + gespeicherte Orte) und Einstellungen über das Menü oben links,
+  oben rechts „Radar“. **Wischen nach rechts** führt in den **Rückblick**: „Heute bisher“, „Gestern“,
+  „Vorgestern“ – gemessene DWD-Stationswerte (Temperatur, Niederschlag, Sonne, Wind, Stundenwerte) neben der
+  Vorhersage des gewählten Modells für dieselben Stunden, inkl. mittlerer Abweichung (außerhalb Deutschlands
+  nur Modellwerte). Die Daten werden beim Wischen nachgeladen, nicht dauerhaft gespeichert.
+- **Hintergrund-Aktualisierung** stündlich (WorkManager, nur mit Netz und ausreichend Akku) für alle Orte;
+  der aktuelle Standort wird dabei an seiner zuletzt bekannten Position aktualisiert.
+- **Wetterseite** wie bei Apple:
   großer, beim Scrollen einklappender Kopfbereich mit **Kombisymbol** (Sonne/Mond, Wolken, Regen/Schnee,
   Windstriche bei Wind), DWD-Warnungen, Niederschlag der nächsten 3 Stunden (15-Min.-Schritte),
   Stundenvorhersage mit Sonnenauf-/-untergang, 10-Tage-Vorhersage mit Temperaturbalken
   (antippen → Tagesverlauf), **Niederschlagskarte 24 h** (Wahrscheinlichkeit und Menge pro Stunde),
-  Niederschlagswahrscheinlichkeit ab 10 % in Stunden- und Tagesvorhersage (auch bei Wolken-/Nebelsymbol),
+  Niederschlagswahrscheinlichkeit in Stunden- und Tagesvorhersage immer angezeigt (unter 10 % blass),
   Radar-Vorschau, Kacheln für Gefühlt, UV, Wind (Kompass), Luftfeuchte/Taupunkt, Sichtweite (mit Angabe
   „gemessen an DWD-Station“ bzw. „Modellwert“), Luftdruck (Tendenz),
   Sonnenlauf, **Mond** (Phase, Beleuchtung, Auf-/Untergang, nächster Vollmond), Luftqualität, Pollen,
@@ -37,7 +44,9 @@ Mindestversion: Android 8.0 (API 26). Google Play Services werden nicht benötig
   **Community-Messnetz** und **Modellvergleich** (8 Wettermodelle, 72 h).
 - **Wetter-Lexikon**: ⓘ an jeder Karte erklärt Begriffe wie Niederschlagswahrscheinlichkeit, Taupunkt,
   gefühlte Temperatur, Luftdruck-Tendenz, Warnstufen, Radar oder Mondphasen (EN/DE).
-- **Regenradar** (MapLibre, OpenFreeMap-Karte): DWD-Radarkomposit mit 2-h-Nowcast für Deutschland,
+- **Kurzvorhersage „Nächste Stunden“** ganz oben: automatisch aus den Stundendaten erzeugter Text zu
+  Wetterwechsel, Temperaturverlauf, Niederschlagsrisiko, Böen und (ab 15 Uhr) Ausblick auf morgen.
+- **Regenradar** (MapLibre, OpenFreeMap-Karte in Schiefer-Blau passend zu den Glaskarten): DWD-Radarkomposit mit 2-h-Nowcast für Deutschland,
   RainViewer für Europa, beide auf **eine gemeinsame Farbskala** umgerechnet (dBZ-basiert):
   **Regen (über 0 °C) weiß → grau → hellblau → dunkelblau**, **Schnee (ab 0 °C) blassrosa → dunkelviolett**,
   Schneeregen (0–1 °C) als Mischfarbe – entschieden pro Pixel über die 2-m-Temperatur zur Zeit des Radarbilds.
@@ -68,6 +77,8 @@ Mindestversion: Android 8.0 (API 26). Google Play Services werden nicht benötig
 | Community-Messnetz | [Sensor.Community](https://sensor.community) | Median aller Außensensoren, Ausreißer gefiltert |
 | Modellvergleich | Open-Meteo (ICON-D2, ICON-EU, ECMWF, AROME/ARPEGE, UKMO, KNMI, MET Norway, GFS) | |
 | Temperatur-/Windgitter (Radar-Overlays, Regen/Schnee) | Open-Meteo, 9 × 11 Punkte im 1°-Raster | 1 h gecacht (Speicher + Datei) |
+| Rückblick (Messungen) | DWD-Stationen via Bright Sky `/weather` | MOSMIX-Vorhersagewerte werden herausgefiltert |
+| Rückblick (Vorhersage) | Open-Meteo `past_days=2`, gewähltes Modell | |
 | Mond | lokal berechnet (Meeus, SunCalc) | gegen US Naval Observatory getestet |
 | Karte | [OpenFreeMap](https://openfreemap.org) · © OpenMapTiles · © OpenStreetMap-Mitwirkende | |
 
@@ -80,7 +91,7 @@ Voraussetzungen: JDK 21, Android SDK mit Plattform 37 und Build-Tools 36.
 
 ```bash
 echo "sdk.dir=$HOME/Android/Sdk" > local.properties
-./gradlew testDebugUnitTest      # 62 Unit-Tests
+./gradlew testDebugUnitTest      # 71 Unit-Tests
 ./gradlew assembleRelease        # APKs in app/build/outputs/apk/release/
 ```
 

@@ -20,7 +20,8 @@ class LogicTest {
     @Test
     fun `chance of precipitation labels`() {
         assertNull(Insights.chanceLabel(null))
-        assertNull(Insights.chanceLabel(4.0))
+        assertEquals(0, Insights.chanceLabel(0.0))
+        assertEquals(0, Insights.chanceLabel(4.0))
         assertEquals(10, Insights.chanceLabel(5.0))
         assertEquals(40, Insights.chanceLabel(38.0))
         assertEquals(100, Insights.chanceLabel(100.0))

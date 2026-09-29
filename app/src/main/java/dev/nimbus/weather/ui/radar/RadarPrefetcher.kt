@@ -22,6 +22,16 @@ object RadarPrefetcher {
     private val lastRun = HashMap<String, Long>()
     private var running: MapSnapshotter? = null
 
+    /**
+     * Completed when the radar preview card has rendered. The preview is what the user sees; the
+     * prefetch of ~300 tiles would otherwise block its few tiles in the request queue.
+     */
+    @Volatile private var previewReady = kotlinx.coroutines.CompletableDeferred<Unit>()
+
+    fun previewRendered() { previewReady.complete(Unit) }
+
+    fun previewStarted() { if (previewReady.isCompleted) previewReady = kotlinx.coroutines.CompletableDeferred() }
+
     /** True while the radar screen is open: it loads its own tiles and has priority. */
     @Volatile var paused = false
 
@@ -46,6 +56,8 @@ object RadarPrefetcher {
             if (now - (lastRun[key] ?: 0L) < MIN_INTERVAL_MS) return
             lastRun[key] = now
         }
+        withTimeoutOrNull(30_000L) { previewReady.await() }
+        if (paused) return
         WeatherGridStore.ensure(http, place.latitude, place.longitude)
         val tl = runCatching { RadarSources.timeline(http, HistoryRange.H2) }.getOrNull() ?: return
         // Opacity 0: MapLibre loads the tiles of visible layers without drawing them.

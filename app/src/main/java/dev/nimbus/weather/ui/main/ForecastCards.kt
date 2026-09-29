@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Umbrella
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.Icon
@@ -66,6 +67,19 @@ import dev.nimbus.weather.util.Units
 
 private val PrecipBlue = Color(0xFF8FD3FF)
 
+/** Chance of precipitation under a weather symbol: always shown, dimmed below 10 %. */
+@Composable
+private fun ChanceText(probability: Double?) {
+    val v = Insights.chanceLabel(probability) ?: return
+    val relevant = v >= Insights.CHANCE_RELEVANT
+    Text(
+        "$v${NBSP}%", fontSize = 11.sp,
+        fontWeight = if (relevant) FontWeight.Bold else FontWeight.Medium,
+        color = if (relevant) PrecipBlue else Color(0x99FFFFFF),
+        style = ChanceStyle,
+    )
+}
+
 /** Soft dark shadow keeps the blue percentages readable on bright, cloudy skies. */
 private val ChanceStyle = androidx.compose.ui.text.TextStyle(
     shadow = androidx.compose.ui.graphics.Shadow(Color(0x99000000), androidx.compose.ui.geometry.Offset(0f, 1f), 4f),
@@ -97,28 +111,9 @@ fun HourlyCard(data: WeatherData, now: Long) {
         }
         list.sortedBy { if (it is HourItem.Hour && it.isNow) start - 1 else it.time }
     }
-    val change = remember(hours) { Insights.nextChange(hours, data.current.condition) }
-    val gust = remember(hours) { Insights.maxGust(hours) }
-    val condText = stringResource(Texts.condition(change.condition, change.isDay))
-    val summary = buildString {
-        append(
-            if (change.time != null) stringResource(R.string.summary_hourly_condition, condText, tf.time(change.time))
-            else stringResource(R.string.summary_hourly_same, condText),
-        )
-        if (gust != null && gust >= 39) {
-            append(' ')
-            append(stringResource(R.string.summary_gusts, Units.windNumber(gust, settings.windUnit) + NBSP + stringResource(Texts.windUnit(settings.windUnit))))
-        }
-    }
-    GlassCard(title = null) {
-        Row(verticalAlignment = Alignment.Top) {
-            Text(summary, Modifier.weight(1f).padding(top = 8.dp), style = androidx.compose.material3.MaterialTheme.typography.bodyMedium, color = Color.White)
-            InfoButton(Term.HOURLY, Modifier.offset(x = 8.dp))
-        }
-        Spacer(Modifier.height(4.dp))
-        HairlineDivider()
+    GlassCard(title = stringResource(R.string.hourly_forecast), icon = Icons.Outlined.Schedule, info = Term.HOURLY) {
         LazyRow(
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
@@ -148,9 +143,7 @@ private fun HourCell(label: String, condition: Condition, isDay: Boolean, precip
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 WeatherIcon(condition, isDay, size = 26.dp)
                 // Shown regardless of the symbol: fog or clouds can still come with a 40 % rain risk.
-                Insights.chanceLabel(precipProb)?.let {
-                    Text("$it${NBSP}%", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PrecipBlue, style = ChanceStyle)
-                }
+                ChanceText(precipProb)
             }
         }
         Text(value, fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White)
@@ -234,9 +227,7 @@ private fun DayRow(
             Text(label, Modifier.width(62.dp), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1)
             Column(Modifier.width(44.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 WeatherIcon(day.condition, true, size = 26.dp)
-                Insights.chanceLabel(day.precipitationProbability)?.let {
-                    Text("$it${NBSP}%", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PrecipBlue, style = ChanceStyle)
-                }
+                ChanceText(day.precipitationProbability)
             }
             Text(
                 Units.temp(day.tempMin, settings.temperatureUnit), Modifier.width(44.dp), fontSize = 18.sp,

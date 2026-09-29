@@ -57,6 +57,7 @@ fun NimbusRoot(viewModel: MainViewModel) {
                     onOpenRadar = { viewModel.navigate(Screen.Radar(it)) },
                     onOpenPlaces = { viewModel.navigate(Screen.Places) },
                     onRequestModels = viewModel::loadModels,
+                    onRequestHistory = { viewModel.loadHistory(it) },
                     onRequestLocation = requestLocation,
                 )
                 Screen.Places -> PlacesScreen(

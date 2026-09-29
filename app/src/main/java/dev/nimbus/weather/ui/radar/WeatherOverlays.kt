@@ -71,7 +71,12 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
                 PropertyFactory.textColor(windColor()),
                 PropertyFactory.textHaloColor("#B3000000"),
                 PropertyFactory.textHaloWidth(1.2f),
-                PropertyFactory.textOptional(true),
+                PropertyFactory.iconAllowOverlap(true),
+                PropertyFactory.iconIgnorePlacement(true),
+                PropertyFactory.textAllowOverlap(true),
+                PropertyFactory.textIgnorePlacement(true),
+                PropertyFactory.iconOpacity(thinOut()),
+                PropertyFactory.textOpacity(thinOut()),
                 PropertyFactory.visibility(Property.NONE),
             ),
         )
@@ -84,6 +89,11 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
                 PropertyFactory.textHaloColor("#B3000000"),
                 PropertyFactory.textHaloWidth(1.4f),
                 PropertyFactory.textFont(arrayOf("Noto Sans Bold")),
+                // Temperature and wind share the grid points and are offset against each other, so
+                // both layers may overlap – otherwise MapLibre's collision check hides one of them.
+                PropertyFactory.textAllowOverlap(true),
+                PropertyFactory.textIgnorePlacement(true),
+                PropertyFactory.textOpacity(thinOut()),
                 PropertyFactory.visibility(Property.NONE),
             ),
         )
@@ -125,7 +135,11 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
             val i = r * g.cols + c
             val p = Point.fromLngLat(g.lon0 + c * g.step, g.lat0 + r * g.step)
             val t = g.temp[h][i]
-            if (!t.isNaN()) temps += Feature.fromGeometry(p).apply { addStringProperty("t", Units.temp(t.toDouble(), unit)) }
+            val major = r % 2 == 0 && c % 2 == 0
+            if (!t.isNaN()) temps += Feature.fromGeometry(p).apply {
+                addStringProperty("t", Units.temp(t.toDouble(), unit))
+                addBooleanProperty("major", major)
+            }
             val v = g.windSpeed[h][i]
             val d = g.windDir[h][i]
             if (!v.isNaN() && !d.isNaN()) winds += Feature.fromGeometry(p).apply {
@@ -133,6 +147,7 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
                 addNumberProperty("s", (0.7f + v / 50f).coerceIn(0.7f, 1.6f))
                 addNumberProperty("kmh", v)
                 addStringProperty("v", v.roundToInt().toString())
+                addBooleanProperty("major", major)
             }
         }
         (s.getSource(TEMP) as? GeoJsonSource)?.setGeoJson(FeatureCollection.fromFeatures(temps))
@@ -144,6 +159,13 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
         const val TEMP = "ov-temp"
         const val WIND = "ov-wind"
         const val ARROW = "ov-arrow"
+
+        /** Below zoom 5.5 only every second grid point (in both directions) is shown. */
+        private fun thinOut(): Expression = Expression.step(
+            Expression.zoom(),
+            Expression.switchCase(Expression.get("major"), Expression.literal(1f), Expression.literal(0f)),
+            Expression.stop(5.5, Expression.literal(1f)),
+        )
 
         /** Wind colour by speed (km/h): calm white → Bft 6 yellow → gale orange → storm red. */
         private fun windColor(): Expression = Expression.step(

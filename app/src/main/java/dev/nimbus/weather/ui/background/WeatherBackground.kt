@@ -217,10 +217,11 @@ fun WeatherBackground(scene: SkyScene, animate: Boolean, modifier: Modifier = Mo
                 }
             }
             // Top right, clear of the centred city name and the big temperature.
-            val sunCenter = Offset(w * 0.87f, h * 0.112f)
+            // Below the top bar (menu / radar button), right of the big temperature.
+            val sunCenter = Offset(w * 0.87f, h * 0.165f)
             val sunR = 28f * dp
             val moonR = 22f * dp
-            val moonCenter = Offset(w * 0.87f, h * 0.112f)
+            val moonCenter = Offset(w * 0.87f, h * 0.165f)
             val ambientShapes = AmbientShapes()
             val particles = ParticleBuffers()
             val boltPath = Path()

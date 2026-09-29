@@ -38,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,6 +66,7 @@ fun MainScreen(
     onOpenRadar: (String?) -> Unit,
     onOpenPlaces: () -> Unit,
     onRequestModels: (String) -> Unit,
+    onRequestHistory: (String) -> Unit,
     onRequestLocation: () -> Unit,
 ) {
     val pages = state.pages
@@ -72,49 +74,60 @@ fun MainScreen(
         WelcomeScreen(state, onRequestLocation, onOpenPlaces)
         return
     }
-    val selectedIndex = pages.indexOfFirst { it.id == state.selectedPlaceId }.coerceAtLeast(0)
-    val pagerState = rememberPagerState(initialPage = selectedIndex) { pages.size }
+    // Places are chosen from the menu; swiping moves through time instead:
+    // day before yesterday | yesterday | today so far | now (start page).
+    val place = pages.firstOrNull { it.id == state.selectedPlaceId } ?: pages.first()
+    val pageCount = HISTORY_DAYS + 1
+    val pagerState = key(place.id) { rememberPagerState(initialPage = pageCount - 1) { pageCount } }
+    val placeState = state.states[place.id]
 
-    // Pager -> view model
-    LaunchedEffect(pagerState, pages) {
-        snapshotFlow { pagerState.settledPage }.distinctUntilChanged().collect { page ->
-            pages.getOrNull(page)?.let { onSelect(it.id) }
-        }
-    }
-    // View model -> pager (e.g. a place was picked in the list)
-    LaunchedEffect(state.selectedPlaceId, pages.size) {
-        val idx = pages.indexOfFirst { it.id == state.selectedPlaceId }
-        if (idx >= 0 && idx != pagerState.currentPage && !pagerState.isScrollInProgress) pagerState.scrollToPage(idx)
+    // Load the history as soon as the user starts swiping back.
+    LaunchedEffect(pagerState, place.id) {
+        snapshotFlow { pagerState.currentPage < pageCount - 1 || pagerState.targetPage < pageCount - 1 }
+            .distinctUntilChanged().collect { back -> if (back) onRequestHistory(place.id) }
     }
 
     Box(Modifier.fillMaxSize()) {
-        HorizontalPager(pagerState, Modifier.fillMaxSize(), key = { pages[it].id }) { page ->
-            val place = pages[page]
-            WeatherPage(
-                place = place,
-                state = state.states[place.id],
-                settings = state.settings,
-                demo = state.demo,
-                isActive = pagerState.currentPage == page,
-                onRefresh = { onRefresh(place.id) },
-                onOpenRadar = { onOpenRadar(place.id) },
-                onRequestModels = { onRequestModels(place.id) },
-            )
+        HorizontalPager(pagerState, Modifier.fillMaxSize(), key = { it }, beyondViewportPageCount = 0) { page ->
+            if (page == pageCount - 1) {
+                WeatherPage(
+                    place = place,
+                    state = placeState,
+                    settings = state.settings,
+                    demo = state.demo,
+                    isActive = pagerState.currentPage == page,
+                    onRefresh = { onRefresh(place.id) },
+                    onOpenRadar = { onOpenRadar(place.id) },
+                    onRequestModels = { onRequestModels(place.id) },
+                )
+            } else {
+                // page 0 = two days ago, page HISTORY_DAYS - 1 = today so far
+                HistoryPage(
+                    place = place,
+                    state = placeState,
+                    settings = state.settings,
+                    dayIndex = page,
+                    isActive = pagerState.currentPage == page,
+                    onRetry = { onRequestHistory(place.id) },
+                )
+            }
         }
         TopBar(
-            count = pages.size,
+            count = pageCount,
             current = pagerState.currentPage,
-            firstIsLocation = pages.firstOrNull()?.isCurrentLocation == true,
-            onRadar = { onOpenRadar(pages.getOrNull(pagerState.currentPage)?.id) },
+            onRadar = { onOpenRadar(place.id) },
             onMenu = onOpenPlaces,
             modifier = Modifier.align(Alignment.TopCenter),
         )
     }
 }
 
+/** Past days reachable by swiping right: today so far, yesterday, the day before. */
+const val HISTORY_DAYS = 3
+
 /** Menu (places & settings) top left, radar top right, page dots in between. */
 @Composable
-private fun TopBar(count: Int, current: Int, firstIsLocation: Boolean, onRadar: () -> Unit, onMenu: () -> Unit, modifier: Modifier) {
+private fun TopBar(count: Int, current: Int, onRadar: () -> Unit, onMenu: () -> Unit, modifier: Modifier) {
     Row(
         modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = 6.dp).height(52.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -123,15 +136,11 @@ private fun TopBar(count: Int, current: Int, firstIsLocation: Boolean, onRadar: 
             Icon(Icons.Rounded.Menu, stringResource(R.string.places), tint = Color.White, modifier = Modifier.size(26.dp))
         }
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            if (count > 1) {
-                for (i in 0 until count) {
-                    val color = if (i == current) Color.White else Color(0x66FFFFFF)
-                    if (i == 0 && firstIsLocation) {
-                        Icon(Icons.Rounded.LocationOn, null, tint = color, modifier = Modifier.padding(horizontal = 3.dp).size(11.dp))
-                    } else {
-                        Box(Modifier.padding(horizontal = 4.dp).size(7.dp).clip(CircleShape).background(color))
-                    }
-                }
+            // Time position: history pages as small dots, "now" as a larger dot on the right.
+            for (i in 0 until count) {
+                val color = if (i == current) Color.White else Color(0x66FFFFFF)
+                val size = if (i == count - 1) 8.dp else 6.dp
+                Box(Modifier.padding(horizontal = 4.dp).size(size).clip(CircleShape).background(color))
             }
         }
         // A labelled pill – a bare map icon was not recognisable as "rain radar".

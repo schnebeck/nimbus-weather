@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nimbus</string>
+
+    <!-- Conditions -->
+    <string name="cond_clear">Clear</string>
+    <string name="cond_sunny">Sunny</string>
+    <string name="cond_mostly_clear">Mostly Clear</string>
+    <string name="cond_mostly_sunny">Mostly Sunny</string>
+    <string name="cond_partly_cloudy">Partly Cloudy</string>
+    <string name="cond_cloudy">Cloudy</string>
+    <string name="cond_fog">Fog</string>
+    <string name="cond_drizzle">Drizzle</string>
+    <string name="cond_rain">Rain</string>
+    <string name="cond_heavy_rain">Heavy Rain</string>
+    <string name="cond_freezing_rain">Freezing Rain</string>
+    <string name="cond_sleet">Sleet</string>
+    <string name="cond_snow">Snow</string>
+    <string name="cond_heavy_snow">Heavy Snow</string>
+    <string name="cond_showers">Showers</string>
+    <string name="cond_thunderstorm">Thunderstorms</string>
+
+    <!-- Header -->
+    <string name="my_location">My Location</string>
+    <string name="high_low">H:%1$s  L:%2$s</string>
+    <string name="feels_like_short">Feels like %1$s</string>
+    <string name="updated_at">Updated %1$s</string>
+    <string name="offline_cached">Offline – showing data from %1$s</string>
+    <string name="loading">Loading weather…</string>
+    <string name="error_loading">Couldn\'t load weather data.</string>
+    <string name="retry">Retry</string>
+
+    <!-- Cards -->
+    <string name="hourly_forecast">Hourly Forecast</string>
+    <string name="ten_day_forecast">10-Day Forecast</string>
+    <string name="n_day_forecast">%1$d-Day Forecast</string>
+    <string name="now">Now</string>
+    <string name="today">Today</string>
+    <string name="sunrise">Sunrise</string>
+    <string name="sunset">Sunset</string>
+    <string name="feels_like">Feels Like</string>
+    <string name="uv_index">UV Index</string>
+    <string name="wind">Wind</string>
+    <string name="gusts">Gusts</string>
+    <string name="precipitation">Precipitation</string>
+    <string name="humidity">Humidity</string>
+    <string name="visibility">Visibility</string>
+    <string name="pressure">Pressure</string>
+    <string name="air_quality">Air Quality</string>
+    <string name="pollen">Pollen</string>
+    <string name="precipitation_map">Precipitation Map</string>
+    <string name="open_radar">Open radar</string>
+    <string name="next_hours_precip">Precipitation Next 3 Hours</string>
+    <string name="model_comparison">Model Comparison</string>
+    <string name="model_comparison_hint">Temperature forecast of different weather models for the next 72 hours</string>
+    <string name="community_sensors">Community Sensors</string>
+    <string name="community_sensors_detail">Median of %1$d citizen sensors within %2$s km (Sensor.Community)</string>
+    <string name="community_spread">Spread ±%1$s</string>
+    <string name="data_sources">Data Sources</string>
+    <string name="measured_at_station">Measured at DWD station %1$s (%2$s km)</string>
+    <string name="alerts">Weather Warnings</string>
+    <string name="alert_valid">%1$s – %2$s</string>
+    <string name="alert_until">Until %1$s</string>
+    <string name="more_alerts">+%1$d more</string>
+    <string name="show_more">Show more</string>
+    <string name="show_less">Show less</string>
+
+    <!-- Summaries -->
+    <string name="summary_rain_now">Precipitation now, stopping in about %1$d min.</string>
+    <string name="summary_rain_continues">Precipitation for at least the next 3 hours.</string>
+    <string name="summary_rain_starting">Precipitation starting in about %1$d min.</string>
+    <string name="summary_no_rain">No precipitation expected in the next 3 hours.</string>
+    <string name="summary_hourly_condition">%1$s conditions expected around %2$s.</string>
+    <string name="summary_hourly_same">%1$s conditions will continue for the rest of the day.</string>
+    <string name="summary_gusts">Wind gusts up to %1$s.</string>
+    <string name="summary_daily_precip">%1$s expected %2$s.</string>
+    <string name="summary_precip_today">%1$s in the last 24 h</string>
+    <string name="summary_precip_next">%1$s expected in the next 24 h.</string>
+    <string name="summary_dew_point">The dew point is %1$s right now.</string>
+    <string name="summary_feels_warmer">Humidity is making it feel warmer.</string>
+    <string name="summary_feels_colder">Wind is making it feel colder.</string>
+    <string name="summary_feels_same">Similar to the actual temperature.</string>
+    <string name="summary_uv_protect">Use sun protection until %1$s.</string>
+    <string name="summary_uv_low">Low for the rest of the day.</string>
+    <string name="summary_visibility_clear">Perfectly clear view.</string>
+    <string name="summary_visibility_hazy">Haze is affecting visibility.</string>
+    <string name="summary_visibility_fog">Fog is reducing visibility.</string>
+    <string name="summary_pressure_rising">Rising</string>
+    <string name="summary_pressure_falling">Falling</string>
+    <string name="summary_pressure_steady">Steady</string>
+    <string name="sunset_at">Sunset: %1$s</string>
+    <string name="sunrise_at">Sunrise: %1$s</string>
+    <string name="polar_day">Sun stays up all day</string>
+    <string name="polar_night">Sun stays down all day</string>
+
+    <string name="uv_low">Low</string>
+    <string name="uv_moderate">Moderate</string>
+    <string name="uv_high">High</string>
+    <string name="uv_very_high">Very High</string>
+    <string name="uv_extreme">Extreme</string>
+
+    <string name="aqi_good">Good</string>
+    <string name="aqi_fair">Fair</string>
+    <string name="aqi_moderate">Moderate</string>
+    <string name="aqi_poor">Poor</string>
+    <string name="aqi_very_poor">Very Poor</string>
+    <string name="aqi_extremely_poor">Extremely Poor</string>
+    <string name="aqi_detail">European AQI · PM2.5 %1$s · PM10 %2$s µg/m³</string>
+
+    <string name="pollen_none">None</string>
+    <string name="pollen_low">Low</string>
+    <string name="pollen_moderate">Moderate</string>
+    <string name="pollen_high">High</string>
+    <string name="pollen_alder">Alder</string>
+    <string name="pollen_birch">Birch</string>
+    <string name="pollen_grass">Grass</string>
+    <string name="pollen_mugwort">Mugwort</string>
+    <string name="pollen_ragweed">Ragweed</string>
+    <string name="pollen_olive">Olive</string>
+
+    <!-- Radar -->
+    <string name="radar">Radar</string>
+    <string name="radar_title">Precipitation Radar</string>
+    <string name="satellite">Satellite</string>
+    <string name="warnings">Warnings</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="forecast">Forecast</string>
+    <string name="radar_light">Light</string>
+    <string name="radar_heavy">Heavy</string>
+    <string name="radar_forecast_germany_only">Radar forecast (nowcast) only available for Germany</string>
+    <string name="radar_minutes_ago">%1$d min ago</string>
+    <string name="radar_minutes_ahead">in %1$d min</string>
+    <string name="radar_attribution">Radar: DWD · RainViewer | Map: © OpenFreeMap © OpenMapTiles © OpenStreetMap</string>
+    <string name="radar_loading">Loading radar…</string>
+    <string name="radar_error">Radar data currently unavailable</string>
+    <string name="my_position">My position</string>
+    <string name="close">Close</string>
+    <string name="layers">Layers</string>
+
+    <!-- Places -->
+    <string name="weather">Weather</string>
+    <string name="search_hint">Search for a city</string>
+    <string name="no_results">No results</string>
+    <string name="add">Add</string>
+    <string name="delete">Delete</string>
+    <string name="places">Places</string>
+    <string name="edit">Edit</string>
+    <string name="done">Done</string>
+    <string name="welcome_title">Welcome to Nimbus</string>
+    <string name="welcome_text">Weather for Germany and Europe from the German Weather Service (DWD) and other open sources.</string>
+    <string name="use_my_location">Use my location</string>
+    <string name="search_city">Search city</string>
+    <string name="location_permission_denied">Location access denied. You can still search for places.</string>
+    <string name="location_unavailable">Location currently unavailable</string>
+
+    <!-- Settings -->
+    <string name="settings">Settings</string>
+    <string name="settings_forecast_source">Forecast source</string>
+    <string name="model_dwd_icon">DWD ICON (ICON-D2 / ICON-EU)</string>
+    <string name="model_dwd_icon_desc">German Weather Service, 2.2 km resolution for Germany</string>
+    <string name="model_best_match">Best match</string>
+    <string name="model_best_match_desc">Open-Meteo picks the best model for the location</string>
+    <string name="model_ecmwf">ECMWF IFS</string>
+    <string name="model_ecmwf_desc">European Centre for Medium-Range Weather Forecasts</string>
+    <string name="model_meteofrance">Météo-France AROME / ARPEGE</string>
+    <string name="model_meteofrance_desc">High resolution for France and Western Europe</string>
+    <string name="settings_units">Units</string>
+    <string name="settings_temperature">Temperature</string>
+    <string name="settings_wind">Wind speed</string>
+    <string name="settings_precipitation">Precipitation</string>
+    <string name="settings_stations">Use DWD station measurements</string>
+    <string name="settings_stations_desc">Replace modelled current values with measurements from the nearest DWD station</string>
+    <string name="settings_animations">Animated backgrounds</string>
+    <string name="settings_animations_desc">Show rain, snow, clouds and thunderstorms in the background</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_desc">Follows the system language (English or German). On Android 13+ you can pick it per app in the system settings.</string>
+    <string name="settings_about">About</string>
+    <string name="settings_about_text">Nimbus is a private, non-commercial weather app. Data: Deutscher Wetterdienst (DWD) via Open-Meteo and Bright Sky, ECMWF, Météo-France and other national weather services via Open-Meteo, CAMS air quality, RainViewer, Sensor.Community. Maps © OpenFreeMap, OpenMapTiles, OpenStreetMap contributors.</string>
+    <string name="version">Version %1$s</string>
+
+    <!-- Directions -->
+    <string name="dir_n">N</string>
+    <string name="dir_ne">NE</string>
+    <string name="dir_e">E</string>
+    <string name="dir_se">SE</string>
+    <string name="dir_s">S</string>
+    <string name="dir_sw">SW</string>
+    <string name="dir_w">W</string>
+    <string name="dir_nw">NW</string>
+    <string name="from_direction">from %1$s</string>
+
+    <string name="unit_bft">Bft</string>
+    <string name="unit_kmh">km/h</string>
+    <string name="unit_ms">m/s</string>
+    <string name="unit_mph">mph</string>
+    <string name="unit_kn">kn</string>
+    <string name="unit_mm">mm</string>
+    <string name="unit_inch">in</string>
+
+    <string name="pm_values">PM2.5 %1$s · PM10 %2$s µg/m³</string>
+
+    <string name="moon">Moon</string>
+    <string name="moon_new">New Moon</string>
+    <string name="moon_waxing_crescent">Waxing Crescent</string>
+    <string name="moon_first_quarter">First Quarter</string>
+    <string name="moon_waxing_gibbous">Waxing Gibbous</string>
+    <string name="moon_full">Full Moon</string>
+    <string name="moon_waning_gibbous">Waning Gibbous</string>
+    <string name="moon_last_quarter">Last Quarter</string>
+    <string name="moon_waning_crescent">Waning Crescent</string>
+    <string name="moon_illumination">%1$d%% illuminated</string>
+    <string name="moonrise">Moonrise</string>
+    <string name="moonset">Moonset</string>
+    <string name="next_full_moon">Next full moon</string>
+    <string name="moon_always_up">Moon stays up all day</string>
+    <string name="moon_always_down">Moon stays down all day</string>
+    <string name="term_moon_title">Moon Phases</string>
+    <string name="term_moon_body">The moon orbits the Earth in about 29.5 days. Depending on its position relative to the sun we see a different part of its sunlit half:\n• New moon: the moon is between Earth and sun and invisible\n• Waxing: the lit part grows, in the evening sky\n• Full moon: opposite the sun, rises at sunset\n• Waning: the lit part shrinks, visible in the second half of the night and in the morning\n\nMoonrise and moonset shift by roughly 50 minutes each day, so on some days the moon does not rise or set at all.\n\nThe app calculates phase, illumination and rise/set times astronomically on the device (after J. Meeus and SunCalc) – no data source is needed. At night the animated sky shows the moon in its real phase when it is above the horizon.</string>
+
+    <string name="src_dwd_icon">Forecast: DWD ICON-D2/EU (Open-Meteo)</string>
+    <string name="src_ecmwf">Forecast: ECMWF IFS (Open-Meteo)</string>
+    <string name="src_meteofrance">Forecast: Météo-France (Open-Meteo)</string>
+    <string name="src_best_match">Forecast: Open-Meteo best match</string>
+    <string name="src_gap_fill">UV and days 9–⁠10: Open-Meteo best match</string>
+    <string name="src_station">Measurements: DWD station %1$s (Bright Sky)</string>
+    <string name="src_warnings">Warnings: DWD (Bright Sky)</string>
+    <string name="src_cams">Air quality &amp; pollen: CAMS Europe</string>
+    <string name="src_community">Sensor.Community</string>
+    <string name="src_moon">Moon: calculated on device</string>
+
+    <string name="radar_range_hours">%1$d h</string>
+    <string name="radar_history_germany_only">Longer history for Germany only</string>
+
+    <string name="radar_hours_ago">%1$d h ago</string>
+
+    <string name="overlay_temperature">Temperature</string>
+    <string name="overlay_wind">Wind</string>
+    <string name="legend_rain">Rain</string>
+    <string name="legend_snow">Snow / sleet</string>
+
+    <string name="settings_preload_radar">Preload radar</string>
+    <string name="settings_preload_radar_desc">Load the radar loop for the shown place in the background on Wi-Fi, so it opens instantly</string>
+
+    <string name="precip_24h">Precipitation, Next 24 Hours</string>
+    <string name="precip_today_amount">%1$s today</string>
+    <string name="precip_next_amount">%1$s in the next 24 h</string>
+    <string name="precip_max_chance">Highest chance: %1$d%% around %2$s</string>
+    <string name="precip_no_chance">Precipitation unlikely in the next 24 hours</string>
+    <string name="precip_chart_hint">Bar height: chance · colour: expected amount</string>
+    <string name="term_hourly_title">Hourly Forecast</string>
+    <string name="term_hourly_body">The next 24 hours at a glance. The symbol shows the most likely weather for the hour, the number below it the temperature.\n\n• Now: the current weather – where available measured at the nearest DWD station, therefore it can differ slightly from the forecast for this hour\n• Blue percentages: chance of precipitation (from 20% and only for precipitation symbols) – see the precipitation card for details\n• Sun symbols with a time: sunrise and sunset\n\nThe sentence above summarises the next change in weather and strong gusts. Swipe sideways for more hours.</string>
+    <string name="term_daily_title">10-Day Forecast</string>
+    <string name="term_daily_body">One row per day: symbol, lowest and highest temperature.\n\n• The bar shows the day\'s temperature range on a scale common to all ten days – so warmer and colder days are easy to compare\n• Its colours go from blue (cold) via green and yellow to red (hot)\n• The dot on today\'s bar is the current temperature\n• Blue percentages: chance of precipitation on that day\n\nTap a day to see its temperature curve and hourly precipitation. Days 9 and 10 have larger uncertainty.</string>
+
+    <string name="models_unavailable">Model data currently unavailable – please try again later.</string>
+
+    <!-- Glossary -->
+    <string name="info_about">About %1$s</string>
+    <string name="term_precip_prob_title">Chance of Precipitation</string>
+    <string name="term_precip_prob_body">The percentage shows how likely it is that at least a small, measurable amount of precipitation (about 0.1 mm) falls at your location within that hour or day.\n\n30% does not mean that it rains 30% of the time or over 30% of the area. It means: in 3 out of 10 comparable weather situations it rains at this place. The value is derived from ensemble forecasts – many slightly varied model runs – and counts how many of them produce rain.\n\nThe icon still shows the most likely weather. The percentage is only shown from 20%.</string>
+    <string name="term_feels_like_title">Feels Like</string>
+    <string name="term_feels_like_body">The feels-like (apparent) temperature describes how warm or cold it feels to the human body, not what a thermometer measures in the shade.\n\nWind removes body heat faster, so it feels colder than the air temperature (wind chill). High humidity hinders sweat from evaporating, so warm air feels even warmer. Strong sunshine can also make it feel warmer.\n\nWhen the current temperature is measured at a DWD station, the feels-like value is shifted by the same difference.</string>
+    <string name="term_dew_point_title">Humidity and Dew Point</string>
+    <string name="term_dew_point_body">Relative humidity is how much water vapour the air holds compared to the maximum it could hold at its current temperature. Because warm air can hold more water, the same amount of moisture gives a lower percentage in the afternoon than at night.\n\nThe dew point is the temperature to which the air would have to cool down for water vapour to condense – for dew, fog or condensation on windows. It describes the actual moisture content better than relative humidity:\n• below 10°: dry and pleasant\n• 10–⁠16°: comfortable\n• 16–⁠20°: noticeably humid\n• above 20°: muggy and oppressive\n\nIf temperature and dew point are close together, fog or low clouds are likely.</string>
+    <string name="term_uv_title">UV Index</string>
+    <string name="term_uv_body">The UV index measures the strength of the sun\'s ultraviolet radiation, which causes sunburn and skin damage. It depends on the sun\'s height, clouds, ozone and altitude.\n\n• 0–⁠2 low: no protection needed\n• 3–⁠5 moderate: protection recommended around midday\n• 6–⁠7 high: protection required, seek shade at midday\n• 8–⁠10 very high: avoid the sun at midday\n• 11+ extreme\n\nSnow, water and sand reflect UV radiation and increase exposure. Clouds reduce it, but thin clouds let most UV through.</string>
+    <string name="term_wind_title">Wind and Gusts</string>
+    <string name="term_wind_body">Wind speed is the average over about 10 minutes, measured at a height of 10 m. Gusts are short peaks lasting a few seconds and can be much stronger than the average.\n\nThe direction is where the wind comes from: a west wind blows from west to east. The arrow in the compass points where the wind is blowing to.\n\nBeaufort scale (examples): 3 = gentle breeze (12–⁠19 km/h), 5 = fresh breeze (29–⁠38), 7 = near gale (50–⁠61), 9 = strong gale (75–⁠88), 12 = hurricane force (≥ 118 km/h). The animated background shows wind and gusts too – clouds, rain and leaves move with them.</string>
+    <string name="term_visibility_title">Visibility</string>
+    <string name="term_visibility_body">Visibility is the distance at which objects can still be clearly recognised. It is reduced by fog, mist, haze, precipitation, dust or smoke.\n\nMeteorologists speak of fog when visibility is below 1 km. Values above 20 km mean very clear air. Visibility is measured automatically at DWD stations; otherwise it comes from the forecast model.</string>
+    <string name="term_pressure_title">Air Pressure</string>
+    <string name="term_pressure_body">Air pressure is the weight of the air column above us, given in hectopascals (hPa) and reduced to sea level so values from different altitudes can be compared. The average is about 1013 hPa.\n\nHigh pressure (above ~1020 hPa) usually brings calm, dry weather. Low pressure (below ~1000 hPa) often brings clouds, wind and precipitation.\n\nThe trend matters more than the value: rapidly falling pressure indicates an approaching low and deteriorating weather, rising pressure indicates improvement. The arrow shows the change over the next three hours.</string>
+    <string name="term_aqi_title">Air Quality</string>
+    <string name="term_aqi_body">The European Air Quality Index (EAQI) of the European Environment Agency combines fine dust (PM2.5, PM10), nitrogen dioxide, ozone and sulphur dioxide into one number. The worst pollutant determines the index.\n\n• 0–⁠20 good • 20–⁠40 fair • 40–⁠60 moderate • 60–⁠80 poor • 80–⁠100 very poor • above 100 extremely poor\n\nPM2.5 and PM10 are particles smaller than 2.5 and 10 micrometres; the smaller ones reach deep into the lungs. The values come from the Copernicus CAMS model for Europe.</string>
+    <string name="term_pollen_title">Pollen</string>
+    <string name="term_pollen_body">Pollen counts are given in grains per cubic metre of air, forecast by the Copernicus CAMS model for Europe.\n\nRough levels used here: below 1 none, up to 20 low, up to 100 moderate, above 100 high. Sensitive people can react even at low concentrations; birch and grass pollen are the most common allergy triggers in Central Europe.\n\nWhen pollen is in the air and it is dry, the animated background shows it as fine floating particles.</string>
+    <string name="term_nowcast_title">Precipitation in the Next Hours</string>
+    <string name="term_nowcast_body">This short-range forecast shows expected precipitation in 15-minute steps. In Germany it comes from the DWD\'s high-resolution ICON-D2 model (2.2 km grid), which is updated every three hours.\n\nThe bars show the amount per 15 minutes. For the current rain radar, including the DWD radar nowcast for the next two hours, open the precipitation map.</string>
+    <string name="term_radar_title">Precipitation Radar</string>
+    <string name="term_radar_body">Weather radar sends out microwave pulses and measures how strongly raindrops, snowflakes and hail reflect them (reflectivity in dBZ). Stronger echoes mean heavier precipitation.\n\nGermany: DWD radar composite in 5-minute steps plus a nowcast that extrapolates the movement of the precipitation for the next two hours. Rest of Europe: RainViewer (past two hours only).\n\nBoth sources are shown in one colour scale. Radar sees precipitation in the air: light drizzle or snow close to the ground may be missing, and near mountains or radar sites artefacts can occur.</string>
+    <string name="term_models_title">Weather Models</string>
+    <string name="term_models_body">Weather models are computer simulations that calculate the future state of the atmosphere on a three-dimensional grid. Finer grids resolve local effects such as thunderstorms, valleys and coasts better.\n\n• ICON-D2 (DWD): 2.2 km, Germany &amp; neighbours, 2 days\n• ICON-EU (DWD): 7 km, Europe, 5 days\n• ECMWF IFS: 9–⁠25 km, global, one of the best global models\n• AROME/ARPEGE (Météo-France), UK Met Office, KNMI Harmonie, MET Norway, NOAA GFS\n\nIf the lines lie close together, the forecast is fairly certain. If they diverge, the weather situation is uncertain – typical for thunderstorms or several days ahead. Tap a model to highlight it.</string>
+    <string name="term_community_title">Community Sensors</string>
+    <string name="term_community_body">Sensor.Community is an open network of thousands of self-built sensors run by citizens – similar to OpenStreetMap, but for measurements. The data is freely available.\n\nPrivate sensors are not calibrated and are often mounted on balconies or house walls, sometimes in the sun. The app therefore shows the median of all outdoor sensors nearby and removes outliers. The spread shows how much the sensors disagree.\n\nUse these values as an additional local impression; the official DWD station is more reliable.</string>
+    <string name="term_station_title">Measured or Forecast?</string>
+    <string name="term_station_body">Near a DWD weather station the current values (temperature, humidity, wind, pressure, visibility) are real measurements from the nearest station within 30 km, provided by Bright Sky from DWD open data. Otherwise they come from the forecast model for the exact location.\n\nMeasurements are more accurate for the station itself, but local conditions can differ – for example between a city centre and an airport. You can switch this off in the settings.</string>
+    <string name="term_alerts_title">DWD Weather Warnings</string>
+    <string name="term_alerts_body">Official warnings of the Deutscher Wetterdienst for your municipality, colour-coded by severity:\n\n• Yellow – weather warning: possible hazard, e.g. frost, strong gusts\n• Orange – warning of significant weather: dangerous weather, e.g. storm gusts, heavy rain\n• Red – severe weather warning: very dangerous, e.g. hurricane-force gusts, heavy thunderstorms\n• Purple – extreme severe weather warning: extremely dangerous, take protective measures\n\nWarnings are only available for Germany.</string>
+</resources>

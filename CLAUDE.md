@@ -1,0 +1,2 @@
+Kreire eine Android-Wetter-App, die per animierten Hintergrund das aktuelle Wetter anzeigt, mit Fokus auf Deutschland und Europa  und als Vorbild Apples Wetter-App und Regenradar unter Android haben sollte.
+Regenradar-Quellen für Deutschland sollte der deutsche Wetterdienst zur verfügung stellen. Weiterhin sind sehr gute Quellen für lokales Wetterdatren die von Kachelmanns Meteomedia-Gruppe, die due vielleicht für unsere App auslesen und aufbereiten könntest. Prüfe deine App, dass keine visuellen Glitches vorkommen und liefere eine APK zum selbstinstallieren aus. 

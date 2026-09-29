@@ -1,0 +1,44 @@
+package dev.nimbus.weather.data.model
+
+import kotlinx.serialization.Serializable
+
+@Serializable
+enum class ForecastModel(val openMeteoId: String) {
+    DWD_ICON("icon_seamless"),
+    BEST_MATCH("best_match"),
+    ECMWF("ecmwf_ifs025"),
+    METEO_FRANCE("meteofrance_seamless"),
+}
+
+@Serializable
+enum class TemperatureUnit { CELSIUS, FAHRENHEIT }
+
+@Serializable
+enum class WindUnit { KMH, MS, MPH, KNOTS, BEAUFORT }
+
+@Serializable
+enum class PrecipitationUnit { MM, INCH }
+
+@Serializable
+data class Settings(
+    val model: ForecastModel = ForecastModel.DWD_ICON,
+    val temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS,
+    val windUnit: WindUnit = WindUnit.KMH,
+    val precipitationUnit: PrecipitationUnit = PrecipitationUnit.MM,
+    val useStationObservations: Boolean = true,
+    val animationsEnabled: Boolean = true,
+    /** Load the radar loop in the background once the location is known (Wi-Fi only). */
+    val preloadRadar: Boolean = true,
+)
+
+/** Models shown in the model comparison chart (Open-Meteo ids and display names). */
+val ComparisonModels = listOf(
+    "icon_d2" to "ICON-D2 (DWD)",
+    "icon_eu" to "ICON-EU (DWD)",
+    "ecmwf_ifs025" to "ECMWF IFS",
+    "meteofrance_seamless" to "ARPEGE/AROME",
+    "ukmo_seamless" to "UK Met Office",
+    "knmi_seamless" to "KNMI Harmonie",
+    "metno_seamless" to "MET Norway",
+    "gfs_seamless" to "NOAA GFS",
+)

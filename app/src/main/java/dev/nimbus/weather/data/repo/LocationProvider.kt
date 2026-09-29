@@ -1,0 +1,111 @@
+package dev.nimbus.weather.data.repo
+
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.pm.PackageManager
+import android.location.Geocoder
+import android.location.Location
+import android.location.LocationManager
+import android.os.Build
+import android.os.CancellationSignal
+import androidx.core.content.ContextCompat
+import dev.nimbus.weather.data.model.Place
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import java.util.Locale
+import kotlin.coroutines.resume
+
+/** Device location without Google Play Services, using the platform LocationManager. */
+class LocationProvider(private val context: Context) {
+
+    fun hasPermission(): Boolean =
+        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+    @SuppressLint("MissingPermission")
+    suspend fun currentLocation(): Location? {
+        if (!hasPermission()) return null
+        val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val providers = listOf(LocationManager.NETWORK_PROVIDER, LocationManager.GPS_PROVIDER, LocationManager.PASSIVE_PROVIDER)
+            .filter { runCatching { lm.isProviderEnabled(it) }.getOrDefault(false) }
+        val lastKnown = providers.mapNotNull { runCatching { lm.getLastKnownLocation(it) }.getOrNull() }
+            .maxByOrNull { it.time }
+        if (lastKnown != null && System.currentTimeMillis() - lastKnown.time < 15 * 60_000L) return lastKnown
+        val active = buildList {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && runCatching { lm.isProviderEnabled(LocationManager.FUSED_PROVIDER) }.getOrDefault(false)) {
+                add(LocationManager.FUSED_PROVIDER)
+            }
+            addAll(providers.filter { it != LocationManager.PASSIVE_PROVIDER })
+        }.distinct()
+        if (active.isEmpty()) return lastKnown
+        // Ask all providers at once and take the first fix (e.g. no network provider on emulators).
+        val fresh = withTimeoutOrNull(15_000L) {
+            channelFlow {
+                active.forEach { provider ->
+                    launch { singleFix(lm, provider)?.let { send(it) } }
+                }
+            }.firstOrNull()
+        }
+        return fresh ?: lastKnown
+    }
+
+    @SuppressLint("MissingPermission")
+    private suspend fun singleFix(lm: LocationManager, provider: String): Location? = suspendCancellableCoroutine { cont ->
+        runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val signal = CancellationSignal()
+                cont.invokeOnCancellation { signal.cancel() }
+                lm.getCurrentLocation(provider, signal, ContextCompat.getMainExecutor(context)) { if (cont.isActive) cont.resume(it) }
+            } else {
+                val listener = android.location.LocationListener { if (cont.isActive) cont.resume(it) }
+                cont.invokeOnCancellation { lm.removeUpdates(listener) }
+                @Suppress("DEPRECATION")
+                lm.requestSingleUpdate(provider, listener, context.mainLooper)
+            }
+        }.onFailure { if (cont.isActive) cont.resume(null) }
+    }
+
+    suspend fun toPlace(location: Location, fallbackName: String): Place {
+        val lat = location.latitude
+        val lon = location.longitude
+        val address = withContext(Dispatchers.IO) {
+            if (!Geocoder.isPresent()) return@withContext null
+            runCatching {
+                val geocoder = Geocoder(context, Locale.getDefault())
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    withTimeoutOrNull(6_000L) {
+                        suspendCancellableCoroutine { cont ->
+                            geocoder.getFromLocation(lat, lon, 1, object : Geocoder.GeocodeListener {
+                                override fun onGeocode(addresses: MutableList<android.location.Address>) { cont.resume(addresses.firstOrNull()) }
+                                override fun onError(errorMessage: String?) { cont.resume(null) }
+                            })
+                        }
+                    }
+                } else {
+                    @Suppress("DEPRECATION")
+                    geocoder.getFromLocation(lat, lon, 1)?.firstOrNull()
+                }
+            }.getOrNull()
+        }
+        return Place(
+            id = CURRENT_LOCATION_ID,
+            name = address?.locality ?: address?.subAdminArea ?: address?.adminArea ?: fallbackName,
+            region = address?.adminArea,
+            country = address?.countryName,
+            countryCode = address?.countryCode,
+            latitude = lat,
+            longitude = lon,
+            isCurrentLocation = true,
+        )
+    }
+
+    companion object {
+        const val CURRENT_LOCATION_ID = "current-location"
+    }
+}

@@ -1,0 +1,411 @@
+package dev.nimbus.weather.ui.main
+
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Umbrella
+import androidx.compose.material.icons.rounded.WarningAmber
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import dev.nimbus.weather.R
+import dev.nimbus.weather.data.model.AlertSeverity
+import dev.nimbus.weather.data.model.Condition
+import dev.nimbus.weather.data.model.DailyPoint
+import dev.nimbus.weather.data.model.HourlyPoint
+import dev.nimbus.weather.data.model.MinutelyPoint
+import dev.nimbus.weather.data.model.WeatherAlert
+import dev.nimbus.weather.data.model.WeatherData
+import dev.nimbus.weather.ui.components.GlassCard
+import dev.nimbus.weather.ui.components.HairlineDivider
+import dev.nimbus.weather.ui.components.InfoButton
+import dev.nimbus.weather.ui.components.Term
+import androidx.compose.foundation.layout.offset
+import dev.nimbus.weather.ui.components.WeatherIcon
+import dev.nimbus.weather.ui.theme.NimbusColors
+import dev.nimbus.weather.util.Texts
+import dev.nimbus.weather.util.NBSP
+import dev.nimbus.weather.util.Units
+
+private val PrecipBlue = Color(0xFF7CC8FF)
+
+// ---------------------------------------------------------------------------------------
+// Hourly
+
+private sealed interface HourItem {
+    val time: Long
+    data class Hour(val point: HourlyPoint, val isNow: Boolean) : HourItem { override val time get() = point.time }
+    data class Sun(override val time: Long, val rise: Boolean) : HourItem
+}
+
+@Composable
+fun HourlyCard(data: WeatherData, now: Long) {
+    val settings = LocalSettings.current
+    val tf = LocalTimeFormat.current
+    val hours = remember(data, now) { Insights.upcomingHours(data, now) }
+    if (hours.isEmpty()) return
+    val items = remember(hours, data.daily) {
+        val list = mutableListOf<HourItem>()
+        hours.forEachIndexed { i, h -> list += HourItem.Hour(h, i == 0) }
+        val start = hours.first().time
+        val end = hours.last().time
+        data.daily.forEach { d ->
+            d.sunrise?.let { if (it in (now + 1)..end) list += HourItem.Sun(it, true) }
+            d.sunset?.let { if (it in (now + 1)..end) list += HourItem.Sun(it, false) }
+        }
+        list.sortedBy { if (it is HourItem.Hour && it.isNow) start - 1 else it.time }
+    }
+    val change = remember(hours) { Insights.nextChange(hours, data.current.condition) }
+    val gust = remember(hours) { Insights.maxGust(hours) }
+    val condText = stringResource(Texts.condition(change.condition, change.isDay))
+    val summary = buildString {
+        append(
+            if (change.time != null) stringResource(R.string.summary_hourly_condition, condText, tf.time(change.time))
+            else stringResource(R.string.summary_hourly_same, condText),
+        )
+        if (gust != null && gust >= 39) {
+            append(' ')
+            append(stringResource(R.string.summary_gusts, Units.windNumber(gust, settings.windUnit) + NBSP + stringResource(Texts.windUnit(settings.windUnit))))
+        }
+    }
+    GlassCard(title = null) {
+        Row(verticalAlignment = Alignment.Top) {
+            Text(summary, Modifier.weight(1f).padding(top = 8.dp), style = androidx.compose.material3.MaterialTheme.typography.bodyMedium, color = Color.White)
+            InfoButton(Term.HOURLY, Modifier.offset(x = 8.dp))
+        }
+        Spacer(Modifier.height(4.dp))
+        HairlineDivider()
+        LazyRow(
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            contentPadding = PaddingValues(horizontal = 0.dp),
+        ) {
+            items(items, key = { (if (it is HourItem.Sun) "s" else "h") + it.time }) { item ->
+                when (item) {
+                    // "Now" shows the current (possibly measured) weather, like the header.
+                    is HourItem.Hour -> HourCell(
+                        label = if (item.isNow) stringResource(R.string.now) else tf.hour(item.point.time),
+                        condition = if (item.isNow) data.current.condition else item.point.condition,
+                        isDay = if (item.isNow) data.current.isDay else item.point.isDay,
+                        precipProb = item.point.precipitationProbability,
+                        value = Units.temp(if (item.isNow) data.current.temperature else item.point.temperature, settings.temperatureUnit),
+                        bold = item.isNow,
+                    )
+                    is HourItem.Sun -> SunCell(tf.time(item.time), item.rise)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HourCell(label: String, condition: Condition, isDay: Boolean, precipProb: Double?, value: String, bold: Boolean) {
+    Column(Modifier.width(52.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, fontSize = 14.sp, fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Medium, color = Color.White, maxLines = 1)
+        Box(Modifier.height(46.dp), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                WeatherIcon(condition, isDay, size = 26.dp)
+                val p = precipProb
+                if (p != null && p >= 20 && condition.isPrecipitation) {
+                    Text("${(p / 10).toInt() * 10}%", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = PrecipBlue)
+                }
+            }
+        }
+        Text(value, fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White)
+    }
+}
+
+@Composable
+private fun SunCell(time: String, rise: Boolean) {
+    Column(Modifier.width(56.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(time, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1)
+        Box(Modifier.height(46.dp), contentAlignment = Alignment.Center) { SunHorizonGlyph(rise) }
+        Text(stringResource(if (rise) R.string.sunrise else R.string.sunset), fontSize = 11.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+private fun SunHorizonGlyph(rise: Boolean) {
+    Canvas(Modifier.size(26.dp)) {
+        val s = size.minDimension
+        val horizon = s * 0.66f
+        val r = s * 0.26f
+        drawArc(Color(0xFFFFC53D), 180f, 180f, true, topLeft = Offset(s / 2 - r, horizon - r), size = Size(r * 2, r * 2))
+        val stroke = s * 0.07f
+        drawLine(Color.White, Offset(s * 0.06f, horizon), Offset(s * 0.94f, horizon), stroke, androidx.compose.ui.graphics.StrokeCap.Round)
+        // Arrow above the sun: up for sunrise, down for sunset.
+        val top = s * 0.02f
+        val bottom = s * 0.3f
+        val tip = if (rise) top else bottom
+        val tail = if (rise) bottom else top
+        val wing = if (rise) s * 0.1f else -s * 0.1f
+        drawLine(Color.White, Offset(s / 2, tail), Offset(s / 2, tip), stroke, androidx.compose.ui.graphics.StrokeCap.Round)
+        drawLine(Color.White, Offset(s / 2, tip), Offset(s / 2 - s * 0.1f, tip + wing), stroke, androidx.compose.ui.graphics.StrokeCap.Round)
+        drawLine(Color.White, Offset(s / 2, tip), Offset(s / 2 + s * 0.1f, tip + wing), stroke, androidx.compose.ui.graphics.StrokeCap.Round)
+    }
+}
+
+// ---------------------------------------------------------------------------------------
+// Daily
+
+@Composable
+fun DailyCard(data: WeatherData, now: Long) {
+    val settings = LocalSettings.current
+    val tf = LocalTimeFormat.current
+    val days = remember(data, now) {
+        val todayIdx = data.daily.indexOfLast { it.date <= now }.coerceAtLeast(0)
+        data.daily.drop(todayIdx).take(10)
+    }
+    if (days.isEmpty()) return
+    val lo = days.minOf { it.tempMin }
+    val hi = days.maxOf { it.tempMax }
+    var expanded by rememberSaveable(data.place.id) { mutableStateOf<Long?>(null) }
+    GlassCard(
+        title = stringResource(if (days.size == 10) R.string.ten_day_forecast else R.string.n_day_forecast, days.size),
+        icon = Icons.Outlined.CalendarMonth,
+        info = Term.DAILY,
+    ) {
+        days.forEachIndexed { i, d ->
+            if (i > 0) HairlineDivider()
+            val isToday = i == 0
+            DayRow(
+                day = d,
+                label = if (isToday) stringResource(R.string.today) else tf.weekdayShort(d.date),
+                min = lo, max = hi,
+                currentTemp = if (isToday) data.current.temperature else null,
+                expanded = expanded == d.date,
+                onClick = { expanded = if (expanded == d.date) null else d.date },
+                hours = if (expanded == d.date) data.hourly.filter { tf.isSameDay(it.time, d.date) } else emptyList(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun DayRow(
+    day: DailyPoint, label: String, min: Double, max: Double, currentTemp: Double?,
+    expanded: Boolean, onClick: () -> Unit, hours: List<HourlyPoint>,
+) {
+    val settings = LocalSettings.current
+    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).animateContentSize()) {
+        Row(Modifier.fillMaxWidth().height(50.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(label, Modifier.width(62.dp), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1)
+            Column(Modifier.width(44.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                WeatherIcon(day.condition, true, size = 26.dp)
+                val p = day.precipitationProbability
+                if (p != null && p >= 20 && day.condition.isPrecipitation) {
+                    Text("${(p / 10).toInt() * 10}%", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = PrecipBlue)
+                }
+            }
+            Text(
+                Units.temp(day.tempMin, settings.temperatureUnit), Modifier.width(44.dp), fontSize = 18.sp,
+                color = NimbusColors.Tertiary, textAlign = TextAlign.End, fontWeight = FontWeight.Medium,
+            )
+            TemperatureRangeBar(day.tempMin, day.tempMax, min, max, currentTemp, Modifier.weight(1f).padding(horizontal = 10.dp))
+            Text(
+                Units.temp(day.tempMax, settings.temperatureUnit), Modifier.width(40.dp), fontSize = 18.sp,
+                color = Color.White, fontWeight = FontWeight.Medium,
+            )
+        }
+        if (expanded && hours.isNotEmpty()) {
+            DayTemperatureChart(hours, Modifier.fillMaxWidth().height(110.dp).padding(bottom = 10.dp))
+        }
+    }
+}
+
+@Composable
+fun TemperatureRangeBar(low: Double, high: Double, min: Double, max: Double, current: Double?, modifier: Modifier = Modifier) {
+    Canvas(modifier.height(6.dp)) {
+        val span = (max - min).coerceAtLeast(1.0)
+        val h = size.height
+        drawRoundRect(Color(0x33000000), size = size, cornerRadius = CornerRadius(h / 2))
+        val x0 = ((low - min) / span * size.width).toFloat()
+        val x1 = ((high - min) / span * size.width).toFloat().coerceAtLeast(x0 + h)
+        val brush = Brush.horizontalGradient(
+            listOf(Insights.temperatureColor(low), Insights.temperatureColor((low + high) / 2), Insights.temperatureColor(high)),
+            startX = x0, endX = x1,
+        )
+        drawRoundRect(brush, topLeft = Offset(x0, 0f), size = Size(x1 - x0, h), cornerRadius = CornerRadius(h / 2))
+        if (current != null) {
+            val cx = ((current.coerceIn(low, high) - min) / span * size.width).toFloat().coerceIn(x0 + h / 2, x1 - h / 2)
+            drawCircle(Color(0xFF1A2A40), h * 0.95f, Offset(cx, h / 2))
+            drawCircle(Color.White, h * 0.62f, Offset(cx, h / 2))
+        }
+    }
+}
+
+@Composable
+private fun DayTemperatureChart(hours: List<HourlyPoint>, modifier: Modifier) {
+    val tf = LocalTimeFormat.current
+    val settings = LocalSettings.current
+    val labels = hours.filterIndexed { i, _ -> i % 6 == 0 }.map { tf.hour(it.time) }
+    Column(modifier) {
+        Canvas(Modifier.fillMaxWidth().weight(1f)) {
+            if (hours.size < 2) return@Canvas
+            val temps = hours.map { Units.temperature(it.temperature, settings.temperatureUnit) }
+            val lo = temps.min() - 1
+            val hi = temps.max() + 1
+            val dx = size.width / (hours.size - 1)
+            fun y(v: Double) = (size.height * (1 - (v - lo) / (hi - lo))).toFloat()
+            // precipitation bars
+            val maxP = hours.maxOf { it.precipitation ?: 0.0 }.coerceAtLeast(2.0)
+            hours.forEachIndexed { i, h ->
+                val p = h.precipitation ?: 0.0
+                if (p > 0.05) {
+                    val bh = (p / maxP * size.height * 0.5).toFloat()
+                    drawRect(PrecipBlue.copy(alpha = 0.45f), Offset(i * dx - dx * 0.35f, size.height - bh), Size(dx * 0.7f, bh))
+                }
+            }
+            val path = androidx.compose.ui.graphics.Path()
+            temps.forEachIndexed { i, t -> if (i == 0) path.moveTo(0f, y(t)) else path.lineTo(i * dx, y(t)) }
+            drawPath(
+                path,
+                Brush.verticalGradient(listOf(Insights.temperatureColor(hours.maxOf { it.temperature }), Insights.temperatureColor(hours.minOf { it.temperature }))),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.5.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round),
+            )
+            for (k in 1..3) {
+                val x = size.width * k / 4
+                drawLine(Color(0x22FFFFFF), Offset(x, 0f), Offset(x, size.height), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f)))
+            }
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            labels.forEach { Text(it, fontSize = 11.sp, color = NimbusColors.Tertiary) }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------------
+// Nowcast (next 3 hours, 15-minute resolution)
+
+@Composable
+fun NowcastCard(points: List<MinutelyPoint>, now: Long, rainingNow: Boolean = false) {
+    val tf = LocalTimeFormat.current
+    val summary = when (val n = Insights.nowcast(points, now, rainingNow)) {
+        Insights.Nowcast.Dry -> stringResource(R.string.summary_no_rain)
+        Insights.Nowcast.Continues -> stringResource(R.string.summary_rain_continues)
+        is Insights.Nowcast.StartsIn -> stringResource(R.string.summary_rain_starting, n.minutes)
+        is Insights.Nowcast.StopsIn -> stringResource(R.string.summary_rain_now, n.minutes)
+    }
+    GlassCard(title = stringResource(R.string.next_hours_precip), icon = Icons.Outlined.Umbrella, info = Term.NOWCAST) {
+        Text(summary, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Color.White)
+        Spacer(Modifier.height(10.dp))
+        Canvas(Modifier.fillMaxWidth().height(70.dp)) {
+            val n = points.size.coerceAtLeast(1)
+            val bw = size.width / n
+            val maxP = maxOf(1.0, points.maxOfOrNull { it.precipitation } ?: 0.0)
+            for (k in 1..3) {
+                val y = size.height * k / 4
+                drawLine(Color(0x22FFFFFF), Offset(0f, y), Offset(size.width, y), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
+            }
+            points.forEachIndexed { i, p ->
+                val bh = (p.precipitation / maxP * size.height).toFloat().coerceAtLeast(if (p.precipitation > 0) 3f else 0f)
+                if (bh > 0) drawRoundRect(
+                    PrecipBlue, Offset(i * bw + bw * 0.12f, size.height - bh), Size(bw * 0.76f, bh),
+                    CornerRadius(3.dp.toPx()),
+                )
+            }
+        }
+        Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(stringResource(R.string.now), fontSize = 11.sp, color = NimbusColors.Tertiary)
+            points.getOrNull(points.size / 2)?.let { Text(tf.time(it.time), fontSize = 11.sp, color = NimbusColors.Tertiary) }
+            points.lastOrNull()?.let { Text(tf.time(it.time), fontSize = 11.sp, color = NimbusColors.Tertiary) }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------------
+// Alerts
+
+fun severityColor(s: AlertSeverity): Color = when (s) {
+    AlertSeverity.MINOR -> Color(0xFFFFE14D)
+    AlertSeverity.MODERATE -> Color(0xFFFF9F1C)
+    AlertSeverity.SEVERE -> Color(0xFFFF3B30)
+    AlertSeverity.EXTREME -> Color(0xFFB0189A)
+}
+
+@Composable
+fun AlertsCard(alerts: List<WeatherAlert>) {
+    val tf = LocalTimeFormat.current
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    GlassCard(
+        title = stringResource(R.string.alerts) + " · DWD",
+        icon = Icons.Rounded.WarningAmber,
+        tint = Color(0x4D3A1010),
+        onClick = { expanded = !expanded },
+        info = Term.ALERTS,
+    ) {
+        val shown = if (expanded) alerts else alerts.take(2)
+        shown.forEachIndexed { i, a ->
+            if (i > 0) HairlineDivider(Modifier.padding(vertical = 8.dp))
+            Row(verticalAlignment = Alignment.Top) {
+                Box(Modifier.padding(top = 6.dp).size(10.dp).clip(CircleShape).background(severityColor(a.severity)))
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.animateContentSize()) {
+                    Text(a.headline, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                    val period = when {
+                        a.onset != null && a.expires != null -> stringResource(
+                            R.string.alert_valid,
+                            tf.weekdayShort(a.onset) + " " + tf.time(a.onset),
+                            tf.weekdayShort(a.expires) + " " + tf.time(a.expires),
+                        )
+                        a.expires != null -> stringResource(R.string.alert_until, tf.weekdayShort(a.expires) + " " + tf.time(a.expires))
+                        else -> null
+                    }
+                    if (period != null) Text(period, fontSize = 13.sp, color = NimbusColors.Secondary)
+                    if (expanded) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(a.description, fontSize = 14.sp, color = Color.White)
+                        a.instruction?.takeIf { it.isNotBlank() }?.let {
+                            Spacer(Modifier.height(4.dp))
+                            Text(it, fontSize = 13.sp, color = NimbusColors.Secondary)
+                        }
+                    }
+                }
+            }
+        }
+        if (!expanded && alerts.size > 2) {
+            Text(stringResource(R.string.more_alerts, alerts.size - 2), Modifier.padding(top = 6.dp), fontSize = 13.sp, color = NimbusColors.Secondary)
+        }
+        Text(
+            stringResource(if (expanded) R.string.show_less else R.string.show_more),
+            Modifier.padding(top = 6.dp), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFFFD27A),
+        )
+    }
+}

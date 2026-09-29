@@ -19,8 +19,8 @@
 
 # Nimbus – weather for Germany and Europe
 
-Nimbus shows the weather the way it looks outside: an animated sky with clouds, rain, snow or stars
-reflects the current conditions. The data comes from the German Weather Service (DWD) – readings from
+Nimbus reflects the current weather with small matching background animations – drifting clouds,
+rain, snow or a starry sky. The data comes from the German Weather Service (DWD) – readings from
 the nearest weather station, forecasts from the high-resolution ICON-D2 model and the rain radar.
 No ads, no account, no Google services. The app speaks English and German.
 

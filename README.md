@@ -19,8 +19,8 @@
 
 # Nimbus – Wetter für Deutschland und Europa
 
-Nimbus zeigt das Wetter so, wie es draußen aussieht: Ein animierter Himmel mit Wolken, Regen, Schnee
-oder Sternen gibt die aktuelle Lage wieder. Die Daten kommen vom Deutschen Wetterdienst – Messwerte der
+Nimbus symbolisiert das aktuelle Wetter mit passenden kleinen Hintergrundanimationen – ziehende Wolken,
+Regen, Schnee oder ein Sternenhimmel. Die Daten kommen vom Deutschen Wetterdienst – Messwerte der
 nächsten Wetterstation, die Vorhersage des hochauflösenden Modells ICON-D2 und das Regenradar.
 Keine Werbung, kein Konto, keine Google-Dienste.
 

@@ -332,6 +332,10 @@
 
     <string name="history_dry_day_model">Kein Niederschlag in den Vorhersagewerten.</string>
 
+    <string name="meteogram_hint">Lange auf das Diagramm drücken zeigt die Werte jeder Stunde</string>
+
+    <string name="history_course">Tagesverlauf</string>
+
     <!-- Glossary -->
     <string name="info_about">Über %1$s</string>
     <string name="term_precip_prob_title">Niederschlagswahrscheinlichkeit</string>

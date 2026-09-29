@@ -26,8 +26,9 @@ Mindestversion: Android 8.0 (API 26). Google Play Services werden nicht benötig
   **Pollen** schweben entsprechend der echten CAMS-Pollenbelastung.
 - **Bedienung:** Orte (aktueller Standort + gespeicherte Orte) und Einstellungen über das Menü oben links,
   oben rechts „Radar“. **Wischen nach rechts** führt in den **Rückblick**: „Heute bisher“, „Gestern“,
-  „Vorgestern“ – gemessene DWD-Stationswerte (Temperatur, Niederschlag, Sonne, Wind, Stundenwerte) neben der
-  Vorhersage des gewählten Modells für dieselben Stunden, inkl. mittlerer Abweichung (außerhalb Deutschlands
+  „Vorgestern“ – gemessene DWD-Stationswerte (Temperatur, Niederschlag, Sonne, Wind) neben der
+  Vorhersage des gewählten Modells für dieselben Stunden, als Meteogramm (Messung durchgezogen, Vorhersage
+  gestrichelt) inkl. mittlerer Abweichung (außerhalb Deutschlands
   nur Modellwerte). Die Stationswerte werden immer geladen, unabhängig von der Einstellung für die
   aktuellen Werte. Die Daten werden beim Wischen nachgeladen, nicht dauerhaft gespeichert.
 - **Hintergrund-Aktualisierung** stündlich (WorkManager, nur mit Netz und ausreichend Akku) für alle Orte;
@@ -37,7 +38,9 @@ Mindestversion: Android 8.0 (API 26). Google Play Services werden nicht benötig
   Windstriche bei Wind), DWD-Warnungen, Niederschlag der nächsten 3 Stunden (15-Min.-Schritte),
   Stundenvorhersage mit Sonnenauf-/-untergang, 10-Tage-Vorhersage mit Temperaturbalken
   (antippen → **Meteogramm** 00–24 Uhr: Temperatur, Niederschlag, Symbole, Wind, Nachtschattierung;
-  ein verschiebbarer Cursor zeigt darunter alle Werte der gewählten Stunde), **Niederschlagskarte 24 h** (Wahrscheinlichkeit und Menge pro Stunde),
+  Einheiten in den Ecken, Achsen nur mit Zahlen, an trockenen Tagen ohne Niederschlagsachse – maximale
+  Diagrammbreite; langes Drücken blendet einen verschiebbaren Cursor ein, der nach 10 s Nichtbenutzung
+  ausblendet, darunter alle Werte der gewählten Stunde), **Niederschlagskarte 24 h** (Wahrscheinlichkeit und Menge pro Stunde),
   Niederschlagswahrscheinlichkeit in Stunden- und Tagesvorhersage immer angezeigt (unter 10 % blass),
   Radar-Vorschau, Kacheln für Gefühlt, UV, Wind (Kompass), Luftfeuchte/Taupunkt, Sichtweite (mit Angabe
   „gemessen an DWD-Station“ bzw. „Modellwert“), Luftdruck (Tendenz),

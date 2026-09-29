@@ -342,6 +342,10 @@
 
     <string name="history_dry_day_model">No precipitation in the forecast values.</string>
 
+    <string name="meteogram_hint">Long press on the chart shows the values of each hour</string>
+
+    <string name="history_course">Course of the Day</string>
+
     <!-- Glossary -->
     <string name="info_about">About %1$s</string>
     <string name="term_precip_prob_title">Chance of Precipitation</string>

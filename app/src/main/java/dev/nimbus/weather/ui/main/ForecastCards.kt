@@ -211,7 +211,7 @@ fun DailyCard(data: WeatherData, now: Long) {
                 expanded = expanded == d.date,
                 onClick = { expanded = if (expanded == d.date) null else d.date },
                 // 00:00 of the next day closes the curve at 24 h
-                hours = if (expanded == d.date) data.hourly.filter { it.time in d.date..d.date + 24 * 3_600_000L } else emptyList(),
+                hours = data.hourly.filter { it.time in d.date..d.date + 24 * 3_600_000L },
                 daily = data.daily,
                 now = now,
             )
@@ -225,7 +225,7 @@ private fun DayRow(
     expanded: Boolean, onClick: () -> Unit, hours: List<HourlyPoint>, daily: List<DailyPoint>, now: Long,
 ) {
     val settings = LocalSettings.current
-    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).animateContentSize()) {
+    Column(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(Modifier.fillMaxWidth().height(50.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(label, Modifier.width(62.dp), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1)
             Column(Modifier.width(44.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -242,8 +242,17 @@ private fun DayRow(
                 color = Color.White, fontWeight = FontWeight.Medium,
             )
         }
-        if (expanded && hours.isNotEmpty()) {
-            Meteogram(hours, day.date, day.date + 24 * 3_600_000L, daily, now, Modifier.fillMaxWidth().padding(bottom = 12.dp))
+        // No clipping animation (like animateContentSize): the meteogram extends into the card padding.
+        androidx.compose.animation.AnimatedVisibility(
+            visible = expanded && hours.size >= 2,
+            enter = androidx.compose.animation.expandVertically(clip = false) + androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.shrinkVertically(clip = false) + androidx.compose.animation.fadeOut(),
+        ) {
+            val end = day.date + 24 * 3_600_000L
+            Meteogram(
+                hours.map { it.toMeteo() }, day.date, end, nightsFromDaily(daily, day.date, end), now,
+                Modifier.fillMaxWidth().bleed(CARD_BLEED).padding(bottom = 12.dp),
+            )
         }
     }
 }

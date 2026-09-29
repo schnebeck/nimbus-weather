@@ -101,11 +101,15 @@ fun HistoryPage(place: Place, state: PlaceState?, settings: Settings, dayIndex: 
     val day = history?.days?.getOrNull(dayIndex)
     val summary = remember(day) { day?.takeIf { it.hours.isNotEmpty() }?.let { DaySummary.of(it) } }
     val tf = remember(history?.zone) { TimeFormat(history?.zone?.id ?: (state?.data?.timezone ?: "UTC"), DateFormat.is24HourFormat(context)) }
-    val scene = remember(summary, day?.date) {
+    // Same sky as the main page at the current time (day/night, twilight, moon) – only the weather
+    // is that of the shown day. A bright day sky at night made the glass cards pale.
+    val scene = remember(summary, day?.date, state?.data) {
         val (season, autumn) = SkyScene.seasonOf(day?.date ?: java.time.LocalDate.now(), place.latitude < 0)
-        SkyScene(
-            condition = summary?.condition ?: Condition.CLOUDY, daylight = 1f, twilight = 0f,
+        val base = state?.data?.let { SkyScene.from(it) } ?: placeholderScene()
+        base.copy(
+            condition = summary?.condition ?: Condition.CLOUDY,
             wind = ((summary?.meanWind ?: 10.0) / 60.0).toFloat().coerceIn(0.08f, 1f),
+            gustiness = 0f, pollen = 0f,
             season = season, autumnProgress = autumn, temperature = summary?.tempMax ?: 15.0,
         )
     }
@@ -142,10 +146,7 @@ fun HistoryPage(place: Place, state: PlaceState?, settings: Settings, dayIndex: 
                     summary == null -> item(key = "empty") { HistoryMessage(stringResource(R.string.history_empty), null) }
                     else -> {
                         item(key = "summary") { SummaryCard(summary, history, settings, tf) }
-                        item(key = "temp") { TemperatureChartCard(day, summary, settings) }
-                        item(key = "precip") { PrecipitationChartCard(day, settings) }
-                        item(key = "wind") { WindChartCard(day, settings) }
-                        item(key = "hours") { HoursCard(day, settings) }
+                        item(key = "course") { DayCourseCard(day, summary, settings, tf) }
                     }
                 }
             }
@@ -273,147 +274,44 @@ private fun Legend(model: Boolean, settings: Settings, measuredAsBars: Boolean =
     }
 }
 
-/** Line chart over the hours of the day with an x axis from 0 to 24 h. */
+/** The day as meteogram: measurement (white) against forecast (dashed), plus precipitation and wind. */
 @Composable
-private fun DayChart(
-    day: HistoryDay, lines: List<Triple<List<Double?>, Color, Boolean>>, bars: List<Double?> = emptyList(),
-    minRange: Double = 4.0, zeroBased: Boolean = false, label: (Double) -> String,
-) {
-    val tf = LocalTimeFormat.current
-    val measurer = rememberTextMeasurer()
-    val style = TextStyle(fontSize = 10.sp, color = NimbusColors.Tertiary)
+private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, tf: TimeFormat) {
     val start = day.date.atStartOfDay(tf.zone).toInstant().toEpochMilli()
-    val xs = day.hours.map { ((it.time - start) / 3_600_000.0).toFloat() }
-    val values = lines.flatMap { it.first.filterNotNull() } + bars.filterNotNull()
-    if (values.isEmpty()) return
-    var lo = if (zeroBased) 0.0 else values.min()
-    var hi = values.max()
-    if (hi - lo < minRange) { val mid = (hi + lo) / 2; lo = if (zeroBased) 0.0 else mid - minRange / 2; hi = lo + minRange }
-    Canvas(Modifier.fillMaxWidth().height(140.dp)) {
-        val axisW = 30.dp.toPx()
-        val axisH = 16.dp.toPx()
-        val w = size.width - axisW
-        val h = size.height - axisH
-        fun x(hour: Float) = axisW + w * hour / 24f
-        fun y(v: Double) = (h - (v - lo) / (hi - lo) * h).toFloat()
-        for (k in 0..2) {
-            val v = lo + (hi - lo) * k / 2
-            drawLine(Color(0x1FFFFFFF), Offset(axisW, y(v)), Offset(size.width, y(v)), 1f)
-            val l = measurer.measure(label(v), style)
-            drawText(l, topLeft = Offset(axisW - l.size.width - 4.dp.toPx(), (y(v) - l.size.height / 2f).coerceIn(0f, h - l.size.height)))
-        }
-        for (hr in 0..24 step 6) {
-            drawLine(Color(0x1FFFFFFF), Offset(x(hr.toFloat()), 0f), Offset(x(hr.toFloat()), h), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
-            val l = measurer.measure("%02d".format(hr % 24), style)
-            drawText(l, topLeft = Offset((x(hr.toFloat()) - l.size.width / 2f).coerceIn(axisW, size.width - l.size.width), h + 2.dp.toPx()))
-        }
-        val hourW = w / 24f
-        bars.forEachIndexed { i, v ->
-            if (v != null && v > 0) {
-                val top = y(v)
-                // Sums refer to the hour before the timestamp: the bar spans that hour.
-                drawRoundRect(PrecipColor, Offset(x(xs[i] - 1f) + hourW * 0.15f, top), Size(hourW * 0.7f, h - top), CornerRadius(2.dp.toPx()))
-            }
-        }
-        lines.forEach { (vals, color, dashed) ->
-            val path = Path()
-            var started = false
-            vals.forEachIndexed { i, v ->
-                if (v == null) { started = false; return@forEachIndexed }
-                if (!started) { path.moveTo(x(xs[i]), y(v)); started = true } else path.lineTo(x(xs[i]), y(v))
-            }
-            drawPath(
-                path, color,
-                style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, pathEffect = if (dashed) PathEffect.dashPathEffect(floatArrayOf(10f, 7f)) else null),
+    val points = remember(day) {
+        day.hours.mapNotNull { h ->
+            val m = h.measured
+            val f = h.model
+            val temp = m?.temperature ?: f?.temperature ?: return@mapNotNull null
+            MeteoPoint(
+                time = h.time,
+                temperature = temp,
+                condition = m?.condition ?: f?.condition ?: Condition.CLOUDY,
+                isDay = f?.isDay ?: true,
+                precipitation = m?.precipitation ?: f?.precipitation,
+                windSpeed = m?.windSpeed ?: f?.windSpeed,
+                windDirection = m?.windDirection,
+                windGust = m?.windGust ?: f?.windGust,
+                forecastTemperature = if (m?.temperature != null) f?.temperature else null,
+                forecastPrecipitation = if (m?.precipitation != null) f?.precipitation else null,
             )
         }
     }
-}
-
-@Composable
-private fun TemperatureChartCard(day: HistoryDay, sum: DaySummary, settings: Settings) {
-    val measured = day.hours.map { it.measured?.temperature?.let { t -> Units.temperature(t, settings.temperatureUnit) } }
-    val model = day.hours.map { it.model?.temperature?.let { t -> Units.temperature(t, settings.temperatureUnit) } }
-    val hasMeasured = measured.any { it != null }
-    GlassCard(title = stringResource(R.string.history_temp_chart), icon = Icons.Outlined.Thermostat) {
-        DayChart(
-            day,
-            listOfNotNull(
-                Triple(model, if (hasMeasured) ModelColor else MeasuredColor, hasMeasured),
-                if (hasMeasured) Triple(measured, MeasuredColor, false) else null,
-            ),
-        ) { "${Math.round(it)}°" }
+    val hasMeasured = day.hours.any { it.measured?.temperature != null }
+    GlassCard(title = stringResource(R.string.history_course), icon = Icons.Outlined.Thermostat) {
+        Meteogram(
+            points, start, start + 24 * 3_600_000L, nightsFromFlags(points), System.currentTimeMillis(),
+            Modifier.fillMaxWidth().bleed(CARD_BLEED),
+        )
         Legend(model = hasMeasured, settings = settings)
         sum.tempError?.let {
             Text(
-                stringResource(R.string.history_error_mean, Units.oneDecimal(it) + (if (settings.temperatureUnit == dev.nimbus.weather.data.model.TemperatureUnit.CELSIUS) "${NBSP}K" else "${NBSP}°F")),
+                stringResource(
+                    R.string.history_error_mean,
+                    Units.oneDecimal(it) + (if (settings.temperatureUnit == dev.nimbus.weather.data.model.TemperatureUnit.CELSIUS) "${NBSP}K" else "${NBSP}°F"),
+                ),
                 fontSize = 13.sp, color = Color.White, modifier = Modifier.padding(top = 6.dp),
             )
-        }
-    }
-}
-
-@Composable
-private fun PrecipitationChartCard(day: HistoryDay, settings: Settings) {
-    val measured = day.hours.map { it.measured?.precipitation?.let { p -> Units.precipitationValue(p, settings.precipitationUnit) } }
-    val model = day.hours.map { it.model?.precipitation?.let { p -> Units.precipitationValue(p, settings.precipitationUnit) } }
-    val hasMeasured = measured.any { it != null }
-    val unit = stringResource(Texts.precipUnit(settings.precipitationUnit))
-    GlassCard(title = stringResource(R.string.history_precip_chart), icon = Icons.Outlined.WaterDrop) {
-        val any = (measured + model).any { (it ?: 0.0) >= 0.05 }
-        if (!any) {
-            Text(stringResource(if (hasMeasured) R.string.history_dry_day else R.string.history_dry_day_model), fontSize = 15.sp, color = Color.White)
-            return@GlassCard
-        }
-        DayChart(
-            day, if (hasMeasured) listOf(Triple(model, ModelColor, true)) else emptyList(),
-            bars = if (hasMeasured) measured else model, minRange = 1.0, zeroBased = true,
-        ) { Units.oneDecimal(it) + NBSP + unit }
-        Legend(model = hasMeasured, settings = settings, measuredAsBars = true)
-    }
-}
-
-@Composable
-private fun WindChartCard(day: HistoryDay, settings: Settings) {
-    val m = settings.windUnit
-    val speed = day.hours.map { (it.measured?.windSpeed ?: it.model?.windSpeed)?.let { v -> Units.windValue(v, m) } }
-    val gust = day.hours.map { (it.measured?.windGust ?: it.model?.windGust)?.let { v -> Units.windValue(v, m) } }
-    val unit = stringResource(Texts.windUnit(m))
-    GlassCard(title = stringResource(R.string.history_wind_chart), icon = Icons.Outlined.Air) {
-        DayChart(day, listOf(Triple(gust, Color(0xFFFFB08A), false), Triple(speed, MeasuredColor, false)), minRange = 10.0, zeroBased = true) {
-            "${Math.round(it)}"
-        }
-        Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Canvas(Modifier.size(16.dp, 8.dp)) { drawLine(MeasuredColor, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.dp.toPx()) }
-            Spacer(Modifier.width(4.dp))
-            Text(stringResource(R.string.history_legend_wind, unit), fontSize = 11.sp, color = NimbusColors.Secondary)
-            Spacer(Modifier.width(14.dp))
-            Canvas(Modifier.size(16.dp, 8.dp)) { drawLine(Color(0xFFFFB08A), Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.dp.toPx()) }
-            Spacer(Modifier.width(4.dp))
-            Text(stringResource(R.string.gusts), fontSize = 11.sp, color = NimbusColors.Secondary)
-        }
-    }
-}
-
-@Composable
-private fun HoursCard(day: HistoryDay, settings: Settings) {
-    val tf = LocalTimeFormat.current
-    GlassCard(title = stringResource(R.string.history_hours), icon = Icons.Outlined.Schedule) {
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            items(day.hours, key = { it.time }) { h ->
-                val cond = h.measured?.condition ?: h.model?.condition ?: Condition.CLOUDY
-                val temp = h.measured?.temperature ?: h.model?.temperature
-                Column(Modifier.width(52.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(tf.hour(h.time), fontSize = 14.sp, color = Color.White)
-                    Box(Modifier.height(40.dp), contentAlignment = Alignment.Center) { WeatherIcon(cond, h.model?.isDay ?: true, size = 26.dp) }
-                    Text(Units.temp(temp, settings.temperatureUnit), fontSize = 17.sp, color = Color.White, textAlign = TextAlign.Center)
-                    val p = h.measured?.precipitation ?: h.model?.precipitation
-                    Text(
-                        if (p != null && p >= 0.1) Units.precipitationNumber(p, settings.precipitationUnit) else " ",
-                        fontSize = 11.sp, color = PrecipColor,
-                    )
-                }
-            }
         }
     }
 }

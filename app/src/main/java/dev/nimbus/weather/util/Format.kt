@@ -84,6 +84,9 @@ class TimeFormat(timezone: String, private val use24h: Boolean, private val loca
     fun zoned(epochMillis: Long): ZonedDateTime = Instant.ofEpochMilli(epochMillis).atZone(zone)
     // "5:00 AM" must never wrap between the time and AM/PM.
     fun hour(epochMillis: Long): String = hourFmt.format(zoned(epochMillis)).replace(' ', '\u202F')
+    /** Hour label for the end of a day axis: "24" instead of "00" in 24-hour format. */
+    fun hourEnd(epochMillis: Long): String =
+        if (use24h && zoned(epochMillis).hour == 0 && zoned(epochMillis).minute == 0) "24" else hour(epochMillis)
     fun time(epochMillis: Long): String = timeFmt.format(zoned(epochMillis)).replace(' ', '\u202F')
     fun weekdayShort(epochMillis: Long): String =
         zoned(epochMillis).dayOfWeek.getDisplayName(TextStyle.SHORT, locale).trimEnd('.')

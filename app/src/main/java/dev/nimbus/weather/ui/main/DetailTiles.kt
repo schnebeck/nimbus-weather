@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.drawText
@@ -74,7 +75,6 @@ fun DetailTiles(data: WeatherData, now: Long) {
         if (c.humidity != null) add { m -> HumidityTile(data, m) }
         if (c.visibility != null) add { m -> VisibilityTile(data, m) }
         if (c.pressure != null) add { m -> PressureTile(data, hours, m) }
-        add { m -> SunTile(data, now, m) }
     }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         tiles.chunked(2).forEach { row ->
@@ -84,6 +84,7 @@ fun DetailTiles(data: WeatherData, now: Long) {
                 else row.forEach { tile -> tile(Modifier.weight(1f).aspectRatio(1f)) }
             }
         }
+        SunCard(data, now)
     }
 }
 
@@ -243,39 +244,76 @@ fun PrecipitationCard(data: WeatherData, now: Long) {
             fontSize = 14.sp, color = Color.White,
         )
         Spacer(Modifier.height(10.dp))
-        val measurer = rememberTextMeasurer()
-        val labelStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Tertiary)
-        // Axis labels are drawn in the chart itself so they sit exactly on grid lines and bars.
-        Canvas(Modifier.fillMaxWidth().height(112.dp)) {
-            val axisW = 36.dp.toPx()
-            val top = 6.dp.toPx()
-            val plotH = size.height - 20.dp.toPx() - top
-            val plotW = size.width - axisW
-            val n = hours.size
-            val bw = plotW / n
-            for (k in 0..2) {
-                val y = top + plotH * k / 2
-                drawLine(Color(0x22FFFFFF), Offset(axisW, y), Offset(size.width, y), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
-                val l = measurer.measure("${100 - 50 * k}${NBSP}%", labelStyle)
-                drawText(l, topLeft = Offset(axisW - l.size.width - 6.dp.toPx(), y - l.size.height / 2f))
-            }
-            hours.forEachIndexed { i, h ->
-                val p = ((h.precipitationProbability ?: 0.0) / 100.0).toFloat().coerceIn(0f, 1f)
-                val amount = (h.precipitation ?: 0.0).toFloat()
-                // light blue for a mere chance, saturated blue for substantial amounts
-                val strength = (amount / 2f).coerceIn(0f, 1f)
-                val color = androidx.compose.ui.graphics.lerp(Color(0x6690C8FF), Color(0xFF3D8BFF), strength)
-                val bh = plotH * p
-                if (bh > 0.5f) drawRoundRect(color, Offset(axisW + i * bw + bw * 0.15f, top + plotH - bh), Size(bw * 0.7f, bh), CornerRadius(2.dp.toPx()))
-                if (i % 6 == 0) {
-                    val l = measurer.measure(tf.hour(h.time), labelStyle)
-                    val cx = axisW + i * bw + bw / 2
-                    drawText(l, topLeft = Offset((cx - l.size.width / 2f).coerceAtMost(size.width - l.size.width), top + plotH + 4.dp.toPx()))
-                }
-            }
-        }
+        PrecipChanceChart(hours, nightsFromDaily(data.daily, hours.first().time - 3_600_000L, hours.last().time), Modifier.fillMaxWidth().bleed(CARD_BLEED))
         Spacer(Modifier.height(4.dp))
         Text(stringResource(R.string.precip_chart_hint), fontSize = 11.sp, color = NimbusColors.Tertiary)
+    }
+}
+
+/**
+ * Chance of precipitation per hour for the next 24 h, in the style of the meteogram: "%" in
+ * the top corner, numbers-only axis, 3-hourly time grid, night shading. Each bar covers the
+ * hour before its time stamp (like the model values), so the axis runs from now to now + 24 h.
+ */
+@Composable
+private fun PrecipChanceChart(hours: List<dev.nimbus.weather.data.model.HourlyPoint>, nights: List<LongRange>, modifier: Modifier) {
+    val tf = LocalTimeFormat.current
+    val measurer = rememberTextMeasurer()
+    val labelStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Tertiary)
+    val unitStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Secondary, fontWeight = FontWeight.SemiBold)
+    val nowLabel = stringResource(R.string.now)
+    val start = hours.first().time - 3_600_000L
+    val end = hours.last().time
+    val span = (end - start).toFloat()
+    Canvas(modifier.height(118.dp)) {
+        val gap = 3.dp.toPx()
+        val axisL = listOf("100", "50", "0").maxOf { measurer.measure(it, labelStyle).size.width } + gap
+        val unit = measurer.measure("%", unitStyle)
+        val top = unit.size.height + 5.dp.toPx()
+        val labelH = measurer.measure("00", labelStyle).size.height
+        val bottom = size.height - labelH - 4.dp.toPx()
+        val l = axisL
+        val r = size.width - measurer.measure(tf.hour(end), labelStyle).size.width / 2f
+        fun x(t: Long) = l + (r - l) * ((t - start) / span)
+        drawRect(DayTint, Offset(l, top), Size(r - l, bottom - top))
+        nights.forEach { n ->
+            val a = maxOf(n.first, start); val b = minOf(n.last + 1, end)
+            if (b > a) drawRect(NightShade, Offset(x(a), top), Size(x(b) - x(a), bottom - top))
+        }
+        drawText(unit, topLeft = Offset(0f, 0f))
+        for (k in 0..2) {
+            val y = top + (bottom - top) * k / 2
+            drawLine(Color(0x1FFFFFFF), Offset(l, y), Offset(r, y), 1f)
+            val t = measurer.measure("${100 - 50 * k}", labelStyle)
+            drawText(t, topLeft = Offset(l - t.size.width - gap, y - t.size.height / 2f))
+        }
+        // Time axis: "now" at the left edge, then every 3 h, and the end time at the right edge.
+        val nowL = measurer.measure(nowLabel, labelStyle)
+        drawText(nowL, topLeft = Offset(l, bottom + 4.dp.toPx()))
+        val endL = measurer.measure(tf.hourEnd(end), labelStyle)
+        val endX = r - endL.size.width / 2f
+        drawText(endL, topLeft = Offset(endX, bottom + 4.dp.toPx()))
+        var mark = (start / 3_600_000L + 1) * 3_600_000L
+        while (mark < end) {
+            if (tf.zoned(mark).hour % 3 == 0) {
+                val xm = x(mark)
+                drawLine(Color(0x1FFFFFFF), Offset(xm, top), Offset(xm, bottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
+                val lt = measurer.measure(tf.hour(mark), labelStyle)
+                val lx = xm - lt.size.width / 2f
+                if (lx > l + nowL.size.width + gap && lx + lt.size.width < endX - gap) drawText(lt, topLeft = Offset(lx, bottom + 4.dp.toPx()))
+            }
+            mark += 3_600_000L
+        }
+        val bw = (r - l) / (span / 3_600_000f)
+        hours.forEach { h ->
+            val p = ((h.precipitationProbability ?: 0.0) / 100.0).toFloat().coerceIn(0f, 1f)
+            val amount = (h.precipitation ?: 0.0).toFloat()
+            // light blue for a mere chance, saturated blue for substantial amounts
+            val strength = (amount / 2f).coerceIn(0f, 1f)
+            val color = androidx.compose.ui.graphics.lerp(Color(0x6690C8FF), Color(0xFF3D8BFF), strength)
+            val bh = (bottom - top) * p
+            if (bh > 0.5f) drawRoundRect(color, Offset(x(h.time) - bw + bw * 0.14f, bottom - bh), Size(bw * 0.72f, bh), CornerRadius(2.dp.toPx()))
+        }
     }
 }
 
@@ -355,59 +393,152 @@ private fun PressureTile(data: WeatherData, hours: List<dev.nimbus.weather.data.
     }
 }
 
+/**
+ * Course of the sun today (00–24 h, like the meteogram): real altitude curve with horizon,
+ * day/night shading, sunrise/sunset marks, highest point and the current position.
+ */
 @Composable
-private fun SunTile(data: WeatherData, now: Long, modifier: Modifier) {
+private fun SunCard(data: WeatherData, now: Long) {
     val tf = LocalTimeFormat.current
-    val today = data.daily.lastOrNull { it.date <= now } ?: data.daily.firstOrNull()
-    val tomorrow = data.daily.firstOrNull { it.date > now }
-    val rise = today?.sunrise
-    val set = today?.sunset
-    val upcomingIsSunset = rise != null && set != null && now in rise until set
-    val nextEvent = when {
-        rise == null || set == null -> null
-        now < rise -> rise
-        now < set -> set
-        else -> tomorrow?.sunrise
+    val lat = data.place.latitude
+    val lon = data.place.longitude
+    val date = tf.zoned(now).toLocalDate()
+    val dayStart = date.atStartOfDay(tf.zone).toInstant().toEpochMilli()
+    val dayEnd = date.plusDays(1).atStartOfDay(tf.zone).toInstant().toEpochMilli()
+    val step = 5 * 60_000L
+    val curve = remember(lat, lon, dayStart) {
+        generateSequence(dayStart) { it + step }.takeWhile { it <= dayEnd }.map { it to Moon.sunAltitude(it, lat, lon) }.toList()
     }
-    val title = stringResource(if (upcomingIsSunset) R.string.sunset else R.string.sunrise)
-    Tile(title, Icons.Outlined.WbTwilight, modifier) {
-        if (nextEvent == null) {
-            Caption(stringResource(if (data.current.isDay) R.string.polar_day else R.string.polar_night))
-            return@Tile
+    val today = data.daily.lastOrNull { it.date <= now }?.takeIf { tf.isSameDay(it.date, now) }
+    val tomorrow = data.daily.firstOrNull { it.date >= dayEnd }
+    val own = remember(lat, lon, dayStart) { Moon.sunTimes(dayStart, lat, lon) }
+    val rise = today?.sunrise ?: own.first
+    val set = today?.sunset ?: own.second
+    val deltaMin = remember(lat, lon, dayStart) {
+        val y = Moon.sunTimes(date.minusDays(1).atStartOfDay(tf.zone).toInstant().toEpochMilli(), lat, lon)
+        if (own.first != null && own.second != null && y.first != null && y.second != null)
+            (((own.second!! - own.first!!) - (y.second!! - y.first!!)) / 60_000.0).roundToInt() else null
+    }
+    val noon = curve.maxBy { it.second }
+    val altNow = Moon.sunAltitude(now, lat, lon)
+
+    GlassCard(title = stringResource(R.string.sun), icon = Icons.Outlined.WbTwilight) {
+        Row(Modifier.fillMaxWidth()) {
+            SunFact(stringResource(R.string.sunrise), rise?.let { tf.time(it) } ?: "–", null, Modifier.weight(1f))
+            SunFact(stringResource(R.string.sunset), set?.let { tf.time(it) } ?: "–", null, Modifier.weight(1f))
+            val len = if (rise != null && set != null) (set - rise) / 60_000L else null
+            SunFact(
+                stringResource(R.string.day_length),
+                len?.let { stringResource(R.string.duration_h_min, (it / 60).toInt(), (it % 60).toInt()) }
+                    ?: stringResource(if (altNow > 0) R.string.polar_day else R.string.polar_night),
+                deltaMin?.let { d ->
+                    val sign = when { d > 0 -> "+"; d < 0 -> "\u2212"; else -> "\u00B1" }
+                    stringResource(R.string.day_length_delta, "$sign${kotlin.math.abs(d)}${NBSP}min")
+                },
+                Modifier.weight(1.1f),
+            )
         }
-        BigValue(tf.time(nextEvent))
-        Canvas(Modifier.fillMaxWidth().weight(1f).padding(vertical = 6.dp)) {
-            val w = size.width
-            val h = size.height
-            val horizon = h * 0.6f
-            // Sine-shaped sun path over the day.
-            val path = Path()
-            val steps = 60
-            for (i in 0..steps) {
-                val x = w * i / steps
-                val y = horizon - sin((i.toFloat() / steps) * 2 * PI - PI / 2).toFloat() * h * 0.36f
-                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-            }
-            drawPath(path, Brush.verticalGradient(listOf(Color(0xCCFFFFFF), Color(0x33FFFFFF)), 0f, h), style = Stroke(1.6.dp.toPx()))
-            drawLine(Color(0x88FFFFFF), Offset(0f, horizon), Offset(w, horizon), 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f)))
-            if (rise != null && set != null) {
-                // 24 h on the x axis: sunrise and sunset hit the horizon at 1/4 and 3/4 width,
-                // the night part wraps around the edges.
-                val dayLen = (set - rise).toFloat()
-                val nightLen = (24 * 3600_000f - dayLen).coerceAtLeast(1f)
-                val fc = when {
-                    now < rise -> (0.25f - 0.5f * ((rise - now) / nightLen)).let { if (it < 0f) it + 1f else it }
-                    now > set -> (0.75f + 0.5f * ((now - set) / nightLen)).let { if (it > 1f) it - 1f else it }
-                    else -> 0.25f + 0.5f * ((now - rise) / dayLen)
-                }
-                val x = w * fc
-                val y = horizon - sin(fc * 2 * PI - PI / 2).toFloat() * h * 0.36f
-                drawCircle(Color.White, 5.dp.toPx(), Offset(x, y))
-                drawCircle(Color(0x55FFFFFF), 9.dp.toPx(), Offset(x, y))
-            }
+        Spacer(Modifier.height(12.dp))
+        SunChart(curve, dayStart, dayEnd, rise, set, noon, now, altNow, Modifier.fillMaxWidth().bleed(CARD_BLEED))
+        Spacer(Modifier.height(8.dp))
+        val deg = { v: Double -> "${kotlin.math.abs(v).roundToInt()}°" }
+        Caption(
+            buildString {
+                append(stringResource(if (altNow >= 0) R.string.sun_now_up else R.string.sun_now_down, deg(altNow)))
+                append(" · ")
+                if (set != null && now > set && tomorrow?.sunrise != null) append(stringResource(R.string.sunrise_tomorrow, tf.time(tomorrow.sunrise!!)))
+                else append(stringResource(R.string.sun_highest, deg(noon.second), tf.time(noon.first)))
+            },
+        )
+    }
+}
+
+@Composable
+private fun SunFact(label: String, value: String, note: String?, modifier: Modifier) {
+    Column(modifier) {
+        Text(label, fontSize = 12.sp, color = NimbusColors.Secondary, maxLines = 1)
+        Text(value, fontSize = 20.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1)
+        if (note != null) Text(note, fontSize = 11.sp, color = NimbusColors.Tertiary, maxLines = 1)
+    }
+}
+
+private val SunYellow = Color(0xFFFFD66B)
+
+@Composable
+private fun SunChart(
+    curve: List<Pair<Long, Double>>, start: Long, end: Long, rise: Long?, set: Long?,
+    noon: Pair<Long, Double>, now: Long, altNow: Double, modifier: Modifier,
+) {
+    val tf = LocalTimeFormat.current
+    val measurer = rememberTextMeasurer()
+    val labelStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Tertiary)
+    val horizonLabel = stringResource(R.string.horizon)
+    // Same scale above and below the horizon; the deep night (below −24°) is cut off.
+    val hi = maxOf(curve.maxOf { it.second }, 10.0) + 4
+    val lo = maxOf(curve.minOf { it.second }, -24.0) - 2
+    Canvas(modifier.height(130.dp)) {
+        val labelH = measurer.measure("00", labelStyle).size.height
+        val top = 4.dp.toPx()
+        val bottom = size.height - labelH - 4.dp.toPx()
+        val halfLabel = measurer.measure("24", labelStyle).size.width / 2f
+        val l = halfLabel; val r = size.width - halfLabel
+        val span = (end - start).toFloat()
+        fun x(t: Long) = l + (r - l) * ((t - start) / span)
+        fun y(a: Double) = (top + (hi - a.coerceAtLeast(lo)) / (hi - lo) * (bottom - top)).toFloat()
+        val horizon = y(0.0)
+        // Day/night background as in the meteogram
+        drawRect(DayTint, Offset(l, top), Size(r - l, bottom - top))
+        val nights = when {
+            rise != null && set != null -> listOf(start to rise, set to end)
+            rise != null -> listOf(start to rise)
+            set != null -> listOf(set to end)
+            altNow < 0 -> listOf(start to end)
+            else -> emptyList()
         }
-        val other = if (upcomingIsSunset) rise else set
-        if (other != null) Caption(stringResource(if (upcomingIsSunset) R.string.sunrise_at else R.string.sunset_at, tf.time(if (upcomingIsSunset) (tomorrow?.sunrise ?: other) else other)))
+        nights.forEach { (a, b) -> if (b > a) drawRect(NightShade, Offset(x(a), top), Size(x(b) - x(a), bottom - top)) }
+        // Time grid
+        var mark = start
+        while (mark <= end) {
+            val xm = x(mark)
+            drawLine(Color(0x1FFFFFFF), Offset(xm, top), Offset(xm, bottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
+            val lt = measurer.measure(if (mark == end) tf.hourEnd(mark) else tf.hour(mark), labelStyle)
+            drawText(lt, topLeft = Offset(xm - lt.size.width / 2f, bottom + 4.dp.toPx()))
+            mark += 6 * 3_600_000L
+        }
+        // Daylight under the curve
+        val area = Path().apply {
+            moveTo(x(curve.first().first), horizon)
+            curve.forEach { (t, a) -> lineTo(x(t), minOf(y(a), horizon)) }
+            lineTo(x(curve.last().first), horizon); close()
+        }
+        drawPath(area, Brush.verticalGradient(listOf(SunYellow.copy(alpha = 0.35f), SunYellow.copy(alpha = 0.05f)), y(hi), horizon))
+        // Curve: bright above, faint below the horizon
+        val path = Path()
+        curve.forEachIndexed { i, (t, a) -> if (i == 0) path.moveTo(x(t), y(a)) else path.lineTo(x(t), y(a)) }
+        clipRect(bottom = horizon) { drawPath(path, SunYellow.copy(alpha = 0.9f), style = Stroke(2.dp.toPx(), cap = StrokeCap.Round)) }
+        clipRect(top = horizon) { drawPath(path, Color.White.copy(alpha = 0.3f), style = Stroke(1.5.dp.toPx(), cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 5f)))) }
+        // Horizon
+        drawLine(Color.White.copy(alpha = 0.45f), Offset(l, horizon), Offset(r, horizon), 1.dp.toPx())
+        val hl = measurer.measure(horizonLabel, labelStyle)
+        drawText(hl, topLeft = Offset(l + 4.dp.toPx(), horizon - hl.size.height - 1.dp.toPx()))
+        // Sunrise / sunset marks
+        listOfNotNull(rise, set).forEach { t ->
+            drawCircle(SunYellow, 3.dp.toPx(), Offset(x(t), horizon))
+        }
+        // Highest point
+        if (noon.second > 0) {
+            val nl = measurer.measure("${noon.second.roundToInt()}°", labelStyle)
+            drawText(nl, topLeft = Offset(x(noon.first) - nl.size.width / 2f, y(noon.second) - nl.size.height - 2.dp.toPx()))
+        }
+        // Now
+        val c = Offset(x(now), y(altNow))
+        if (altNow >= 0) {
+            drawCircle(SunYellow.copy(alpha = 0.25f), 11.dp.toPx(), c)
+            drawCircle(SunYellow, 6.dp.toPx(), c)
+        } else {
+            drawCircle(Color(0xFF1A2A40), 6.dp.toPx(), c)
+            drawCircle(Color.White.copy(alpha = 0.8f), 5.dp.toPx(), c, style = Stroke(1.5.dp.toPx()))
+        }
     }
 }
 

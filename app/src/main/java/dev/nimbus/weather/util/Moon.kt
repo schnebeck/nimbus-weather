@@ -75,6 +75,33 @@ object Moon {
         return alt + astroRefraction(alt)
     }
 
+    /** Altitude of the sun's centre above the horizon in degrees (geometric, without refraction). */
+    fun sunAltitude(timeMs: Long, lat: Double, lon: Double): Double {
+        val d = toDays(timeMs)
+        val c = sunCoords(d)
+        val h = siderealTime(d, RAD * -lon) - c.ra
+        return altitude(h, RAD * lat, c.dec) / RAD
+    }
+
+    /**
+     * Sunrise and sunset (upper limb with refraction, −0.833°) of the day starting at
+     * [dayStartMs], found by scanning in 5-minute steps; null when the sun does not cross.
+     */
+    fun sunTimes(dayStartMs: Long, lat: Double, lon: Double): Pair<Long?, Long?> {
+        val step = 5 * 60_000L
+        var rise: Long? = null
+        var set: Long? = null
+        var prev = sunAltitude(dayStartMs, lat, lon) + 0.833
+        for (i in 1..288) {
+            val t = dayStartMs + i * step
+            val cur = sunAltitude(t, lat, lon) + 0.833
+            if (prev < 0 && cur >= 0 && rise == null) rise = t - step + (step * (-prev / (cur - prev))).toLong()
+            if (prev >= 0 && cur < 0 && set == null) set = t - step + (step * (prev / (prev - cur))).toLong()
+            prev = cur
+        }
+        return rise to set
+    }
+
     fun illumination(timeMs: Long): Illumination {
         val d = toDays(timeMs)
         val s = sunCoords(d)

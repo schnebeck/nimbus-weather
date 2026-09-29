@@ -40,11 +40,12 @@ Mindestversion: Android 8.0 (API 26). Google Play Services werden nicht benötig
   (antippen → **Meteogramm** 00–24 Uhr: Temperatur, Niederschlag, Symbole, Wind, Nachtschattierung;
   Einheiten in den Ecken, Achsen nur mit Zahlen, an trockenen Tagen ohne Niederschlagsachse – maximale
   Diagrammbreite; langes Drücken blendet einen verschiebbaren Cursor ein, der nach 10 s Nichtbenutzung
-  ausblendet, darunter alle Werte der gewählten Stunde), **Niederschlagskarte 24 h** (Wahrscheinlichkeit und Menge pro Stunde),
+  ausblendet, darunter alle Werte der gewählten Stunde), **Niederschlagskarte 24 h** (Wahrscheinlichkeit und Menge pro Stunde, von „Jetzt“ bis +24 h mit Nachtschattierung),
   Niederschlagswahrscheinlichkeit in Stunden- und Tagesvorhersage immer angezeigt (unter 10 % blass),
   Radar-Vorschau, Kacheln für Gefühlt, UV, Wind (Kompass), Luftfeuchte/Taupunkt, Sichtweite (mit Angabe
   „gemessen an DWD-Station“ bzw. „Modellwert“), Luftdruck (Tendenz),
-  Sonnenlauf, **Mond** (Phase, Beleuchtung, Auf-/Untergang, nächster Vollmond), Luftqualität, Pollen,
+  **Sonne** (Tagesansicht 00–24 Uhr: echter Sonnenhöhen-Verlauf mit Horizont, Tag/Nacht-Schattierung,
+  Auf-/Untergang, Tageslänge mit Änderung zu gestern, Höchststand und aktuelle Position), **Mond** (Phase, Beleuchtung, Auf-/Untergang, nächster Vollmond), Luftqualität, Pollen,
   **Pollenflug** (Stufen je Art für bis zu 3 Tage, Zusammensetzung der nächsten 24 h, gestapelter Stundenverlauf),
   **Community-Messnetz** und **Modellvergleich** (8 Wettermodelle, 72 h).
 - **Wetter-Lexikon**: ⓘ an jeder Karte erklärt Begriffe wie Niederschlagswahrscheinlichkeit, Taupunkt,

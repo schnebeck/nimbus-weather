@@ -378,4 +378,13 @@
     <string name="term_station_body">Near a DWD weather station the current values (temperature, humidity, wind, pressure, visibility) are real measurements from the nearest station within 30 km, provided by Bright Sky from DWD open data. Otherwise they come from the forecast model for the exact location.\n\nMeasurements are more accurate for the station itself, but local conditions can differ – for example between a city centre and an airport. You can switch this off in the settings.</string>
     <string name="term_alerts_title">DWD Weather Warnings</string>
     <string name="term_alerts_body">Official warnings of the Deutscher Wetterdienst for your municipality, colour-coded by severity:\n\n• Yellow – weather warning: possible hazard, e.g. frost, strong gusts\n• Orange – warning of significant weather: dangerous weather, e.g. storm gusts, heavy rain\n• Red – severe weather warning: very dangerous, e.g. hurricane-force gusts, heavy thunderstorms\n• Purple – extreme severe weather warning: extremely dangerous, take protective measures\n\nWarnings are only available for Germany.</string>
+    <string name="sun">Sun</string>
+    <string name="day_length">Day length</string>
+    <string name="duration_h_min">%1$d:%2$02d\u00A0h</string>
+    <string name="day_length_delta">%1$s vs. yesterday</string>
+    <string name="horizon">Horizon</string>
+    <string name="sun_now_up">Sun now %1$s above the horizon</string>
+    <string name="sun_now_down">Sun now %1$s below the horizon</string>
+    <string name="sun_highest">highest %1$s at\u00A0%2$s</string>
+    <string name="sunrise_tomorrow">sunrise tomorrow\u00A0%1$s</string>
 </resources>

@@ -65,7 +65,9 @@ import kotlin.math.floor
 import kotlin.math.roundToInt
 
 private val PrecipBar = Color(0xB38FD3FF)
-private val NightShade = Color(0x26000000)
+// Day slightly lighter, night clearly darker than the card: the two must be told apart at a glance.
+internal val DayTint = Color(0x14FFFFFF)
+internal val NightShade = Color(0x47000000)
 private val GridLine = Color(0x1FFFFFFF)
 private val ForecastLine = Color(0xFFFFC56B)
 private const val CURSOR_TIMEOUT_MS = 10_000L
@@ -181,7 +183,7 @@ fun Meteogram(points: List<MeteoPoint>, start: Long, end: Long, nights: List<Lon
     val wet = pts.any { (it.precipitation ?: 0.0) > 0.0 || (it.forecastPrecipitation ?: 0.0) > 0.0 }
     val axisR = with(density) {
         if (wet) maxOf((0..2).maxOf { measurer.measure(precipLabel(it), labelStyle).size.width }, measurer.measure(pUnit, unitStyle).size.width).toDp() + gap
-        else (measurer.measure(tf.hour(end), labelStyle).size.width / 2).toDp()
+        else (measurer.measure(tf.hourEnd(end), labelStyle).size.width / 2).toDp()
     }
     val labelsH = 14.dp
     val iconsH = 30.dp
@@ -218,6 +220,7 @@ fun Meteogram(points: List<MeteoPoint>, start: Long, end: Long, nights: List<Lon
                 fun yT(v: Double) = (bottom - (v - tLo) / (tHi - tLo) * (bottom - top)).toFloat()
                 fun yP(v: Double) = (bottom - v / precipMax * (bottom - top)).toFloat()
 
+                drawRect(DayTint, Offset(l, top), Size(r - l, bottom - top + windH.toPx()))
                 nights.forEach { n ->
                     val a = maxOf(n.first, start); val b = minOf(n.last + 1, end)
                     if (b > a) drawRect(NightShade, Offset(x(a), top), Size(x(b) - x(a), bottom - top + windH.toPx()))
@@ -243,7 +246,7 @@ fun Meteogram(points: List<MeteoPoint>, start: Long, end: Long, nights: List<Lon
                 while (mark <= end) {
                     val xm = x(mark)
                     drawLine(GridLine, Offset(xm, top), Offset(xm, bottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
-                    val lt = measurer.measure(tf.hour(mark), labelStyle)
+                    val lt = measurer.measure(if (mark == end) tf.hourEnd(mark) else tf.hour(mark), labelStyle)
                     drawText(lt, topLeft = Offset((xm - lt.size.width / 2f).coerceIn(0f, size.width - lt.size.width), 0f))
                     mark += 3 * 3_600_000L
                 }

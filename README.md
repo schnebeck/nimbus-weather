@@ -15,15 +15,40 @@
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
+<p align="right"><a href="README.en.md">English</a></p>
+
 # Nimbus – Wetter für Deutschland und Europa
 
-Android-Wetter-App mit animiertem Himmel passend zum aktuellen Wetter, Regenradar des Deutschen
-Wetterdienstes und ausschließlich offenen Datenquellen. Oberfläche auf Englisch und Deutsch.
-Freie Software unter der GPL-3.0-or-later.
+**Die Wetter-App mit dem Himmel von draußen.** Nimbus zeigt das aktuelle Wetter als animierten Himmel,
+misst mit den Stationen des Deutschen Wetterdienstes, rechnet mit dem hochauflösenden DWD-Modell
+ICON-D2 und zeigt das Regenradar des DWD – ohne Werbung, ohne Konto, ohne Google-Dienste und nur mit
+offenen Daten.
+
+<p align="center">
+  <img src="docs/screenshots/scenes.png" width="820" alt="Animierte Wetterszenen: Sonne, Herbstlaub, Gewitter, Schnee, Regen, klare Nacht">
+  <br><sub>Der Himmel folgt dem Wetter, dem Sonnenstand und der Jahreszeit (hier im Demo-Modus).</sub>
+</p>
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/main.png" width="240" alt="Wetterseite"><br><sub><b>Wetterseite</b><br>Messwerte der nächsten DWD-Station, Kurzvorhersage, Stunden und 10 Tage</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/meteogram.png" width="240" alt="Meteogramm"><br><sub><b>Meteogramm</b><br>Temperatur, Regen, Sonnenschein und Wind je Stunde – mit Schieber</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/history.png" width="240" alt="Rückblick"><br><sub><b>Rückblick</b><br>Was war gemessen, was war vorhergesagt? Einfach nach rechts wischen</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/radar.png" width="240" alt="Regenradar"><br><sub><b>Regenradar</b><br>DWD-Radar mit Vorhersage, Temperatur- und Windebene</sub></td>
+    <td align="center"><img src="docs/screenshots/sun.png" width="240" alt="Sonne und Mond"><br><sub><b>Sonne und Mond</b><br>Sonnenbogen mit Morgenrot und Blauer Stunde, Mondphase</sub></td>
+    <td align="center" valign="middle">
+      <b>Herunterladen</b><br><br>
+      <a href="https://github.com/schnebeck/nimbus-weather/releases/latest">Neueste Version (APK)</a><br><br>
+      <sub>Android 8.0 oder neuer<br>ohne Google Play Services</sub>
+    </td>
+  </tr>
+</table>
 
 ## Installation
 
-Die signierten APKs liegen in `dist/`:
+Die signierten APKs gibt es unter [Releases](https://github.com/schnebeck/nimbus-weather/releases/latest):
 
 | Datei | Für |
 |---|---|
@@ -133,6 +158,8 @@ Jede Datei trägt ihren Lizenzhinweis im Kopf oder in `REUSE.toml` (geprüft mit
 - Gradle-Wrapper: Apache-2.0
 - Aufgezeichnete API-Antworten in `app/src/test/resources/fixtures/`: Daten von Open-Meteo, DWD und
   Copernicus unter CC BY 4.0, von Sensor.Community unter ODbL 1.0
+- Screenshots in `docs/screenshots/`: CC BY 4.0, mit Wetter-, Radar- und Kartendaten von DWD,
+  Open-Meteo, RainViewer, OpenFreeMap, OpenMapTiles und OpenStreetMap-Mitwirkenden (ODbL)
 
 Idee, Entscheidungen und Tests: Thorsten Schnebeck. Geschrieben von Anthropic Claude Opus 5.5
 (KI-generierter Inhalt).

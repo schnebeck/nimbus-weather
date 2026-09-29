@@ -19,10 +19,10 @@
 
 # Nimbus – Wetter für Deutschland und Europa
 
-**Die Wetter-App mit dem Himmel von draußen.** Nimbus zeigt das aktuelle Wetter als animierten Himmel,
-misst mit den Stationen des Deutschen Wetterdienstes, rechnet mit dem hochauflösenden DWD-Modell
-ICON-D2 und zeigt das Regenradar des DWD – ohne Werbung, ohne Konto, ohne Google-Dienste und nur mit
-offenen Daten.
+Nimbus zeigt das Wetter so, wie es draußen aussieht: Ein animierter Himmel mit Wolken, Regen, Schnee
+oder Sternen gibt die aktuelle Lage wieder. Die Daten kommen vom Deutschen Wetterdienst – Messwerte der
+nächsten Wetterstation, die Vorhersage des hochauflösenden Modells ICON-D2 und das Regenradar.
+Keine Werbung, kein Konto, keine Google-Dienste.
 
 <p align="center">
   <img src="docs/screenshots/scenes.png" width="820" alt="Animierte Wetterszenen: Sonne, Herbstlaub, Gewitter, Schnee, Regen, klare Nacht">

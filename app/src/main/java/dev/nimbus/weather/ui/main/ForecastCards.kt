@@ -64,7 +64,12 @@ import dev.nimbus.weather.util.Texts
 import dev.nimbus.weather.util.NBSP
 import dev.nimbus.weather.util.Units
 
-private val PrecipBlue = Color(0xFF7CC8FF)
+private val PrecipBlue = Color(0xFF8FD3FF)
+
+/** Soft dark shadow keeps the blue percentages readable on bright, cloudy skies. */
+private val ChanceStyle = androidx.compose.ui.text.TextStyle(
+    shadow = androidx.compose.ui.graphics.Shadow(Color(0x99000000), androidx.compose.ui.geometry.Offset(0f, 1f), 4f),
+)
 
 // ---------------------------------------------------------------------------------------
 // Hourly
@@ -142,9 +147,9 @@ private fun HourCell(label: String, condition: Condition, isDay: Boolean, precip
         Box(Modifier.height(46.dp), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 WeatherIcon(condition, isDay, size = 26.dp)
-                val p = precipProb
-                if (p != null && p >= 20 && condition.isPrecipitation) {
-                    Text("${(p / 10).toInt() * 10}%", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = PrecipBlue)
+                // Shown regardless of the symbol: fog or clouds can still come with a 40 % rain risk.
+                Insights.chanceLabel(precipProb)?.let {
+                    Text("$it${NBSP}%", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PrecipBlue, style = ChanceStyle)
                 }
             }
         }
@@ -229,9 +234,8 @@ private fun DayRow(
             Text(label, Modifier.width(62.dp), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1)
             Column(Modifier.width(44.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 WeatherIcon(day.condition, true, size = 26.dp)
-                val p = day.precipitationProbability
-                if (p != null && p >= 20 && day.condition.isPrecipitation) {
-                    Text("${(p / 10).toInt() * 10}%", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = PrecipBlue)
+                Insights.chanceLabel(day.precipitationProbability)?.let {
+                    Text("$it${NBSP}%", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PrecipBlue, style = ChanceStyle)
                 }
             }
             Text(

@@ -225,10 +225,16 @@ fun RadarPreviewCard(data: WeatherData, onOpen: () -> Unit) {
                     val timeline = runCatching { RadarSources.timeline(http) }.getOrNull()
                     val frame = timeline?.frames?.getOrNull(timeline.nowIndex)
                     radarTime = frame?.time
-                    val key = "${data.place.id}|${frame?.time}|$wDp"
+                    val key = "${data.place.id}|${frame?.time}|$wDp|${context.resources.configuration.locales[0].language}"
                     PreviewCache.get(key)?.let { image = it; return@launch }
                     if (cancelled) return@launch
-                    snapshotter = RadarSnapshot.create(context, data.place.latitude, data.place.longitude, wDp, hDp, density.density, timeline, frame).also { snap ->
+                    val style = dev.nimbus.weather.ui.radar.MapStyle.builder(
+                        (context.applicationContext as NimbusApp).container.mapHttp,
+                        context.resources.configuration.locales[0].language,
+                        if (timeline != null && frame != null) RadarSnapshot.rasters(timeline, listOf(0 to frame), 0.85f) else emptyList(),
+                    )
+                    if (cancelled) return@launch
+                    snapshotter = RadarSnapshot.create(context, style, data.place.latitude, data.place.longitude, wDp, hDp, density.density).also { snap ->
                         snap.start({ snapshot ->
                             PreviewCache.put(key, snapshot.bitmap)
                             image = snapshot.bitmap
@@ -308,6 +314,7 @@ fun SourcesFooter(data: WeatherData) {
                 SourceKind.DWD_WARNINGS -> stringResource(R.string.src_warnings)
                 SourceKind.CAMS -> stringResource(R.string.src_cams)
                 SourceKind.COMMUNITY -> stringResource(R.string.src_community)
+                SourceKind.DWD_POLLEN -> stringResource(R.string.src_dwd_pollen)
             }
         } + stringResource(R.string.src_moon)
         Text(

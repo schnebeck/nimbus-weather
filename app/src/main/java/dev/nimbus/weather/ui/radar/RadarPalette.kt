@@ -11,30 +11,31 @@ import java.io.ByteArrayOutputStream
 /**
  * Unified radar colour scale. Both DWD (WN composite, dBZ intervals) and RainViewer
  * ("Universal Blue" scheme) tiles are decoded back to reflectivity (dBZ) and recoloured, so the
- * map shows one consistent palette across the German border. Rain is shown in blues (heavy rain
- * yellow → red), snow in pink → violet; the phase comes from the 2 m temperature at each pixel.
+ * map shows one consistent palette across the German border. Rain goes from white via grey to
+ * blue, snow from pale pink to dark violet; the phase comes from the 2 m temperature at each pixel.
  */
 object RadarPalette {
-    /** dBZ → ARGB: rain in blues, heavy rain yellow → red, hail cores near white. */
+    /**
+     * dBZ → ARGB for rain (above 0 °C): white → light grey → dark grey → light blue → dark blue.
+     * The dark grey stays lighter than the dark base map so weak rain remains visible.
+     */
     private val rainStops = listOf(
-        8 to 0x66A8D8FF, 14 to 0xA07CC0FF.toInt(), 20 to 0xD04FA0F5.toInt(), 26 to 0xE82E78E0.toInt(),
-        // Hard step from dark blue to yellow at 40 dBZ: interpolating between them gives a murky olive.
-        32 to 0xF01E4FB8.toInt(), 39 to 0xF4234AA0.toInt(), 40 to 0xF8F2D544.toInt(), 45 to 0xFAF59B2E.toInt(),
-        50 to 0xFCE8402C.toInt(), 55 to 0xFDB3122F.toInt(), 62 to 0xFFF5EEFF.toInt(),
+        8 to 0x80FFFFFF.toInt(), 14 to 0xB0E8EAEE.toInt(), 20 to 0xD0BEC3CB.toInt(), 26 to 0xE07E858F.toInt(),
+        32 to 0xF08CC8FF.toInt(), 40 to 0xF53D8BFF.toInt(), 48 to 0xFA1440C8.toInt(), 56 to 0xFF0A1F7A.toInt(),
     )
 
-    /** dBZ → ARGB: snow in pink → violet. */
+    /** dBZ → ARGB for snow (0 °C and below): pale pink (white with a hint of pink) → dark violet. */
     private val snowStops = listOf(
-        8 to 0x66F9C9EE, 14 to 0xA0F2A6E3.toInt(), 20 to 0xD0E27DD6.toInt(), 26 to 0xE8C95BC9.toInt(),
-        32 to 0xF0A843BA.toInt(), 40 to 0xF8812DA8.toInt(), 50 to 0xFC5E1B8F.toInt(), 60 to 0xFF3F0F6E.toInt(),
+        8 to 0x80FFF2F8.toInt(), 16 to 0xB0F7D2E6.toInt(), 24 to 0xD0E7A3CF.toInt(), 32 to 0xE8C86FBF.toInt(),
+        40 to 0xF29A45AE.toInt(), 50 to 0xFA6A2390.toInt(), 60 to 0xFF45106E.toInt(),
     )
 
     private val rainLut = buildLut(rainStops)
     private val snowLut = buildLut(snowStops)
 
     /** Colours for the legends (light → heavy). */
-    val legendRain: List<Int> = listOf(10, 17, 24, 31, 38, 43, 48, 54).map { rainLut[it] }
-    val legendSnow: List<Int> = listOf(10, 17, 24, 31, 40, 50).map { snowLut[it] }
+    val legendRain: List<Int> = listOf(10, 16, 22, 28, 34, 42, 50, 56).map { rainLut[it] }
+    val legendSnow: List<Int> = listOf(10, 18, 26, 34, 44, 56).map { snowLut[it] }
 
     /** [snow]: 0 = rain, 1 = snow, in between sleet (colours are blended). */
     fun colorFor(dbz: Int, snow: Float): Int {
@@ -52,8 +53,8 @@ object RadarPalette {
     /** Test hook (demo mode): shifts the temperatures used for the rain/snow decision. */
     @Volatile var demoTempOffset = 0f
 
-    /** Fraction of snow from the 2 m temperature: snow ≤ 0.5 °C, rain ≥ 2 °C, sleet in between. */
-    fun snowFraction(tempC: Float): Float = ((2f - (tempC + demoTempOffset)) / 1.5f).coerceIn(0f, 1f)
+    /** Fraction of snow from the 2 m temperature: snow ≤ 0 °C, rain ≥ 1 °C, sleet in between. */
+    fun snowFraction(tempC: Float): Float = (1f - (tempC + demoTempOffset)).coerceIn(0f, 1f)
 
     private fun buildLut(stops: List<Pair<Int, Int>>): IntArray = IntArray(96) { dbz ->
         when {
@@ -200,7 +201,8 @@ object RadarPalette {
         val h = bitmap.height
         val px = IntArray(w * h)
         bitmap.getPixels(px, 0, w, 0, 0, w, h)
-        val grid = if (geo != null && timeMs != null) WeatherGridStore.gridFor(geo.centerLat, geo.centerLon) else null
+        // Tiles at low zoom are wider than the grid: look it up by overlap, not by the tile centre.
+        val grid = if (geo != null && timeMs != null) WeatherGridStore.gridOverlapping(geo) else null
         val field = if (grid != null && timeMs != null) grid.temp[grid.hourIndex(timeMs)] else null
         // Latitude depends only on the row and longitude only on the column (Mercator tiles).
         val rowLat = if (field != null && geo != null) DoubleArray(h) { geo.latAt((it + 0.5) / h) } else null
@@ -216,7 +218,7 @@ object RadarPalette {
                 }
                 val sourceSnow = if ((code and SNOW_FLAG) != 0) 1f else 0f
                 val snow = if (field != null && rowLat != null && colLon != null) {
-                    grid?.sample(field, rowLat[y], colLon[x])?.let { snowFraction(it) } ?: sourceSnow
+                    grid?.sampleNear(field, rowLat[y], colLon[x])?.let { snowFraction(it) } ?: sourceSnow
                 } else sourceSnow
                 val c = colorFor(code and 0xFF, snow)
                 px[i] = c
@@ -236,6 +238,10 @@ class TileGeo(private val minX: Double, private val minY: Double, private val ma
     fun latAt(fy: Double) = Math.toDegrees(kotlin.math.atan(kotlin.math.sinh((maxY - fy * (maxY - minY)) / R)))
     val centerLat: Double get() = latAt(0.5)
     val centerLon: Double get() = lonAt(0.5)
+    val north: Double get() = latAt(0.0)
+    val south: Double get() = latAt(1.0)
+    val west: Double get() = lonAt(0.0)
+    val east: Double get() = lonAt(1.0)
 
     companion object {
         private const val R = 6378137.0

@@ -3,6 +3,7 @@ package dev.nimbus.weather
 import android.app.Application
 import dev.nimbus.weather.data.remote.BrightSkySource
 import dev.nimbus.weather.data.remote.CommunitySource
+import dev.nimbus.weather.data.remote.PollenSource
 import dev.nimbus.weather.data.remote.OpenMeteoSource
 import dev.nimbus.weather.data.remote.USER_AGENT
 import dev.nimbus.weather.data.repo.LocationProvider
@@ -53,5 +54,5 @@ class AppContainer(app: Application) {
     val store = Store(app)
     val location = LocationProvider(app)
     val openMeteo = OpenMeteoSource(http)
-    val repository = WeatherRepository(openMeteo, BrightSkySource(http), CommunitySource(http))
+    val repository = WeatherRepository(openMeteo, BrightSkySource(http), CommunitySource(http), PollenSource(http))
 }

@@ -27,7 +27,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.rounded.NearMe
+import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -127,7 +127,7 @@ private fun TopBar(count: Int, current: Int, firstIsLocation: Boolean, onRadar: 
                 for (i in 0 until count) {
                     val color = if (i == current) Color.White else Color(0x66FFFFFF)
                     if (i == 0 && firstIsLocation) {
-                        Icon(Icons.Rounded.NearMe, null, tint = color, modifier = Modifier.padding(horizontal = 3.dp).size(11.dp))
+                        Icon(Icons.Rounded.LocationOn, null, tint = color, modifier = Modifier.padding(horizontal = 3.dp).size(11.dp))
                     } else {
                         Box(Modifier.padding(horizontal = 4.dp).size(7.dp).clip(CircleShape).background(color))
                     }
@@ -170,7 +170,7 @@ private fun WelcomeScreen(state: UiState, onRequestLocation: () -> Unit, onSearc
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color(0xFF14305E)),
                     modifier = Modifier.widthIn(min = 240.dp),
                 ) {
-                    Icon(Icons.Rounded.NearMe, null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Rounded.LocationOn, null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(8.dp))
                     Text(stringResource(R.string.use_my_location), fontWeight = FontWeight.SemiBold)
                 }

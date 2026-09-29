@@ -174,19 +174,6 @@ private class RadarMapController {
         show(timeline.nowIndex)
     }
 
-    /** Shows place names in the app language where OpenStreetMap has them (name:de, name:en …). */
-    fun localizeLabels(style: Style, language: String) {
-        style.layers.filterIsInstance<SymbolLayer>().forEach { layer ->
-            val field = layer.textField.expression?.toString() ?: return@forEach
-            if (!field.contains("name")) return@forEach
-            layer.setProperties(
-                PropertyFactory.textField(
-                    Expression.coalesce(Expression.get("name:$language"), Expression.get("name:latin"), Expression.get("name")),
-                ),
-            )
-        }
-    }
-
     fun addLocation(style: Style, place: Place) {
         style.addSource(GeoJsonSource("me", Point.fromLngLat(place.longitude, place.latitude)))
         style.addLayer(
@@ -298,6 +285,7 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
     var styleReady by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
+        val styleBuilder = MapStyle.builder(container.mapHttp, context.resources.configuration.locales[0].language)
         mapView.getMapAsync { map ->
             controller.map = map
             map.uiSettings.isRotateGesturesEnabled = false
@@ -306,11 +294,10 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
             map.cameraPosition = CameraPosition.Builder().target(target).zoom(if (place != null) RADAR_ZOOM else 5.2).build()
             map.setMaxZoomPreference(10.0)
             map.setMinZoomPreference(3.0)
-            map.setStyle(Style.Builder().fromUri(STYLE_URL)) { style ->
+            map.setStyle(styleBuilder) { style ->
                 controller.installBase(style)
                 overlays.install(style, fieldBelow = "sat")
                 overlays.setVisible(showTemp, showWind)
-                controller.localizeLabels(style, context.resources.configuration.locales[0].language)
                 // Panned far away: load the temperature/wind grid for the new area.
                 map.addOnCameraIdleListener {
                     val c = map.cameraPosition.target ?: return@addOnCameraIdleListener

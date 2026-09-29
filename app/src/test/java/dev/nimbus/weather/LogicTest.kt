@@ -18,6 +18,44 @@ import java.time.LocalDate
 
 class LogicTest {
     @Test
+    fun `chance of precipitation labels`() {
+        assertNull(Insights.chanceLabel(null))
+        assertNull(Insights.chanceLabel(4.0))
+        assertEquals(10, Insights.chanceLabel(5.0))
+        assertEquals(40, Insights.chanceLabel(38.0))
+        assertEquals(100, Insights.chanceLabel(100.0))
+    }
+
+    @Test
+    fun `map labels use the app language`() {
+        val style = dev.nimbus.weather.data.remote.JsonCodec.parseToJsonElement(
+            """{"layers":[
+              {"id":"place","layout":{"text-field":["coalesce",["get","name_en"],["get","name"]]}},
+              {"id":"road","layout":{"text-field":["to-string",["get","ref"]]}},
+              {"id":"water"}
+            ]}""",
+        ) as kotlinx.serialization.json.JsonObject
+        val out = dev.nimbus.weather.ui.radar.MapStyle.localize(style, "de").toString()
+        assertTrue(out.contains("name:de"))
+        assertTrue(!out.contains("name_en"))
+        assertTrue(out.contains("\"ref\""))
+    }
+
+    @Test
+    fun `radar layers are embedded below the first label layer`() {
+        val style = dev.nimbus.weather.data.remote.JsonCodec.parseToJsonElement(
+            """{"sources":{"osm":{"type":"vector"}},"layers":[{"id":"bg","type":"background"},{"id":"label","type":"symbol"}]}""",
+        ) as kotlinx.serialization.json.JsonObject
+        val out = dev.nimbus.weather.ui.radar.MapStyle.withRasters(
+            style, listOf(dev.nimbus.weather.ui.radar.MapStyle.Raster("dwd0", "https://x/{bbox-epsg-3857}", 10, 0.85f)),
+        )
+        val ids = (out["layers"] as kotlinx.serialization.json.JsonArray).map { (it as kotlinx.serialization.json.JsonObject)["id"].toString().trim('"') }
+        assertEquals(listOf("bg", "dwd0", "label"), ids)
+        assertTrue((out["sources"] as kotlinx.serialization.json.JsonObject).containsKey("osm"))
+        assertTrue(out.toString().contains("\"tileSize\":512"))
+    }
+
+    @Test
     fun `wmo codes`() {
         assertEquals(Condition.CLEAR, WeatherCodes.fromWmo(0))
         assertEquals(Condition.FOG, WeatherCodes.fromWmo(45))

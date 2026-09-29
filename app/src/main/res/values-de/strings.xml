@@ -239,16 +239,41 @@
     <string name="precip_no_chance">Niederschlag in den nächsten 24 Stunden unwahrscheinlich</string>
     <string name="precip_chart_hint">Balkenhöhe: Wahrscheinlichkeit · Farbe: erwartete Menge</string>
     <string name="term_hourly_title">Stündliche Vorhersage</string>
-    <string name="term_hourly_body">Die nächsten 24 Stunden auf einen Blick. Das Symbol zeigt das wahrscheinlichste Wetter der Stunde, die Zahl darunter die Temperatur.\n\n• Jetzt: das aktuelle Wetter – wo vorhanden an der nächsten DWD-Station gemessen, daher kann es leicht von der Vorhersage für diese Stunde abweichen\n• Blaue Prozentwerte: Niederschlagswahrscheinlichkeit (ab 20 % und nur bei Niederschlagssymbolen) – Details in der Niederschlagskarte\n• Sonnensymbole mit Uhrzeit: Sonnenauf- und -untergang\n\nDer Satz darüber fasst den nächsten Wetterwechsel und starke Böen zusammen. Seitlich wischen für weitere Stunden.</string>
+    <string name="term_hourly_body">Die nächsten 24 Stunden auf einen Blick. Das Symbol zeigt das wahrscheinlichste Wetter der Stunde, die Zahl darunter die Temperatur.\n\n• Jetzt: das aktuelle Wetter – wo vorhanden an der nächsten DWD-Station gemessen, daher kann es leicht von der Vorhersage für diese Stunde abweichen\n• Blaue Prozentwerte: Niederschlagswahrscheinlichkeit ab 10 %, auch wenn das Symbol keinen Niederschlag zeigt – Details in der Niederschlagskarte\n• Sonnensymbole mit Uhrzeit: Sonnenauf- und -untergang\n\nDer Satz darüber fasst den nächsten Wetterwechsel und starke Böen zusammen. Seitlich wischen für weitere Stunden.</string>
     <string name="term_daily_title">10-Tage-Vorhersage</string>
     <string name="term_daily_body">Eine Zeile pro Tag: Symbol, tiefste und höchste Temperatur.\n\n• Der Balken zeigt die Temperaturspanne des Tages auf einer gemeinsamen Skala für alle zehn Tage – so lassen sich wärmere und kältere Tage direkt vergleichen\n• Seine Farben reichen von Blau (kalt) über Grün und Gelb bis Rot (heiß)\n• Der Punkt im Balken von heute ist die aktuelle Temperatur\n• Blaue Prozentwerte: Niederschlagswahrscheinlichkeit an diesem Tag\n\nTippe auf einen Tag, um Temperaturverlauf und stündlichen Niederschlag zu sehen. Die Tage 9 und 10 sind deutlich unsicherer.</string>
 
     <string name="models_unavailable">Modelldaten derzeit nicht verfügbar – bitte später erneut versuchen.</string>
 
+    <string name="visibility_measured">Gemessen: DWD %1$s</string>
+    <string name="visibility_model">Modellwert</string>
+
+    <string name="pollen_forecast">Pollenflug</string>
+    <string name="pollen_hazel">Hasel</string>
+    <string name="pollen_ash">Esche</string>
+    <string name="pollen_rye">Roggen</string>
+    <string name="tomorrow">Morgen</string>
+    <string name="pollen_level_0">Keine Belastung</string>
+    <string name="pollen_level_05">Keine bis gering</string>
+    <string name="pollen_level_1">Gering</string>
+    <string name="pollen_level_15">Gering bis mittel</string>
+    <string name="pollen_level_2">Mittel</string>
+    <string name="pollen_level_25">Mittel bis hoch</string>
+    <string name="pollen_level_3">Hoch</string>
+    <string name="pollen_none_active">Keine der %1$d Pollenarten fliegt derzeit in nennenswerter Menge</string>
+    <string name="pollen_composition">Zusammensetzung, nächste 24 Std.</string>
+    <string name="pollen_composition_none">Zu wenig Pollen in der Luft für eine Aufteilung.</string>
+    <string name="pollen_composition_total">Mittlere Gesamtmenge %1$s Pollen/m³ (Copernicus CAMS)</string>
+    <string name="pollen_course">Verlauf (Pollen/m³, gestapelt)</string>
+    <string name="pollen_show_details">Alle Arten und Verlauf anzeigen</string>
+    <string name="pollen_source_dwd">Stufen: DWD-Pollenflug-Gefahrenindex, Region %1$s</string>
+    <string name="pollen_source_cams">Stufen abgeleitet aus Copernicus-CAMS-Konzentrationen</string>
+    <string name="src_dwd_pollen">Pollen: DWD-Pollenflug-Gefahrenindex</string>
+
     <!-- Glossary -->
     <string name="info_about">Über %1$s</string>
     <string name="term_precip_prob_title">Niederschlagswahrscheinlichkeit</string>
-    <string name="term_precip_prob_body">Der Prozentwert gibt an, wie wahrscheinlich es ist, dass an deinem Ort in dieser Stunde bzw. an diesem Tag mindestens eine kleine, messbare Menge Niederschlag fällt (etwa 0,1 mm).\n\n30 % bedeutet nicht, dass es 30 % der Zeit oder auf 30 % der Fläche regnet. Es bedeutet: In 3 von 10 vergleichbaren Wetterlagen regnet es an diesem Ort. Der Wert stammt aus Ensemble-Vorhersagen – vielen leicht variierten Modellläufen – und zählt, wie viele davon Regen liefern.\n\nDas Symbol zeigt trotzdem das wahrscheinlichste Wetter. Der Prozentwert wird erst ab 20 % angezeigt.</string>
+    <string name="term_precip_prob_body">Der Prozentwert gibt an, wie wahrscheinlich es ist, dass an deinem Ort in dieser Stunde bzw. an diesem Tag mindestens eine kleine, messbare Menge Niederschlag fällt (etwa 0,1 mm).\n\n30 % bedeutet nicht, dass es 30 % der Zeit oder auf 30 % der Fläche regnet. Es bedeutet: In 3 von 10 vergleichbaren Wetterlagen regnet es an diesem Ort. Der Wert stammt aus Ensemble-Vorhersagen – vielen leicht variierten Modellläufen – und zählt, wie viele davon Regen liefern.\n\nDas Symbol zeigt trotzdem das wahrscheinlichste Wetter – eine Wolke mit 40 % heißt also: wahrscheinlich trocken, aber ein Schauer ist gut möglich. Werte unter 10 % werden nicht angezeigt.</string>
     <string name="term_feels_like_title">Gefühlte Temperatur</string>
     <string name="term_feels_like_body">Die gefühlte Temperatur beschreibt, wie warm oder kalt es sich für den menschlichen Körper anfühlt – nicht, was ein Thermometer im Schatten misst.\n\nWind entzieht dem Körper schneller Wärme, dadurch fühlt es sich kälter an als die Lufttemperatur (Windchill). Hohe Luftfeuchtigkeit behindert das Verdunsten von Schweiß, warme Luft fühlt sich dann noch wärmer an. Auch kräftiger Sonnenschein lässt es wärmer wirken.\n\nWird die aktuelle Temperatur an einer DWD-Station gemessen, wird die gefühlte Temperatur um dieselbe Differenz angepasst.</string>
     <string name="term_dew_point_title">Luftfeuchtigkeit und Taupunkt</string>
@@ -258,13 +283,13 @@
     <string name="term_wind_title">Wind und Böen</string>
     <string name="term_wind_body">Die Windgeschwindigkeit ist ein Mittelwert über etwa 10 Minuten, gemessen in 10 m Höhe. Böen sind kurze Spitzen von wenigen Sekunden und können deutlich stärker sein als der Mittelwert.\n\nDie Richtung gibt an, woher der Wind kommt: Westwind weht von Westen nach Osten. Der Pfeil im Kompass zeigt, wohin der Wind weht.\n\nBeaufort-Skala (Beispiele): 3 = schwache Brise (12–⁠19 km/h), 5 = frische Brise (29–⁠38), 7 = steifer Wind (50–⁠61), 9 = Sturm (75–⁠88), 12 = Orkan (ab 118 km/h). Auch der animierte Hintergrund zeigt Wind und Böen – Wolken, Regen und Blätter bewegen sich mit.</string>
     <string name="term_visibility_title">Sichtweite</string>
-    <string name="term_visibility_body">Die Sichtweite ist die Entfernung, in der Gegenstände noch klar erkennbar sind. Sie wird durch Nebel, Dunst, Niederschlag, Staub oder Rauch verringert.\n\nVon Nebel spricht man bei Sichtweiten unter 1 km. Werte über 20 km bedeuten sehr klare Luft. An DWD-Stationen wird die Sichtweite automatisch gemessen, sonst stammt sie aus dem Vorhersagemodell.</string>
+    <string name="term_visibility_body">Die Sichtweite ist die Entfernung, in der Gegenstände noch klar erkennbar sind. Sie wird durch Nebel, Dunst, Niederschlag, Staub oder Rauch verringert.\n\nVon Nebel spricht man bei Sichtweiten unter 1 km. Werte über 20 km bedeuten sehr klare Luft. An DWD-Stationen wird die Sichtweite automatisch gemessen, sonst stammt sie aus dem Vorhersagemodell.\n\nHohe Luftfeuchte und gute Sicht sind kein Widerspruch: Wasserdampf selbst ist unsichtbar. Die Sicht sinkt erst, wenn er zu winzigen Tröpfchen kondensiert (feuchter Dunst, Nebel – meist ab etwa 95 %) oder wenn Staub- und Rußteilchen in feuchter Luft aufquellen (Dunst). Nach Regen ist die Luft ausgewaschen, dann sind 40 km bei 80–90 % Luftfeuchte ganz normal.</string>
     <string name="term_pressure_title">Luftdruck</string>
     <string name="term_pressure_body">Der Luftdruck ist das Gewicht der Luftsäule über uns, angegeben in Hektopascal (hPa) und auf Meereshöhe umgerechnet, damit Werte aus unterschiedlichen Höhen vergleichbar sind. Der Mittelwert liegt bei etwa 1013 hPa.\n\nHochdruck (über ca. 1020 hPa) bringt meist ruhiges, trockenes Wetter. Tiefdruck (unter ca. 1000 hPa) bringt oft Wolken, Wind und Niederschlag.\n\nWichtiger als der Wert ist die Tendenz: Schnell fallender Druck kündigt ein Tief und schlechteres Wetter an, steigender Druck eine Besserung. Der Pfeil zeigt die Änderung in den nächsten drei Stunden.</string>
     <string name="term_aqi_title">Luftqualität</string>
     <string name="term_aqi_body">Der Europäische Luftqualitätsindex (EAQI) der Europäischen Umweltagentur fasst Feinstaub (PM2,5, PM10), Stickstoffdioxid, Ozon und Schwefeldioxid zu einer Zahl zusammen. Der schlechteste Schadstoff bestimmt den Index.\n\n• 0–⁠20 gut • 20–⁠40 akzeptabel • 40–⁠60 mäßig • 60–⁠80 schlecht • 80–⁠100 sehr schlecht • über 100 extrem schlecht\n\nPM2,5 und PM10 sind Partikel kleiner als 2,5 bzw. 10 Mikrometer; die kleineren gelangen tief in die Lunge. Die Werte stammen aus dem Copernicus-CAMS-Modell für Europa.</string>
     <string name="term_pollen_title">Pollen</string>
-    <string name="term_pollen_body">Die Pollenbelastung wird in Pollenkörnern pro Kubikmeter Luft angegeben, vorhergesagt vom Copernicus-CAMS-Modell für Europa.\n\nGrobe Stufen in der App: unter 1 keine, bis 20 gering, bis 100 mittel, über 100 hoch. Empfindliche Menschen können schon bei geringen Konzentrationen reagieren; Birken- und Gräserpollen sind in Mitteleuropa die häufigsten Allergieauslöser.\n\nSind Pollen in der Luft und ist es trocken, zeigt der animierte Hintergrund sie als feine schwebende Partikel.</string>
+    <string name="term_pollen_body">Die Pollenflugvorhersage zeigt, wie stark allergierelevante Pollenarten in der Luft sind.\n\nStufen (Skala des Deutschen Wetterdienstes): keine, gering, mittel und hoch, mit Zwischenstufen. Jeder Balken hat drei Segmente – halb gefüllte Segmente sind die Zwischenstufen.\n\n• Deutschland: amtlicher Pollenflug-Gefahrenindex des DWD für 8 Arten (Hasel, Erle, Esche, Birke, Gräser, Roggen, Beifuß, Ambrosia) und 27 Regionen, täglich gegen 11 Uhr für heute, morgen und übermorgen\n• Übriges Europa: Stufen abgeleitet aus dem Copernicus-CAMS-Modell (6 Arten)\n\nZusammensetzung und Verlauf stammen aus CAMS in Pollenkörnern pro Kubikmeter Luft. Sie zeigen, welche Pollen dominieren – hilfreich, wenn man nur auf bestimmte Arten reagiert. Empfindliche Menschen können schon bei geringer Belastung reagieren.\n\nSind Pollen in der Luft und ist es trocken, zeigt der animierte Hintergrund sie als feine schwebende Partikel.</string>
     <string name="term_nowcast_title">Niederschlag in den nächsten Stunden</string>
     <string name="term_nowcast_body">Diese Kurzfristvorhersage zeigt den erwarteten Niederschlag in 15-Minuten-Schritten. In Deutschland stammt sie aus dem hochaufgelösten ICON-D2-Modell des DWD (2,2-km-Gitter), das alle drei Stunden neu gerechnet wird.\n\nDie Balken zeigen die Menge pro 15 Minuten. Für das aktuelle Regenradar inklusive DWD-Radarvorhersage der nächsten zwei Stunden öffne die Niederschlagskarte.</string>
     <string name="term_radar_title">Niederschlagsradar</string>

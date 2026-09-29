@@ -6,6 +6,7 @@ import dev.nimbus.weather.data.model.Settings
 import dev.nimbus.weather.data.remote.BrightSkySource
 import dev.nimbus.weather.data.remote.CommunitySource
 import dev.nimbus.weather.data.remote.OpenMeteoSource
+import dev.nimbus.weather.data.remote.PollenSource
 import dev.nimbus.weather.data.repo.WeatherRepository
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.Dispatcher
@@ -41,6 +42,8 @@ class RepositoryTest {
                     url.encodedPath == "/current_weather" -> ok("brightsky_current.json")
                     url.encodedPath == "/alerts" -> MockResponse.Builder().code(200).body("""{"alerts":[]}""").build()
                     url.encodedPath.startsWith("/airrohr") -> ok("sensor_community.json")
+                    url.encodedPath == "/pollen.json" -> ok("dwd_pollen.json")
+                    url.encodedPath == "/wms" -> ok("dwd_pollen_region.json")
                     else -> MockResponse.Builder().code(404).build()
                 }
             }
@@ -58,6 +61,7 @@ class RepositoryTest {
             OpenMeteoSource(http, base, base, base),
             BrightSkySource(http, base),
             CommunitySource(http, base),
+            PollenSource(http, "$base/pollen.json", "$base/wms", base),
             clock = { clock },
         )
     }
@@ -75,6 +79,8 @@ class RepositoryTest {
         assertEquals(10, data.daily.size)                      // ICON (8 days) + best match fill
         assertNotNull(data.airQuality)
         assertNotNull(data.community)
+        assertEquals(dev.nimbus.weather.data.model.PollenSourceKind.DWD, data.pollen?.source)
+        assertTrue(data.pollen!!.region!!.startsWith("Geest"))
         assertEquals(dev.nimbus.weather.data.model.SourceKind.MODEL_DWD_ICON, data.sources.first().kind)
         assertEquals("Berlin-Tempelhof", data.sources.first { it.kind == dev.nimbus.weather.data.model.SourceKind.DWD_STATION }.detail)
         assertTrue(requested.any { it.endsWith("icon_seamless") })

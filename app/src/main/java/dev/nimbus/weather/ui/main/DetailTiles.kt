@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Air
 import androidx.compose.material.icons.outlined.Compress
-import androidx.compose.material.icons.outlined.Grass
 import androidx.compose.material.icons.outlined.Thermostat
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.WaterDrop
@@ -295,6 +294,12 @@ private fun VisibilityTile(data: WeatherData, modifier: Modifier) {
     val v = data.current.visibility
     Tile(stringResource(R.string.visibility), Icons.Outlined.Visibility, modifier, Term.VISIBILITY) {
         BigValue(Units.visibilityKm(v))
+        val station = data.current.stationName
+        Text(
+            if (data.current.visibilityMeasured && station != null) stringResource(R.string.visibility_measured, station)
+            else stringResource(R.string.visibility_model),
+            fontSize = 12.sp, color = NimbusColors.Secondary, maxLines = 2, lineHeight = 15.sp,
+        )
         Spacer(Modifier.weight(1f))
         Caption(
             stringResource(
@@ -429,33 +434,6 @@ fun AirQualityCard(data: WeatherData) {
     }
 }
 
-@Composable
-fun PollenCard(data: WeatherData) {
-    val pollen = data.airQuality?.pollen ?: return
-    if (pollen.isEmpty()) return
-    val names = mapOf(
-        "alder" to R.string.pollen_alder, "birch" to R.string.pollen_birch, "grass" to R.string.pollen_grass,
-        "mugwort" to R.string.pollen_mugwort, "ragweed" to R.string.pollen_ragweed, "olive" to R.string.pollen_olive,
-    )
-    GlassCard(title = stringResource(R.string.pollen), icon = Icons.Outlined.Grass, info = Term.POLLEN) {
-        pollen.entries.sortedByDescending { it.value }.forEach { (k, v) ->
-            val (level, color, frac) = when {
-                v < 1 -> Triple(R.string.pollen_none, Color(0x55FFFFFF), 0f)
-                v < 20 -> Triple(R.string.pollen_low, Color(0xFF7ED957), 0.33f)
-                v < 100 -> Triple(R.string.pollen_moderate, Color(0xFFF7C948), 0.66f)
-                else -> Triple(R.string.pollen_high, Color(0xFFFF5B36), 1f)
-            }
-            Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(names[k] ?: R.string.pollen), Modifier.width(96.dp), fontSize = 15.sp, color = Color.White)
-                Canvas(Modifier.weight(1f).height(6.dp)) {
-                    drawRoundRect(Color(0x33FFFFFF), cornerRadius = CornerRadius(size.height / 2))
-                    if (frac > 0) drawRoundRect(color, size = Size(size.width * frac, size.height), cornerRadius = CornerRadius(size.height / 2))
-                }
-                Text(stringResource(level), Modifier.width(80.dp).padding(start = 10.dp), fontSize = 13.sp, color = NimbusColors.Secondary)
-            }
-        }
-    }
-}
 
 // ---------------------------------------------------------------------------------------
 // Moon (calculated on the device)

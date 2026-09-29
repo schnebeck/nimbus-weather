@@ -10,12 +10,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
-import org.maplibre.android.maps.Style
 import org.maplibre.android.snapshotter.MapSnapshotter
-import org.maplibre.android.style.layers.PropertyFactory
-import org.maplibre.android.style.layers.RasterLayer
-import org.maplibre.android.style.sources.RasterSource
-import org.maplibre.android.style.sources.TileSet
 import kotlin.coroutines.resume
 
 /**
@@ -53,24 +48,13 @@ object RadarPrefetcher {
         }
         WeatherGridStore.ensure(http, place.latitude, place.longitude)
         val tl = runCatching { RadarSources.timeline(http, HistoryRange.H2) }.getOrNull() ?: return
+        // Opacity 0: MapLibre loads the tiles of visible layers without drawing them.
+        val style = MapStyle.builder(
+            http, context.resources.configuration.locales[0].language,
+            RadarSnapshot.rasters(tl, tl.frames.withIndex().map { it.index to it.value }, 0f),
+        )
         withContext(Dispatchers.Main) {
             val dm = context.resources.displayMetrics
-            val style = Style.Builder().fromUri(STYLE_URL)
-            tl.frames.forEachIndexed { i, f ->
-                // Opacity 0 but visibility "visible": MapLibre loads the tiles without drawing them.
-                f.rainViewerPath?.let { path ->
-                    style.withSource(RasterSource("rv$i", TileSet("2.2.0", RadarSources.rainViewerTileUrl(tl.rainViewerHost, path)).apply { maxZoom = 7f }, 512))
-                    style.withLayer(RasterLayer("rv$i", "rv$i").withProperties(PropertyFactory.rasterOpacity(0f)))
-                }
-                f.dwdTime?.let { t ->
-                    style.withSource(RasterSource("dwd$i", TileSet("2.2.0", RadarSources.dwdTileUrl(RadarSources.DWD_LAYER, t)).apply {
-                        maxZoom = 10f
-                        minZoom = 3f
-                        setBounds(1.4f, 45.6f, 18.8f, 56.3f)
-                    }, 512))
-                    style.withLayer(RasterLayer("dwd$i", "dwd$i").withProperties(PropertyFactory.rasterOpacity(0f)))
-                }
-            }
             val options = MapSnapshotter.Options((dm.widthPixels / dm.density).toInt(), (dm.heightPixels / dm.density).toInt())
                 .withStyleBuilder(style)
                 .withCameraPosition(CameraPosition.Builder().target(LatLng(place.latitude, place.longitude)).zoom(RADAR_ZOOM).build())

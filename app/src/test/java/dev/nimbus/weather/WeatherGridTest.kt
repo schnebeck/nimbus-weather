@@ -38,6 +38,15 @@ class WeatherGridTest {
     }
 
     @Test
+    fun `edge values continue slightly outside and large tiles overlap`() {
+        assertEquals(2f, grid.sampleNear(grid.temp[0], 49.7, 9.5)!!, 1e-4f)      // clamped to (50, 9)
+        assertNull(grid.sampleNear(grid.temp[0], 47.0, 9.0))
+        val bigTile = TileGeo.fromXyz(4, 8, 5)                                       // ~22°x14° around central Europe
+        assertTrue(grid.overlaps(bigTile.south, bigTile.north, bigTile.west, bigTile.east))
+        assertTrue(!grid.contains(bigTile.centerLat, bigTile.centerLon))
+    }
+
+    @Test
     fun `grid origin snaps to the spacing`() {
         val (a, b) = WeatherGrid.origin(52.52, 13.40)
         val (c, d) = WeatherGrid.origin(52.60, 13.35)
@@ -60,12 +69,18 @@ class WeatherGridTest {
     @Test
     fun `snow fraction from temperature and blended colours`() {
         assertEquals(1f, RadarPalette.snowFraction(-3f), 0f)
-        assertEquals(1f, RadarPalette.snowFraction(0.5f), 0f)
-        assertEquals(0f, RadarPalette.snowFraction(2.5f), 0f)
-        assertEquals(0.5f, RadarPalette.snowFraction(1.25f), 1e-4f)
-        val rain = RadarPalette.colorFor(30, 0f)
-        val snow = RadarPalette.colorFor(30, 1f)
-        val sleet = RadarPalette.colorFor(30, 0.5f)
+        assertEquals(1f, RadarPalette.snowFraction(0f), 0f)
+        assertEquals(0f, RadarPalette.snowFraction(1f), 0f)
+        assertEquals(0f, RadarPalette.snowFraction(5f), 0f)
+        assertEquals(0.5f, RadarPalette.snowFraction(0.5f), 1e-4f)
+        val rain = RadarPalette.colorFor(40, 0f)
+        val snow = RadarPalette.colorFor(40, 1f)
+        val sleet = RadarPalette.colorFor(40, 0.5f)
+        // weak rain is neutral white/grey, weak snow is pale pink
+        val weakRain = RadarPalette.colorFor(10, 0f)
+        val weakSnow = RadarPalette.colorFor(10, 1f)
+        assertTrue(kotlin.math.abs(((weakRain shr 16) and 0xFF) - (weakRain and 0xFF)) < 8)
+        assertTrue(((weakSnow shr 16) and 0xFF) > ((weakSnow shr 8) and 0xFF))
         assertNotEquals(rain, snow)
         assertTrue(sleet != rain && sleet != snow)
         // rain is blue-dominated, snow has a strong red share (pink/violet)

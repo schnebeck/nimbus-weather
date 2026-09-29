@@ -30,7 +30,7 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.NearMe
+import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -163,7 +163,7 @@ fun PlacesScreen(
                             .clickable(onClick = onRequestLocation).padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Rounded.NearMe, null, tint = Color.White)
+                        Icon(Icons.Rounded.LocationOn, null, tint = Color.White)
                         Spacer(Modifier.size(10.dp))
                         Text(stringResource(R.string.use_my_location), color = Color.White, fontSize = 16.sp)
                     }
@@ -210,7 +210,7 @@ private fun PlaceCard(place: Place, st: PlaceState?, settings: dev.nimbus.weathe
                         if (place.isCurrentLocation) stringResource(R.string.my_location) else place.name,
                         fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
-                    if (place.isCurrentLocation) Icon(Icons.Rounded.NearMe, null, tint = Color.White, modifier = Modifier.padding(start = 4.dp).size(14.dp))
+                    if (place.isCurrentLocation) Icon(Icons.Rounded.LocationOn, null, tint = Color.White, modifier = Modifier.padding(start = 4.dp).size(14.dp))
                 }
                 Text(
                     if (place.isCurrentLocation) place.name else (tf?.time(System.currentTimeMillis()) ?: place.subtitle),

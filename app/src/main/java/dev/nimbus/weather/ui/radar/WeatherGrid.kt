@@ -71,6 +71,15 @@ class WeatherGrid(
 
     fun temperatureAt(lat: Double, lon: Double, timeMs: Long): Float? = sample(temp[hourIndex(timeMs)], lat, lon)
 
+    /** Like [sample], but continues the edge values up to [margin] degrees outside the grid. */
+    fun sampleNear(field: FloatArray, lat: Double, lon: Double, margin: Double = step): Float? {
+        if (lat < lat0 - margin || lat > lat1 + margin || lon < lon0 - margin || lon > lon1 + margin) return null
+        return sample(field, lat.coerceIn(lat0, lat1), lon.coerceIn(lon0, lon1))
+    }
+
+    fun overlaps(south: Double, north: Double, west: Double, east: Double) =
+        north >= lat0 && south <= lat1 && east >= lon0 && west <= lon1
+
     companion object {
         // Open-Meteo counts every location as one API call (free tier: 5,000/hour, 10,000/day),
         // so the grid stays small: 9 x 11 = 99 points, 1° apart, covering about 8° x 10°.
@@ -113,6 +122,9 @@ object WeatherGridStore {
 
     fun temperatureAt(lat: Double, lon: Double, timeMs: Long): Float? =
         gridFor(lat, lon)?.temperatureAt(lat, lon, timeMs)
+
+    fun gridOverlapping(tile: TileGeo): WeatherGrid? =
+        grids.firstOrNull { it.second.overlaps(tile.south, tile.north, tile.west, tile.east) }?.second
 
     /** Makes sure a fresh grid covers [lat]/[lon] with some margin; returns it (or null on error). */
     suspend fun ensure(http: OkHttpClient, lat: Double, lon: Double): WeatherGrid? = mutex.withLock {

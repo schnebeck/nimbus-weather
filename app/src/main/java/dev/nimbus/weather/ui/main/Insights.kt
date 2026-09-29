@@ -69,6 +69,13 @@ object Insights {
         else HourlyChange(current, hours.firstOrNull()?.isDay ?: true, null)
     }
 
+    /** Chance of precipitation as shown in the forecasts: from 10 %, rounded to 10 %; else null. */
+    fun chanceLabel(probability: Double?): Int? {
+        val p = probability ?: return null
+        val r = (Math.round(p / 10.0) * 10).toInt()
+        return if (r >= 10) r else null
+    }
+
     fun maxGust(hours: List<HourlyPoint>): Double? = hours.take(12).mapNotNull { it.windGust }.maxOrNull()
 
     enum class Trend { RISING, FALLING, STEADY }

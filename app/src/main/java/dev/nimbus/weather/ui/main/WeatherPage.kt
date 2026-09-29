@@ -25,7 +25,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CloudOff
-import androidx.compose.material.icons.rounded.NearMe
+import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -221,7 +221,7 @@ private fun WeatherContent(
             item(key = "tiles") { DetailTiles(data, now) }
             item(key = "moon") { MoonCard(data, now) }
             if (data.airQuality?.europeanAqi != null) item(key = "aqi") { AirQualityCard(data) }
-            if ((data.airQuality?.pollen?.values?.maxOrNull() ?: 0.0) >= 1.0) item(key = "pollen") { PollenCard(data) }
+            data.pollen?.let { p -> item(key = "pollen") { PollenForecastCard(p, now) } }
             if (data.community != null) item(key = "community") { CommunityCard(data) }
             item(key = "models") { ModelComparisonCard(state.models, now, onRequestModels) }
             item(key = "sources") { SourcesFooter(data) }
@@ -242,7 +242,11 @@ private fun Header(data: WeatherData, progress: Float, statusTop: androidx.compo
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (data.place.isCurrentLocation) {
-                Icon(Icons.Rounded.NearMe, null, tint = Color.White, modifier = Modifier.size(18.dp).padding(end = 2.dp))
+                // Location pin (not an arrow – an arrow next to weather data reads as wind direction).
+                Icon(
+                    Icons.Rounded.LocationOn, stringResource(R.string.my_location), tint = Color.White,
+                    modifier = Modifier.size(22.dp).padding(end = 2.dp),
+                )
             }
             Text(
                 data.place.name, fontSize = 32.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,

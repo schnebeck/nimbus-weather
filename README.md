@@ -10,8 +10,8 @@ Die fertigen, signierten APKs liegen in `dist/`:
 
 | Datei | Für |
 |---|---|
-| `Nimbus-1.0.0-arm64.apk` (13 MB) | praktisch alle Android-Handys seit ca. 2017 |
-| `Nimbus-1.0.0-universal.apk` (44 MB) | alle Geräte inkl. 32-Bit-ARM und x86 |
+| `Nimbus-1.1.0-arm64.apk` (13 MB) | praktisch alle Android-Handys seit ca. 2017 |
+| `Nimbus-1.1.0-universal.apk` (44 MB) | alle Geräte inkl. 32-Bit-ARM und x86 |
 
 APK aufs Handy kopieren, öffnen, „Installation aus unbekannten Quellen“ für den Dateimanager erlauben.
 Mindestversion: Android 8.0 (API 26). Google Play Services werden nicht benötigt.
@@ -29,15 +29,18 @@ Mindestversion: Android 8.0 (API 26). Google Play Services werden nicht benötig
   Windstriche bei Wind), DWD-Warnungen, Niederschlag der nächsten 3 Stunden (15-Min.-Schritte),
   Stundenvorhersage mit Sonnenauf-/-untergang, 10-Tage-Vorhersage mit Temperaturbalken
   (antippen → Tagesverlauf), **Niederschlagskarte 24 h** (Wahrscheinlichkeit und Menge pro Stunde),
-  Radar-Vorschau, Kacheln für Gefühlt, UV, Wind (Kompass), Luftfeuchte/Taupunkt, Sichtweite, Luftdruck (Tendenz),
+  Niederschlagswahrscheinlichkeit ab 10 % in Stunden- und Tagesvorhersage (auch bei Wolken-/Nebelsymbol),
+  Radar-Vorschau, Kacheln für Gefühlt, UV, Wind (Kompass), Luftfeuchte/Taupunkt, Sichtweite (mit Angabe
+  „gemessen an DWD-Station“ bzw. „Modellwert“), Luftdruck (Tendenz),
   Sonnenlauf, **Mond** (Phase, Beleuchtung, Auf-/Untergang, nächster Vollmond), Luftqualität, Pollen,
+  **Pollenflug** (Stufen je Art für bis zu 3 Tage, Zusammensetzung der nächsten 24 h, gestapelter Stundenverlauf),
   **Community-Messnetz** und **Modellvergleich** (8 Wettermodelle, 72 h).
 - **Wetter-Lexikon**: ⓘ an jeder Karte erklärt Begriffe wie Niederschlagswahrscheinlichkeit, Taupunkt,
   gefühlte Temperatur, Luftdruck-Tendenz, Warnstufen, Radar oder Mondphasen (EN/DE).
 - **Regenradar** (MapLibre, OpenFreeMap-Karte): DWD-Radarkomposit mit 2-h-Nowcast für Deutschland,
   RainViewer für Europa, beide auf **eine gemeinsame Farbskala** umgerechnet (dBZ-basiert):
-  **Regen in Blautönen** (Starkregen gelb → rot), **Schnee rosa → violett**, Schneeregen dazwischen –
-  entschieden pro Pixel über die 2-m-Temperatur zur Zeit des Radarbilds.
+  **Regen (über 0 °C) weiß → grau → hellblau → dunkelblau**, **Schnee (ab 0 °C) blassrosa → dunkelviolett**,
+  Schneeregen (0–1 °C) als Mischfarbe – entschieden pro Pixel über die 2-m-Temperatur zur Zeit des Radarbilds.
   Overlays **Temperatur** (Farbfeld + Werte) und **Wind** (Pfeile nach Stärke gefärbt, km/h),
   passend zur Stunde auf der Zeitleiste; Satellit (Meteosat), DWD-Warnkarte.
   Rückblick 2 h / 6 h / 24 h (DWD hält 3 Tage vor), Kartenbeschriftung in App-Sprache.
@@ -59,7 +62,9 @@ Mindestversion: Android 8.0 (API 26). Google Play Services werden nicht benötig
 | Radar Deutschland | DWD GeoServer WMS `Radar_wn-product_1x1km_ger` | 5-Min.-Takt, 2 h Nowcast, 3 Tage Archiv |
 | Radar Europa | [RainViewer](https://www.rainviewer.com/api.html) | nur die letzten 2 h, max. Zoom 7 |
 | Satellit, Warnkarte | DWD GeoServer WMS | |
-| Luftqualität, Pollen | Copernicus CAMS Europe via Open-Meteo | |
+| Luftqualität | Copernicus CAMS Europe via Open-Meteo | |
+| Pollenflug Deutschland | [DWD-Pollenflug-Gefahrenindex](https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json) | 8 Arten, 27 Regionen, heute/morgen/übermorgen; Region per WMS-Abfrage „Pollenfluggebiete“ |
+| Pollen Europa, Zusammensetzung, Verlauf | Copernicus CAMS via Open-Meteo | 6 Arten, stündlich, ~3 Tage |
 | Community-Messnetz | [Sensor.Community](https://sensor.community) | Median aller Außensensoren, Ausreißer gefiltert |
 | Modellvergleich | Open-Meteo (ICON-D2, ICON-EU, ECMWF, AROME/ARPEGE, UKMO, KNMI, MET Norway, GFS) | |
 | Temperatur-/Windgitter (Radar-Overlays, Regen/Schnee) | Open-Meteo, 9 × 11 Punkte im 1°-Raster | 1 h gecacht (Speicher + Datei) |
@@ -75,7 +80,7 @@ Voraussetzungen: JDK 21, Android SDK mit Plattform 37 und Build-Tools 36.
 
 ```bash
 echo "sdk.dir=$HOME/Android/Sdk" > local.properties
-./gradlew testDebugUnitTest      # 51 Unit-Tests
+./gradlew testDebugUnitTest      # 62 Unit-Tests
 ./gradlew assembleRelease        # APKs in app/build/outputs/apk/release/
 ```
 

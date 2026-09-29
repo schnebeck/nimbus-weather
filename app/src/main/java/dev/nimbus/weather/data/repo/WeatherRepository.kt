@@ -13,6 +13,7 @@ import dev.nimbus.weather.data.model.WeatherData
 import dev.nimbus.weather.data.model.ComparisonModels
 import dev.nimbus.weather.data.remote.BrightSkySource
 import dev.nimbus.weather.data.remote.CommunitySource
+import dev.nimbus.weather.data.remote.PollenSource
 import dev.nimbus.weather.data.remote.ModelForecast
 import dev.nimbus.weather.data.remote.OpenMeteoSource
 import dev.nimbus.weather.data.remote.StationObservation
@@ -23,6 +24,7 @@ class WeatherRepository(
     private val openMeteo: OpenMeteoSource,
     private val brightSky: BrightSkySource,
     private val community: CommunitySource,
+    private val pollen: PollenSource,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
 
@@ -47,6 +49,7 @@ class WeatherRepository(
         }
         val aqJob = async { runCatching { openMeteo.airQuality(lat, lon) }.getOrNull() }
         val communityJob = async { runCatching { community.nearby(lat, lon) }.getOrNull() }
+        val pollenJob = async { runCatching { pollen.forecast(lat, lon, inDwdArea) }.getOrNull() }
 
         val primaryResult = primaryJob.await()
         val fill = fillJob.await()
@@ -82,6 +85,8 @@ class WeatherRepository(
         if (inDwdArea) sources += Source(SourceKind.DWD_WARNINGS)
         val aq = aqJob.await()
         if (aq != null) sources += Source(SourceKind.CAMS)
+        val pollenForecast = pollenJob.await()
+        if (pollenForecast?.source == dev.nimbus.weather.data.model.PollenSourceKind.DWD) sources += Source(SourceKind.DWD_POLLEN)
         val communityObs = communityJob.await()
         if (communityObs != null) sources += Source(SourceKind.COMMUNITY)
 
@@ -96,6 +101,7 @@ class WeatherRepository(
             alerts = alerts,
             airQuality = aq,
             community = communityObs,
+            pollen = pollenForecast,
             sources = sources,
             fetchedAt = clock(),
         )
@@ -131,6 +137,7 @@ class WeatherRepository(
                 windGust = obs.windGust ?: model.windGust,
                 windDirection = obs.windDirection ?: model.windDirection,
                 visibility = obs.visibility ?: model.visibility,
+                visibilityMeasured = obs.visibility != null,
                 stationName = obs.stationName,
                 stationDistanceKm = obs.distanceKm,
             )

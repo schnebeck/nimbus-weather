@@ -220,13 +220,10 @@ private fun PlaceCard(place: Place, st: PlaceState?, settings: dev.nimbus.weathe
             s?.let { Text(stringResource(Texts.condition(it.current.condition, it.current.isDay)), fontSize = 14.sp, color = Color.White, maxLines = 1) }
         }
         Column(Modifier.fillMaxSize().weight(0.6f), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.SpaceBetween) {
-            Text(s?.let { Units.temp(it.current.temperature, settings.temperatureUnit) } ?: "–", fontSize = 44.sp, fontWeight = FontWeight.Light, color = Color.White)
+            dev.nimbus.weather.ui.components.BigTemperature(s?.current?.temperature, settings.temperatureUnit, 44.sp, weight = FontWeight.Light)
             val today = s?.daily?.lastOrNull { it.date <= System.currentTimeMillis() }
             if (today != null) {
-                Text(
-                    stringResource(R.string.high_low, Units.temp(today.tempMax, settings.temperatureUnit), Units.temp(today.tempMin, settings.temperatureUnit)),
-                    fontSize = 14.sp, color = Color.White,
-                )
+                dev.nimbus.weather.ui.components.MaxMinStack(today.tempMax, today.tempMin, settings.temperatureUnit, fontSize = 13.sp)
             }
         }
     }

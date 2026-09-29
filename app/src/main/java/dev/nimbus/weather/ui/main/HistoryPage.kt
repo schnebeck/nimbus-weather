@@ -146,7 +146,8 @@ fun HistoryPage(place: Place, state: PlaceState?, settings: Settings, dayIndex: 
                     summary == null -> item(key = "empty") { HistoryMessage(stringResource(R.string.history_empty), null) }
                     else -> {
                         item(key = "summary") { SummaryCard(summary, history, settings, tf) }
-                        item(key = "course") { DayCourseCard(day, summary, settings, tf) }
+                        // Right after midnight there is only one hour – nothing to draw yet.
+                        if (day.hours.size >= 2) item(key = "course") { DayCourseCard(day, summary, settings, tf) }
                     }
                 }
             }
@@ -172,10 +173,7 @@ private fun HistoryHeader(place: Place, title: String, day: HistoryDay?, summary
             Row(verticalAlignment = Alignment.CenterVertically) {
                 WeatherIcon(summary.condition, true, size = 40.dp)
                 Spacer(Modifier.width(10.dp))
-                Text(
-                    stringResource(R.string.high_low, Units.temp(summary.tempMax, s.temperatureUnit), Units.temp(summary.tempMin, s.temperatureUnit)),
-                    fontSize = 22.sp, fontWeight = FontWeight.Medium, color = Color.White,
-                )
+                dev.nimbus.weather.ui.components.MaxMinStack(summary.tempMax, summary.tempMin, s.temperatureUnit, fontSize = 20.sp)
             }
             Text(stringResource(Texts.condition(summary.condition, true)), fontSize = 16.sp, color = NimbusColors.Secondary)
         }
@@ -228,7 +226,8 @@ private fun SummaryCard(sum: DaySummary, history: History, settings: Settings, t
             if (history.stationName != null && sum.measured) stringResource(
                 R.string.history_source_station, history.stationName,
                 Units.oneDecimal(history.stationDistanceKm ?: 0.0), modelName(settings.model),
-            ) else stringResource(R.string.history_source_model, modelName(settings.model)),
+            ) else if (history.stationName != null) stringResource(R.string.history_source_pending, history.stationName, modelName(settings.model))
+            else stringResource(R.string.history_source_model, modelName(settings.model)),
             fontSize = 11.sp, color = NimbusColors.Tertiary, lineHeight = 14.sp,
         )
     }
@@ -294,6 +293,7 @@ private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, 
                 windGust = m?.windGust ?: f?.windGust,
                 forecastTemperature = if (m?.temperature != null) f?.temperature else null,
                 forecastPrecipitation = if (m?.precipitation != null) f?.precipitation else null,
+                sunshine = m?.sunshineMinutes ?: f?.sunshineMinutes,
             )
         }
     }

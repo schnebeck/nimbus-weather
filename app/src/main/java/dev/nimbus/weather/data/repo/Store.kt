@@ -24,7 +24,7 @@ class Store(private val context: Context) {
     private val placeList = ListSerializer(Place.serializer())
 
     val settings: Flow<Settings> = context.dataStore.data.map { p ->
-        p[settingsKey]?.let { runCatching { JsonCodec.decodeFromString(Settings.serializer(), it) }.getOrNull() } ?: Settings()
+        p[settingsKey]?.let { runCatching { JsonCodec.decodeFromString(Settings.serializer(), it) }.getOrNull() } ?: Settings.forLocale(java.util.Locale.getDefault())
     }
 
     val places: Flow<List<Place>> = context.dataStore.data.map { p ->
@@ -33,7 +33,7 @@ class Store(private val context: Context) {
 
     suspend fun updateSettings(transform: (Settings) -> Settings) {
         context.dataStore.edit { p ->
-            val cur = p[settingsKey]?.let { runCatching { JsonCodec.decodeFromString(Settings.serializer(), it) }.getOrNull() } ?: Settings()
+            val cur = p[settingsKey]?.let { runCatching { JsonCodec.decodeFromString(Settings.serializer(), it) }.getOrNull() } ?: Settings.forLocale(java.util.Locale.getDefault())
             p[settingsKey] = JsonCodec.encodeToString(Settings.serializer(), transform(cur))
         }
     }

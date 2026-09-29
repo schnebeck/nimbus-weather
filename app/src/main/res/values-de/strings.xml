@@ -18,7 +18,6 @@
     <string name="cond_thunderstorm">Gewitter</string>
 
     <string name="my_location">Mein Standort</string>
-    <string name="high_low">H:%1$s  T:%2$s</string>
     <string name="feels_like_short">Gefühlt %1$s</string>
     <string name="updated_at">Aktualisiert %1$s</string>
     <string name="offline_cached">Offline – Daten von %1$s</string>
@@ -377,4 +376,21 @@
     <string name="sun_now_down">Sonne jetzt %1$s unter dem Horizont</string>
     <string name="sun_highest">Höchststand %1$s um\u00A0%2$s</string>
     <string name="sunrise_tomorrow">morgen Aufgang\u00A0%1$s</string>
+    <string name="phase_day">Tag</string>
+    <string name="phase_golden">Morgen-/Abendrot</string>
+    <string name="phase_golden_morning">Morgenrot</string>
+    <string name="phase_golden_evening">Abendrot</string>
+    <string name="phase_blue">Blaue Stunde</string>
+    <string name="phase_night">Nacht</string>
+    <string name="sun_phases_morning">Heute früh: %1$s</string>
+    <string name="sun_phases_evening">Heute Abend: %1$s</string>
+    <string name="sun_phases_tomorrow">Morgen früh: %1$s</string>
+    <string name="term_sun_title">Sonne und Lichtphasen</string>
+    <string name="term_sun_body">Die Kurve zeigt, wie hoch die Sonne im Verlauf des heutigen Tages über dem Horizont steht – auf dem Gerät berechnet. Die Skala ist für den Ort fest, vom höchsten Sonnenstand mittags im Hochsommer bis zum tiefsten Stand um Mitternacht im Winter. So zeigt der Bogen auf einen Blick die Jahreszeit: im Sommer hoch und breit, im Winter flach und kurz, mit der Nacht als tiefer Mulde.\n\nDer Hintergrund zeigt die Lichtphasen:\n• Tag: Sonne mehr als 6° über dem Horizont\n• Morgen-/Abendrot (Fotografen sagen „Goldene Stunde“): von 6° über bis 4° unter dem Horizont – warmes, weiches Licht und lange Schatten, roter Himmel rund um Auf- und Untergang\n• Blaue Stunde: 4° bis 8° unter dem Horizont – die Sonne ist weg, der Himmel färbt sich tiefblau\n• Nacht: Sonne mehr als 8° unter dem Horizont\n\nAstronomen teilen die Dämmerung anders ein: Die bürgerliche Dämmerung dauert, bis die Sonne 6° unter dem Horizont steht (draußen noch hell genug ohne Licht), die nautische bis 12° und die astronomische bis 18° – erst dann ist der Himmel ganz dunkel.\n\nSonnenauf- und -untergang beziehen sich auf den oberen Sonnenrand einschließlich der Lichtbrechung in der Atmosphäre.</string>
+    <string name="max_label">Max</string>
+    <string name="min_label">Min</string>
+    <string name="history_source_pending">Noch keine Messwerte der DWD-Station %1$s für diesen Tag – Vorhersagewerte (%2$s)</string>
+    <string name="sunshine_short">Sonne</string>
+    <string name="legend_precip">Niederschlag %1$s</string>
+    <string name="legend_sunshine">Sonnenschein %1$s Std. (Balken: Minuten je Stunde)</string>
 </resources>

@@ -53,6 +53,7 @@ enum class Term(@StringRes val title: Int, @StringRes val body: Int) {
     STATION(R.string.term_station_title, R.string.term_station_body),
     ALERTS(R.string.term_alerts_title, R.string.term_alerts_body),
     MOON(R.string.term_moon_title, R.string.term_moon_body),
+    SUN(R.string.term_sun_title, R.string.term_sun_body),
     HOURLY(R.string.term_hourly_title, R.string.term_hourly_body),
     DAILY(R.string.term_daily_title, R.string.term_daily_body),
     OUTLOOK(R.string.term_outlook_title, R.string.term_outlook_body),

@@ -22,6 +22,15 @@ object Units {
     fun temperature(celsius: Double, unit: TemperatureUnit): Double =
         if (unit == TemperatureUnit.FAHRENHEIT) celsius * 9.0 / 5.0 + 32.0 else celsius
 
+    fun tempUnit(unit: TemperatureUnit): String = if (unit == TemperatureUnit.FAHRENHEIT) "°F" else "°C"
+
+    /** "12" – the number only, for layouts that set the unit separately. */
+    fun tempNumber(celsius: Double?, unit: TemperatureUnit): String = temp(celsius, unit).removeSuffix("°")
+
+    /** "12 °C" with a narrow no-break space, for places where the unit must be explicit. */
+    fun tempFull(celsius: Double?, unit: TemperatureUnit): String =
+        if (celsius == null) "–" else tempNumber(celsius, unit) + "\u202F" + tempUnit(unit)
+
     /** "12°" — rounds half away from zero and avoids "-0°". */
     fun temp(celsius: Double?, unit: TemperatureUnit): String {
         if (celsius == null) return "–"
@@ -76,7 +85,7 @@ object Units {
 }
 
 /** Time formatting in the time zone of the displayed place. */
-class TimeFormat(timezone: String, private val use24h: Boolean, private val locale: Locale = Locale.getDefault()) {
+class TimeFormat(timezone: String, val use24h: Boolean, private val locale: Locale = Locale.getDefault()) {
     val zone: ZoneId = runCatching { ZoneId.of(timezone) }.getOrDefault(ZoneId.systemDefault())
     private val hourFmt = DateTimeFormatter.ofPattern(if (use24h) "HH" else "h a", locale)
     private val timeFmt = DateTimeFormatter.ofPattern(if (use24h) "HH:mm" else "h:mm a", locale)

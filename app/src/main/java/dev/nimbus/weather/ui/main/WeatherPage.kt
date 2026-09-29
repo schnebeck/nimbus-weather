@@ -257,7 +257,7 @@ private fun Header(data: WeatherData, progress: Float, statusTop: androidx.compo
         Box(contentAlignment = Alignment.TopCenter) {
             // Collapsed line: "12° | Cloudy"
             Text(
-                "${Units.temp(c.temperature, s.temperatureUnit)} | $condition",
+                "${Units.tempFull(c.temperature, s.temperatureUnit)} | $condition",
                 Modifier.graphicsLayer { alpha = ((progress - 0.65f) / 0.35f).coerceIn(0f, 1f) },
                 fontSize = 18.sp, fontWeight = FontWeight.Medium, color = NimbusColors.Secondary,
             )
@@ -268,27 +268,21 @@ private fun Header(data: WeatherData, progress: Float, statusTop: androidx.compo
                 },
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                // Combined symbol (sun/moon, clouds, rain/snow, wind) next to the temperature.
+                // Combined symbol (sun/moon, clouds, rain/snow, wind), temperature with unit and the
+                // day's max/min stacked like on a weather station display.
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     WeatherIcon(
-                        c.condition, c.isDay, size = 68.dp, wind = windiness(c.windSpeed, c.windGust),
+                        c.condition, c.isDay, size = 64.dp, wind = windiness(c.windSpeed, c.windGust),
                         description = condition,
                     )
-                    Spacer(Modifier.width(10.dp))
-                    Text(
-                        Units.temp(c.temperature, s.temperatureUnit),
-                        fontSize = 100.sp, fontWeight = FontWeight.Thin, color = Color.White, lineHeight = 104.sp,
-                        style = androidx.compose.ui.text.TextStyle(shadow = TextShadow),
-                    )
+                    Spacer(Modifier.width(8.dp))
+                    dev.nimbus.weather.ui.components.BigTemperature(c.temperature, s.temperatureUnit, 96.sp, shadow = TextShadow)
+                    if (today != null) {
+                        Spacer(Modifier.width(12.dp))
+                        dev.nimbus.weather.ui.components.MaxMinStack(today.tempMax, today.tempMin, s.temperatureUnit, fontSize = 18.sp, shadow = TextShadow)
+                    }
                 }
                 Text(condition, fontSize = 21.sp, fontWeight = FontWeight.Medium, color = Color(0xE6FFFFFF), style = androidx.compose.ui.text.TextStyle(shadow = TextShadow))
-                if (today != null) {
-                    Text(
-                        stringResource(R.string.high_low, Units.temp(today.tempMax, s.temperatureUnit), Units.temp(today.tempMin, s.temperatureUnit)),
-                        fontSize = 20.sp, fontWeight = FontWeight.Medium, color = Color.White,
-                        style = androidx.compose.ui.text.TextStyle(shadow = TextShadow),
-                    )
-                }
                 if (c.stationName != null && c.stationDistanceKm != null) {
                     val explain = dev.nimbus.weather.ui.components.LocalExplain.current
                     Row(

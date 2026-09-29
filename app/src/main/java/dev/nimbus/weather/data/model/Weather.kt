@@ -70,6 +70,8 @@ data class HourlyPoint(
     val visibility: Double? = null,
     val pressure: Double? = null,
     val cloudCover: Double? = null,
+    /** Minutes of sunshine in the hour before [time]. */
+    val sunshine: Double? = null,
 )
 
 @Serializable

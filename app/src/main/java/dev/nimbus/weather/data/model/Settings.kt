@@ -29,7 +29,22 @@ data class Settings(
     val animationsEnabled: Boolean = true,
     /** Load the radar loop in the background once the location is known (Wi-Fi only). */
     val preloadRadar: Boolean = true,
-)
+) {
+    companion object {
+        private val FAHRENHEIT_COUNTRIES = setOf("US", "LR", "MM", "BS", "BZ", "KY", "PW", "FM", "MH")
+
+        /** Defaults for a first start: units as customary in the country of the device locale. */
+        fun forLocale(locale: java.util.Locale): Settings {
+            val country = locale.country.uppercase()
+            val imperial = country in FAHRENHEIT_COUNTRIES
+            return Settings(
+                temperatureUnit = if (imperial) TemperatureUnit.FAHRENHEIT else TemperatureUnit.CELSIUS,
+                windUnit = if (imperial || country == "GB") WindUnit.MPH else WindUnit.KMH,
+                precipitationUnit = if (imperial) PrecipitationUnit.INCH else PrecipitationUnit.MM,
+            )
+        }
+    }
+}
 
 /** Models shown in the model comparison chart (Open-Meteo ids and display names). */
 val ComparisonModels = listOf(

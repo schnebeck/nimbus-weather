@@ -28,23 +28,25 @@ Mindestversion: Android 8.0 (API 26). Google Play Services werden nicht benötig
   oben rechts „Radar“. **Wischen nach rechts** führt in den **Rückblick**: „Heute bisher“, „Gestern“,
   „Vorgestern“ – gemessene DWD-Stationswerte (Temperatur, Niederschlag, Sonne, Wind) neben der
   Vorhersage des gewählten Modells für dieselben Stunden, als Meteogramm (Messung durchgezogen, Vorhersage
-  gestrichelt) inkl. mittlerer Abweichung (außerhalb Deutschlands
+  gestrichelt), gemessene Sonnenscheindauer, inkl. mittlerer Abweichung (außerhalb Deutschlands
   nur Modellwerte). Die Stationswerte werden immer geladen, unabhängig von der Einstellung für die
   aktuellen Werte. Die Daten werden beim Wischen nachgeladen, nicht dauerhaft gespeichert.
 - **Hintergrund-Aktualisierung** stündlich (WorkManager, nur mit Netz und ausreichend Akku) für alle Orte;
   der aktuelle Standort wird dabei an seiner zuletzt bekannten Position aktualisiert.
 - **Wetterseite** wie bei Apple:
   großer, beim Scrollen einklappender Kopfbereich mit **Kombisymbol** (Sonne/Mond, Wolken, Regen/Schnee,
-  Windstriche bei Wind), DWD-Warnungen, Niederschlag der nächsten 3 Stunden (15-Min.-Schritte),
+  Windstriche bei Wind), Temperatur mit Einheit (°C/°F) und Max/Min untereinander wie an einer
+  Wetterstation (auch im Rückblick und in der Ortsliste), DWD-Warnungen, Niederschlag der nächsten 3 Stunden (15-Min.-Schritte),
   Stundenvorhersage mit Sonnenauf-/-untergang, 10-Tage-Vorhersage mit Temperaturbalken
-  (antippen → **Meteogramm** 00–24 Uhr: Temperatur, Niederschlag, Symbole, Wind, Nachtschattierung;
-  Einheiten in den Ecken, Achsen nur mit Zahlen, an trockenen Tagen ohne Niederschlagsachse – maximale
-  Diagrammbreite; langes Drücken blendet einen verschiebbaren Cursor ein, der nach 10 s Nichtbenutzung
+  (antippen → **Meteogramm** 00–24 Uhr: Temperatur, Niederschlag, eigene Sonnenschein-Zeile (Minuten je Stunde,
+  Tagessumme rechts), Legende mit Tagessummen von Niederschlag und Sonnenschein, Symbole, Wind, Nachtschattierung; Balken mittig zur Stunde;
+  Einheiten in den Ecken, Achsen nur mit Zahlen, Zeitachse 00–24 – maximale Diagrammbreite; langes Drücken blendet einen verschiebbaren Cursor ein, der nach 10 s Nichtbenutzung
   ausblendet, darunter alle Werte der gewählten Stunde), **Niederschlagskarte 24 h** (Wahrscheinlichkeit und Menge pro Stunde, von „Jetzt“ bis +24 h mit Nachtschattierung),
   Niederschlagswahrscheinlichkeit in Stunden- und Tagesvorhersage immer angezeigt (unter 10 % blass),
   Radar-Vorschau, Kacheln für Gefühlt, UV, Wind (Kompass), Luftfeuchte/Taupunkt, Sichtweite (mit Angabe
   „gemessen an DWD-Station“ bzw. „Modellwert“), Luftdruck (Tendenz),
-  **Sonne** (Tagesansicht 00–24 Uhr: echter Sonnenhöhen-Verlauf mit Horizont, Tag/Nacht-Schattierung,
+  **Sonne** (Tagesansicht 00–24 Uhr: echter Sonnenhöhen-Verlauf mit fester Skala je Ort – die Bogenhöhe
+  zeigt die Jahreszeit –, Lichtphasen Tag / Morgen-/Abendrot / Blaue Stunde / Nacht mit Uhrzeiten,
   Auf-/Untergang, Tageslänge mit Änderung zu gestern, Höchststand und aktuelle Position), **Mond** (Phase, Beleuchtung, Auf-/Untergang, nächster Vollmond), Luftqualität, Pollen,
   **Pollenflug** (Stufen je Art für bis zu 3 Tage, Zusammensetzung der nächsten 24 h, gestapelter Stundenverlauf),
   **Community-Messnetz** und **Modellvergleich** (8 Wettermodelle, 72 h).
@@ -65,7 +67,8 @@ Mindestversion: Android 8.0 (API 26). Google Play Services werden nicht benötig
   angezeigten Ort **im Hintergrund vorgeladen**.
 - **Orte**: GPS-Standort + gespeicherte Orte (Suche über Open-Meteo Geocoding), Wischen zum Wechseln.
 - **Einstellungen**: Vorhersagemodell (DWD ICON, Beste Auswahl, ECMWF, Météo-France), Einheiten
-  (°C/°F, km/h, m/s, mph, kn, Bft, mm/in), DWD-Stationswerte, Animationen an/aus.
+  (°C/°F, km/h, m/s, mph, kn, Bft, mm/in; beim ersten Start passend zum Land der Spracheinstellung),
+  DWD-Stationswerte, Animationen an/aus.
 - Offline: letzte Daten je Ort werden gespeichert und mit Hinweis angezeigt.
 
 ## Datenquellen

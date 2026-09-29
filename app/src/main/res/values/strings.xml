@@ -22,7 +22,6 @@
 
     <!-- Header -->
     <string name="my_location">My Location</string>
-    <string name="high_low">H:%1$s  L:%2$s</string>
     <string name="feels_like_short">Feels like %1$s</string>
     <string name="updated_at">Updated %1$s</string>
     <string name="offline_cached">Offline – showing data from %1$s</string>
@@ -387,4 +386,21 @@
     <string name="sun_now_down">Sun now %1$s below the horizon</string>
     <string name="sun_highest">highest %1$s at\u00A0%2$s</string>
     <string name="sunrise_tomorrow">sunrise tomorrow\u00A0%1$s</string>
+    <string name="phase_day">Day</string>
+    <string name="phase_golden">Golden hour</string>
+    <string name="phase_golden_morning">Golden hour</string>
+    <string name="phase_golden_evening">Golden hour</string>
+    <string name="phase_blue">Blue hour</string>
+    <string name="phase_night">Night</string>
+    <string name="sun_phases_morning">This morning: %1$s</string>
+    <string name="sun_phases_evening">This evening: %1$s</string>
+    <string name="sun_phases_tomorrow">Tomorrow morning: %1$s</string>
+    <string name="term_sun_title">Sun and Light Phases</string>
+    <string name="term_sun_body">The curve shows how high the sun stands above the horizon over the course of today, calculated on the device. The scale is fixed for the place – from the highest sun at midsummer noon to its lowest point at midwinter midnight – so the arc shows the season at a glance: high and wide in summer, low and short in winter, with the night as a deep trough.\n\nThe background shows the light phases:\n• Day: sun more than 6° above the horizon\n• Golden hour (morning and evening glow): from 6° above to 4° below the horizon – warm, soft light and long shadows, red sky around sunrise and sunset\n• Blue hour: 4° to 8° below the horizon – the sun is down, the sky turns deep blue\n• Night: sun more than 8° below the horizon\n\nAstronomers divide the twilight differently: civil twilight lasts until the sun is 6° below the horizon (still bright enough outdoors without lights), nautical twilight until 12° and astronomical twilight until 18° – only then is the sky completely dark.\n\nSunrise and sunset refer to the upper edge of the sun including atmospheric refraction.</string>
+    <string name="max_label">Max</string>
+    <string name="min_label">Min</string>
+    <string name="history_source_pending">No readings from DWD station %1$s for this day yet – forecast values (%2$s)</string>
+    <string name="sunshine_short">Sun</string>
+    <string name="legend_precip">Precipitation %1$s</string>
+    <string name="legend_sunshine">Sunshine %1$s h (bars: minutes per hour)</string>
 </resources>

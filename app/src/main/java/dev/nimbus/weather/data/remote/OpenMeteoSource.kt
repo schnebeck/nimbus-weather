@@ -41,6 +41,7 @@ data class ModelForecast(
                 visibility = h.visibility ?: o.visibility,
                 pressure = h.pressure ?: o.pressure,
                 cloudCover = h.cloudCover ?: o.cloudCover,
+                sunshine = h.sunshine ?: o.sunshine,
             )
         }
         val lastHour = hours.lastOrNull()?.time ?: Long.MIN_VALUE
@@ -155,7 +156,7 @@ class OpenMeteoSource(
             "wind_gusts_10m,visibility,uv_index"
         const val HOURLY = "temperature_2m,apparent_temperature,relative_humidity_2m,precipitation_probability," +
             "precipitation,weather_code,is_day,uv_index,visibility,wind_speed_10m,wind_direction_10m," +
-            "wind_gusts_10m,pressure_msl,cloud_cover"
+            "wind_gusts_10m,pressure_msl,cloud_cover,sunshine_duration"
         const val DAILY = "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum," +
             "precipitation_probability_max,uv_index_max,wind_speed_10m_max,wind_direction_10m_dominant"
         const val POLLEN = "alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,ragweed_pollen,olive_pollen"
@@ -202,6 +203,7 @@ class OpenMeteoSource(
                 val wg = h.doubles("wind_gusts_10m")
                 val ps = h.doubles("pressure_msl")
                 val cc = h.doubles("cloud_cover")
+                val sun = h.doubles("sunshine_duration")
                 t.indices.mapNotNull { i ->
                     val time = t[i] ?: return@mapNotNull null
                     val tt = temp.at(i) ?: return@mapNotNull null
@@ -221,6 +223,7 @@ class OpenMeteoSource(
                         visibility = vis.at(i),
                         pressure = ps.at(i),
                         cloudCover = cc.at(i),
+                        sunshine = sun.at(i)?.div(60.0),
                     )
                 }
             } ?: emptyList()

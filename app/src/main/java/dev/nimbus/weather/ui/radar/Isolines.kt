@@ -10,18 +10,19 @@ import kotlin.math.floor
 object Isolines {
     data class Segment(val level: Double, val lon1: Double, val lat1: Double, val lon2: Double, val lat2: Double)
 
-    fun compute(g: WeatherGrid, field: FloatArray, band: Double, refine: Int = 4): List<Segment> {
+    /** Lines at [offset] + k · [band]; e.g. band 1, offset 0.5 → 21.5, 22.5, … (the rounding borders). */
+    fun compute(g: WeatherGrid, field: FloatArray, band: Double, refine: Int = 4, offset: Double = 0.0): List<Segment> {
         val rows = (g.rows - 1) * refine + 1
         val cols = (g.cols - 1) * refine + 1
         val step = g.step / refine
         val v = Array(rows) { r -> DoubleArray(cols) { c -> g.sample(field, g.lat0 + r * step, g.lon0 + c * step)?.toDouble() ?: Double.NaN } }
         val finite = v.flatMap { it.asIterable() }.filter { !it.isNaN() }
         if (finite.isEmpty()) return emptyList()
-        val first = floor(finite.min() / band).toInt() + 1
-        val last = kotlin.math.ceil(finite.max() / band).toInt() - 1     // no line exactly on the maximum
+        val first = floor((finite.min() - offset) / band).toInt() + 1
+        val last = kotlin.math.ceil((finite.max() - offset) / band).toInt() - 1     // no line exactly on the maximum
         val out = ArrayList<Segment>()
         for (k in first..last) {
-            val level = k * band
+            val level = offset + k * band
             for (r in 0 until rows - 1) for (c in 0 until cols - 1) {
                 // corners: a = bottom-left, b = bottom-right, cc = top-right, d = top-left (lat grows with r)
                 val a = v[r][c]; val b = v[r][c + 1]; val cc = v[r + 1][c + 1]; val d = v[r + 1][c]

@@ -39,4 +39,23 @@ class IsolinesTest {
         assertEquals(1.0, WeatherGrid.stepForZoom(6.6), 0.0)
         assertEquals(0.25, WeatherGrid.stepForZoom(8.6), 0.0)
     }
+
+    @Test
+    fun `every band holds exactly one label value`() {
+        for (unit in dev.nimbus.weather.data.model.TemperatureUnit.entries) {
+            var t = -30.0
+            while (t < 45.0) {
+                val display = dev.nimbus.weather.util.Units.temperature(t, unit)
+                val label = dev.nimbus.weather.util.Units.temp(t, unit).removeSuffix("°").toInt()
+                assertEquals("t=$t $unit", label, dev.nimbus.weather.ui.radar.WeatherOverlays.band(display))
+                t += 0.05
+            }
+        }
+    }
+
+    @Test
+    fun `isolines lie on the rounding borders`() {
+        val segs = Isolines.compute(grid(), grid().temp[0], band = 1.0, offset = 0.5)
+        assertEquals((0 until 10).map { it + 0.5 }.toSet(), segs.map { it.level }.toSet())
+    }
 }

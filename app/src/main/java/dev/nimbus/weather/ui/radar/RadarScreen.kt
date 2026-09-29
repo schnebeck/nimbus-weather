@@ -307,6 +307,7 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
             mapView.onPause()
             mapView.onStop()
             mapView.onDestroy()
+            overlays.dispose()
         }
     }
 
@@ -608,20 +609,23 @@ private fun Legend(showTemp: Boolean, unit: dev.nimbus.weather.data.model.Temper
     }
     if (showTemp) {
         Spacer(Modifier.height(4.dp))
-        // Discrete bands like on the map (areas of equal temperature).
+        // Discrete bands like on the map (areas of equal temperature), in the display unit.
+        val f = unit == dev.nimbus.weather.data.model.TemperatureUnit.FAHRENHEIT
+        val lo = if (f) -4 else -20
+        val hi = if (f) 104 else 40
         Canvas(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp))) {
-            val bands = (-10 until 20)        // -20 °C … 40 °C in 2 °C steps; labels at thirds
-            val bw = size.width / bands.count()
-            bands.forEachIndexed { i, b ->
+            val n = hi - lo
+            val bw = size.width / n
+            for (k in 0 until n) {
                 drawRect(
-                    dev.nimbus.weather.ui.main.Insights.temperatureColor((b + 0.5) * WeatherOverlays.BAND),
-                    androidx.compose.ui.geometry.Offset(i * bw, 0f), androidx.compose.ui.geometry.Size(bw + 0.5f, size.height),
+                    Color(WeatherOverlays.bandColor(lo + k, unit)),
+                    androidx.compose.ui.geometry.Offset(k * bw, 0f), androidx.compose.ui.geometry.Size(bw + 0.5f, size.height),
                 )
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            listOf(-20.0, 0.0, 20.0, 40.0).forEach {
-                Text(dev.nimbus.weather.util.Units.temp(it, unit), fontSize = 10.sp, color = NimbusColors.Tertiary)
+            (0..3).map { lo + (hi - lo) * it / 3 }.forEach {
+                Text("$it°", fontSize = 10.sp, color = NimbusColors.Tertiary)
             }
         }
     }

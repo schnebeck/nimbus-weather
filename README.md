@@ -10,8 +10,8 @@ Die fertigen, signierten APKs liegen in `dist/`:
 
 | Datei | Für |
 |---|---|
-| `Nimbus-1.4.0-arm64.apk` (13 MB) | praktisch alle Android-Handys seit ca. 2017 |
-| `Nimbus-1.4.0-universal.apk` (44 MB) | alle Geräte inkl. 32-Bit-ARM und x86 |
+| `Nimbus-1.4.1-arm64.apk` (13 MB) | praktisch alle Android-Handys seit ca. 2017 |
+| `Nimbus-1.4.1-universal.apk` (44 MB) | alle Geräte inkl. 32-Bit-ARM und x86 |
 
 APK aufs Handy kopieren, öffnen, „Installation aus unbekannten Quellen“ für den Dateimanager erlauben.
 Mindestversion: Android 8.0 (API 26). Google Play Services werden nicht benötigt.
@@ -50,7 +50,7 @@ Mindestversion: Android 8.0 (API 26). Google Play Services werden nicht benötig
   RainViewer für Europa, beide auf **eine gemeinsame Farbskala** umgerechnet (dBZ-basiert):
   **Regen (über 0 °C) weiß → grau → hellblau → dunkelblau**, **Schnee (ab 0 °C) blassrosa → dunkelviolett**,
   Schneeregen (0–1 °C) als Mischfarbe – entschieden pro Pixel über die 2-m-Temperatur zur Zeit des Radarbilds.
-  Overlays **Temperatur** (Flächen gleicher Temperatur in 2-°C-Stufen mit Isolinien + Werte) und **Wind**
+  Overlays **Temperatur** (Flächen gleicher Temperatur in 1-Grad-Stufen, Grenzen auf den Rundungsgrenzen, mit Isolinien + Werte) und **Wind**
   (Pfeile nach Stärke gefärbt, km/h), passend zur Stunde auf der Zeitleiste; das Werteraster wird beim Zoomen
   feiner (1° → 0,5° → 0,25° → 0,125°, je 99 Punkte); Satellit (Meteosat), DWD-Warnkarte.
   Die Radarschleife lädt vom aktuellen Bild ausgehend in Gruppen und startet, sobald 5 Bilder da sind.
@@ -93,7 +93,7 @@ Voraussetzungen: JDK 21, Android SDK mit Plattform 37 und Build-Tools 36.
 
 ```bash
 echo "sdk.dir=$HOME/Android/Sdk" > local.properties
-./gradlew testDebugUnitTest      # 73 Unit-Tests
+./gradlew testDebugUnitTest      # 75 Unit-Tests
 ./gradlew assembleRelease        # APKs in app/build/outputs/apk/release/
 ```
 

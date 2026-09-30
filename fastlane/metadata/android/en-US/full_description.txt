@@ -1,0 +1,31 @@
+<p>Nimbus reflects the current weather with small matching background animations – drifting clouds, rain, snow or a starry sky. The data comes from the German Weather Service (DWD) – readings from the nearest weather station, forecasts from the high-resolution ICON-D2 model and the rain radar. No ads, no account, no Google services.</p>
+
+<p><b>Weather</b></p>
+<ul>
+<li>Current conditions measured at the nearest DWD station, DWD weather alerts</li>
+<li>Short text outlook for the next hours and precipitation in 15-minute steps</li>
+<li>Hourly and 10-day forecast with chance of precipitation</li>
+<li>Meteogram for every day: temperature, precipitation, sunshine and wind per hour, with a slider for the exact values</li>
+<li>Look back: swipe right to compare what was measured with what was forecast for today, yesterday and the day before</li>
+<li>Feels like, UV, wind, humidity and dew point, visibility, air pressure</li>
+<li>Sun course with golden and blue hour, moon phase and moon times</li>
+<li>Air quality, pollen forecast (DWD index and composition), citizen sensor network, comparison of eight weather models</li>
+</ul>
+
+<p><b>Rain radar</b></p>
+<ul>
+<li>DWD radar with a 2-hour nowcast for Germany, RainViewer for Europe</li>
+<li>One colour scale for rain and for snow – decided per pixel by the temperature</li>
+<li>Temperature and wind layers, satellite and warning map, look back up to 24 hours</li>
+<li>On Wi-Fi the radar loop of your location is kept up to date in the background, so it opens instantly</li>
+</ul>
+
+<p><b>Details</b></p>
+<ul>
+<li>An ⓘ on every card explains the terms</li>
+<li>English and German, units follow your country (°C/°F, km/h, mph, m/s, knots, Beaufort, mm/inch)</li>
+<li>Forecast model to choose: DWD ICON, best match, ECMWF or Météo-France</li>
+<li>Battery friendly: the animation slows down when the phone is left alone and stops in battery saver mode</li>
+</ul>
+
+<p>Data: Deutscher Wetterdienst (via Bright Sky and Open-Meteo), Open-Meteo, Copernicus CAMS, RainViewer, Sensor.Community, OpenStreetMap/Nominatim. Maps © OpenFreeMap, OpenMapTiles, OpenStreetMap contributors.</p>

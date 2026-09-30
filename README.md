@@ -118,11 +118,17 @@ echo "sdk.dir=$HOME/Android/Sdk" > local.properties
 ./gradlew assembleRelease        # APKs in app/build/outputs/apk/release/
 ```
 
-Signiert wird mit `keystore/keystore.properties` (nicht im Repository); fehlt die Datei, wird mit dem
-Debug-Schlüssel signiert.
+Signiert wird mit `keystore/keystore.properties` (nicht im Repository); fehlt die Datei, bleibt die
+Release-APK unsigniert (`app-universal-release-unsigned.apk`), so wie F-Droid sie erwartet.
 
 Technik: Kotlin, Jetpack Compose (Material 3), OkHttp, kotlinx.serialization, DataStore, WorkManager,
 MapLibre Android, AboutLibraries (Lizenzliste, beim Bauen erzeugt).
+
+### F-Droid
+
+Store-Texte, Bildschirmfotos und Änderungshinweise liegen im F-Droid-Format unter
+`fastlane/metadata/android/` (Deutsch und Englisch). Der Entwurf des Build-Rezepts für das
+fdroiddata-Repository steht in `docs/fdroid/dev.nimbus.weather.yml`.
 
 ### Demo-Modus für visuelle Tests
 

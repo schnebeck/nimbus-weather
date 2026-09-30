@@ -77,3 +77,24 @@ SPDX-License-Identifier = "BSD-2-Clause"
 path = "app/src/test/resources/fixtures/nominatim_reverse.json"
 SPDX-FileCopyrightText = "OpenStreetMap contributors (via Nominatim)"
 SPDX-License-Identifier = "ODbL-1.0"
+
+# Store listing for F-Droid (texts and images)
+[[annotations]]
+path = ["fastlane/metadata/android/**/*.txt", "fastlane/metadata/android/*/images/icon.png"]
+SPDX-FileCopyrightText = "(C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+[[annotations]]
+path = ["fastlane/metadata/android/*/images/featureGraphic.png", "fastlane/metadata/android/*/images/phoneScreenshots/*.png"]
+SPDX-FileCopyrightText = [
+    "(C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>",
+    "Radar and weather data: Deutscher Wetterdienst (DWD), RainViewer, Open-Meteo.com",
+    "Map: OpenFreeMap, OpenMapTiles, OpenStreetMap contributors",
+]
+SPDX-License-Identifier = "CC-BY-4.0 AND ODbL-1.0"
+
+# F-Droid build recipe (kept in the canonical format of `fdroid rewritemeta`, which allows no comments)
+[[annotations]]
+path = "docs/fdroid/dev.nimbus.weather.yml"
+SPDX-FileCopyrightText = "(C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>"
+SPDX-License-Identifier = "GPL-3.0-or-later"

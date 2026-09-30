@@ -1,0 +1,4 @@
+• Für F-Droid vorbereitet: Store-Texte, Bildschirmfotos und unsignierter Release-Build
+• Behoben: Der aktuelle Standort zeigte manchmal „Mein Standort“ statt der Ortschaft; OpenStreetMap als zweite Quelle für Ortsnamen
+• Radar: endloses Laden der 6-/24-Std.-Schleife behoben; die 2-Std.-Schleife bleibt im WLAN aktuell; Zeitlimits und gespeicherte Bilder bei schlechter Verbindung
+• Weniger Akkuverbrauch (Bildrate der Himmel-Animation, Radar-Darstellung, Standort zuerst über das Netz)

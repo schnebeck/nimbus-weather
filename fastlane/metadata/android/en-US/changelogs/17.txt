@@ -1,0 +1,4 @@
+• Prepared for F-Droid: store texts, screenshots and an unsigned release build
+• Fixed: the current location sometimes showed "My location" instead of the town; OpenStreetMap as a second source for place names
+• Radar: endless loading of the 6 h / 24 h loop fixed; the 2 h loop stays up to date on Wi-Fi; timeouts and stored copies when the connection is poor
+• Lower battery use (sky animation frame rate, radar rendering, network location first)

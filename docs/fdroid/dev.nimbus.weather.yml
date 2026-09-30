@@ -1,0 +1,36 @@
+AntiFeatures:
+  NonFreeNet:
+    en-US: Radar images outside Germany come from RainViewer, a proprietary service.
+    de-DE: Radarbilder außerhalb Deutschlands kommen von RainViewer, einem proprietären
+      Dienst.
+Categories:
+  - Weather
+License: GPL-3.0-or-later
+AuthorName: Thorsten Schnebeck
+WebSite: https://github.com/schnebeck/nimbus-weather
+SourceCode: https://github.com/schnebeck/nimbus-weather
+IssueTracker: https://github.com/schnebeck/nimbus-weather/issues
+Changelog: https://github.com/schnebeck/nimbus-weather/releases
+
+AutoName: Nimbus
+
+RepoType: git
+Repo: https://github.com/schnebeck/nimbus-weather.git
+
+Builds:
+  - versionName: 1.10.2
+    versionCode: 17
+    commit: v1.10.2
+    subdir: app
+    sudo:
+      - apt-get update
+      - apt-get install -y openjdk-21-jdk-headless
+      - update-alternatives --auto java
+    gradle:
+      - yes
+    output: build/outputs/apk/release/app-universal-release-unsigned.apk
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 1.10.2
+CurrentVersionCode: 17

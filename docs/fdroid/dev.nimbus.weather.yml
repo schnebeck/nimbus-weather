@@ -20,7 +20,7 @@ Repo: https://github.com/schnebeck/nimbus-weather.git
 Builds:
   - versionName: 1.10.2
     versionCode: 17
-    commit: v1.10.2
+    commit: 87177926ce87c503f199b097b71a234b4d75bfcf
     subdir: app
     sudo:
       - apt-get update

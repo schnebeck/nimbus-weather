@@ -14,8 +14,7 @@
 # F-Droid
 
 - `dev.nimbus.weather.yml` – build recipe for the fdroiddata repository, already in the format of
-  `fdroid rewritemeta` and checked with `fdroid lint`. Before submitting, replace
-  `commit: v1.10.2` with the full commit hash of the tag.
+  `fdroid rewritemeta` and checked with `fdroid lint`. It builds the tag v1.10.2 (commit hash).
 - Store texts, screenshots, icon, banner and changelogs are read by F-Droid from
   `fastlane/metadata/android/` in this repository (en-US and de-DE).
 

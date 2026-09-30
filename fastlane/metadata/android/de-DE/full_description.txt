@@ -9,7 +9,8 @@
 <li>Rückblick: nach rechts wischen und für heute, gestern und vorgestern vergleichen, was gemessen und was vorhergesagt wurde</li>
 <li>Gefühlte Temperatur, UV, Wind, Luftfeuchte und Taupunkt, Sichtweite, Luftdruck</li>
 <li>Sonnenlauf mit Morgen-/Abendrot und Blauer Stunde, Mondphase und Mondzeiten</li>
-<li>Luftqualität, Pollenflug (DWD-Index und Zusammensetzung), Bürger-Messnetz, Vergleich von acht Wettermodellen</li>
+<li>Luftqualität, Pollenflug (DWD-Index und Zusammensetzung, Arten wählbar), Bürger-Messnetz, Vergleich von acht Wettermodellen</li>
+<li>Gezeiten an der Küste und an Tideflüssen: nächste Hoch- und Niedrigwasser mit Tidekurve, berechnet aus Pegelmessungen; an Flüssen und an der Ostsee der aktuelle Pegelstand</li>
 </ul>
 
 <p><b>Regenradar</b></p>
@@ -28,4 +29,4 @@
 <li>Akkuschonend: Die Animation wird langsamer, wenn das Handy unbenutzt liegt, und stoppt im Energiesparmodus</li>
 </ul>
 
-<p>Daten: Deutscher Wetterdienst (über Bright Sky und Open-Meteo), Open-Meteo, Copernicus CAMS, RainViewer, Sensor.Community, OpenStreetMap/Nominatim. Karten © OpenFreeMap, OpenMapTiles, OpenStreetMap-Mitwirkende.</p>
+<p>Daten: Deutscher Wetterdienst (über Bright Sky und Open-Meteo), Open-Meteo, Copernicus CAMS, RainViewer, Sensor.Community, PEGELONLINE (WSV), OpenStreetMap/Nominatim. Karten © OpenFreeMap, OpenMapTiles, OpenStreetMap-Mitwirkende.</p>

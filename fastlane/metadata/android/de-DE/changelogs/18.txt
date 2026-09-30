@@ -1,0 +1,3 @@
+• Neu: Gezeiten an der Küste und an Tideflüssen – nächste Hoch- und Niedrigwasser mit Tidekurve, berechnet aus Pegelmessungen (etwa ±30 min, nicht für Navigation oder Wattwanderungen)
+• Neu: Pegelkarte für Flüsse und die Ostsee mit Wasserstand, Einstufung und Verlauf
+• Pollenflug: Arten wählbar, z. B. nur Bäume

@@ -148,13 +148,15 @@ data class WeatherData(
     val airQuality: AirQuality? = null,
     val community: CommunityObservation? = null,
     val pollen: PollenForecast? = null,
+    /** Nearest water level gauge (PEGELONLINE), only in Germany. */
+    val gauge: GaugeInfo? = null,
     val sources: List<Source>,
     val fetchedAt: Long,
 )
 
 /** A data source that contributed to a forecast; rendered localized in the UI. */
 @Serializable
-enum class SourceKind { MODEL_DWD_ICON, MODEL_ECMWF, MODEL_METEO_FRANCE, MODEL_BEST_MATCH, GAP_FILL, DWD_STATION, DWD_WARNINGS, CAMS, COMMUNITY, DWD_POLLEN }
+enum class SourceKind { MODEL_DWD_ICON, MODEL_ECMWF, MODEL_METEO_FRANCE, MODEL_BEST_MATCH, GAP_FILL, DWD_STATION, DWD_WARNINGS, CAMS, COMMUNITY, DWD_POLLEN, PEGELONLINE }
 
 @Serializable
 data class Source(val kind: SourceKind, val detail: String? = null)
@@ -205,4 +207,38 @@ data class ModelSeries(
     val times: List<Long>,
     val temperature: List<Double?>,
     val precipitation: List<Double?>,
+)
+
+/** One water level reading, [value] in cm above gauge zero. */
+@Serializable
+data class LevelSample(val time: Long, val value: Double)
+
+/**
+ * The nearest gauge of the federal waterways (PEGELONLINE): current level, reference values and
+ * the recent course; for tide gauges also the predicted high and low waters.
+ */
+@Serializable
+data class GaugeInfo(
+    val uuid: String,
+    val name: String,
+    val water: String,
+    val distanceKm: Double,
+    val tidal: Boolean,
+    /** Gauge zero in metres above sea level (NHN), if known. */
+    val gaugeZero: Double? = null,
+    val level: Double? = null,
+    val levelTime: Long? = null,
+    /** PEGELONLINE classification relative to mean low / mean high water: low, normal, high. */
+    val state: String? = null,
+    /** Characteristic values in cm, e.g. MNW, MW, MHW, HSW, M_I, MThw, MTnw. */
+    val marks: Map<String, Double> = emptyMap(),
+    /** Discharge in m³/s, if measured recently. */
+    val discharge: Double? = null,
+    /** Measured course, 10-minute means (rivers: 7 days, coast: 1.5 days). */
+    val history: List<LevelSample> = emptyList(),
+    /** Tide gauges: predicted course for the next 2 days. */
+    val prediction: List<LevelSample> = emptyList(),
+    val extremes: List<dev.nimbus.weather.util.Tides.Extreme> = emptyList(),
+    /** RMS of the tide fit in cm – how much wind and noise the model does not explain. */
+    val predictionRms: Double? = null,
 )

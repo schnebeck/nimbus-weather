@@ -63,6 +63,8 @@ enum class Term(@StringRes val title: Int, @StringRes val body: Int) {
     PRESSURE(R.string.term_pressure_title, R.string.term_pressure_body),
     AIR_QUALITY(R.string.term_aqi_title, R.string.term_aqi_body),
     POLLEN(R.string.term_pollen_title, R.string.term_pollen_body),
+    TIDES(R.string.term_tides_title, R.string.term_tides_body),
+    GAUGE(R.string.term_gauge_title, R.string.term_gauge_body),
     NOWCAST(R.string.term_nowcast_title, R.string.term_nowcast_body),
     RADAR(R.string.term_radar_title, R.string.term_radar_body),
     MODELS(R.string.term_models_title, R.string.term_models_body),

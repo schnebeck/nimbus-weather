@@ -89,5 +89,8 @@ class AppContainer(app: Application) {
     val location = LocationProvider(app, http)
     val openMeteo = OpenMeteoSource(http)
     val history = dev.nimbus.weather.data.remote.HistorySource(http)
-    val repository = WeatherRepository(openMeteo, BrightSkySource(http), CommunitySource(http), PollenSource(http))
+    val repository = WeatherRepository(
+        openMeteo, BrightSkySource(http), CommunitySource(http), PollenSource(http),
+        dev.nimbus.weather.data.remote.GaugeSource(http, File(app.cacheDir, "tides")),
+    )
 }

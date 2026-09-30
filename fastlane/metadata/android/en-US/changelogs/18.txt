@@ -1,0 +1,3 @@
+• New: tides at the coast and on tidal rivers – next high and low waters with a tide curve, calculated from gauge readings (about ±30 min, not for navigation or mudflat hiking)
+• New: water level card for rivers and the Baltic coast with level, rating and course
+• Pollen: choose the types to show, e.g. trees only

@@ -54,6 +54,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.res.stringResource
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
@@ -109,11 +111,19 @@ fun pollenLevelColor(level: Float): Color = when {
     else -> Color(0xFFFF5B36)
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun PollenForecastCard(pollen: PollenForecast, now: Long) {
+fun PollenForecastCard(pollenAll: PollenForecast, now: Long) {
     val tf = LocalTimeFormat.current
+    val selected = LocalSettings.current.pollenTypes
+    val updateSettings = LocalSettingsUpdater.current
     var expanded by rememberSaveable { mutableStateOf(false) }
+    var picking by rememberSaveable { mutableStateOf(false) }
+    // Only the types the user is interested in (settings, or "Choose types" in this card).
+    val pollen = remember(pollenAll, selected) { onlyTypes(pollenAll, selected) }
+    val hiddenCount = remember(pollenAll, selected) {
+        pollenAll.days.flatMap { it.levels.keys }.plus(pollenAll.hourly.keys).distinct().count { it !in selected }
+    }
     val days = remember(pollen, now) { pollen.days.filter { it.date + 24 * 3600_000L > now }.take(3) }
     val today = days.firstOrNull()
     // Rows: every type that is active on any of the shown days; the rest is summarised.
@@ -221,13 +231,42 @@ fun PollenForecastCard(pollen: PollenForecast, now: Long) {
                 else stringResource(R.string.pollen_source_cams),
                 fontSize = 11.sp, color = NimbusColors.Tertiary, lineHeight = 14.sp,
             )
-            Text(
-                stringResource(if (expanded) R.string.show_less else R.string.pollen_show_details),
-                Modifier.padding(top = 6.dp), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF9FD8FF),
-            )
+            if (hiddenCount > 0) {
+                Text(pluralStringResource(R.plurals.pollen_hidden, hiddenCount, hiddenCount), fontSize = 11.sp, color = NimbusColors.Tertiary, lineHeight = 14.sp)
+            }
+            Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(if (expanded) R.string.show_less else R.string.pollen_show_details),
+                    Modifier.weight(1f), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF9FD8FF),
+                )
+                Text(
+                    stringResource(R.string.pollen_choose),
+                    Modifier.clip(RoundedCornerShape(8.dp)).clickable { picking = true }.padding(horizontal = 6.dp, vertical = 4.dp),
+                    fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF9FD8FF),
+                )
+            }
+        }
+    }
+
+    if (picking) {
+        androidx.compose.material3.ModalBottomSheet(
+            onDismissRequest = { picking = false },
+            containerColor = Color(0xFF16233A), contentColor = Color.White,
+        ) {
+            Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 32.dp)) {
+                Text(stringResource(R.string.pollen_choose_title), fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                Spacer(Modifier.height(12.dp))
+                PollenTypePicker(selected) { types -> updateSettings { it.copy(pollenTypes = types) } }
+            }
         }
     }
 }
+
+/** The forecast reduced to the chosen types (levels, hourly concentrations). */
+fun onlyTypes(p: PollenForecast, types: Set<PollenType>): PollenForecast = p.copy(
+    days = p.days.map { d -> d.copy(levels = d.levels.filterKeys { it in types }) },
+    hourly = p.hourly.filterKeys { it in types },
+)
 
 /** Three segments (low / moderate / high); half levels fill half a segment. */
 @Composable

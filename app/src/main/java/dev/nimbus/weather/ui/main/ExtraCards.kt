@@ -334,6 +334,7 @@ fun SourcesFooter(data: WeatherData) {
                 SourceKind.CAMS -> stringResource(R.string.src_cams)
                 SourceKind.COMMUNITY -> stringResource(R.string.src_community)
                 SourceKind.DWD_POLLEN -> stringResource(R.string.src_dwd_pollen)
+                SourceKind.PEGELONLINE -> stringResource(R.string.src_pegelonline, titleCase(src.detail ?: ""))
             }
         } + stringResource(R.string.src_moon)
         Text(

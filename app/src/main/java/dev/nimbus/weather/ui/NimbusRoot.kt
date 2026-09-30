@@ -32,6 +32,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -55,6 +56,7 @@ fun NimbusRoot(viewModel: MainViewModel) {
     BackHandler(enabled = state.backStack.size > 1) { viewModel.back() }
 
     ExplainHost {
+    CompositionLocalProvider(dev.nimbus.weather.ui.main.LocalSettingsUpdater provides viewModel::updateSettings) {
     Box(Modifier.fillMaxSize().background(Color(0xFF0E1726))) {
         if (!state.initialized) return@Box
         AnimatedContent(
@@ -100,6 +102,7 @@ fun NimbusRoot(viewModel: MainViewModel) {
                 }
             }
         }
+    }
     }
     }
 }

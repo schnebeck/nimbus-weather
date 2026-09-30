@@ -143,6 +143,13 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                 }
             }
             item {
+                Section(stringResource(R.string.pollen_forecast)) {
+                    Text(stringResource(R.string.settings_pollen_desc), fontSize = 13.sp, color = NimbusColors.Secondary, lineHeight = 18.sp)
+                    Spacer(Modifier.size(10.dp))
+                    dev.nimbus.weather.ui.main.PollenTypePicker(settings.pollenTypes) { types -> onChange { it.copy(pollenTypes = types) } }
+                }
+            }
+            item {
                 Section(stringResource(R.string.settings_language)) {
                     Text(stringResource(R.string.settings_language_desc), fontSize = 14.sp, color = NimbusColors.Secondary)
                 }

@@ -42,6 +42,7 @@ class WeatherRepository(
     private val brightSky: BrightSkySource,
     private val community: CommunitySource,
     private val pollen: PollenSource,
+    private val gauges: dev.nimbus.weather.data.remote.GaugeSource? = null,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
 
@@ -67,6 +68,15 @@ class WeatherRepository(
         val aqJob = async { runCatching { openMeteo.airQuality(lat, lon) }.getOrNull() }
         val communityJob = async { runCatching { community.nearby(lat, lon) }.getOrNull() }
         val pollenJob = async { runCatching { pollen.forecast(lat, lon, inDwdArea) }.getOrNull() }
+        // Water levels: federal waterways only (Germany). Optional – never fails the forecast.
+        val gaugeJob = async {
+            if (gauges == null || !inDwdArea) null
+            else kotlinx.coroutines.withTimeoutOrNull(GAUGE_TIMEOUT_MS) {
+                runCatching { gauges.nearest(lat, lon) }
+                    .onFailure { if (it !is kotlinx.coroutines.CancellationException) android.util.Log.w("Nimbus", "gauge unavailable: $it") }
+                    .getOrNull()
+            }
+        }
 
         val primaryResult = primaryJob.await()
         val fill = fillJob.await()
@@ -104,6 +114,8 @@ class WeatherRepository(
         if (aq != null) sources += Source(SourceKind.CAMS)
         val pollenForecast = pollenJob.await()
         if (pollenForecast?.source == dev.nimbus.weather.data.model.PollenSourceKind.DWD) sources += Source(SourceKind.DWD_POLLEN)
+        val gauge = gaugeJob.await()
+        if (gauge != null) sources += Source(SourceKind.PEGELONLINE, gauge.name)
         val communityObs = communityJob.await()
         if (communityObs != null) sources += Source(SourceKind.COMMUNITY)
 
@@ -119,6 +131,7 @@ class WeatherRepository(
             airQuality = aq,
             community = communityObs,
             pollen = pollenForecast,
+            gauge = gauge,
             sources = sources,
             fetchedAt = clock(),
         )
@@ -130,6 +143,9 @@ class WeatherRepository(
     suspend fun search(query: String, language: String): List<Place> = openMeteo.searchPlaces(query, language)
 
     companion object {
+        /** The first tide fit downloads ~3 MB; later loads take a fraction of a second. */
+        private const val GAUGE_TIMEOUT_MS = 30_000L
+
         /** Rough bounding box of the DWD station network / warning area. */
         fun isInDwdArea(lat: Double, lon: Double) = lat in 47.2..55.1 && lon in 5.8..15.1
 

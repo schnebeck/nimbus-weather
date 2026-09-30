@@ -98,3 +98,8 @@ SPDX-License-Identifier = "CC-BY-4.0 AND ODbL-1.0"
 path = "docs/fdroid/dev.nimbus.weather.yml"
 SPDX-FileCopyrightText = "(C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>"
 SPDX-License-Identifier = "GPL-3.0-or-later"
+
+[[annotations]]
+path = "app/src/test/resources/fixtures/pegel_*"
+SPDX-FileCopyrightText = "Wasserstraßen- und Schifffahrtsverwaltung des Bundes (WSV), PEGELONLINE"
+SPDX-License-Identifier = "DL-DE-ZERO-2.0"

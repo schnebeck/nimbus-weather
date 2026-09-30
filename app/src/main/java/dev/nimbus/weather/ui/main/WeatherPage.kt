@@ -96,6 +96,8 @@ import kotlinx.coroutines.delay
 import java.util.Calendar
 
 val LocalSettings = staticCompositionLocalOf { Settings() }
+/** Changes the settings from anywhere below the root (e.g. the pollen card's type picker). */
+val LocalSettingsUpdater = staticCompositionLocalOf<((Settings) -> Settings) -> Unit> { {} }
 val LocalTimeFormat = staticCompositionLocalOf { TimeFormat("UTC", true) }
 
 private val ExpandedHeader = 316.dp
@@ -246,6 +248,7 @@ private fun WeatherContent(
             item(key = "moon") { MoonCard(data, now) }
             if (data.airQuality?.europeanAqi != null) item(key = "aqi") { AirQualityCard(data) }
             data.pollen?.let { p -> item(key = "pollen") { PollenForecastCard(p, now) } }
+            data.gauge?.let { g -> item(key = "gauge") { GaugeCard(g, now) } }
             if (data.community != null) item(key = "community") { CommunityCard(data) }
             item(key = "models") { ModelComparisonCard(state.models, now, onRequestModels) }
             item(key = "sources") { SourcesFooter(data) }

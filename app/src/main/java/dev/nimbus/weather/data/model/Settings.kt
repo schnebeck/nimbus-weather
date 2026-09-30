@@ -46,6 +46,8 @@ data class Settings(
     val animationsEnabled: Boolean = true,
     /** Load the radar loop in the background once the location is known (Wi-Fi only). */
     val preloadRadar: Boolean = true,
+    /** Pollen types shown in the pollen card (at least one). */
+    val pollenTypes: Set<PollenType> = PollenType.entries.toSet(),
 ) {
     companion object {
         private val FAHRENHEIT_COUNTRIES = setOf("US", "LR", "MM", "BS", "BZ", "KY", "PW", "FM", "MH")

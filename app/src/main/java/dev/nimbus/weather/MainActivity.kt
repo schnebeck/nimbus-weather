@@ -87,6 +87,11 @@ class MainActivity : ComponentActivity() {
         } else null
         viewModel.setDemo(demo, i.getStringExtra("demo_screen"))
         dev.nimbus.weather.ui.radar.RadarPalette.demoTempOffset = i.getStringExtra("demo_radar_temp")?.toFloatOrNull() ?: 0f
+        // Test hook: add a saved place "Name,lat,lon" (debug builds only).
+        if (BuildConfig.DEBUG) i.getStringExtra("demo_add_place")?.split(",")?.takeIf { it.size == 3 }?.let { (n, la, lo) ->
+            val lat = la.toDoubleOrNull(); val lon = lo.toDoubleOrNull()
+            if (lat != null && lon != null) viewModel.addPlace(dev.nimbus.weather.data.model.Place(id = "demo-$n", name = n, latitude = lat, longitude = lon))
+        }
         // Test hook: run the background radar refresh once right now (debug builds only).
         if (BuildConfig.DEBUG && i.getBooleanExtra("demo_radar_worker", false)) {
             androidx.work.WorkManager.getInstance(this).enqueue(

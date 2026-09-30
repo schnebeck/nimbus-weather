@@ -148,15 +148,15 @@ data class WeatherData(
     val airQuality: AirQuality? = null,
     val community: CommunityObservation? = null,
     val pollen: PollenForecast? = null,
-    /** Nearest water level gauge (PEGELONLINE), only in Germany. */
-    val gauge: GaugeInfo? = null,
+    /** Nearby water level gauges, one per water body (tide gauge first), only in Germany. */
+    val gauges: List<GaugeInfo> = emptyList(),
     val sources: List<Source>,
     val fetchedAt: Long,
 )
 
 /** A data source that contributed to a forecast; rendered localized in the UI. */
 @Serializable
-enum class SourceKind { MODEL_DWD_ICON, MODEL_ECMWF, MODEL_METEO_FRANCE, MODEL_BEST_MATCH, GAP_FILL, DWD_STATION, DWD_WARNINGS, CAMS, COMMUNITY, DWD_POLLEN, PEGELONLINE }
+enum class SourceKind { MODEL_DWD_ICON, MODEL_ECMWF, MODEL_METEO_FRANCE, MODEL_BEST_MATCH, GAP_FILL, DWD_STATION, DWD_WARNINGS, CAMS, COMMUNITY, DWD_POLLEN, PEGELONLINE, NLWKN, GAUGES, LHP_ALERTS }
 
 @Serializable
 data class Source(val kind: SourceKind, val detail: String? = null)
@@ -241,4 +241,39 @@ data class GaugeInfo(
     val extremes: List<dev.nimbus.weather.util.Tides.Extreme> = emptyList(),
     /** RMS of the tide fit in cm – how much wind and noise the model does not explain. */
     val predictionRms: Double? = null,
-)
+    /** Who operates the gauge / delivers the data. */
+    val provider: GaugeProvider = GaugeProvider.PEGELONLINE,
+    /** Flood alert levels in cm (Meldestufe / Informationswert / Alarmstufe 1–4), where published. */
+    val alertLevels: Map<Int, Double> = emptyMap(),
+    /** Current alert level, 0 = none. */
+    val alertStage: Int? = null,
+    /** How the state names its alert levels. */
+    val alertKind: AlertKind = AlertKind.MELDESTUFE,
+    /** Forecast of the state flood centre (Hessen), dashed in the chart. */
+    val forecast: List<LevelSample> = emptyList(),
+    /** Classification of the Länderübergreifendes Hochwasserportal: -1 no data, 0 none … 4 very large flood. */
+    val lhpClass: Int? = null,
+    /** The state's own wording for the classification, e.g. "Kein Hochwasser", "Meldestufe 1". */
+    val lhpClassName: String? = null,
+    /** State's own status text where it provides one (Sachsen: "Niedrigwasser", "Kein Hochwasser"). */
+    val stateText: String? = null,
+    /** Web page of the gauge at the operator (for gauges without measured values in the app). */
+    val link: String? = null,
+    /** Tendency given by the operator: 1 rising, 0 steady, -1 falling. */
+    val tendency: Int? = null,
+    /** PEGELONLINE: the station measures every minute (only a shorter history is loaded). */
+    val minuteData: Boolean = false,
+) {
+    /** True when the app has a measured value; LHP-only gauges carry just a classification. */
+    val hasValues: Boolean get() = level != null
+}
+
+/**
+ * Who delivers the data of a gauge. PEGELONLINE: federal waterways; the states for their own
+ * rivers; LHP: classification only (all states, no measured values).
+ */
+@Serializable
+enum class GaugeProvider { PEGELONLINE, NLWKN, LANUK_NRW, LFULG_SACHSEN, HLNUG_HESSEN, LHP }
+
+@Serializable
+enum class AlertKind { MELDESTUFE, INFORMATIONSWERT, ALARMSTUFE }

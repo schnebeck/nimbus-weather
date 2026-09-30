@@ -1,0 +1,12 @@
+NLWKN Pegelonline web service – terms of use (from the "Pegelonline Webservice – Benutzerhandbuch",
+NLWKN Betriebsstelle Hannover-Hildesheim, 26.10.2023):
+
+NLWKN Pegelonline stellt einen Webservice bereit, der kostenfrei genutzt werden kann. Damit können
+Drittanwender ihr Angebot um Messdaten des NLWKN erweitern.
+
+- Es handelt sich um ungeprüfte Rohdaten, die mit Fehlern und Datenlücken behaftet sein können. Aus
+  diesem Grund kann für die Vollständigkeit und Richtigkeit dieser Daten keine Gewähr übernommen werden.
+- Eine vollständige Ausfallsicherheit der Datenbereitstellung kann nicht gewährt werden. Es kann zu
+  Ausfällen in der Datenbereitstellung kommen. Es besteht kein Anspruch auf Datenbereitstellung.
+- Die Quelle www.pegelonline.nlwkn.niedersachsen.de muss bei Verwendung der Services immer angegeben
+  werden.

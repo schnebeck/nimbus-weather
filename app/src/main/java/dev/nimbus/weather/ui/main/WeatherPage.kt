@@ -248,7 +248,7 @@ private fun WeatherContent(
             item(key = "moon") { MoonCard(data, now) }
             if (data.airQuality?.europeanAqi != null) item(key = "aqi") { AirQualityCard(data) }
             data.pollen?.let { p -> item(key = "pollen") { PollenForecastCard(p, now) } }
-            data.gauge?.let { g -> item(key = "gauge") { GaugeCard(g, now) } }
+            if (data.gauges.isNotEmpty()) item(key = "gauge") { GaugeCard(data.gauges, now) }
             if (data.community != null) item(key = "community") { CommunityCard(data) }
             item(key = "models") { ModelComparisonCard(state.models, now, onRequestModels) }
             item(key = "sources") { SourcesFooter(data) }

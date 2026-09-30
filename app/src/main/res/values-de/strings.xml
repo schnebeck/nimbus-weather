@@ -416,7 +416,7 @@
     <string name="licenses_show_text">Lizenztext anzeigen</string>
     <string name="licenses_libraries">Bibliotheken (%1$d)</string>
     <string name="licenses_data">Daten und Karten</string>
-    <string name="licenses_data_text">Wetterdaten: Deutscher Wetterdienst (DWD), CC BY 4.0, teils über Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, RainViewer · Bürger-Messnetz: Sensor.Community, ODbL · Pegel: PEGELONLINE (WSV), DL-DE Zero 2.0 · Ortsnamen: Nominatim, © OpenStreetMap-Mitwirkende, ODbL · Karten: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap-Mitwirkende, ODbL.</string>
+    <string name="licenses_data_text">Wetterdaten: Deutscher Wetterdienst (DWD), CC BY 4.0, teils über Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, RainViewer · Bürger-Messnetz: Sensor.Community, ODbL · Pegel: PEGELONLINE (WSV), DL-DE Zero 2.0; NLWKN Pegelonline, pegelonline.nlwkn.niedersachsen.de; LANUK NRW (Hochwasserportal NRW), DL-DE Zero 2.0; LfULG Sachsen (Pegelnetz); HLNUG; Hochwasser-Einstufung und -Warnungen: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0 · Ortsnamen: Nominatim, © OpenStreetMap-Mitwirkende, ODbL · Karten: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap-Mitwirkende, ODbL.</string>
     <string name="radar_loading_frames">Radarbilder werden geladen %1$d/%2$d</string>
     <string name="radar_partly_cached">Verbindungsprobleme – einige Radarbilder sind ältere Kopien aus dem Speicher.</string>
     <string name="radar_partly_missing">Einige Radarbilder konnten nicht geladen werden.</string>
@@ -464,5 +464,22 @@
     <string name="term_tides_title">Gezeiten</string>
     <string name="term_tides_body">Zweimal am Tag steigt das Meer (Flut) bis zum Hochwasser und fällt (Ebbe) bis zum Niedrigwasser – angetrieben von Mond und Sonne. Um Voll- und Neumond ist der Tidenhub am größten (Springtide), um Halbmond am kleinsten (Nipptide).\n\nNimbus berechnet die Gezeiten selbst aus den Messungen des nächsten Pegels der Wasserstraßen- und Schifffahrtsverwaltung (PEGELONLINE): Aus vier Wochen Messwerten bestimmt es die acht wichtigsten Teiltiden und sagt damit die nächsten zwei Tage voraus – nach dem gleichen Prinzip wie amtliche Gezeitentafeln, aber mit viel kürzerer Datenbasis. Im Vergleich mit gemessenen Hoch- und Niedrigwassern liegen die Zeiten meist 10 bis 30 Minuten daneben. Wind verschiebt den echten Wasserstand: auflandiger Wind hebt ihn an, ablandiger senkt ihn.\n\n⚠ Nicht für Navigation und nicht für Wattwanderungen! Das Wasser im Watt kommt schneller zurück, als man gehen kann. Nutze den amtlichen Gezeitenkalender des Bundesamts für Seeschifffahrt und Hydrographie (BSH) und geh nur mit geprüften Wattführern ins Watt.\n\nDie Kurve zeigt den gemessenen Wasserstand (durchgezogen) und die Vorhersage (gestrichelt) in Zentimetern über Pegelnull.</string>
     <string name="term_gauge_title">Pegel</string>
-    <string name="term_gauge_body">Der aktuelle Messwert des nächsten Pegels der Bundeswasserstraßen (PEGELONLINE) im Umkreis von 10 km, in Zentimetern über Pegelnull – einer festen Bezugshöhe, die sich von Pegel zu Pegel unterscheidet. Der Wert sagt deshalb nichts über die Wassertiefe; vergleichbar ist er nur am selben Pegel.\n\nKennwerte des Pegels: mittleres Niedrigwasser (MNW), Mittelwasser (MW) und mittleres Hochwasser (MHW) der letzten Jahre. PEGELONLINE stuft den aktuellen Stand als Niedrigwasser, normal oder Hochwasser ein. Die Hochwassermarken I–III schränken die Schifffahrt ein; darüber sperrt die Wasserschutzpolizei Abschnitte.\n\nDie Kurve zeigt die letzten sieben Tage. Für Hochwasserwarnungen gelten die Hochwasserdienste der Bundesländer.</string>
+    <string name="term_gauge_body">Wasserstände der Pegel im Umkreis von 10 km, je Fluss oder See einer. Messwerte kommen von den Bundeswasserstraßen (PEGELONLINE) und von den Ländern, die sie offen veröffentlichen: Niedersachsen (NLWKN), Nordrhein-Westfalen (LANUK), Sachsen (LfULG) und Hessen (HLNUG, mit Vorhersage). Für alle anderen Pegel liefert das Länderübergreifende Hochwasserportal (LHP) die aktuelle Hochwasser-Einstufung und einen Link zur Pegelseite des Landes.\n\nDer Wasserstand wird in Zentimetern über Pegelnull angegeben – einer festen Bezugshöhe, die sich von Pegel zu Pegel unterscheidet. Er sagt deshalb nichts über die Wassertiefe; vergleichbar ist er nur am selben Pegel.\n\nKennwerte: mittleres Niedrigwasser (MNW), Mittelwasser (MW) und mittleres Hochwasser (MHW). Die Länder warnen in Stufen – Meldestufen (Niedersachsen, Hessen), Informationswerte (NRW) oder Alarmstufen (Sachsen) 1 bis 3 bzw. 4; je höher, desto größer das Hochwasser. An Bundeswasserstraßen schränken die Hochwassermarken I–III die Schifffahrt ein.\n\nFür Warnungen und Entscheidungen gelten die Hochwassermeldedienste der Länder.</string>
+    <string name="gauge_alert_none">Keine %1$s</string>
+    <string name="gauge_alert_stage">%1$s %2$d erreicht</string>
+    <string name="gauge_next_alert">%1$s %2$d bei %3$d cm (noch %4$d cm)</string>
+    <string name="src_nlwkn">Pegel: NLWKN Pegelonline (pegelonline.nlwkn.niedersachsen.de), %1$s</string>
+    <string name="alert_kind_ms">Meldestufe</string>
+    <string name="alert_kind_iw">Informationswert</string>
+    <string name="alert_kind_as">Alarmstufe</string>
+    <string name="alert_kind_ms_short">MS</string>
+    <string name="alert_kind_iw_short">IW</string>
+    <string name="alert_kind_as_short">AS</string>
+    <string name="gauge_data_by">Daten: %1$s</string>
+    <string name="gauge_no_data">Derzeit keine Daten</string>
+    <string name="gauge_values_at_state">Die Messwerte dieses Pegels veröffentlicht das Land nur auf seiner eigenen Webseite.</string>
+    <string name="gauge_forecast_note">Gestrichelt: Vorhersage der Hochwasserzentrale des Landes</string>
+    <string name="gauge_open_state_page">Pegelseite des Landes ›</string>
+    <string name="src_gauges">Pegel: %1$s</string>
+    <string name="src_lhp_alerts">Hochwasserwarnungen: LHP</string>
 </resources>

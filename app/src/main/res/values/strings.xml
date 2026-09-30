@@ -426,7 +426,7 @@
     <string name="licenses_show_text">Show license text</string>
     <string name="licenses_libraries">Libraries (%1$d)</string>
     <string name="licenses_data">Data and maps</string>
-    <string name="licenses_data_text">Weather data: Deutscher Wetterdienst (DWD), CC BY 4.0, partly via Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, RainViewer · Citizen sensors: Sensor.Community, ODbL · Water levels: PEGELONLINE (WSV), DL-DE Zero 2.0 · Place names: Nominatim, © OpenStreetMap contributors, ODbL · Maps: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors, ODbL.</string>
+    <string name="licenses_data_text">Weather data: Deutscher Wetterdienst (DWD), CC BY 4.0, partly via Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, RainViewer · Citizen sensors: Sensor.Community, ODbL · Water levels: PEGELONLINE (WSV), DL-DE Zero 2.0; NLWKN Pegelonline, pegelonline.nlwkn.niedersachsen.de; LANUK NRW (Hochwasserportal NRW), DL-DE Zero 2.0; LfULG Sachsen (Pegelnetz); HLNUG; flood classification and alerts: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0 · Place names: Nominatim, © OpenStreetMap contributors, ODbL · Maps: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors, ODbL.</string>
     <string name="radar_loading_frames">Loading radar images %1$d/%2$d</string>
     <string name="radar_partly_cached">Connection problems – some radar images are older copies from the memory.</string>
     <string name="radar_partly_missing">Some radar images could not be loaded.</string>
@@ -474,5 +474,22 @@
     <string name="term_tides_title">Tides</string>
     <string name="term_tides_body">Twice a day the sea rises (flood) to high water and falls (ebb) to low water – driven by the moon and the sun. Around full and new moon the range is largest (spring tide), around half moon smallest (neap tide).\n\nNimbus calculates the tides itself from the readings of the nearest gauge of the federal waterways (PEGELONLINE): from four weeks of measurements it determines the eight main partial tides and predicts the next two days with them – the same principle as official tide tables, but with a much shorter data basis. Compared with measured high and low waters, the times are usually off by 10 to 30 minutes. Wind shifts the real water level: onshore wind raises it, offshore wind lowers it.\n\n⚠ Not for navigation and not for mudflat hiking! The water in the Wadden Sea comes back faster than you can walk. Use the official tide calendar of the Federal Maritime and Hydrographic Agency (BSH) and go on the mudflats only with a certified guide.\n\nThe curve shows the measured level (solid) and the prediction (dashed) in centimetres above the gauge zero.</string>
     <string name="term_gauge_title">Water level</string>
-    <string name="term_gauge_body">The current reading of the nearest gauge of the federal waterways (PEGELONLINE) within 10 km, in centimetres above the gauge zero – a fixed reference height that differs from gauge to gauge. The level therefore says nothing about the water depth; it is only comparable at the same gauge.\n\nReference values of the gauge: mean low water (MNW), mean water (MW) and mean high water (MHW) of the last years. PEGELONLINE rates the current level as low water, normal or high water. Flood marks I–III restrict shipping; above them the waterway police close sections.\n\nThe curve shows the last seven days. For flood warnings, follow the flood information services of the federal states.</string>
+    <string name="term_gauge_body">Water levels of the gauges within 10 km, one per river or lake. Measured values come from the federal waterways (PEGELONLINE) and from the states that publish them openly: Lower Saxony (NLWKN), North Rhine-Westphalia (LANUK), Saxony (LfULG) and Hesse (HLNUG, with its forecast). For all other gauges the Länderübergreifendes Hochwasserportal (LHP) gives the current flood classification and a link to the gauge page of the state.\n\nThe level is given in centimetres above the gauge zero – a fixed reference height that differs from gauge to gauge. It therefore says nothing about the water depth; it is only comparable at the same gauge.\n\nReference values: mean low water (MNW), mean water (MW) and mean high water (MHW). The states warn in stages – called flood alert levels (Meldestufen, Lower Saxony and Hesse), information levels (NRW) or alarm levels (Saxony) 1 to 3 or 4; the higher, the larger the flood. On federal waterways, flood marks I–III restrict shipping.\n\nFor warnings and decisions, follow the flood information services of the states.</string>
+    <string name="gauge_alert_none">No %1$s</string>
+    <string name="gauge_alert_stage">%1$s %2$d reached</string>
+    <string name="gauge_next_alert">%1$s %2$d at %3$d cm (%4$d cm to go)</string>
+    <string name="src_nlwkn">Water level: NLWKN Pegelonline (pegelonline.nlwkn.niedersachsen.de), %1$s</string>
+    <string name="alert_kind_ms">flood alert level</string>
+    <string name="alert_kind_iw">information level</string>
+    <string name="alert_kind_as">alarm level</string>
+    <string name="alert_kind_ms_short">AL</string>
+    <string name="alert_kind_iw_short">IL</string>
+    <string name="alert_kind_as_short">AS</string>
+    <string name="gauge_data_by">data: %1$s</string>
+    <string name="gauge_no_data">No current data</string>
+    <string name="gauge_values_at_state">The state publishes the measured values of this gauge only on its own web page.</string>
+    <string name="gauge_forecast_note">Dashed: forecast of the state flood centre</string>
+    <string name="gauge_open_state_page">Gauge page of the state ›</string>
+    <string name="src_gauges">Water levels: %1$s</string>
+    <string name="src_lhp_alerts">Flood alerts: LHP</string>
 </resources>

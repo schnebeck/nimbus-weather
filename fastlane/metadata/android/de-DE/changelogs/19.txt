@@ -1,0 +1,4 @@
+• Pegel: je Gewässer einer, bis zu vier (z. B. Weser, Fulda und Werra in Hann. Münden)
+• Neue Quellen: Niedersachsen (NLWKN), NRW (LANUK), Sachsen (LfULG), Hessen (HLNUG, mit Vorhersage); für alle anderen Länder die Hochwasser-Einstufung mit Link zur Landesseite
+• Hochwasserwarnungen der Länder in der Warnungskarte
+• Gezeiten auch für Orte bis 25 km vom Tidepegel (z. B. Norden)

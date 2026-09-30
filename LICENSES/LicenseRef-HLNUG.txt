@@ -1,0 +1,6 @@
+Hessisches Landesamt für Naturschutz, Umwelt und Geologie (HLNUG) – water level data (WISKI-Web)
+
+"Alle Daten können unter Angabe HLNUG als Quelle genutzt werden."
+(https://www.hlnug.de/themen/wasser/wasserstands-und-durchflusswerte-pegel, as of 2026-09-30)
+
+The data are unchecked raw data; no warranty for completeness or correctness.

@@ -103,3 +103,28 @@ SPDX-License-Identifier = "GPL-3.0-or-later"
 path = "app/src/test/resources/fixtures/pegel_*"
 SPDX-FileCopyrightText = "Wasserstraßen- und Schifffahrtsverwaltung des Bundes (WSV), PEGELONLINE"
 SPDX-License-Identifier = "DL-DE-ZERO-2.0"
+
+[[annotations]]
+path = "app/src/test/resources/fixtures/nlwkn_*"
+SPDX-FileCopyrightText = "Niedersächsischer Landesbetrieb für Wasserwirtschaft, Küsten- und Naturschutz (NLWKN), www.pegelonline.nlwkn.niedersachsen.de"
+SPDX-License-Identifier = "LicenseRef-NLWKN-Pegelonline"
+
+[[annotations]]
+path = ["app/src/test/resources/fixtures/wiski_nrw_*"]
+SPDX-FileCopyrightText = "Landesamt für Natur, Umwelt und Klima Nordrhein-Westfalen (LANUK), Hochwasserportal NRW"
+SPDX-License-Identifier = "DL-DE-ZERO-2.0"
+
+[[annotations]]
+path = ["app/src/test/resources/fixtures/wiski_hessen_*"]
+SPDX-FileCopyrightText = "Hessisches Landesamt für Naturschutz, Umwelt und Geologie (HLNUG)"
+SPDX-License-Identifier = "LicenseRef-HLNUG"
+
+[[annotations]]
+path = ["app/src/test/resources/fixtures/sachsen_*"]
+SPDX-FileCopyrightText = "Sächsisches Landesamt für Umwelt, Landwirtschaft und Geologie (LfULG), Pegelnetz"
+SPDX-License-Identifier = "LicenseRef-LfULG-Sachsen"
+
+[[annotations]]
+path = ["app/src/test/resources/fixtures/lhp_*"]
+SPDX-FileCopyrightText = "Länderübergreifendes Hochwasserportal (LHP), www.hochwasserzentralen.de"
+SPDX-License-Identifier = "CC-BY-4.0"

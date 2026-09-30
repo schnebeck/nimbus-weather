@@ -45,6 +45,14 @@ class GaugeSourceTest {
         assertTrue(g.marks.getValue("MThw") > g.marks.getValue("MTnw"))
     }
 
+    @Test fun tideGaugeFartherAwayForCoastalTowns() {
+        // Norden: no gauge within 10 km, the tide gauge Norderney Riffgat is 11.6 km away.
+        val g = GaugeSource.pickStation(Fixtures.json("pegel_stations_norden.json"), 53.596, 7.206)!!
+        assertEquals("NORDERNEY RIFFGAT", g.name)
+        assertTrue(g.tidal)
+        assertEquals(11.6, g.distanceKm, 0.3)
+    }
+
     @Test fun tenMinuteMeans() {
         val raw = (0 until 30).map { LevelSample(it * 60_000L, it.toDouble()) }
         val b = GaugeSource.binned(raw)

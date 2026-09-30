@@ -10,7 +10,8 @@
 <li>Feels like, UV, wind, humidity and dew point, visibility, air pressure</li>
 <li>Sun course with golden and blue hour, moon phase and moon times</li>
 <li>Air quality, pollen forecast (DWD index and composition, choose the types you care about), citizen sensor network, comparison of eight weather models</li>
-<li>Tides at the coast and on tidal rivers: next high and low waters with a tide curve, calculated from gauge readings; the current water level on rivers and the Baltic coast</li>
+<li>Tides at the coast and on tidal rivers: next high and low waters with a tide curve, calculated from gauge readings</li>
+<li>Water levels of the rivers nearby, one gauge per river – measured values from the federal waterways and from Lower Saxony, North Rhine-Westphalia, Saxony and Hesse, elsewhere the flood classification of the states; plus their flood alerts</li>
 </ul>
 
 <p><b>Rain radar</b></p>
@@ -29,4 +30,4 @@
 <li>Battery friendly: the animation slows down when the phone is left alone and stops in battery saver mode</li>
 </ul>
 
-<p>Data: Deutscher Wetterdienst (via Bright Sky and Open-Meteo), Open-Meteo, Copernicus CAMS, RainViewer, Sensor.Community, PEGELONLINE (WSV), OpenStreetMap/Nominatim. Maps © OpenFreeMap, OpenMapTiles, OpenStreetMap contributors.</p>
+<p>Data: Deutscher Wetterdienst (via Bright Sky and Open-Meteo), Open-Meteo, Copernicus CAMS, RainViewer, Sensor.Community, PEGELONLINE (WSV), NLWKN, LANUK NRW, LfULG Sachsen, HLNUG, Länderübergreifendes Hochwasserportal, OpenStreetMap/Nominatim. Maps © OpenFreeMap, OpenMapTiles, OpenStreetMap contributors.</p>

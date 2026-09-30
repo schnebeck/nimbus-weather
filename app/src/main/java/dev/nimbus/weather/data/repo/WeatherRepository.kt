@@ -68,14 +68,18 @@ class WeatherRepository(
         val aqJob = async { runCatching { openMeteo.airQuality(lat, lon) }.getOrNull() }
         val communityJob = async { runCatching { community.nearby(lat, lon) }.getOrNull() }
         val pollenJob = async { runCatching { pollen.forecast(lat, lon, inDwdArea) }.getOrNull() }
-        // Water levels: federal waterways only (Germany). Optional – never fails the forecast.
+        // Water levels and state flood alerts (Germany). Optional – never fail the forecast.
         val gaugeJob = async {
-            if (gauges == null || !inDwdArea) null
+            if (gauges == null || !inDwdArea) emptyList()
             else kotlinx.coroutines.withTimeoutOrNull(GAUGE_TIMEOUT_MS) {
-                runCatching { gauges.nearest(lat, lon) }
-                    .onFailure { if (it !is kotlinx.coroutines.CancellationException) android.util.Log.w("Nimbus", "gauge unavailable: $it") }
-                    .getOrNull()
-            }
+                runCatching { gauges.nearby(lat, lon) }
+                    .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it; android.util.Log.w("Nimbus", "gauges unavailable: $it") }
+                    .getOrDefault(emptyList())
+            }.orEmpty()
+        }
+        val floodJob = async {
+            if (gauges?.lhp == null || !inDwdArea) emptyList()
+            else kotlinx.coroutines.withTimeoutOrNull(10_000L) { runCatching { gauges.lhp.alerts(lat, lon) }.getOrNull() }.orEmpty()
         }
 
         val primaryResult = primaryJob.await()
@@ -114,8 +118,10 @@ class WeatherRepository(
         if (aq != null) sources += Source(SourceKind.CAMS)
         val pollenForecast = pollenJob.await()
         if (pollenForecast?.source == dev.nimbus.weather.data.model.PollenSourceKind.DWD) sources += Source(SourceKind.DWD_POLLEN)
-        val gauge = gaugeJob.await()
-        if (gauge != null) sources += Source(SourceKind.PEGELONLINE, gauge.name)
+        val gaugeList = gaugeJob.await()
+        if (gaugeList.isNotEmpty()) sources += Source(SourceKind.GAUGES, gaugeList.map { it.provider }.distinct().joinToString(",") { it.name })
+        val floodAlerts = floodJob.await()
+        if (floodAlerts.isNotEmpty()) sources += Source(SourceKind.LHP_ALERTS)
         val communityObs = communityJob.await()
         if (communityObs != null) sources += Source(SourceKind.COMMUNITY)
 
@@ -127,11 +133,11 @@ class WeatherRepository(
             hourly = forecast.hourly,
             daily = forecast.daily,
             minutely = forecast.minutely,
-            alerts = alerts,
+            alerts = alerts + floodAlerts,
             airQuality = aq,
             community = communityObs,
             pollen = pollenForecast,
-            gauge = gauge,
+            gauges = gaugeList,
             sources = sources,
             fetchedAt = clock(),
         )
@@ -144,7 +150,7 @@ class WeatherRepository(
 
     companion object {
         /** The first tide fit downloads ~3 MB; later loads take a fraction of a second. */
-        private const val GAUGE_TIMEOUT_MS = 30_000L
+        private const val GAUGE_TIMEOUT_MS = 40_000L
 
         /** Rough bounding box of the DWD station network / warning area. */
         fun isInDwdArea(lat: Double, lon: Double) = lat in 47.2..55.1 && lon in 5.8..15.1

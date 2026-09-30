@@ -335,6 +335,12 @@ fun SourcesFooter(data: WeatherData) {
                 SourceKind.COMMUNITY -> stringResource(R.string.src_community)
                 SourceKind.DWD_POLLEN -> stringResource(R.string.src_dwd_pollen)
                 SourceKind.PEGELONLINE -> stringResource(R.string.src_pegelonline, titleCase(src.detail ?: ""))
+                SourceKind.NLWKN -> stringResource(R.string.src_nlwkn, src.detail ?: "")
+                SourceKind.GAUGES -> stringResource(
+                    R.string.src_gauges,
+                    src.detail.orEmpty().split(",").mapNotNull { n -> runCatching { providerName(dev.nimbus.weather.data.model.GaugeProvider.valueOf(n)) }.getOrNull() }.joinToString(", "),
+                )
+                SourceKind.LHP_ALERTS -> stringResource(R.string.src_lhp_alerts)
             }
         } + stringResource(R.string.src_moon)
         Text(

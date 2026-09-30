@@ -1,0 +1,4 @@
+• Water levels: one gauge per river, up to four (e.g. Weser, Fulda and Werra in Hann. Münden)
+• New sources: Lower Saxony (NLWKN), North Rhine-Westphalia (LANUK), Saxony (LfULG), Hesse (HLNUG, with forecast); for all other states the flood classification with a link to the state's gauge page
+• Flood alerts of the states in the warnings card
+• Tides also for places up to 25 km from the tide gauge (e.g. Norden)

@@ -77,11 +77,13 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   Lichtphasen Tag, Morgen-/Abendrot, Blaue Stunde und Nacht, Tageslänge; Mondphase, Auf- und Untergang.
 - **Umwelt**: Luftqualität, Pollenflug (DWD-Index und Zusammensetzung, Arten wählbar – z. B. nur
   Bäume), Bürger-Messnetz, Vergleich von acht Wettermodellen.
-- **Gezeiten und Pegel**: Liegt ein Pegel der Bundeswasserstraßen höchstens 10 km entfernt, zeigt
-  Nimbus an der Küste und an Tideflüssen die nächsten Hoch- und Niedrigwasser mit Tidekurve –
-  selbst berechnet aus vier Wochen Pegelmessungen, etwa ±30 Minuten genau, nicht für Navigation
-  oder Wattwanderungen. An Flüssen und an der Ostsee zeigt die Karte Wasserstand, Einstufung
-  (Niedrig-/Hochwasser), Abstand zum Mittelwasser, Abfluss und den Verlauf der letzten Tage.
+- **Gezeiten und Pegel**: Die Pegel im Umkreis von 10 km, je Gewässer einer (z. B. Weser, Fulda
+  und Werra in Hann. Münden). An der Küste und an Tideflüssen zuerst die nächsten Hoch- und
+  Niedrigwasser mit Tidekurve – selbst berechnet aus vier Wochen Pegelmessungen, etwa ±30 Minuten
+  genau, nicht für Navigation oder Wattwanderungen. Messwerte von den Bundeswasserstraßen und aus
+  Niedersachsen, NRW, Sachsen und Hessen, sonst die Hochwasser-Einstufung des Länderportals mit
+  Link; dazu die Hochwasserwarnungen der Länder. Welche Quelle je Bundesland genutzt wird und
+  warum: [docs/GAUGES.md](docs/GAUGES.md).
 - **Regenradar**: DWD-Radar mit 2-h-Vorhersage für Deutschland, RainViewer für Europa, einheitliche
   Farbskala für Regen (weiß → blau) und Schnee (rosa → violett, pro Pixel nach der Temperatur),
   Temperatur- und Windebene, Satellit, Warnkarte, Rückblick bis 24 h. Im WLAN hält die App die
@@ -106,7 +108,7 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
 | Pollenflug Deutschland | [DWD-Pollenflug-Gefahrenindex](https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json) |
 | Bürger-Messnetz | [Sensor.Community](https://sensor.community) |
 | Modellvergleich, Temperatur-/Windgitter | Open-Meteo |
-| Pegel, Gezeiten | [PEGELONLINE](https://www.pegelonline.wsv.de) (WSV), Gezeiten daraus berechnet |
+| Pegel, Gezeiten, Hochwasser | PEGELONLINE (WSV), NLWKN, LANUK NRW, LfULG Sachsen, HLNUG, Länderübergreifendes Hochwasserportal – Details in [docs/GAUGES.md](docs/GAUGES.md) |
 | Ortsname des Standorts | System-Geocoder, sonst [Nominatim](https://nominatim.org) (OpenStreetMap) |
 | Sonne und Mond | auf dem Gerät berechnet (nach SunCalc und J. Meeus) |
 | Karte | [OpenFreeMap](https://openfreemap.org) · © OpenMapTiles · © OpenStreetMap-Mitwirkende |

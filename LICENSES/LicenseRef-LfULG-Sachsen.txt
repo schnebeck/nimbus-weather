@@ -1,0 +1,6 @@
+Freistaat Sachsen, Sächsisches Landesamt für Umwelt, Landwirtschaft und Geologie (LfULG) – Pegelnetz
+
+The map service "Pegelnetz" (layer "aktuelle_Wasserstaende") is listed in the open data catalogue
+(GovData / Geoportal Sachsen) without access restrictions. Source: Landesamt für Umwelt,
+Landwirtschaft und Geologie, https://luis.sachsen.de/wasser/pegelmessnetz.html
+The data are unchecked raw data; no warranty for completeness or correctness.

@@ -90,8 +90,10 @@ fun NimbusRoot(viewModel: MainViewModel) {
                 Screen.Settings -> SettingsScreen(
                     settings = state.settings,
                     onChange = viewModel::updateSettings,
+                    onOpenLicenses = { viewModel.navigate(Screen.Licenses) },
                     onBack = { viewModel.back() },
                 )
+                Screen.Licenses -> dev.nimbus.weather.ui.settings.LicensesScreen(onBack = { viewModel.back() })
                 is Screen.Radar -> {
                     val place = state.pages.firstOrNull { it.id == screen.placeId } ?: state.pages.firstOrNull()
                     RadarScreen(place = place, temperatureUnit = state.settings.temperatureUnit, onBack = { viewModel.back() })

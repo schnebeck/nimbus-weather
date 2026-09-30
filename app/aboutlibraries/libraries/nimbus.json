@@ -1,0 +1,15 @@
+{
+  "uniqueId": "dev.nimbus.weather:nimbus",
+  "name": "Nimbus",
+  "description": "Weather for Germany and Europe.",
+  "website": "https://github.com/schnebeck/nimbus-weather",
+  "developers": [
+    {
+      "name": "Thorsten Schnebeck",
+      "organisationUrl": "https://github.com/schnebeck"
+    }
+  ],
+  "licenses": [
+    "nimbus-gpl-3.0-or-later"
+  ]
+}

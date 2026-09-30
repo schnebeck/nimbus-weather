@@ -182,7 +182,7 @@
     <string name="settings_language">Sprache</string>
     <string name="settings_language_desc">Folgt der Systemsprache (Englisch oder Deutsch). Ab Android 13 kann sie in den Systemeinstellungen pro App gewählt werden.</string>
     <string name="settings_about">Über</string>
-    <string name="settings_about_text">Nimbus ist eine private, nicht-kommerzielle Wetter-App. Daten: Deutscher Wetterdienst (DWD) über Open-Meteo und Bright Sky, ECMWF, Météo-France und weitere nationale Wetterdienste über Open-Meteo, CAMS-Luftqualität, RainViewer, Sensor.Community. Karten © OpenFreeMap, OpenMapTiles, OpenStreetMap-Mitwirkende.</string>
+    <string name="settings_about_text">Nimbus ist eine freie Wetter-App ohne Werbung und Tracking. Daten: Deutscher Wetterdienst (DWD) über Open-Meteo und Bright Sky, ECMWF, Météo-France und weitere nationale Wetterdienste über Open-Meteo, CAMS-Luftqualität, RainViewer, Sensor.Community. Karten © OpenFreeMap, OpenMapTiles, OpenStreetMap-Mitwirkende.</string>
     <string name="version">Version %1$s</string>
 
     <string name="dir_n">N</string>
@@ -408,4 +408,13 @@
     <string name="sunshine_short">Sonne</string>
     <string name="legend_precip">Niederschlag %1$s</string>
     <string name="legend_sunshine">Sonnenschein %1$s (Balken: Minuten je Stunde)</string>
+    <string name="licenses_title">Open-Source-Lizenzen</string>
+    <string name="licenses_settings_desc">Lizenzen von Nimbus und der verwendeten Bibliotheken</string>
+    <string name="licenses_app_text">Nimbus ist freie Software: Die App darf unter den Bedingungen der GNU General Public License, Version 3 oder später, weitergegeben und verändert werden. Es gibt keine Gewährleistung, soweit gesetzlich zulässig.</string>
+    <string name="licenses_credits">Idee, Entscheidungen und Tests: Thorsten Schnebeck. Geschrieben von Anthropic Claude Opus 5.5 (KI-generierter Inhalt).</string>
+    <string name="licenses_source">Quellcode auf GitHub</string>
+    <string name="licenses_show_text">Lizenztext anzeigen</string>
+    <string name="licenses_libraries">Bibliotheken (%1$d)</string>
+    <string name="licenses_data">Daten und Karten</string>
+    <string name="licenses_data_text">Wetterdaten: Deutscher Wetterdienst (DWD), CC BY 4.0, teils über Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, RainViewer · Bürger-Messnetz: Sensor.Community, ODbL · Karten: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap-Mitwirkende, ODbL.</string>
 </resources>

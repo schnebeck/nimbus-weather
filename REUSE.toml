@@ -61,3 +61,14 @@ SPDX-FileCopyrightText = [
     "Map: OpenFreeMap, OpenMapTiles, OpenStreetMap contributors",
 ]
 SPDX-License-Identifier = "CC-BY-4.0 AND ODbL-1.0"
+
+# Extra entries for the in-app license list (code that is not a Gradle dependency)
+[[annotations]]
+path = ["app/aboutlibraries/libraries/*.json", "app/aboutlibraries/licenses/nimbus-gpl-3.0-or-later.json"]
+SPDX-FileCopyrightText = "(C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+[[annotations]]
+path = "app/aboutlibraries/licenses/suncalc-bsd-2-clause.json"
+SPDX-FileCopyrightText = "(C) 2026 Volodymyr Agafonkin (SunCalc)"
+SPDX-License-Identifier = "BSD-2-Clause"

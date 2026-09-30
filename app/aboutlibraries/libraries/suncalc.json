@@ -1,0 +1,15 @@
+{
+  "uniqueId": "com.github.mourner:suncalc",
+  "name": "SunCalc (port)",
+  "description": "Sun and moon positions, moon phase and rise/set times. Ported to Kotlin for Nimbus (util/Moon.kt).",
+  "website": "https://github.com/mourner/suncalc",
+  "developers": [
+    {
+      "name": "Volodymyr Agafonkin",
+      "organisationUrl": "https://github.com/mourner"
+    }
+  ],
+  "licenses": [
+    "suncalc-bsd-2-clause"
+  ]
+}

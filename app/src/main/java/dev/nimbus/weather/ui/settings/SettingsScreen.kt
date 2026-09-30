@@ -37,6 +37,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.RadioButton
@@ -67,7 +68,7 @@ import dev.nimbus.weather.data.model.WindUnit
 import dev.nimbus.weather.ui.theme.NimbusColors
 
 @Composable
-fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Unit, onBack: () -> Unit) {
+fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Unit, onOpenLicenses: () -> Unit, onBack: () -> Unit) {
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     Column(
         Modifier.fillMaxSize()
@@ -151,6 +152,17 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                     Text(stringResource(R.string.settings_about_text), fontSize = 13.sp, color = NimbusColors.Secondary, lineHeight = 18.sp)
                     Spacer(Modifier.size(8.dp))
                     Text(stringResource(R.string.version, BuildConfig.VERSION_NAME), fontSize = 12.sp, color = NimbusColors.Tertiary)
+                    Spacer(Modifier.size(8.dp))
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable(onClick = onOpenLicenses).padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(stringResource(R.string.licenses_title), fontSize = 16.sp, color = Color.White)
+                            Text(stringResource(R.string.licenses_settings_desc), fontSize = 13.sp, color = NimbusColors.Secondary)
+                        }
+                        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = NimbusColors.Tertiary)
+                    }
                 }
             }
         }

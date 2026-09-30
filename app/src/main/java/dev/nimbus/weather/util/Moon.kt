@@ -7,7 +7,7 @@
  *   Written by Anthropic Claude Opus 5.5 - AI generated content.
  *
  *   Moon and sun positions are a port of SunCalc,
- *   Copyright (c) 2014, Vladimir Agafonkin, under the BSD 2-Clause License
+ *   Copyright (c) 2026, Volodymyr Agafonkin, under the BSD 2-Clause License
  *   (LICENSES/BSD-2-Clause.txt). The full moon dates follow the formulas
  *   of Jean Meeus, "Astronomical Algorithms".
  *
@@ -16,7 +16,7 @@
  *   LICENSES/GPL-3.0-or-later.txt.
  *
  * SPDX-FileCopyrightText: (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
- * SPDX-FileCopyrightText: (C) 2014 Vladimir Agafonkin (SunCalc)
+ * SPDX-FileCopyrightText: (C) 2026 Volodymyr Agafonkin (SunCalc)
  * SPDX-FileContributor: Anthropic Claude Opus 5.5 (AI generated content)
  * SPDX-License-Identifier: GPL-3.0-or-later AND BSD-2-Clause
  */
@@ -35,7 +35,7 @@ import kotlin.math.tan
 
 /**
  * Moon position, phase and rise/set times – a port of the moon part of SunCalc
- * (Vladimir Agafonkin, BSD-2-Clause, https://github.com/mourner/suncalc), which is based on
+ * (Volodymyr Agafonkin, BSD-2-Clause, https://github.com/mourner/suncalc), which is based on
  * the formulas of "Astronomy Answers" (aa.quae.nl). Accuracy: a few minutes for rise/set,
  * which is plenty for a weather app.
  */

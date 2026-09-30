@@ -58,6 +58,7 @@ sealed interface Screen {
     data object Main : Screen
     data object Places : Screen
     data object Settings : Screen
+    data object Licenses : Screen
     data class Radar(val placeId: String?) : Screen
 }
 

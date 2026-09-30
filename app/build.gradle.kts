@@ -21,6 +21,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.aboutlibraries.android)
 }
 
 val keystoreProps = Properties().apply {
@@ -36,8 +37,8 @@ android {
         applicationId = "dev.nimbus.weather"
         minSdk = 26
         targetSdk = 36
-        versionCode = 13
-        versionName = "1.8.2"
+        versionCode = 14
+        versionName = "1.9.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -92,6 +93,19 @@ android {
     }
 }
 
+// Open-source licenses shown in the settings: collected from the release dependencies at build
+// time, plus the entries in app/aboutlibraries/ (code that is not a Gradle dependency).
+aboutLibraries {
+    collect {
+        configPath = file("aboutlibraries")
+        filterVariants.addAll("release")
+        includePlatform = false
+    }
+    library {
+        duplicationMode = com.mikepenz.aboutlibraries.plugin.DuplicateMode.MERGE
+    }
+}
+
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
@@ -116,6 +130,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.maplibre)
     implementation(libs.androidx.work.runtime)
+    implementation(libs.aboutlibraries.core)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     testImplementation(libs.junit)

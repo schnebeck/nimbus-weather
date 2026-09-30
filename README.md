@@ -83,7 +83,8 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   WLAN im Hintergrund vorgeladen.
 - **Lexikon**: ⓘ an jeder Karte erklärt die Begriffe.
 - **Orte, Einstellungen**: Standort und gespeicherte Orte; Vorhersagemodell, Einheiten (beim ersten
-  Start passend zum Land), Stationswerte, Animationen. Stündliche Aktualisierung im Hintergrund,
+  Start passend zum Land), Stationswerte, Animationen. Unter „Open-Source-Lizenzen“ stehen die Lizenzen
+  von Nimbus und aller verwendeten Bibliotheken. Stündliche Aktualisierung im Hintergrund,
   offline die zuletzt geladenen Daten.
 
 ## Datenquellen
@@ -117,7 +118,7 @@ Signiert wird mit `keystore/keystore.properties` (nicht im Repository); fehlt di
 Debug-Schlüssel signiert.
 
 Technik: Kotlin, Jetpack Compose (Material 3), OkHttp, kotlinx.serialization, DataStore, WorkManager,
-MapLibre Android.
+MapLibre Android, AboutLibraries (Lizenzliste, beim Bauen erzeugt).
 
 ### Demo-Modus für visuelle Tests
 
@@ -153,7 +154,7 @@ Nimbus ist freie Software unter der **GNU General Public License, Version 3 oder
 Jede Datei trägt ihren Lizenzhinweis im Kopf oder in `REUSE.toml` (geprüft mit
 [`reuse lint`](https://reuse.software)). Abweichend davon:
 
-- Sonnen- und Mondberechnung in `util/Moon.kt`: teilweise nach SunCalc, © 2014 Vladimir Agafonkin,
+- Sonnen- und Mondberechnung in `util/Moon.kt`: teilweise nach SunCalc, © 2026 Volodymyr Agafonkin,
   BSD-2-Clause
 - Gradle-Wrapper: Apache-2.0
 - Aufgezeichnete API-Antworten in `app/src/test/resources/fixtures/`: Daten von Open-Meteo, DWD und

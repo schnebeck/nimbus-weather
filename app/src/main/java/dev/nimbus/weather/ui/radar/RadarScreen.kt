@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import kotlin.math.roundToInt
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -86,6 +87,7 @@ import dev.nimbus.weather.data.model.Place
 import dev.nimbus.weather.data.repo.WeatherRepository
 import dev.nimbus.weather.ui.theme.NimbusColors
 import dev.nimbus.weather.util.TimeFormat
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.maplibre.android.camera.CameraPosition
@@ -113,6 +115,8 @@ private const val FRAME_MS = 450L
 private const val MIN_FRAMES_TO_PLAY = 5
 private const val LOAD_POLL_MS = 250L
 private const val BATCH_TIMEOUT_MS = 8000L
+private const val STYLE_TIMEOUT_MS = 15_000L
+private const val OFFLINE_BATCH_TIMEOUT_MS = 1500L
 /**
  * MapLibre loads the tiles of every layer whose visibility is "visible" – even at opacity 0.
  * Layers that must not load yet are therefore switched to visibility "none".
@@ -139,6 +143,9 @@ private class RadarMapController {
     private var nowIndex = 0
     val allWarm: Boolean get() = frames.isNotEmpty() && warm.size >= frames.size
     val allLoaded: Boolean get() = frames.isNotEmpty() && loaded.size >= frames.size
+    val loadedCount: Int get() = loaded.size
+    /** Set by MapLibre's render callback: every tile of every visible layer is loaded. */
+    @Volatile var fullyRendered = false
 
     /** The map is idle: all warm frames have their tiles. */
     fun markIdle() { loaded += warm }
@@ -158,6 +165,10 @@ private class RadarMapController {
     /** Satellite and warning layers; the radar frames are inserted between them. */
     fun installBase(style: Style) {
         this.style = style
+        // No animated property changes: by default MapLibre fades every opacity change over
+        // 300 ms and keeps rendering at full frame rate meanwhile – with a frame change every
+        // 450 ms the map rendered almost continuously. Frame changes are hard cuts anyway.
+        style.transition = org.maplibre.android.style.layers.TransitionOptions(0, 0, false)
         val below = style.layers.firstOrNull { it is SymbolLayer }?.id
         fun add(layer: RasterLayer) = if (below != null) style.addLayerBelow(layer, below) else style.addLayer(layer)
         style.addSource(RasterSource("sat", TileSet("2.2.0", RadarSources.dwdTileUrl(RadarSources.SAT_LAYER, null)).apply { maxZoom = 9f }, 512).apply { prefetchZoomDelta = 0 })
@@ -244,8 +255,10 @@ private class RadarMapController {
         val s = style ?: return
         if (index == shown && !force) return
         // Warm frames are "visible" at opacity 0, so their tiles are loaded ahead and the loop
-        // plays without flicker; all others stay "none" and cost no requests yet.
-        frames.indices.forEach { i -> if (i != index) setState(s, i, i in warm, 0f) }
+        // plays without flicker; all others stay "none" and cost no requests yet. Only the two
+        // layers that change are touched: restyling all ~50 layers per frame made the loop
+        // cost more than a CPU core.
+        if (shown in frames.indices && shown != index) setState(s, shown, shown in warm, 0f)
         setState(s, index, true, frameOpacity)
         warm += index
         shown = index
@@ -289,6 +302,12 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
     var timeline by remember { mutableStateOf<RadarTimeline?>(null) }
     var error by remember { mutableStateOf(false) }
     var ready by remember { mutableStateOf(false) }
+    /** Frames with complete tiles, for the progress hint while the loop loads. */
+    var loadedFrames by remember { mutableIntStateOf(0) }
+    /** Incremented by "load again". */
+    var reloadKey by remember { mutableIntStateOf(0) }
+    /** Tile requests that failed or were answered from the cache while this screen is open. */
+    val netStatus by RadarNetStatus.state.collectAsState()
     var frame by remember { mutableIntStateOf(0) }
     var playing by remember { mutableStateOf(false) }
     var satellite by rememberSaveable { mutableStateOf(false) }
@@ -301,7 +320,7 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
     val openedAt = remember { System.currentTimeMillis() }
 
     val mapView = remember {
-        val options = MapLibreMapOptions.createFromAttributes(context).textureMode(true)
+        val options = MapLibreMapOptions.createFromAttributes(context).textureMode(false)
             .attributionEnabled(false).logoEnabled(false).compassEnabled(false)
         MapView(context, options).apply { onCreate(Bundle()) }
     }
@@ -330,9 +349,17 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
 
     var range by rememberSaveable { mutableStateOf(HistoryRange.H2) }
     var styleReady by remember { mutableStateOf(false) }
+    /** Incremented by "load again" while the map style never arrived. */
+    var styleAttempt by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(Unit) {
+    // Without any map style (no network and nothing stored) the screen must not wait forever.
+    LaunchedEffect(styleAttempt) {
+        delay(STYLE_TIMEOUT_MS)
+        if (!styleReady) error = true
+    }
+    LaunchedEffect(styleAttempt) {
         val styleBuilder = MapStyle.builder(container.mapHttp, context.resources.configuration.locales[0].language)
+        if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "style JSON after ${System.currentTimeMillis() - openedAt} ms")
         mapView.getMapAsync { map ->
             controller.map = map
             map.uiSettings.isRotateGesturesEnabled = false
@@ -349,48 +376,59 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
                 map.addOnCameraIdleListener { gridCheck++ }
                 place?.let { controller.addLocation(style, it) }
                 controller.setOverlays(satellite, warnings)
-                // Base map + visible frame first; each time the map is idle the next frames are
-                // warmed up. The loop starts once all frames are loaded.
-                // Frames are loaded batch by batch, from "now" outwards: the next batch is requested
-                // only when the map reports all tiles of the previous one loaded, so the frames next
-                // to "now" are complete early. The loop starts with the first few and grows.
                 // "fully" = every tile of every visible layer is loaded (MapLibre render flag).
-                var fullyRendered = false
-                mapView.addOnDidFinishRenderingFrameListener { fully, _, _ -> fullyRendered = fully }
-                scope.launch {
-                    var waited = 0L
-                    while (!controller.allLoaded) {
-                        delay(LOAD_POLL_MS)
-                        if (controller.frames.isEmpty()) continue
-                        waited += LOAD_POLL_MS
-                        // Wait at least one poll after a batch so the flag reflects the new layers;
-                        // a tile that never answers must not stall the rest: move on after a while.
-                        if ((fullyRendered && waited > LOAD_POLL_MS) || waited >= BATCH_TIMEOUT_MS) {
-                            controller.markIdle()
-                            fullyRendered = false
-                            controller.warmNextBatch()
-                            waited = 0
-                        }
-                        if (!ready && (controller.playableRange().count() >= MIN_FRAMES_TO_PLAY || controller.allLoaded)) {
-                            ready = true
-                            playing = true
-                            if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "loop starts after ${System.currentTimeMillis() - openedAt} ms")
-                        }
-                    }
-                    if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "all frames after ${System.currentTimeMillis() - openedAt} ms")
-                }
+                mapView.addOnDidFinishRenderingFrameListener { fully, _, _ -> controller.fullyRendered = fully; RadarTileStats.frames.incrementAndGet() }
                 styleReady = true
+                if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "style ready after ${System.currentTimeMillis() - openedAt} ms")
             }
         }
     }
 
+    // Frames are loaded batch by batch, from "now" outwards: the next batch is requested only when
+    // the map reports all tiles of the previous one loaded (or after a timeout, so a tile that never
+    // answers cannot stall the rest). Restarted for every timeline, i.e. also after switching the
+    // history range – it used to run only once, so 6 h / 24 h never loaded after the 2 h loop.
+    LaunchedEffect(timeline, styleReady) {
+        if (!styleReady || timeline == null) return@LaunchedEffect
+        loadedFrames = 0
+        var waited = 0L
+        // Offline, tiles that are not stored never arrive: don't wait long for them.
+        val cm = context.getSystemService(android.net.ConnectivityManager::class.java)
+        val batchTimeout = if (cm?.activeNetwork == null) OFFLINE_BATCH_TIMEOUT_MS else BATCH_TIMEOUT_MS
+        while (!controller.allLoaded) {
+            delay(LOAD_POLL_MS)
+            if (controller.frames.isEmpty()) continue
+            waited += LOAD_POLL_MS
+            if ((controller.fullyRendered && waited > LOAD_POLL_MS) || waited >= batchTimeout) {
+                controller.markIdle()
+                controller.fullyRendered = false
+                controller.warmNextBatch()
+                waited = 0
+            }
+            loadedFrames = controller.loadedCount
+            if (!ready && (controller.playableRange().count() >= MIN_FRAMES_TO_PLAY || controller.allLoaded)) {
+                ready = true
+                playing = true
+                if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "loop starts after ${System.currentTimeMillis() - openedAt} ms")
+            }
+        }
+        loadedFrames = controller.loadedCount
+        if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "all frames after ${System.currentTimeMillis() - openedAt} ms, tile requests ${RadarTileStats.requests.get()}")
+
+    }
+
     // (Re)load the frames for the selected history range.
-    LaunchedEffect(range, styleReady) {
-        // The temperature grid first: the tile recolouring uses it to tell rain from snow.
+    LaunchedEffect(range, styleReady, reloadKey) {
+        // The temperature grid is needed before the tiles: their colouring tells rain from snow.
         val lat = place?.latitude ?: 51.1
         val lon = place?.longitude ?: 10.4
-        val grid = WeatherGridStore.ensure(container.http, lat, lon)
-        val tl = runCatching { RadarSources.timeline(container.http, range) }.getOrNull()
+        RadarNetStatus.reset()
+        // Grid and time line in parallel; neither may hold up the other.
+        val gridJob = async { WeatherGridStore.ensure(container.http, lat, lon) }
+        val tl = runCatching { RadarSources.timeline(container.http, range, force = reloadKey > 0) }.getOrNull()
+        if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "timeline after ${System.currentTimeMillis() - openedAt} ms")
+        val grid = gridJob.await()
+        if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "grid after ${System.currentTimeMillis() - openedAt} ms")
         if (tl == null) { error = true; return@LaunchedEffect }
         error = false
         timeline = tl
@@ -465,19 +503,50 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
             }
         }
 
-        if (!ready && !error) {
+        // Only the very first step (map style and time line) blocks the screen; the radar frames
+        // load in the background with a small progress hint, the map stays usable.
+        if (!error && (!styleReady || timeline == null)) {
             Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp)
                 Spacer(Modifier.height(8.dp))
                 Text(stringResource(R.string.radar_loading), color = Color.White, fontSize = 14.sp)
             }
         }
-        if (error) {
-            Text(
-                stringResource(R.string.radar_error), Modifier.align(Alignment.Center)
-                    .clip(RoundedCornerShape(12.dp)).background(Color(0xCC000000)).padding(16.dp),
-                color = Color.White,
-            )
+        val total = timeline?.frames?.size ?: 0
+        val stillLoading = timeline != null && styleReady && loadedFrames < total
+        val trouble = netStatus.failed > 0 || netStatus.fromCache > 0
+        if (error || stillLoading || trouble) {
+            Column(
+                Modifier.align(Alignment.TopCenter).windowInsetsPadding(WindowInsets.statusBars).padding(top = 64.dp, start = 24.dp, end = 24.dp)
+                    .clip(RoundedCornerShape(12.dp)).background(Color(0xCC0B1424)).padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                if (stillLoading && !error) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.radar_loading_frames, loadedFrames, total), color = Color.White, fontSize = 13.sp)
+                    }
+                }
+                val msg = when {
+                    error -> R.string.radar_error
+                    netStatus.failed > 0 && netStatus.fromCache > 0 -> R.string.radar_partly_cached
+                    netStatus.failed > 0 -> R.string.radar_partly_missing
+                    else -> null
+                }
+                if (msg != null) {
+                    if (stillLoading && !error) Spacer(Modifier.height(6.dp))
+                    Text(stringResource(msg), color = Color(0xFFFFD27A), fontSize = 13.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        stringResource(R.string.radar_reload), color = Color(0xFF9CC8FF), fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable {
+                            error = false; ready = false; playing = false
+                            if (styleReady) reloadKey++ else styleAttempt++
+                        }.padding(horizontal = 10.dp, vertical = 6.dp),
+                    )
+                }
+            }
         }
 
         // Bottom controls

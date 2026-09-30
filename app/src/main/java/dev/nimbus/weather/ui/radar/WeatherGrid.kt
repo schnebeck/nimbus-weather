@@ -141,6 +141,7 @@ object WeatherGridStore {
     private val mutex = Mutex()
     @Volatile private var grids: List<Pair<Long, WeatherGrid>> = emptyList()
     private const val MAX_AGE_MS = 60 * 60_000L
+    private const val STALE_MAX_AGE_MS = 24 * 3600_000L
     /** Grids are also kept on disk for an hour, so app restarts cost no API calls. */
     @Volatile var cacheDir: java.io.File? = null
 
@@ -180,13 +181,21 @@ object WeatherGridStore {
             "&hourly=temperature_2m,wind_speed_10m,wind_direction_10m&past_hours=25&forecast_hours=4" +
             "&timeformat=unixtime&wind_speed_unit=kmh&cell_selection=nearest"
         val file = cacheDir?.let { java.io.File(it, "grid_${step}_${OpenMeteoSource.fmt(lat0)}_${OpenMeteoSource.fmt(lon0)}.json") }
+        suspend fun readFile(maxAge: Long) = file?.takeIf { it.exists() && now - it.lastModified() < maxAge }?.let {
+            withContext(Dispatchers.IO) { JsonCodec.parseToJsonElement(it.readText()) }
+        }
         val grid = runCatching {
-            val cached = file?.takeIf { it.exists() && now - it.lastModified() < MAX_AGE_MS }?.let {
-                withContext(Dispatchers.IO) { JsonCodec.parseToJsonElement(it.readText()) }
-            }
-            val json = cached ?: http.getJson(url).also { j ->
-                file?.let { f -> withContext(Dispatchers.IO) { f.parentFile?.mkdirs(); f.writeText(j.toString()) } }
-            }
+            val json = readFile(MAX_AGE_MS)
+                ?: runCatching {
+                    // Short limit: the radar waits for this grid (rain or snow colours).
+                    kotlinx.coroutines.withTimeout(8_000L) { http.getJson(url) }.also { j ->
+                        file?.let { f -> withContext(Dispatchers.IO) { f.parentFile?.mkdirs(); f.writeText(j.toString()) } }
+                    }
+                }.getOrElse { e ->
+                    // No network: yesterday's temperatures still tell rain from snow better than none.
+                    if (e is kotlinx.coroutines.CancellationException && e !is kotlinx.coroutines.TimeoutCancellationException) throw e
+                    readFile(STALE_MAX_AGE_MS) ?: throw e
+                }
             WeatherGrid.parse(json, lat0, lon0, rows, cols, step)
         }.onFailure {
             if (it is kotlinx.coroutines.CancellationException) throw it   // not an error: caller left

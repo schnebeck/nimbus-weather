@@ -53,29 +53,39 @@ class LocationProvider(private val context: Context) {
             .filter { runCatching { lm.isProviderEnabled(it) }.getOrDefault(false) }
         val lastKnown = providers.mapNotNull { runCatching { lm.getLastKnownLocation(it) }.getOrNull() }
             .maxByOrNull { it.time }
-        if (lastKnown != null && System.currentTimeMillis() - lastKnown.time < 15 * 60_000L) return lastKnown
-        val active = buildList {
+        // For the weather a position from a few minutes ago is as good as a new one.
+        if (lastKnown != null && System.currentTimeMillis() - lastKnown.time < 30 * 60_000L) return lastKnown
+        // Network (cell/Wi-Fi) or the fused provider first: a few hundred metres are plenty for a
+        // weather forecast and cost almost no battery. GPS only when they give nothing (e.g. no
+        // network location service on the device), and then for a limited time.
+        val coarse = buildList {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && runCatching { lm.isProviderEnabled(LocationManager.FUSED_PROVIDER) }.getOrDefault(false)) {
                 add(LocationManager.FUSED_PROVIDER)
             }
-            addAll(providers.filter { it != LocationManager.PASSIVE_PROVIDER })
-        }.distinct()
-        if (active.isEmpty()) return lastKnown
-        // Ask all providers at once and take the first fix (e.g. no network provider on emulators).
-        val fresh = withTimeoutOrNull(15_000L) {
+            if (LocationManager.NETWORK_PROVIDER in providers) add(LocationManager.NETWORK_PROVIDER)
+        }
+        suspend fun firstFix(list: List<String>, timeoutMs: Long): Location? = if (list.isEmpty()) null else withTimeoutOrNull(timeoutMs) {
             channelFlow {
-                active.forEach { provider ->
-                    launch { singleFix(lm, provider)?.let { send(it) } }
-                }
+                list.forEach { provider -> launch { singleFix(lm, provider)?.let { send(it) } } }
             }.firstOrNull()
         }
+        val fresh = firstFix(coarse, 6_000L)
+            ?: firstFix(listOf(LocationManager.GPS_PROVIDER).filter { it in providers }, 12_000L)
         return fresh ?: lastKnown
     }
 
     @SuppressLint("MissingPermission")
     private suspend fun singleFix(lm: LocationManager, provider: String): Location? = suspendCancellableCoroutine { cont ->
         runCatching {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && provider != LocationManager.GPS_PROVIDER) {
+                // Balanced accuracy: Wi-Fi and cell towers, the GPS stays off.
+                val signal = CancellationSignal()
+                cont.invokeOnCancellation { signal.cancel() }
+                val request = android.location.LocationRequest.Builder(0L)
+                    .setQuality(android.location.LocationRequest.QUALITY_BALANCED_POWER_ACCURACY)
+                    .build()
+                lm.getCurrentLocation(provider, request, signal, ContextCompat.getMainExecutor(context)) { if (cont.isActive) cont.resume(it) }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 val signal = CancellationSignal()
                 cont.invokeOnCancellation { signal.cancel() }
                 lm.getCurrentLocation(provider, signal, ContextCompat.getMainExecutor(context)) { if (cont.isActive) cont.resume(it) }

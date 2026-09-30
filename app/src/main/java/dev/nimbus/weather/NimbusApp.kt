@@ -29,6 +29,7 @@ import dev.nimbus.weather.data.repo.WeatherRepository
 import dev.nimbus.weather.ui.radar.RadarCacheInterceptor
 import dev.nimbus.weather.ui.radar.RadarTileInterceptor
 import dev.nimbus.weather.ui.radar.RetryInterceptor
+import dev.nimbus.weather.ui.radar.StaleFallbackInterceptor
 import okhttp3.Cache
 import org.maplibre.android.MapLibre
 import org.maplibre.android.module.http.HttpRequestUtil
@@ -44,9 +45,15 @@ class NimbusApp : Application() {
         super.onCreate()
         container = AppContainer(this)
         dev.nimbus.weather.ui.radar.WeatherGridStore.cacheDir = java.io.File(cacheDir, "grid")
+        dev.nimbus.weather.ui.radar.RadarSources.stateDir = java.io.File(cacheDir, "radar")
         MapLibre.getInstance(this)
+        // MapLibre stops requesting tiles while Android reports no connection and waits for it to
+        // come back. Our HTTP client answers from its cache when offline (StaleFallbackInterceptor),
+        // so let MapLibre always ask: the stored map and radar appear immediately.
+        MapLibre.setConnected(true)
         HttpRequestUtil.setOkHttpClient(container.mapHttp)
         dev.nimbus.weather.data.repo.RefreshWorker.schedule(this)
+        dev.nimbus.weather.data.repo.RadarWorker.schedule(this)
     }
 }
 
@@ -62,11 +69,18 @@ class AppContainer(app: Application) {
     val mapHttp: OkHttpClient = http.newBuilder()
         // Map tiles come from few hosts; OkHttp's default of 5 parallel requests per host is too low.
         .dispatcher(okhttp3.Dispatcher().apply { maxRequests = 32; maxRequestsPerHost = 12 })
-        .cache(Cache(File(app.cacheDir, "maptiles"), 80L * 1024 * 1024))
+        // A slow tile must not block its slot for long: MapLibre asks again, and the cache
+        // fallback below answers with the stored copy.
+        .connectTimeout(8, TimeUnit.SECONDS)
+        .readTimeout(12, TimeUnit.SECONDS)
+        .callTimeout(25, TimeUnit.SECONDS)
+        // Base map, three radar ranges and their nowcasts; the OS may trim it when storage is low.
+        .cache(Cache(File(app.cacheDir, "maptiles"), 150L * 1024 * 1024))
         .addInterceptor { chain ->
             chain.proceed(chain.request().newBuilder().header("User-Agent", USER_AGENT).build())
         }
         .addInterceptor(RadarTileInterceptor())
+        .addInterceptor(StaleFallbackInterceptor(setOf("maps.dwd.de", "tilecache.rainviewer.com", "api.rainviewer.com", "tiles.openfreemap.org")))
         .addInterceptor(RetryInterceptor(setOf("maps.dwd.de", "tilecache.rainviewer.com")))
         .addNetworkInterceptor(RadarCacheInterceptor())
         .build()

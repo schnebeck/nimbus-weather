@@ -34,6 +34,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.JsonObject
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -95,6 +96,20 @@ object RadarSources {
 
     private val mutex = Mutex()
     private val cached = HashMap<HistoryRange, Pair<Long, RadarTimeline>>()
+    /** Last RainViewer frame list, used when the API does not answer (its paths stay valid ~2 h). */
+    @Volatile private var lastRainViewer: Pair<Long, Pair<String, List<Pair<Long, String>>>>? = null
+    /** Time of the newest DWD radar analysis; frames up to here are final and cached long. */
+    @Volatile var latestAnalysis: Long? = null
+        private set
+    /**
+     * The last analysis time is also kept on disk: without network the loop is then built from
+     * exactly the frames that are in the cache (an estimated time would miss them).
+     */
+    @Volatile var stateDir: java.io.File? = null
+    private fun storedAnalysis(): Long? = runCatching { java.io.File(stateDir, "radar_latest").readText().trim().toLong() }.getOrNull()
+    private fun storeAnalysis(t: Long) { runCatching { stateDir?.let { it.mkdirs(); java.io.File(it, "radar_latest").writeText(t.toString()) } } }
+    /** Each discovery request may take this long; after that the fallback applies. */
+    private const val DISCOVERY_TIMEOUT_MS = 6_000L
     private val rainViewerTimes = java.util.concurrent.ConcurrentHashMap<String, Long>()
 
     /** Time of a RainViewer frame by its path (e.g. "/v2/radar/abc123"), for the tile recolouring. */
@@ -105,14 +120,21 @@ object RadarSources {
      * RainViewer frames (past only, last 2 h) are matched by time.
      */
     suspend fun timeline(
-        http: OkHttpClient, range: HistoryRange = HistoryRange.H2, now: Long = System.currentTimeMillis(),
+        http: OkHttpClient, range: HistoryRange = HistoryRange.H2, now: Long = System.currentTimeMillis(), force: Boolean = false,
     ): RadarTimeline = mutex.withLock {
-        cached[range]?.let { (at, tl) -> if (now - at < 2 * 60_000L) return tl }
+        if (!force) cached[range]?.let { (at, tl) -> if (now - at < 2 * 60_000L) return tl }
         coroutineScope {
-            val dwdJob = async { runCatching { latestDwdAnalysis(http) }.getOrNull() }
-            val rvJob = async { runCatching { rainViewerFrames(http) }.getOrNull() }
-            val latest = dwdJob.await() ?: ((now - 10 * 60_000L) / (5 * 60_000L) * (5 * 60_000L))
-            val rv = rvJob.await()
+            // Neither discovery request may hold up the radar: after a few seconds the DWD time is
+            // estimated (analyses appear every 5 minutes, ~10 minutes late) and RainViewer's last
+            // known frame list is used.
+            val dwdJob = async { withTimeoutOrNull(DISCOVERY_TIMEOUT_MS) { runCatching { latestDwdAnalysis(http) }.getOrNull() } }
+            val rvJob = async { withTimeoutOrNull(DISCOVERY_TIMEOUT_MS) { runCatching { rainViewerFrames(http) }.getOrNull() } }
+            val dwd = dwdJob.await()
+            if (dwd != null) { latestAnalysis = dwd; withContext(Dispatchers.IO) { storeAnalysis(dwd) } }
+            val known = dwd ?: latestAnalysis ?: withContext(Dispatchers.IO) { storedAnalysis() }?.also { latestAnalysis = it }
+            val latest = known?.takeIf { now - it < 3 * 3600_000L } ?: ((now - 10 * 60_000L) / (5 * 60_000L) * (5 * 60_000L))
+            val rv = rvJob.await()?.also { lastRainViewer = now to it }
+                ?: lastRainViewer?.takeIf { now - it.first < 2 * 3600_000L }?.second
             val host = rv?.first ?: "https://tilecache.rainviewer.com"
             val rvFrames = rv?.second.orEmpty()
             rvFrames.forEach { (t, p) -> rainViewerTimes[p] = t }

@@ -142,8 +142,10 @@ object RadarPalette {
 
     enum class Source { DWD, RAINVIEWER }
 
-    private val dwdCache = HashMap<Int, Int>()
-    private val rvCache = HashMap<Int, Int>()
+    // Lock-free: up to 12 tile threads decode at the same time. A synchronized map made them wait
+    // for each other on every single pixel.
+    private val dwdCache = java.util.concurrent.ConcurrentHashMap<Int, Int>()
+    private val rvCache = java.util.concurrent.ConcurrentHashMap<Int, Int>()
     private const val NONE = -1
     private const val SNOW_FLAG = 0x100
 
@@ -154,8 +156,8 @@ object RadarPalette {
     fun decode(argb: Int, source: Source): Int {
         if ((argb ushr 24) == 0) return NONE
         return when (source) {
-            Source.DWD -> synchronized(dwdCache) { dwdCache.getOrPut(argb) { decodeDwd(argb) } }
-            Source.RAINVIEWER -> synchronized(rvCache) { rvCache.getOrPut(argb) { decodeRainViewer(argb) } }
+            Source.DWD -> dwdCache[argb] ?: decodeDwd(argb).also { dwdCache[argb] = it }
+            Source.RAINVIEWER -> rvCache[argb] ?: decodeRainViewer(argb).also { rvCache[argb] = it }
         }
     }
 
@@ -291,8 +293,18 @@ class RadarCacheInterceptor : Interceptor {
         val url = request.url
         val maxAge = when (url.host) {
             "maps.dwd.de" -> {
+                // Analysed frames never change once published: keep them three days (the DWD archive).
+                // Nowcast frames are recomputed every 5 minutes; 10 minutes keeps the loop current
+                // without reloading all of it on every opening. Tiles without time (satellite,
+                // warnings) change every few minutes.
                 val time = url.queryParameter("time")?.let { runCatching { java.time.Instant.parse(it).toEpochMilli() }.getOrNull() }
-                if (time != null && time < System.currentTimeMillis() - 15 * 60_000L) 3 * 24 * 3600 else 300
+                val latest = RadarSources.latestAnalysis
+                when {
+                    time == null -> 300
+                    latest != null && time <= latest -> 3 * 24 * 3600
+                    time < System.currentTimeMillis() - 15 * 60_000L -> 3 * 24 * 3600
+                    else -> 600
+                }
             }
             "tilecache.rainviewer.com" -> 24 * 3600
             else -> return response
@@ -309,6 +321,12 @@ class RadarCacheInterceptor : Interceptor {
  * so the raw tiles are cached long-term while the colours (which depend on the current
  * temperature grid) are recomputed; MapLibre may keep the recoloured variant for 10 minutes.
  */
+/** Radar tile requests since start (debug statistics). */
+object RadarTileStats {
+    val requests = java.util.concurrent.atomic.AtomicInteger()
+    val frames = java.util.concurrent.atomic.AtomicInteger()
+}
+
 class RadarTileInterceptor : Interceptor {
     private fun empty(response: Response): Response =
         response.newBuilder().code(204).message("No Content").body(ByteArray(0).toResponseBody(null))
@@ -324,6 +342,7 @@ class RadarTileInterceptor : Interceptor {
             else -> null
         }
         val response = chain.proceed(request)
+        if (source != null) RadarTileStats.requests.incrementAndGet()
         if (source == null || !response.isSuccessful) return response
         val contentType = response.header("Content-Type") ?: ""
         if (!contentType.startsWith("image/png")) {

@@ -51,6 +51,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -128,10 +129,15 @@ fun SkyScene.withDemo(demo: Demo?): SkyScene {
 
 @Composable
 fun rememberNow(): Long {
-    val now by produceState(System.currentTimeMillis()) {
-        while (true) {
-            delay(30_000)
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    // Ticks only while the app is visible – no wake-ups in the background.
+    val now by produceState(System.currentTimeMillis(), lifecycle) {
+        lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
             value = System.currentTimeMillis()
+            while (true) {
+                delay(30_000)
+                value = System.currentTimeMillis()
+            }
         }
     }
     return now

@@ -56,7 +56,19 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        dev.nimbus.weather.ui.background.UserActivity.touch()
         viewModel.onResume()
+    }
+
+    override fun onPause() {
+        viewModel.onPause()
+        super.onPause()
+    }
+
+    /** Every touch counts as activity: the sky animation slows down when nobody looks for a while. */
+    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
+        dev.nimbus.weather.ui.background.UserActivity.touch()
+        return super.dispatchTouchEvent(ev)
     }
 
     /**
@@ -75,5 +87,11 @@ class MainActivity : ComponentActivity() {
         } else null
         viewModel.setDemo(demo, i.getStringExtra("demo_screen"))
         dev.nimbus.weather.ui.radar.RadarPalette.demoTempOffset = i.getStringExtra("demo_radar_temp")?.toFloatOrNull() ?: 0f
+        // Test hook: run the background radar refresh once right now (debug builds only).
+        if (BuildConfig.DEBUG && i.getBooleanExtra("demo_radar_worker", false)) {
+            androidx.work.WorkManager.getInstance(this).enqueue(
+                androidx.work.OneTimeWorkRequestBuilder<dev.nimbus.weather.data.repo.RadarWorker>().build(),
+            )
+        }
     }
 }

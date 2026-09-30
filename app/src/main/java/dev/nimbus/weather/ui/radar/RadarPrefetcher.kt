@@ -58,22 +58,29 @@ object RadarPrefetcher {
         running = null
     }
 
-    private const val MIN_INTERVAL_MS = 10 * 60_000L
+    private const val MIN_INTERVAL_MS = 8 * 60_000L
 
     fun isUnmetered(context: Context): Boolean {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         return cm.activeNetwork != null && !cm.isActiveNetworkMetered
     }
 
-    suspend fun prefetch(context: Context, http: OkHttpClient, place: Place) {
+    /**
+     * [background]: called by the periodic worker – there is no preview card to wait for, and the
+     * snapshot runs without a visible activity.
+     */
+    suspend fun prefetch(context: Context, http: OkHttpClient, place: Place, background: Boolean = false) {
         if (paused) return
         val key = "%.2f,%.2f".format(place.latitude, place.longitude)
         val now = System.currentTimeMillis()
         synchronized(lastRun) {
-            if (now - (lastRun[key] ?: 0L) < MIN_INTERVAL_MS) return
+            if (now - (lastRun[key] ?: 0L) < MIN_INTERVAL_MS) {
+                if (dev.nimbus.weather.BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "prefetch skipped: last run ${(now - lastRun[key]!!) / 1000} s ago")
+                return
+            }
             lastRun[key] = now
         }
-        withTimeoutOrNull(30_000L) { previewReady.await() }
+        if (!background) withTimeoutOrNull(30_000L) { previewReady.await() }
         if (paused) return
         WeatherGridStore.ensure(http, place.latitude, place.longitude)
         val tl = runCatching { RadarSources.timeline(http, HistoryRange.H2) }.getOrNull() ?: return

@@ -142,7 +142,24 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val german: Boolean
         get() = getApplication<Application>().resources.configuration.locales[0].language == Locale.GERMAN.language
 
+    /** Refreshes the radar cache of the shown place while the app is open (Wi-Fi only). */
+    private var radarTicker: kotlinx.coroutines.Job? = null
+
+    fun onPause() {
+        radarTicker?.cancel()
+        radarTicker = null
+    }
+
     fun onResume() {
+        radarTicker?.cancel()
+        radarTicker = viewModelScope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(RADAR_REFRESH_MS)
+                val st = _state.value
+                val place = st.pages.firstOrNull { it.id == st.selectedPlaceId } ?: st.pages.firstOrNull() ?: continue
+                maybePrefetchRadar(place, st.settings)
+            }
+        }
         if (!_state.value.initialized) return
         viewModelScope.launch {
             // Take over what the hourly background refresh stored in the meantime.
@@ -322,6 +339,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     companion object {
+        /** Matches the nowcast lifetime in the cache: the radar never shows frames older than this. */
+        private const val RADAR_REFRESH_MS = 10 * 60_000L
+
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer { MainViewModel(this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as Application) }
         }

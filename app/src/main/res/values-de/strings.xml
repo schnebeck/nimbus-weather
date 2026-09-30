@@ -245,7 +245,7 @@
     <string name="legend_snow">Schnee / Schneeregen</string>
 
     <string name="settings_preload_radar">Radar vorladen</string>
-    <string name="settings_preload_radar_desc">Radarschleife für den angezeigten Ort im WLAN im Hintergrund laden, damit sie sofort erscheint</string>
+    <string name="settings_preload_radar_desc">Radarschleife für den aktuellen Ort im WLAN aktuell halten (etwa alle 15 Minuten, auch im Hintergrund), damit sie sofort erscheint</string>
 
     <string name="precip_24h">Niederschlag, nächste 24 Std.</string>
     <string name="precip_today_amount">%1$s heute</string>
@@ -417,4 +417,8 @@
     <string name="licenses_libraries">Bibliotheken (%1$d)</string>
     <string name="licenses_data">Daten und Karten</string>
     <string name="licenses_data_text">Wetterdaten: Deutscher Wetterdienst (DWD), CC BY 4.0, teils über Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, RainViewer · Bürger-Messnetz: Sensor.Community, ODbL · Karten: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap-Mitwirkende, ODbL.</string>
+    <string name="radar_loading_frames">Radarbilder werden geladen %1$d/%2$d</string>
+    <string name="radar_partly_cached">Verbindungsprobleme – einige Radarbilder sind ältere Kopien aus dem Speicher.</string>
+    <string name="radar_partly_missing">Einige Radarbilder konnten nicht geladen werden.</string>
+    <string name="radar_reload">Erneut laden</string>
 </resources>

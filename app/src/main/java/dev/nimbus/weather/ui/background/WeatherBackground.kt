@@ -34,6 +34,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
@@ -173,6 +176,35 @@ private fun snowCount(c: Condition): Int = when (c) {
     else -> 0
 }
 
+/** Time of the last touch; the sky animation slows down when the app is left open unused. */
+object UserActivity {
+    @Volatile var lastInteraction = System.currentTimeMillis()
+        private set
+
+    fun touch() { lastInteraction = System.currentTimeMillis() }
+}
+
+private const val IDLE_AFTER_MS = 60_000L
+
+/** Battery saver switched on in the system: no animation (Android's own guideline). */
+@Composable
+private fun rememberPowerSaveMode(): Boolean {
+    val context = LocalContext.current
+    val pm = remember { context.getSystemService(android.os.PowerManager::class.java) }
+    var on by remember { mutableStateOf(pm?.isPowerSaveMode == true) }
+    DisposableEffect(context) {
+        val receiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(c: android.content.Context?, i: android.content.Intent?) { on = pm?.isPowerSaveMode == true }
+        }
+        androidx.core.content.ContextCompat.registerReceiver(
+            context, receiver, android.content.IntentFilter(android.os.PowerManager.ACTION_POWER_SAVE_MODE_CHANGED),
+            androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+        onDispose { context.unregisterReceiver(receiver) }
+    }
+    return on
+}
+
 /**
  * Full-screen animated sky for the given [scene]. All animation is computed from a single
  * frame clock inside the draw phase, so no recomposition happens per frame.
@@ -183,13 +215,26 @@ fun WeatherBackground(scene: SkyScene, animate: Boolean, modifier: Modifier = Mo
     val systemAnimations = remember {
         SystemSettings.Global.getFloat(context.contentResolver, SystemSettings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f
     }
-    val running = animate && systemAnimations
+    val powerSave = rememberPowerSaveMode()
+    val running = animate && systemAnimations && !powerSave
     val clock = remember { mutableDoubleStateOf(12.0) }
-    LaunchedEffect(running) {
+    // Fast particles (rain, snow, lightning) need a smooth picture; drifting clouds, stars and
+    // leaves look the same at 30 fps and cost half (or, on 120 Hz screens, a quarter) of the GPU
+    // work. Nobody touching the phone for a while: 15 fps.
+    val fast = rainSpec(scene.condition) != null || snowCount(scene.condition) > 0
+    LaunchedEffect(running, fast) {
         if (!running) return@LaunchedEffect
         val base = clock.doubleValue
         val start = withFrameNanos { it }
         while (true) {
+            val idle = System.currentTimeMillis() - UserActivity.lastInteraction > IDLE_AFTER_MS
+            val interval = when {
+                idle -> 1000L / 15
+                fast -> 1000L / 60
+                else -> 1000L / 30
+            }
+            // Sleep until shortly before the next wanted frame; the frame clock aligns it to vsync.
+            if (interval > 17) kotlinx.coroutines.delay(interval - 12)
             withFrameNanos { clock.doubleValue = base + (it - start) / 1_000_000_000.0 }
         }
     }

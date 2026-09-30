@@ -255,7 +255,7 @@
     <string name="legend_snow">Snow / sleet</string>
 
     <string name="settings_preload_radar">Preload radar</string>
-    <string name="settings_preload_radar_desc">Load the radar loop for the shown place in the background on Wi-Fi, so it opens instantly</string>
+    <string name="settings_preload_radar_desc">Keep the radar loop of the current place up to date on Wi-Fi (about every 15 minutes, also in the background), so it opens instantly</string>
 
     <string name="precip_24h">Precipitation, Next 24 Hours</string>
     <string name="precip_today_amount">%1$s today</string>
@@ -427,4 +427,8 @@
     <string name="licenses_libraries">Libraries (%1$d)</string>
     <string name="licenses_data">Data and maps</string>
     <string name="licenses_data_text">Weather data: Deutscher Wetterdienst (DWD), CC BY 4.0, partly via Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, RainViewer · Citizen sensors: Sensor.Community, ODbL · Maps: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors, ODbL.</string>
+    <string name="radar_loading_frames">Loading radar images %1$d/%2$d</string>
+    <string name="radar_partly_cached">Connection problems – some radar images are older copies from the memory.</string>
+    <string name="radar_partly_missing">Some radar images could not be loaded.</string>
+    <string name="radar_reload">Load again</string>
 </resources>

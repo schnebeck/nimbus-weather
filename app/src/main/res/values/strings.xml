@@ -426,7 +426,7 @@
     <string name="licenses_show_text">Show license text</string>
     <string name="licenses_libraries">Libraries (%1$d)</string>
     <string name="licenses_data">Data and maps</string>
-    <string name="licenses_data_text">Weather data: Deutscher Wetterdienst (DWD), CC BY 4.0, partly via Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, RainViewer · Citizen sensors: Sensor.Community, ODbL · Maps: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors, ODbL.</string>
+    <string name="licenses_data_text">Weather data: Deutscher Wetterdienst (DWD), CC BY 4.0, partly via Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, RainViewer · Citizen sensors: Sensor.Community, ODbL · Place names: Nominatim, © OpenStreetMap contributors, ODbL · Maps: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors, ODbL.</string>
     <string name="radar_loading_frames">Loading radar images %1$d/%2$d</string>
     <string name="radar_partly_cached">Connection problems – some radar images are older copies from the memory.</string>
     <string name="radar_partly_missing">Some radar images could not be loaded.</string>

@@ -47,7 +47,7 @@ val JsonCodec = Json {
     coerceInputValues = true
 }
 
-const val USER_AGENT = "Nimbus-Weather/1.0 (Android; private non-commercial app)"
+const val USER_AGENT = "Nimbus-Weather (Android; https://github.com/schnebeck/nimbus-weather)"
 
 suspend fun Call.await(): Response = suspendCancellableCoroutine { cont ->
     enqueue(object : Callback {

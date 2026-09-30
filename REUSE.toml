@@ -72,3 +72,8 @@ SPDX-License-Identifier = "GPL-3.0-or-later"
 path = "app/aboutlibraries/licenses/suncalc-bsd-2-clause.json"
 SPDX-FileCopyrightText = "(C) 2026 Volodymyr Agafonkin (SunCalc)"
 SPDX-License-Identifier = "BSD-2-Clause"
+
+[[annotations]]
+path = "app/src/test/resources/fixtures/nominatim_reverse.json"
+SPDX-FileCopyrightText = "OpenStreetMap contributors (via Nominatim)"
+SPDX-License-Identifier = "ODbL-1.0"

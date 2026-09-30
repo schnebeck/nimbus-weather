@@ -24,6 +24,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import dev.nimbus.weather.NimbusApp
+import dev.nimbus.weather.BuildConfig
 import dev.nimbus.weather.R
 import dev.nimbus.weather.data.model.Condition
 import dev.nimbus.weather.data.model.ModelSeries
@@ -192,9 +193,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 return@launch
             }
             val old = _state.value.currentPlace
+            val fallbackName = getApplication<Application>().getString(R.string.my_location)
             val moved = old == null || distanceKm(old.latitude, old.longitude, loc.latitude, loc.longitude) > 1.5
-            val place = if (moved || old == null) {
-                location.toPlace(loc, getApplication<Application>().getString(R.string.my_location))
+            // A place without a real name (geocoding failed last time) asks again.
+            val unnamed = old != null && old.name == fallbackName
+            val place = if (moved || unnamed || old == null) {
+                val found = location.toPlace(loc, fallbackName)
+                // Geocoding failed again, but we are still near the last named place: keep its name.
+                if (found.name == fallbackName && old != null && old.name != fallbackName &&
+                    distanceKm(old.latitude, old.longitude, loc.latitude, loc.longitude) < 5.0
+                ) found.copy(name = old.name, region = old.region, country = old.country, countryCode = old.countryCode) else found
             } else old
             _state.update { st ->
                 st.copy(
@@ -203,6 +211,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     selectedPlaceId = if (st.selectedPlaceId == null || old == null && st.savedPlaces.isEmpty()) place.id else st.selectedPlaceId,
                 )
             }
+            // Only the name changed (it was missing before): show it right away, no reload needed.
+            if (!moved && old != null && place.name != old.name) {
+                val renamed = _state.value.states[place.id]?.data?.copy(place = place)
+                if (renamed != null) {
+                    updatePlace(place.id) { it.copy(data = renamed) }
+                    runCatching { store.cacheWeather(renamed) }
+                }
+            }
+            if (BuildConfig.DEBUG) android.util.Log.d("NimbusLocation", "place ${place.name} (was ${old?.name}, moved=$moved)")
             load(place, force = moved || force)
         }
     }

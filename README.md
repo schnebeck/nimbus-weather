@@ -101,6 +101,7 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
 | Pollenflug Deutschland | [DWD-Pollenflug-Gefahrenindex](https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json) |
 | Bürger-Messnetz | [Sensor.Community](https://sensor.community) |
 | Modellvergleich, Temperatur-/Windgitter | Open-Meteo |
+| Ortsname des Standorts | System-Geocoder, sonst [Nominatim](https://nominatim.org) (OpenStreetMap) |
 | Sonne und Mond | auf dem Gerät berechnet (nach SunCalc und J. Meeus) |
 | Karte | [OpenFreeMap](https://openfreemap.org) · © OpenMapTiles · © OpenStreetMap-Mitwirkende |
 

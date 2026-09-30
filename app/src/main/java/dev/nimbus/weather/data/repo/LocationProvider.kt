@@ -35,11 +35,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import dev.nimbus.weather.data.remote.getJson
+import dev.nimbus.weather.data.remote.o
+import dev.nimbus.weather.data.remote.obj
+import dev.nimbus.weather.data.remote.s
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import java.util.Locale
 import kotlin.coroutines.resume
 
-/** Device location without Google Play Services, using the platform LocationManager. */
-class LocationProvider(private val context: Context) {
+/** Device location without Google Play Services, using the platform LocationManager; place names from the platform geocoder or OpenStreetMap. */
+class LocationProvider(private val context: Context, private val http: okhttp3.OkHttpClient? = null) {
 
     fun hasPermission(): Boolean =
         ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
@@ -120,19 +125,49 @@ class LocationProvider(private val context: Context) {
                 }
             }.getOrNull()
         }
-        return Place(
-            id = CURRENT_LOCATION_ID,
-            name = address?.locality ?: address?.subAdminArea ?: address?.adminArea ?: fallbackName,
-            region = address?.adminArea,
-            country = address?.countryName,
-            countryCode = address?.countryCode,
-            latitude = lat,
-            longitude = lon,
-            isCurrentLocation = true,
-        )
+        val name = address?.locality ?: address?.subAdminArea ?: address?.adminArea
+        if (name != null) {
+            return Place(
+                id = CURRENT_LOCATION_ID, name = name, region = address?.adminArea, country = address?.countryName,
+                countryCode = address?.countryCode, latitude = lat, longitude = lon, isCurrentLocation = true,
+            )
+        }
+        // No platform geocoder (devices without Google services) or it failed: OpenStreetMap.
+        osmReverse(lat, lon)?.let { return it }
+        return Place(id = CURRENT_LOCATION_ID, name = fallbackName, latitude = lat, longitude = lon, isCurrentLocation = true)
+    }
+
+    /**
+     * Reverse geocoding with Nominatim (OpenStreetMap). Only called when the location changed and
+     * the platform geocoder gave nothing, well within Nominatim's usage policy (max. 1 request/s).
+     */
+    private suspend fun osmReverse(lat: Double, lon: Double): Place? {
+        val client = http ?: return null
+        val url = "https://nominatim.openstreetmap.org/reverse".toHttpUrl().newBuilder()
+            .addQueryParameter("lat", dev.nimbus.weather.data.remote.OpenMeteoSource.fmt(lat))
+            .addQueryParameter("lon", dev.nimbus.weather.data.remote.OpenMeteoSource.fmt(lon))
+            .addQueryParameter("format", "jsonv2")
+            .addQueryParameter("zoom", "10")
+            .addQueryParameter("accept-language", Locale.getDefault().language)
+            .build().toString()
+        return runCatching {
+            withTimeoutOrNull(6_000L) { client.getJson(url) }?.let { parseNominatim(it, lat, lon) }
+        }.getOrNull()
     }
 
     companion object {
+        /** Place from a Nominatim reverse answer: town, city or village, else the county. */
+        fun parseNominatim(root: kotlinx.serialization.json.JsonElement, lat: Double, lon: Double): Place? {
+            val o = root.obj() ?: return null
+            val a = o.o("address") ?: return null
+            val name = listOf("city", "town", "village", "municipality", "suburb", "county").firstNotNullOfOrNull { a.s(it) }
+                ?: o.s("name")?.takeIf { it.isNotBlank() } ?: return null
+            return Place(
+                id = CURRENT_LOCATION_ID, name = name, region = a.s("state"), country = a.s("country"),
+                countryCode = a.s("country_code")?.uppercase(), latitude = lat, longitude = lon, isCurrentLocation = true,
+            )
+        }
+
         const val CURRENT_LOCATION_ID = "current-location"
     }
 }

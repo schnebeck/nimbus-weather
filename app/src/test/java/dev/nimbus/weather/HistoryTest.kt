@@ -46,13 +46,21 @@ class HistoryTest {
     }
 
     @Test
-    fun `days are split in the local time zone, future hours cut`() {
+    fun `days are split in the local time zone, today runs on with the forecast`() {
         val h = HistorySource.combine(Fixtures.json("openmeteo_history.json"), Fixtures.json("brightsky_history.json"), "icon_seamless", now)
         assertEquals(listOf(LocalDate.of(2026, 9, 27), LocalDate.of(2026, 9, 28), LocalDate.of(2026, 9, 29)), h.days.map { it.date })
         assertEquals(24, h.days[0].hours.size)
         assertEquals(24, h.days[1].hours.size)
-        assertTrue(h.days[2].hours.all { it.time <= now })
-        assertTrue(h.days[2].hours.size in 11..13)
+        // Today: measured hours up to now, then the forecast only, up to midnight
+        val (past, ahead) = h.days[2].hours.partition { it.time <= now }
+        assertTrue(past.size in 11..13)
+        assertTrue(ahead.isNotEmpty() && ahead.all { it.measured == null && it.model != null })
+        assertTrue(h.days[2].hours.size in 23..24)
+        // the summary counts only the hours up to now
+        assertEquals(
+            DaySummary.of(HistoryDay(h.days[2].date, past)).modelPrecipitation,
+            DaySummary.of(h.days[2], now).modelPrecipitation,
+        )
         // measured and modelled values are both present for past hours
         val sample = h.days[1].hours[12]
         assertNotNull(sample.measured?.temperature)

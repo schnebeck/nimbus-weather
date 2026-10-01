@@ -169,7 +169,10 @@ class HistorySource(
             val (zone, modelled) = parseModel(modelRoot)
             val obs = obsRoot?.let { parseObservations(it) } ?: Observations(emptyMap(), null, null)
             val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
-            val times = (modelled.keys + obs.byTime.keys).filter { it <= now }.sorted()
+            // Past hours, and for today the forecast up to midnight (drawn dashed, not counted in the summary)
+            val times = (modelled.keys + obs.byTime.keys).filter { t ->
+                t <= now || (t in modelled && Instant.ofEpochMilli(t - 1).atZone(zone).toLocalDate() == today)
+            }.distinct().sorted()
             val days = (2 downTo 0).map { back ->
                 val date = today.minusDays(back.toLong())
                 val hours = times.filter { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == date }
@@ -191,8 +194,9 @@ data class DaySummary(
     val measured: Boolean,
 ) {
     companion object {
-        fun of(day: HistoryDay): DaySummary {
-            val h = day.hours
+        /** Summary of the hours up to [now] (today's forecast for the rest of the day is left out). */
+        fun of(day: HistoryDay, now: Long = Long.MAX_VALUE): DaySummary {
+            val h = day.hours.filter { it.time <= now }
             val mt = h.mapNotNull { it.measured?.temperature }
             val measured = mt.size >= h.size / 2 && mt.isNotEmpty()
             fun pick(m: (HistoryHour) -> Double?, mod: (HistoryHour) -> Double?) = h.mapNotNull { m(it) ?: mod(it) }

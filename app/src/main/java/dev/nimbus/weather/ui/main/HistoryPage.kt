@@ -124,7 +124,7 @@ fun HistoryPage(
     val context = LocalContext.current
     val history = state?.history
     val day = history?.days?.getOrNull(dayIndex)
-    val summary = remember(day) { day?.takeIf { it.hours.isNotEmpty() }?.let { DaySummary.of(it) } }
+    val summary = remember(day) { day?.takeIf { it.hours.isNotEmpty() }?.let { DaySummary.of(it, history?.fetchedAt ?: Long.MAX_VALUE) } }
     val tf = remember(history?.zone) { TimeFormat(history?.zone?.id ?: (state?.data?.timezone ?: "UTC"), DateFormat.is24HourFormat(context)) }
     // Same sky as the main page at the current time (day/night, twilight, moon) – only the weather
     // is that of the shown day. A bright day sky at night made the glass cards pale.
@@ -311,10 +311,20 @@ private fun Legend(model: Boolean, settings: Settings, measuredAsBars: Boolean =
 @Composable
 private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, tf: TimeFormat) {
     val start = day.date.atStartOfDay(tf.zone).toInstant().toEpochMilli()
+    val asOf = remember(day) { System.currentTimeMillis() }
     val points = remember(day) {
         day.hours.mapNotNull { h ->
             val m = h.measured
             val f = h.model
+            // Rest of today: the forecast only, dashed
+            if (h.time > asOf && m == null) {
+                val ft = f?.temperature ?: return@mapNotNull null
+                return@mapNotNull MeteoPoint(
+                    time = h.time, temperature = ft, condition = f.condition, isDay = f.isDay,
+                    precipitation = f.precipitation, windSpeed = f.windSpeed, windGust = f.windGust,
+                    forecastTemperature = ft, sunshine = f.sunshineMinutes, forecastOnly = true,
+                )
+            }
             val temp = m?.temperature ?: f?.temperature ?: return@mapNotNull null
             MeteoPoint(
                 time = h.time,

@@ -111,7 +111,8 @@ fun MainScreen(
 
     // Tablet in landscape: the places as a sidebar on the left, the weather on the right
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
-    val sidebar = maxWidth >= 1000.dp && maxWidth > maxHeight
+    // Only with a choice: a single place would just repeat the header next to it
+    val sidebar = maxWidth >= 1000.dp && maxWidth > maxHeight && pages.size >= 2
     val contentWidth = if (sidebar) maxWidth - SidebarWidth else maxWidth
     Row(Modifier.fillMaxSize()) {
     if (sidebar) PlacesSidebar(state, place.id, onSelect, onOpenPlaces, Modifier.width(SidebarWidth).fillMaxHeight())

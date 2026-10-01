@@ -1,0 +1,3 @@
+• Tablet: places sidebar only with two or more places
+• Look back "today so far": forecast up to midnight (dashed)
+• Radar: past images no longer stronger than the forecast (RainViewer only outside the DWD area)

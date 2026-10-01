@@ -235,14 +235,17 @@ object RadarPalette {
         val grid = if (geo != null && timeMs != null) WeatherGridStore.gridOverlapping(geo, timeMs) else null
         val field = if (grid != null && timeMs != null) grid.temp[grid.hourIndex(timeMs)] else null
         // Latitude depends only on the row and longitude only on the column (Mercator tiles).
-        val rowLat = if (field != null && geo != null) DoubleArray(h) { geo.latAt((it + 0.5) / h) } else null
-        val colLon = if (field != null && geo != null) DoubleArray(w) { geo.lonAt((it + 0.5) / w) } else null
+        // RainViewer only outside the DWD radar area (inside it the DWD layer shows the same rain)
+        val masked = source == Source.RAINVIEWER && geo != null && DwdCoverage.ready
+        val needCoords = (field != null || masked) && geo != null
+        val rowLat = if (needCoords) DoubleArray(h) { geo!!.latAt((it + 0.5) / h) } else null
+        val colLon = if (needCoords) DoubleArray(w) { geo!!.lonAt((it + 0.5) / w) } else null
         var any = false
         for (y in 0 until h) {
             for (x in 0 until w) {
                 val i = y * w + x
                 val code = decode(px[i], source)
-                if (code == NONE) {
+                if (code == NONE || masked && DwdCoverage.covers(rowLat!![y], colLon!![x])) {
                     px[i] = 0
                     continue
                 }

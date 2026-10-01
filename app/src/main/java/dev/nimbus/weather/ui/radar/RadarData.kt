@@ -84,7 +84,7 @@ object RadarSources {
      * Bumped whenever the tile colouring changes: radar tiles were once cached already recoloured,
      * a new URL makes sure old colours never come back from MapLibre's or OkHttp's cache.
      */
-    const val TILE_VERSION = 4
+    const val TILE_VERSION = 5
 
     fun dwdTileUrl(layer: String, time: String?): String =
         "$DWD_WMS?service=WMS&version=1.1.1&request=GetMap&layers=$layer&styles=&format=image/png&transparent=true" +

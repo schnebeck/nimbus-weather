@@ -125,6 +125,8 @@ data class MeteoPoint(
     val forecastPrecipitation: Double? = null,
     /** Minutes of sunshine in the hour before [time]. */
     val sunshine: Double? = null,
+    /** Look-back of today: an hour still to come – only the forecast, drawn dashed and paler. */
+    val forecastOnly: Boolean = false,
 )
 
 fun HourlyPoint.toMeteo() = MeteoPoint(
@@ -214,8 +216,9 @@ fun Meteogram(
     } + gap
     // Daily totals (the first point, 00:00, belongs to the hour before the day)
     val dayPts = pts.filter { it.time > start }
-    val sunTotalMin = dayPts.mapNotNull { it.sunshine }.takeIf { it.isNotEmpty() }?.sum()
-    val precipTotal = dayPts.mapNotNull { it.precipitation }.takeIf { it.isNotEmpty() }?.sum()
+    // Totals of what happened (the look-back of today leaves out the hours still to come)
+    val sunTotalMin = dayPts.filter { !it.forecastOnly }.mapNotNull { it.sunshine }.takeIf { it.isNotEmpty() }?.sum()
+    val precipTotal = dayPts.filter { !it.forecastOnly }.mapNotNull { it.precipitation }.takeIf { it.isNotEmpty() }?.sum()
     val axisR = with(density) {
         listOf(
             (0..2).maxOf { measurer.measure(precipLabel(it), labelStyle).size.width },
@@ -309,7 +312,7 @@ fun Meteogram(
                     pts.forEach { h ->
                         val p = Units.precipitationValue(h.precipitation ?: 0.0, s.precipitationUnit)
                         if (p > 0.0) {
-                            drawRoundRect(PrecipBar, Offset(x(h.time) - hourW * 0.36f, yP(p)), Size(hourW * 0.72f, bottom - yP(p)), CornerRadius(2.dp.toPx()))
+                            drawRoundRect(if (h.forecastOnly) PrecipBar.copy(alpha = PrecipBar.alpha * 0.45f) else PrecipBar, Offset(x(h.time) - hourW * 0.36f, yP(p)), Size(hourW * 0.72f, bottom - yP(p)), CornerRadius(2.dp.toPx()))
                         }
                     }
                 }
@@ -325,7 +328,12 @@ fun Meteogram(
                 }
                 // Temperature curve (measured in comparison mode: white)
                 val path = Path()
-                pts.forEachIndexed { i, h -> if (i == 0) path.moveTo(x(h.time), yT(temps[i])) else path.lineTo(x(h.time), yT(temps[i])) }
+                var on = false
+                pts.forEachIndexed { i, h ->
+                    // hours still to come (look-back of today) have no measured curve
+                    if (h.forecastOnly) { on = false; return@forEachIndexed }
+                    if (!on) { path.moveTo(x(h.time), yT(temps[i])); on = true } else path.lineTo(x(h.time), yT(temps[i]))
+                }
                 val brush = if (compare) Brush.linearGradient(listOf(Color.White, Color.White)) else Brush.verticalGradient(
                     listOf(Insights.temperatureColor(pts.maxOf { it.temperature }), Insights.temperatureColor(pts.minOf { it.temperature })),
                     startY = top, endY = bottom,
@@ -452,6 +460,7 @@ private fun readoutLines(h: MeteoPoint): List<String> {
     val first = buildString {
         append(Units.temp(h.temperature, s.temperatureUnit)).append(" · ").append(stringResource(Texts.condition(h.condition, h.isDay)))
         when {
+            h.forecastOnly -> append(" · ").append(forecastWord)
             h.forecastTemperature != null -> append(" · ").append(forecastWord).append(' ').append(Units.temp(h.forecastTemperature, s.temperatureUnit))
             h.apparentTemperature != null -> append(" · ").append(stringResource(R.string.feels_like_short, Units.temp(h.apparentTemperature, s.temperatureUnit)))
         }

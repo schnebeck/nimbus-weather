@@ -515,12 +515,15 @@ fun RadarScreen(
         RadarNetStatus.reset()
         // Grid and time line in parallel; neither may hold up the other.
         val gridJob = async { WeatherGridStore.ensure(container.http, lat, lon, from = archiveDay) }
+        // The DWD area mask before the first RainViewer tiles are coloured (from disk after the first time)
+        val coverageJob = async { kotlinx.coroutines.withTimeoutOrNull(5_000L) { DwdCoverage.ensure(container.http) } }
         val tl = runCatching {
             if (archiveDay != null) RadarSources.dayTimeline(container.http, archiveDay)
             else RadarSources.timeline(container.http, range, force = reloadKey > 0)
         }.getOrNull()
         if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "timeline after ${System.currentTimeMillis() - openedAt} ms")
         val grid = gridJob.await()
+        coverageJob.await()
         if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "grid after ${System.currentTimeMillis() - openedAt} ms")
         if (tl == null) { error = true; return@LaunchedEffect }
         error = false

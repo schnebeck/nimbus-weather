@@ -1,0 +1,3 @@
+• Tablet: Ortsleiste erst ab zwei Orten
+• Rückblick „Heute bisher“: Vorhersage bis 24 Uhr (gestrichelt)
+• Radar: vergangene Bilder nicht mehr kräftiger als die Vorhersage (RainViewer nur außerhalb des DWD-Gebiets)

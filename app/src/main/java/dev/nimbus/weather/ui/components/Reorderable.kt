@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,8 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
@@ -42,10 +43,53 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 
+/** Pure decision logic of [ReorderableColumn] – kept free of Compose for unit tests. */
+object Reorder {
+    /**
+     * A row moves past a neighbour once its leading edge (the bottom when dragged down, the top
+     * when dragged up) covers this much of the neighbour – as Android's ItemTouchHelper does. It
+     * works for rows of any height (a tall expanded group swaps as readily as a single row), and
+     * moving back needs a clear counter-movement (0.4 of a row): a finger never holds perfectly
+     * still, and without such a margin the row flipped back and forth at the boundary.
+     */
+    const val OVERLAP = 0.7f
+
+    /** Row bounds within the column: top and height. */
+    data class Row(val top: Float, val height: Float)
+
+    /**
+     * New index of the dragged row whose top is at [dragTop] (column coordinates), currently at
+     * [index] among [rows] (in their current order and layout).
+     */
+    fun target(rows: List<Row>, index: Int, dragTop: Float): Int {
+        val h = rows[index].height
+        var i = index
+        while (i + 1 < rows.size) {
+            val n = rows[i + 1]
+            if (dragTop + h > n.top + n.height * OVERLAP) i++ else break
+        }
+        if (i != index) return i
+        while (i - 1 >= 0) {
+            val p = rows[i - 1]
+            if (dragTop < p.top + p.height * (1f - OVERLAP)) i-- else break
+        }
+        return i
+    }
+
+    /** The dragged row stays within the column: from the first row's top to the last row's bottom. */
+    fun clampTop(rows: List<Row>, index: Int, dragTop: Float): Float {
+        val minTop = rows.first().top
+        val maxTop = rows.last().let { it.top + it.height } - rows[index].height
+        return dragTop.coerceIn(minTop, maxOf(minTop, maxTop))
+    }
+}
+
 /**
  * Rows of [items], sorted by dragging the modifier handed to [row] as `handle` (a drag handle
- * icon). Rows may differ in height (an expanded group moves as a whole). The new order is passed
- * to [onMove] when the row is dropped; [moveUp]/[moveDown] label the TalkBack actions on the handle.
+ * icon). The dragged row follows the finger in absolute terms – its offset is computed from its
+ * actual place in the layout, so it never jumps when the rows around it change places. Rows may
+ * differ in height (an expanded group moves as a whole). The new order goes to [onMove] when the
+ * row is dropped; [moveUp]/[moveDown] label the TalkBack actions on the handle.
  */
 @Composable
 fun <T> ReorderableColumn(
@@ -58,12 +102,22 @@ fun <T> ReorderableColumn(
     gap: Dp = 0.dp,
     row: @Composable (item: T, dragging: Boolean, handle: Modifier) -> Unit,
 ) {
-    var order by remember(items) { mutableStateOf(items) }
+    // One state for the lifetime of the list: the drag handlers keep a reference to it. (Keyed by
+    // [items], it was replaced after every drop when the new order came back from the settings –
+    // the handlers then sorted a stale copy and the row drifted away from the layout.)
+    var order by remember { mutableStateOf(items) }
     var dragKey by remember { mutableStateOf<Any?>(null) }
-    var dragOffset by remember { mutableStateOf(0f) }
-    val heights = remember { mutableStateMapOf<Any, Int>() }
-    val gapPx = with(LocalDensity.current) { gap.toPx() }
+    // A new order from outside (saved, reset) – taken over when no row is being dragged
+    if (dragKey == null && order != items) order = items
+    /** Top of the dragged row in column coordinates, where the finger has taken it. */
+    var dragTop by remember { mutableFloatStateOf(0f) }
+    /** Layout of every row (top, height), updated after each placement. */
+    val bounds = remember { mutableStateMapOf<Any, Reorder.Row>() }
     val haptics = LocalHapticFeedback.current
+
+    /** Rows in the current order – null until the layout has caught up with the last move. */
+    fun rows() = order.mapNotNull { bounds[key(it)] }
+        .takeIf { r -> r.size == order.size && r.zipWithNext().all { (a, b) -> a.top < b.top } }
 
     fun move(from: Int, to: Int) {
         if (from == to || to !in order.indices) return
@@ -78,24 +132,27 @@ fun <T> ReorderableColumn(
                 val handle = Modifier
                     .pointerInput(k) {
                         detectDragGestures(
-                            onDragStart = { dragKey = k; dragOffset = 0f; haptics.performHapticFeedback(HapticFeedbackType.LongPress) },
+                            onDragStart = {
+                                dragKey = k
+                                dragTop = bounds[k]?.top ?: 0f
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            },
                             onDrag = { change, amount ->
                                 change.consume()
-                                dragOffset += amount.y
+                                // The movement always counts; only the decision waits for the layout
+                                // to catch up with the last move (otherwise fast drags lagged behind)
+                                dragTop += amount.y
+                                val rows = rows() ?: return@detectDragGestures
                                 val i = order.indexOfFirst { key(it) == k }
-                                // Swap with a neighbour once the row has passed half of it
-                                val next = order.getOrNull(i + 1)?.let { heights[key(it)] }
-                                val prev = order.getOrNull(i - 1)?.let { heights[key(it)] }
-                                if (next != null && dragOffset > next / 2f) {
-                                    move(i, i + 1); dragOffset -= next + gapPx
-                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                } else if (prev != null && -dragOffset > prev / 2f) {
-                                    move(i, i - 1); dragOffset += prev + gapPx
+                                dragTop = Reorder.clampTop(rows, i, dragTop)
+                                val to = Reorder.target(rows, i, dragTop)
+                                if (to != i) {
+                                    move(i, to)
                                     haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 }
                             },
-                            onDragEnd = { dragKey = null; dragOffset = 0f; onMove(order) },
-                            onDragCancel = { dragKey = null; dragOffset = 0f; onMove(order) },
+                            onDragEnd = { dragKey = null; onMove(order) },
+                            onDragCancel = { dragKey = null; onMove(order) },
                         )
                     }
                     .semantics {
@@ -112,10 +169,11 @@ fun <T> ReorderableColumn(
                     }
                 Box(
                     Modifier
-                        .onSizeChanged { heights[k] = it.height }
+                        .onPlaced { c -> bounds[k] = Reorder.Row(c.positionInParent().y, c.size.height.toFloat()) }
                         .zIndex(if (dragging) 1f else 0f)
                         .graphicsLayer {
-                            translationY = if (dragging) dragOffset else 0f
+                            // Read at draw time: always relative to where the row is laid out now
+                            translationY = if (dragging) dragTop - (bounds[k]?.top ?: dragTop) else 0f
                             shadowElevation = if (dragging) 8.dp.toPx() else 0f
                         },
                 ) { row(item, dragging, handle) }

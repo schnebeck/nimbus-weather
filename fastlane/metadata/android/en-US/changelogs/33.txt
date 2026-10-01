@@ -1,0 +1,1 @@
+• Drag to sort (cards, small tiles, places): the row follows the finger steadily and no longer jumps back and forth; also when dragged again and up to the first and last position

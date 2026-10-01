@@ -85,15 +85,11 @@ import dev.nimbus.weather.util.TimeFormat
 import dev.nimbus.weather.util.Units
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.icons.rounded.RemoveCircle
-import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
-import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -238,74 +234,43 @@ private fun EditList(
     places: List<Place>, state: UiState, onReorder: (List<String>) -> Unit, onRemove: (Place) -> Unit,
     modifier: Modifier, navBottom: androidx.compose.ui.unit.Dp,
 ) {
-    var order by remember(places) { mutableStateOf(places.map { it.id }) }
-    var dragId by remember { mutableStateOf<String?>(null) }
-    var dragOffset by remember { mutableStateOf(0f) }
     var confirmId by remember { mutableStateOf<String?>(null) }
-    val step = with(androidx.compose.ui.platform.LocalDensity.current) { (EditRowHeight + EditRowGap).toPx() }
-    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
-    Column(
-        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = navBottom + 16.dp),
-        verticalArrangement = Arrangement.spacedBy(EditRowGap),
-    ) {
-        order.forEach { id ->
-            val place = places.firstOrNull { it.id == id } ?: return@forEach
-            androidx.compose.runtime.key(id) {
-                val dragging = dragId == id
-                val st = state.states[id]?.data
-                val colors = st?.let { SkyScene.from(it).skyColors } ?: listOf(Color(0xFF2A3B57), Color(0xFF34486A), Color(0xFF3E5579))
-                Row(
-                    Modifier.fillMaxWidth().height(EditRowHeight)
-                        .zIndex(if (dragging) 1f else 0f)
-                        .graphicsLayer {
-                            translationY = if (dragging) dragOffset else 0f
-                            scaleX = if (dragging) 1.03f else 1f; scaleY = scaleX
-                            shadowElevation = if (dragging) 12.dp.toPx() else 0f
-                            shape = RoundedCornerShape(14.dp); clip = true
-                        }
-                        .background(Brush.linearGradient(colors)),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (confirmId == id) {
-                        androidx.compose.material3.TextButton(
-                            onClick = { confirmId = null; onRemove(place) },
-                            modifier = Modifier.padding(start = 6.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFFE5484D)),
-                        ) { Text(stringResource(R.string.delete), color = Color.White, fontWeight = FontWeight.SemiBold) }
-                    } else {
-                        IconButton(onClick = { confirmId = id }) {
-                            Icon(Icons.Rounded.RemoveCircle, stringResource(R.string.delete), tint = Color(0xFFFF6B6E))
-                        }
+    Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = navBottom + 16.dp)) {
+        dev.nimbus.weather.ui.components.ReorderableColumn(
+            places, key = { it.id }, gap = EditRowGap,
+            moveUp = stringResource(R.string.move_up), moveDown = stringResource(R.string.move_down),
+            onMove = { list -> onReorder(list.map { it.id }) },
+        ) { place, dragging, handle ->
+            val id = place.id
+            val st = state.states[id]?.data
+            val colors = st?.let { SkyScene.from(it).skyColors } ?: listOf(Color(0xFF2A3B57), Color(0xFF34486A), Color(0xFF3E5579))
+            Row(
+                Modifier.fillMaxWidth().height(EditRowHeight)
+                    .graphicsLayer {
+                        scaleX = if (dragging) 1.03f else 1f; scaleY = scaleX
+                        shape = RoundedCornerShape(14.dp); clip = true
                     }
-                    Column(Modifier.weight(1f).padding(start = 4.dp).clickable(enabled = confirmId == id) { confirmId = null }) {
-                        Text(place.name, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        if (place.subtitle.isNotEmpty()) Text(place.subtitle, fontSize = 12.sp, color = NimbusColors.Secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    .background(Brush.linearGradient(colors)),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (confirmId == id) {
+                    androidx.compose.material3.TextButton(
+                        onClick = { confirmId = null; onRemove(place) },
+                        modifier = Modifier.padding(start = 6.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFFE5484D)),
+                    ) { Text(stringResource(R.string.delete), color = Color.White, fontWeight = FontWeight.SemiBold) }
+                } else {
+                    IconButton(onClick = { confirmId = id }) {
+                        Icon(Icons.Rounded.RemoveCircle, stringResource(R.string.delete), tint = Color(0xFFFF6B6E))
                     }
-                    Icon(
-                        Icons.Rounded.DragHandle, stringResource(R.string.places_drag),
-                        tint = Color.White,
-                        modifier = Modifier.size(56.dp).padding(16.dp).pointerInput(id) {
-                            detectDragGestures(
-                                onDragStart = {
-                                    dragId = id; dragOffset = 0f; confirmId = null
-                                    haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                                },
-                                onDrag = { change, amount ->
-                                    change.consume()
-                                    dragOffset += amount.y
-                                    val from = order.indexOf(id)
-                                    val to = (from + (dragOffset / step).roundToInt()).coerceIn(0, order.lastIndex)
-                                    if (to != from) {
-                                        order = order.toMutableList().apply { removeAt(from); add(to, id) }
-                                        dragOffset -= (to - from) * step
-                                        haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                    }
-                                },
-                                onDragEnd = { dragId = null; dragOffset = 0f; onReorder(order) },
-                                onDragCancel = { dragId = null; dragOffset = 0f; onReorder(order) },
-                            )
-                        },
-                    )
                 }
+                Column(Modifier.weight(1f).padding(start = 4.dp).clickable(enabled = confirmId == id) { confirmId = null }) {
+                    Text(place.name, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (place.subtitle.isNotEmpty()) Text(place.subtitle, fontSize = 12.sp, color = NimbusColors.Secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                Icon(
+                    Icons.Rounded.DragHandle, stringResource(R.string.places_drag), tint = Color.White,
+                    modifier = handle.size(56.dp).padding(16.dp),
+                )
             }
         }
     }

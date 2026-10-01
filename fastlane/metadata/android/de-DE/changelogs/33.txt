@@ -1,0 +1,1 @@
+• Sortieren per Ziehen (Kacheln, kleine Kacheln, Orte): die Zeile folgt ruhig dem Finger und springt nicht mehr hin und her; funktioniert auch beim wiederholten Ziehen und bis zur ersten und letzten Position

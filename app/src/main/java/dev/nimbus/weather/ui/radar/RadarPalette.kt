@@ -33,11 +33,12 @@ import java.io.ByteArrayOutputStream
  */
 object RadarPalette {
     /**
-     * dBZ → ARGB for rain (above 0 °C): white → light grey → dark grey → light blue → dark blue.
-     * The dark grey stays lighter than the dark base map so weak rain remains visible.
+     * dBZ → ARGB for rain (above 0 °C): white → light grey (neutral only for the weakest echoes,
+     * the first tenth of the legend) → blue-grey → light blue → dark blue. The blue-grey stays
+     * lighter than the dark base map so weak rain remains visible.
      */
     private val rainStops = listOf(
-        8 to 0x80FFFFFF.toInt(), 14 to 0xB0E8EAEE.toInt(), 20 to 0xD0BEC3CB.toInt(), 26 to 0xE07E858F.toInt(),
+        8 to 0x80FFFFFF.toInt(), 14 to 0xB0DEDEDE.toInt(), 20 to 0xD0AFBCCF.toInt(), 26 to 0xE08A9FC2.toInt(),
         32 to 0xF08CC8FF.toInt(), 40 to 0xF53D8BFF.toInt(), 48 to 0xFA1440C8.toInt(), 56 to 0xFF0A1F7A.toInt(),
     )
 
@@ -50,9 +51,13 @@ object RadarPalette {
     private val rainLut = buildLut(rainStops)
     private val snowLut = buildLut(snowStops)
 
+    /** Range of the legends; colours are sampled evenly, so a position on the bar is linear in dBZ. */
+    const val LEGEND_MIN_DBZ = 10
+    const val LEGEND_MAX_DBZ = 56
+
     /** Colours for the legends (light → heavy). */
-    val legendRain: List<Int> = listOf(10, 16, 22, 28, 34, 42, 50, 56).map { rainLut[it] }
-    val legendSnow: List<Int> = listOf(10, 18, 26, 34, 44, 56).map { snowLut[it] }
+    val legendRain: List<Int> = (LEGEND_MIN_DBZ..LEGEND_MAX_DBZ step 2).map { rainLut[it] }
+    val legendSnow: List<Int> = (LEGEND_MIN_DBZ..LEGEND_MAX_DBZ step 2).map { snowLut[it] }
 
     /** [snow]: 0 = rain, 1 = snow, in between sleet (colours are blended). */
     fun colorFor(dbz: Int, snow: Float): Int {

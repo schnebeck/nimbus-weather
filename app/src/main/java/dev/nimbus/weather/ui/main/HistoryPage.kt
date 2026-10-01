@@ -142,7 +142,10 @@ fun HistoryPage(place: Place, state: PlaceState?, settings: Settings, dayIndex: 
 
     Box(Modifier.fillMaxSize()) {
         WeatherBackground(scene, animate = isActive && settings.animationsEnabled)
-        CompositionLocalProvider(LocalSettings provides settings, LocalTimeFormat provides tf) {
+        CompositionLocalProvider(
+            LocalSettings provides settings, LocalTimeFormat provides tf,
+            dev.nimbus.weather.ui.components.LocalCardShade provides scene.cardShade,
+        ) {
             val clipTop = with(androidx.compose.ui.platform.LocalDensity.current) { (statusTop + 52.dp).toPx() }
             LazyColumn(
                 // Content scrolls away below the top bar instead of running under menu and radar button.

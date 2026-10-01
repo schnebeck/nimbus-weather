@@ -46,18 +46,14 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -88,6 +84,16 @@ import dev.nimbus.weather.util.Texts
 import dev.nimbus.weather.util.TimeFormat
 import dev.nimbus.weather.util.Units
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.rounded.DragHandle
+import androidx.compose.material.icons.rounded.RemoveCircle
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,6 +102,7 @@ fun PlacesScreen(
     search: suspend (String) -> List<Place>,
     onAdd: (Place) -> Unit,
     onRemove: (Place) -> Unit,
+    onReorder: (List<String>) -> Unit,
     onOpen: (String) -> Unit,
     onSettings: () -> Unit,
     onRequestLocation: () -> Unit,
@@ -109,6 +116,11 @@ fun PlacesScreen(
         results = search(query.trim())
     }
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    // Edit mode (long press on a place): sort by dragging, delete with a confirmation.
+    var editing by rememberSaveable { mutableStateOf(false) }
+    val saved = state.savedPlaces.filter { it.id != state.currentPlace?.id }
+    if (saved.isEmpty()) editing = false
+    androidx.activity.compose.BackHandler(enabled = editing) { editing = false }
 
     Column(
         Modifier.fillMaxSize()
@@ -121,7 +133,19 @@ fun PlacesScreen(
                 IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.close), tint = Color.White) }
             } else Spacer(Modifier.size(12.dp))
             Text(stringResource(R.string.weather), Modifier.weight(1f), fontSize = 30.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            IconButton(onClick = onSettings) { Icon(Icons.Outlined.Settings, stringResource(R.string.settings), tint = Color.White) }
+            if (editing) {
+                androidx.compose.material3.TextButton(onClick = { editing = false }) {
+                    Text(stringResource(R.string.places_edit_done), color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                }
+            } else IconButton(onClick = onSettings) { Icon(Icons.Outlined.Settings, stringResource(R.string.settings), tint = Color.White) }
+        }
+        if (editing) {
+            Text(
+                stringResource(R.string.places_edit_hint), Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                fontSize = 13.sp, color = NimbusColors.Secondary,
+            )
+            EditList(saved, state, onReorder, onRemove, Modifier.padding(top = 8.dp), navBottom)
+            return@Column
         }
         TextField(
             value = query,
@@ -187,29 +211,113 @@ fun PlacesScreen(
                 }
             }
             items(state.pages, key = { it.id }) { place ->
-                val card = @Composable { PlaceCard(place, state.states[place.id], state.settings) { onOpen(place.id) } }
-                if (place.isCurrentLocation) card() else {
-                    val dismiss = rememberSwipeToDismissBoxState(
-                        confirmValueChange = { v -> if (v == SwipeToDismissBoxValue.EndToStart) { onRemove(place); true } else false },
-                    )
-                    SwipeToDismissBox(
-                        state = dismiss,
-                        enableDismissFromStartToEnd = false,
-                        backgroundContent = {
-                            Box(
-                                Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp)).background(Color(0xFFE5484D)).padding(end = 20.dp),
-                                contentAlignment = Alignment.CenterEnd,
-                            ) { Icon(Icons.Rounded.Delete, stringResource(R.string.delete), tint = Color.White) }
+                PlaceCard(
+                    place, state.states[place.id], state.settings,
+                    onLongClick = if (place.isCurrentLocation) null else ({ editing = true }),
+                ) { onOpen(place.id) }
+            }
+            if (saved.isNotEmpty()) item(key = "edit-hint") {
+                Text(
+                    stringResource(R.string.places_long_press_hint), Modifier.fillMaxWidth().padding(top = 4.dp),
+                    fontSize = 12.sp, color = NimbusColors.Tertiary, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+            }
+        }
+    }
+}
+
+private val EditRowHeight = 64.dp
+private val EditRowGap = 10.dp
+
+/**
+ * Saved places in edit mode: the handle on the right drags a row to a new position (stored on
+ * release), the button on the left asks once more before deleting. "My location" is not listed.
+ */
+@Composable
+private fun EditList(
+    places: List<Place>, state: UiState, onReorder: (List<String>) -> Unit, onRemove: (Place) -> Unit,
+    modifier: Modifier, navBottom: androidx.compose.ui.unit.Dp,
+) {
+    var order by remember(places) { mutableStateOf(places.map { it.id }) }
+    var dragId by remember { mutableStateOf<String?>(null) }
+    var dragOffset by remember { mutableStateOf(0f) }
+    var confirmId by remember { mutableStateOf<String?>(null) }
+    val step = with(androidx.compose.ui.platform.LocalDensity.current) { (EditRowHeight + EditRowGap).toPx() }
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    Column(
+        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = navBottom + 16.dp),
+        verticalArrangement = Arrangement.spacedBy(EditRowGap),
+    ) {
+        order.forEach { id ->
+            val place = places.firstOrNull { it.id == id } ?: return@forEach
+            androidx.compose.runtime.key(id) {
+                val dragging = dragId == id
+                val st = state.states[id]?.data
+                val colors = st?.let { SkyScene.from(it).skyColors } ?: listOf(Color(0xFF2A3B57), Color(0xFF34486A), Color(0xFF3E5579))
+                Row(
+                    Modifier.fillMaxWidth().height(EditRowHeight)
+                        .zIndex(if (dragging) 1f else 0f)
+                        .graphicsLayer {
+                            translationY = if (dragging) dragOffset else 0f
+                            scaleX = if (dragging) 1.03f else 1f; scaleY = scaleX
+                            shadowElevation = if (dragging) 12.dp.toPx() else 0f
+                            shape = RoundedCornerShape(14.dp); clip = true
+                        }
+                        .background(Brush.linearGradient(colors)),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (confirmId == id) {
+                        androidx.compose.material3.TextButton(
+                            onClick = { confirmId = null; onRemove(place) },
+                            modifier = Modifier.padding(start = 6.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFFE5484D)),
+                        ) { Text(stringResource(R.string.delete), color = Color.White, fontWeight = FontWeight.SemiBold) }
+                    } else {
+                        IconButton(onClick = { confirmId = id }) {
+                            Icon(Icons.Rounded.RemoveCircle, stringResource(R.string.delete), tint = Color(0xFFFF6B6E))
+                        }
+                    }
+                    Column(Modifier.weight(1f).padding(start = 4.dp).clickable(enabled = confirmId == id) { confirmId = null }) {
+                        Text(place.name, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        if (place.subtitle.isNotEmpty()) Text(place.subtitle, fontSize = 12.sp, color = NimbusColors.Secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Icon(
+                        Icons.Rounded.DragHandle, stringResource(R.string.places_drag),
+                        tint = Color.White,
+                        modifier = Modifier.size(56.dp).padding(16.dp).pointerInput(id) {
+                            detectDragGestures(
+                                onDragStart = {
+                                    dragId = id; dragOffset = 0f; confirmId = null
+                                    haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                },
+                                onDrag = { change, amount ->
+                                    change.consume()
+                                    dragOffset += amount.y
+                                    val from = order.indexOf(id)
+                                    val to = (from + (dragOffset / step).roundToInt()).coerceIn(0, order.lastIndex)
+                                    if (to != from) {
+                                        order = order.toMutableList().apply { removeAt(from); add(to, id) }
+                                        dragOffset -= (to - from) * step
+                                        haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                    }
+                                },
+                                onDragEnd = { dragId = null; dragOffset = 0f; onReorder(order) },
+                                onDragCancel = { dragId = null; dragOffset = 0f; onReorder(order) },
+                            )
                         },
-                    ) { card() }
+                    )
                 }
             }
         }
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun PlaceCard(place: Place, st: PlaceState?, settings: dev.nimbus.weather.data.model.Settings, onClick: () -> Unit) {
+private fun PlaceCard(
+    place: Place, st: PlaceState?, settings: dev.nimbus.weather.data.model.Settings,
+    onLongClick: (() -> Unit)? = null, onClick: () -> Unit,
+) {
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
     val context = LocalContext.current
     val s = st?.data
     val colors = s?.let { SkyScene.from(it).skyColors } ?: listOf(Color(0xFF2A3B57), Color(0xFF34486A), Color(0xFF3E5579))
@@ -217,7 +325,10 @@ private fun PlaceCard(place: Place, st: PlaceState?, settings: dev.nimbus.weathe
     Row(
         Modifier.fillMaxWidth().height(112.dp).clip(RoundedCornerShape(16.dp))
             .background(Brush.linearGradient(colors))
-            .clickable(onClick = onClick)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick?.let { f -> { haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); f() } },
+            )
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
         Column(Modifier.weight(1f).fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {

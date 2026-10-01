@@ -92,8 +92,9 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
 - **Akku**: Der animierte Himmel läuft mit 30 Bildern/s (Regen, Schnee: 60), nach einer Minute ohne
   Berührung mit 15; im Energiesparmodus des Systems steht er still.
 - **Lexikon**: ⓘ an jeder Karte erklärt die Begriffe.
-- **Orte, Einstellungen**: Standort und gespeicherte Orte; Vorhersagemodell, Einheiten (beim ersten
-  Start passend zum Land), Stationswerte, Animationen. Unter „Open-Source-Lizenzen“ stehen die Lizenzen
+- **Orte, Einstellungen**: Standort und gespeicherte Orte (lange drücken zum Sortieren und Löschen);
+  Vorhersagemodell, Einheiten (beim ersten Start passend zum Land), Stationswerte, Animationen, welche
+  Kacheln die Wetterseite zeigt. Unter „Open-Source-Lizenzen“ stehen die Lizenzen
   von Nimbus und aller verwendeten Bibliotheken. Stündliche Aktualisierung im Hintergrund,
   offline die zuletzt geladenen Daten.
 

@@ -17,6 +17,7 @@
 
 package dev.nimbus.weather.ui.main
 
+import dev.nimbus.weather.data.model.WeatherCard
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -182,7 +183,10 @@ fun WeatherPage(
             LoadingOrError(place, state, onRefresh)
             return@Box
         }
-        CompositionLocalProvider(LocalSettings provides settings, LocalTimeFormat provides tf) {
+        CompositionLocalProvider(
+            LocalSettings provides settings, LocalTimeFormat provides tf,
+            dev.nimbus.weather.ui.components.LocalCardShade provides scene.cardShade,
+        ) {
             WeatherContent(data, state ?: PlaceState(data), now, onRefresh, onOpenRadar, onRequestModels)
         }
     }
@@ -199,6 +203,7 @@ private fun WeatherContent(
     onRequestModels: () -> Unit,
 ) {
     val density = LocalDensity.current
+    val cards = LocalSettings.current
     val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val listState = rememberLazyListState()
@@ -237,18 +242,18 @@ private fun WeatherContent(
         ) {
             item(key = "header-space") { Spacer(Modifier.height(ExpandedHeader + statusTop - 12.dp)) }
             if (stale) item(key = "offline") { OfflineBanner(data) }
-            if (data.alerts.isNotEmpty()) item(key = "alerts") { AlertsCard(data.alerts) }
-            item(key = "hourly") { HourlyCard(data, now) }
-            item(key = "daily") { DailyCard(data, now) }
-            item(key = "precip") { PrecipitationCard(data, now, nowcastPoints.takeIf { showNowcast }, raining) }
-            item(key = "radar") { RadarPreviewCard(data, onOpenRadar) }
-            item(key = "tiles") { DetailTiles(data, now) }
-            item(key = "moon") { MoonCard(data, now) }
-            if (data.airQuality?.europeanAqi != null) item(key = "aqi") { AirQualityCard(data) }
-            data.pollen?.let { p -> item(key = "pollen") { PollenForecastCard(p, now) } }
-            if (data.gauges.isNotEmpty()) item(key = "gauge") { GaugeCard(data.gauges, now) }
-            if (data.community != null) item(key = "community") { CommunityCard(data) }
-            item(key = "models") { ModelComparisonCard(state.models, now, onRequestModels) }
+            if (data.alerts.isNotEmpty() && cards.shows(WeatherCard.ALERTS)) item(key = "alerts") { AlertsCard(data.alerts) }
+            if (cards.shows(WeatherCard.HOURLY)) item(key = "hourly") { HourlyCard(data, now) }
+            if (cards.shows(WeatherCard.DAILY)) item(key = "daily") { DailyCard(data, now) }
+            if (cards.shows(WeatherCard.PRECIPITATION)) item(key = "precip") { PrecipitationCard(data, now, nowcastPoints.takeIf { showNowcast }, raining) }
+            if (cards.shows(WeatherCard.RADAR)) item(key = "radar") { RadarPreviewCard(data, onOpenRadar) }
+            if (TileCards.any(cards::shows)) item(key = "tiles") { DetailTiles(data, now) }
+            if (cards.shows(WeatherCard.MOON)) item(key = "moon") { MoonCard(data, now) }
+            if (data.airQuality?.europeanAqi != null && cards.shows(WeatherCard.AIR_QUALITY)) item(key = "aqi") { AirQualityCard(data) }
+            if (cards.shows(WeatherCard.POLLEN)) data.pollen?.let { p -> item(key = "pollen") { PollenForecastCard(p, now) } }
+            if (data.gauges.isNotEmpty() && cards.shows(WeatherCard.GAUGES)) item(key = "gauge") { GaugeCard(data.gauges, now) }
+            if (data.community != null && cards.shows(WeatherCard.COMMUNITY)) item(key = "community") { CommunityCard(data) }
+            if (cards.shows(WeatherCard.MODELS)) item(key = "models") { ModelComparisonCard(state.models, now, onRequestModels) }
             item(key = "sources") { SourcesFooter(data) }
         }
         Header(data, progress, statusTop)
@@ -366,3 +371,9 @@ private fun LoadingOrError(place: Place, state: PlaceState?, onRetry: () -> Unit
         }
     }
 }
+
+/** The small tiles and the sun card, grouped in one list item. */
+private val TileCards = listOf(
+    WeatherCard.FEELS_LIKE, WeatherCard.UV_INDEX, WeatherCard.WIND, WeatherCard.HUMIDITY,
+    WeatherCard.VISIBILITY, WeatherCard.PRESSURE, WeatherCard.SUN,
+)

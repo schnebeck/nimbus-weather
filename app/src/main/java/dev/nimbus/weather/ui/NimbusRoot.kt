@@ -84,6 +84,7 @@ fun NimbusRoot(viewModel: MainViewModel) {
                     search = viewModel::search,
                     onAdd = { viewModel.addPlace(it); viewModel.back() },
                     onRemove = viewModel::removePlace,
+                    onReorder = viewModel::reorderPlaces,
                     onOpen = { viewModel.select(it); viewModel.back() },
                     onSettings = { viewModel.navigate(Screen.Settings) },
                     onRequestLocation = requestLocation,

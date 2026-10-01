@@ -20,8 +20,9 @@
 Stand: **30. September 2026** (Nimbus 1.12.0). Alle Quellen wurden an diesem Tag live geprüft.
 
 Die Pegelkarte zeigt die Pegel im Umkreis von 10 km, **je Gewässer einen**, höchstens vier
-(Hann. Münden: Weser, Fulda, Werra). Tidepegel zählen bis 25 km und stehen oben, mit selbst
-berechneter Gezeitenvorhersage. Kanäle werden übersprungen.
+(Hann. Münden: Weser, Fulda, Werra). Gibt es dort keinen, erscheint der nächstgelegene bis 20 km
+(z. B. im Osten Hannovers der Leinepegel Herrenhausen). Tidepegel zählen bis 25 km und stehen oben,
+mit selbst berechneter Gezeitenvorhersage. Kanäle werden übersprungen.
 
 Nimbus nutzt nur Quellen mit **dokumentierter Schnittstelle oder offener Lizenz**. Webseiten
 auszulesen (Scraping) ist ausgeschlossen: Es bricht bei jeder Umgestaltung und ist bei mehreren

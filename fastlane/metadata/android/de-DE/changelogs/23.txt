@@ -1,0 +1,6 @@
+• Pegel: gibt es im Umkreis von 10 km keinen, erscheint der nächste bis 20 km (z. B. im Osten Hannovers die Leine)
+• Besserer Kontrast: bei hellem Himmel werden die Kacheln dunkler
+• 10 Tage: „Heute“ ist aufgeklappt, eine gestrichelte Linie zeigt die aktuelle Uhrzeit
+• Einstellungen: jede Kachel lässt sich ausblenden
+• Orte: lange drücken zum Sortieren und Löschen; Löschen per Wischen entfällt
+• Radar: neutrales Grau nur noch für die schwächsten Echos, danach Blaugrau

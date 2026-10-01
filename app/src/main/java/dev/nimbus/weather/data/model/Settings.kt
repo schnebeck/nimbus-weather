@@ -36,6 +36,13 @@ enum class WindUnit { KMH, MS, MPH, KNOTS, BEAUFORT }
 @Serializable
 enum class PrecipitationUnit { MM, INCH }
 
+/** Cards of the weather page that can be switched off in the settings (in page order). */
+@Serializable
+enum class WeatherCard {
+    ALERTS, HOURLY, DAILY, PRECIPITATION, RADAR, FEELS_LIKE, UV_INDEX, WIND, HUMIDITY, VISIBILITY, PRESSURE,
+    SUN, MOON, AIR_QUALITY, POLLEN, GAUGES, COMMUNITY, MODELS,
+}
+
 @Serializable
 data class Settings(
     val model: ForecastModel = ForecastModel.DWD_ICON,
@@ -48,7 +55,11 @@ data class Settings(
     val preloadRadar: Boolean = true,
     /** Pollen types shown in the pollen card (at least one). */
     val pollenTypes: Set<PollenType> = PollenType.entries.toSet(),
+    /** Cards the user switched off. */
+    val hiddenCards: Set<WeatherCard> = emptySet(),
 ) {
+    fun shows(card: WeatherCard) = card !in hiddenCards
+
     companion object {
         private val FAHRENHEIT_COUNTRIES = setOf("US", "LR", "MM", "BS", "BZ", "KY", "PW", "FM", "MH")
 

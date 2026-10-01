@@ -52,7 +52,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -241,7 +240,7 @@ fun WeatherBackground(scene: SkyScene, animate: Boolean, modifier: Modifier = Mo
 
     val colors = scene.skyColors
     // Luminance of the upper sky and of what the clouds add – bright scenes get a header scrim.
-    val brightness = colors[1].luminance() * 0.6f + (if (scene.cloudiness > 0.6f && !scene.isNight) 0.25f else 0f)
+    val brightness = scene.brightness
     val scrim = ((brightness - 0.22f) * 0.9f).coerceIn(0f, 0.28f)
     val c0 by animateColorAsState(colors[0], tween(900), label = "sky0")
     val c1 by animateColorAsState(colors[1], tween(900), label = "sky1")

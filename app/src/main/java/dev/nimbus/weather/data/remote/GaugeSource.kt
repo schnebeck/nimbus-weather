@@ -64,7 +64,7 @@ class GaugeSource(
      * Details (course of the week, tide prediction) are loaded only for the chosen gauges.
      */
     suspend fun nearby(lat: Double, lon: Double, now: Long = System.currentTimeMillis()): List<GaugeInfo> = coroutineScope {
-        val r = RADIUS_KM.toDouble()
+        val r = FALLBACK_RADIUS_KM.toDouble()   // candidates up to the fallback; select() narrows to RADIUS_KM
         suspend fun <T> safe(name: String, block: suspend () -> List<T>): List<T> =
             runCatching { withTimeoutOrNull(SOURCE_TIMEOUT_MS) { block() }.orEmpty() }
                 .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it; android.util.Log.w("Nimbus", "gauges $name: $it") }
@@ -163,6 +163,11 @@ class GaugeSource(
 
     companion object {
         const val RADIUS_KM = 10
+        /**
+         * Without any gauge within [RADIUS_KM], the nearest one up to this distance stands in – e.g. in
+         * the east of Hannover, ~11 km from the Leine gauge Herrenhausen.
+         */
+        const val FALLBACK_RADIUS_KM = 20
         const val MAX_GAUGES = 4
         private const val SOURCE_TIMEOUT_MS = 12_000L
         /** The first tide fit downloads ~3 MB. */
@@ -231,12 +236,15 @@ class GaugeSource(
          * 1. duplicates (a federal gauge also listed by a state or the LHP) are merged, the source
          *    with values wins and takes over the LHP classification and link;
          * 2. only gauges within [radiusKm] count – if there is no tide gauge among them, the nearest
-         *    one up to [TIDE_RADIUS_KM];
+         *    one up to [TIDE_RADIUS_KM]; with none at all, the nearest gauge up to [fallbackKm];
          * 3. per water body the nearest one (a gauge with values is preferred over a classification
          *    only one, if it is less than 3 km farther away);
          * 4. a tide gauge first, then by distance, at most [max].
          */
-        fun select(all: List<GaugeInfo>, radiusKm: Double = RADIUS_KM.toDouble(), max: Int = MAX_GAUGES): List<GaugeInfo> {
+        fun select(
+            all: List<GaugeInfo>, radiusKm: Double = RADIUS_KM.toDouble(), max: Int = MAX_GAUGES,
+            fallbackKm: Double = FALLBACK_RADIUS_KM.toDouble(),
+        ): List<GaugeInfo> {
             val sorted = all.sortedBy { PRIORITY.indexOf(it.provider) }
             val merged = ArrayList<GaugeInfo>()
             for (g in sorted) {
@@ -254,7 +262,9 @@ class GaugeSource(
             val near = merged.filter { it.distanceKm <= radiusKm }
             val farTide = if (near.any { it.tidal }) null
             else merged.filter { it.tidal && it.distanceKm <= TIDE_RADIUS_KM }.minByOrNull { it.distanceKm }
-            val inRange = near + listOfNotNull(farTide)
+            val inRange = (near + listOfNotNull(farTide)).ifEmpty {
+                listOfNotNull(merged.filter { it.distanceKm <= fallbackKm }.minByOrNull { it.distanceKm + if (it.provider == GaugeProvider.LHP) 3.0 else 0.0 })
+            }
             val perWater = inRange.groupBy { waterKey(it.water).ifEmpty { it.uuid } }.values.map { group ->
                 group.minBy { it.distanceKm + if (it.provider == GaugeProvider.LHP) 3.0 else 0.0 }
             }

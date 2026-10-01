@@ -110,6 +110,16 @@ class StateGaugesTest {
         assertEquals(listOf("NORDERNEY"), GaugeSource.select(listOf(t("NORDERNEY", "Nordsee", 11.6), t("FAR", "Ems", 20.0))).map { it.uuid })
     }
 
+    @Test fun nearestGaugeStandsInWhenNoneWithinTenKm() {
+        fun g(id: String, water: String, d: Double) = GaugeInfo(id, id, water, d, false, level = 100.0, provider = GaugeProvider.PEGELONLINE)
+        // East of Hannover: the Leine gauge Herrenhausen 11.4 km away, another river at 17 km
+        assertEquals(listOf("HERRENHAUSEN"), GaugeSource.select(listOf(g("HERRENHAUSEN", "Leine", 11.4), g("OTHER", "Fuhse", 17.0))).map { it.uuid })
+        // nothing within 20 km: no card
+        assertTrue(GaugeSource.select(listOf(g("FAR", "Weser", 21.0))).isEmpty())
+        // a gauge within 10 km: no stand-in from farther away
+        assertEquals(listOf("NEAR"), GaugeSource.select(listOf(g("NEAR", "Ihme", 6.0), g("HERRENHAUSEN", "Leine", 11.4))).map { it.uuid })
+    }
+
     @Test fun measuredGaugePreferredOverClassificationOnly() {
         val chosen = GaugeSource.select(
             listOf(

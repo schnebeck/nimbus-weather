@@ -116,4 +116,16 @@ class WeatherGridTest {
         assertTrue((rain and 0xFF) > ((rain shr 16) and 0xFF))
         assertTrue(((snow shr 16) and 0xFF) > ((snow shr 8) and 0xFF))
     }
+
+    @Test
+    fun `rain legend is neutral grey only in its first tenth, then blue-grey`() {
+        val legend = RadarPalette.legendRain
+        legend.forEachIndexed { i, c ->
+            val pos = i.toFloat() / legend.lastIndex
+            val r = (c shr 16) and 0xFF
+            val b = c and 0xFF
+            if (pos <= 0.10f) assertTrue("neutral at $pos", kotlin.math.abs(r - b) <= 4)
+            if (pos >= 0.13f) assertTrue("blue share at $pos", b - r >= 8)
+        }
+    }
 }

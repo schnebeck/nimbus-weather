@@ -19,6 +19,7 @@ package dev.nimbus.weather.ui.background
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import dev.nimbus.weather.data.model.Condition
 import dev.nimbus.weather.data.model.WeatherData
 import kotlin.math.abs
@@ -76,6 +77,14 @@ data class SkyScene(
             Condition.DRIZZLE, Condition.SHOWERS, Condition.SNOW, Condition.SLEET -> 0.85f
             else -> 1f
         }
+
+    /** Luminance of the upper sky plus what daytime clouds add: ~0.05 (night) .. ~0.6 (overcast day, fog, snow). */
+    val brightness: Float
+        get() = skyColors[1].luminance() * 0.6f + (if (cloudiness > 0.6f && !isNight) 0.25f else 0f)
+
+    /** 0..1: how much the glass cards darken on a bright sky, so that their text keeps its contrast. */
+    val cardShade: Float
+        get() = ((brightness - 0.2f) / 0.25f).coerceIn(0f, 1f)
 
     val skyColors: List<Color>
         get() {

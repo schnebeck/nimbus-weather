@@ -17,6 +17,7 @@
 
 package dev.nimbus.weather.ui.settings
 
+import dev.nimbus.weather.data.model.WeatherCard
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -67,6 +68,7 @@ import dev.nimbus.weather.data.model.TemperatureUnit
 import dev.nimbus.weather.data.model.WindUnit
 import dev.nimbus.weather.ui.theme.NimbusColors
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Unit, onOpenLicenses: () -> Unit, onBack: () -> Unit) {
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -143,6 +145,21 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                 }
             }
             item {
+                Section(stringResource(R.string.settings_cards)) {
+                    Text(stringResource(R.string.settings_cards_desc), fontSize = 13.sp, color = NimbusColors.Secondary, lineHeight = 18.sp)
+                    Spacer(Modifier.size(10.dp))
+                    androidx.compose.foundation.layout.FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        WeatherCard.entries.forEach { c ->
+                            dev.nimbus.weather.ui.main.SelectChip(stringResource(cardLabel(c)), settings.shows(c)) {
+                                onChange { st -> st.copy(hiddenCards = if (st.shows(c)) st.hiddenCards + c else st.hiddenCards - c) }
+                            }
+                        }
+                    }
+                }
+            }
+            item {
                 Section(stringResource(R.string.pollen_forecast)) {
                     Text(stringResource(R.string.settings_pollen_desc), fontSize = 13.sp, color = NimbusColors.Secondary, lineHeight = 18.sp)
                     Spacer(Modifier.size(10.dp))
@@ -174,6 +191,28 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
             }
         }
     }
+}
+
+/** Card titles as shown on the weather page. */
+private fun cardLabel(c: WeatherCard): Int = when (c) {
+    WeatherCard.ALERTS -> R.string.alerts
+    WeatherCard.HOURLY -> R.string.hourly_forecast
+    WeatherCard.DAILY -> R.string.ten_day_forecast
+    WeatherCard.PRECIPITATION -> R.string.precip_title
+    WeatherCard.RADAR -> R.string.precipitation_map
+    WeatherCard.FEELS_LIKE -> R.string.feels_like
+    WeatherCard.UV_INDEX -> R.string.uv_index
+    WeatherCard.WIND -> R.string.wind
+    WeatherCard.HUMIDITY -> R.string.humidity
+    WeatherCard.VISIBILITY -> R.string.visibility
+    WeatherCard.PRESSURE -> R.string.pressure
+    WeatherCard.SUN -> R.string.sun
+    WeatherCard.MOON -> R.string.moon
+    WeatherCard.AIR_QUALITY -> R.string.air_quality
+    WeatherCard.POLLEN -> R.string.pollen_forecast
+    WeatherCard.GAUGES -> R.string.gauge_title_level
+    WeatherCard.COMMUNITY -> R.string.community_sensors
+    WeatherCard.MODELS -> R.string.model_comparison
 }
 
 @Composable

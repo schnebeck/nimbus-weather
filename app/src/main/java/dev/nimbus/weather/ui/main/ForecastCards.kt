@@ -221,7 +221,8 @@ fun DailyCard(data: WeatherData, now: Long) {
     if (days.isEmpty()) return
     val lo = days.minOf { it.tempMin }
     val hi = days.maxOf { it.tempMax }
-    var expanded by rememberSaveable(data.place.id) { mutableStateOf<Long?>(null) }
+    // Today opens by default; every row (today too) can still be closed.
+    var expanded by rememberSaveable(data.place.id) { mutableStateOf<Long?>(days.first().date) }
     GlassCard(
         title = stringResource(if (days.size == 10) R.string.ten_day_forecast else R.string.n_day_forecast, days.size),
         icon = Icons.Outlined.CalendarMonth,
@@ -279,6 +280,7 @@ private fun DayRow(
             Meteogram(
                 hours.map { it.toMeteo() }, day.date, end, nightsFromDaily(daily, day.date, end), now,
                 Modifier.fillMaxWidth().bleed(CARD_BLEED).padding(bottom = 12.dp),
+                showNow = currentTemp != null,   // today only
             )
         }
     }

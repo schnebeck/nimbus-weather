@@ -150,8 +150,14 @@ fun nightsFromFlags(points: List<MeteoPoint>): List<LongRange> =
  * precipitation (bars, right axis), wind arrows, night shading. A long press shows a cursor –
  * dragging moves it, it fades out after 10 s. Plain swipes stay free for paging.
  */
+private val NowMark = Color(0xB3FFFFFF)
+
 @Composable
-fun Meteogram(points: List<MeteoPoint>, start: Long, end: Long, nights: List<LongRange>, now: Long, modifier: Modifier = Modifier) {
+fun Meteogram(
+    points: List<MeteoPoint>, start: Long, end: Long, nights: List<LongRange>, now: Long, modifier: Modifier = Modifier,
+    /** Fixed mark at the current time (not interactive, independent of the cursor). */
+    showNow: Boolean = false,
+) {
     val s = LocalSettings.current
     val tf = LocalTimeFormat.current
     val density = LocalDensity.current
@@ -351,6 +357,12 @@ fun Meteogram(points: List<MeteoPoint>, start: Long, end: Long, nights: List<Lon
                         drawLine(windColor(kmh), tip, tip + Offset(-3.5.dp.toPx(), 4.5.dp.toPx()), 1.8.dp.toPx(), StrokeCap.Round)
                         drawLine(windColor(kmh), tip, tip + Offset(3.5.dp.toPx(), 4.5.dp.toPx()), 1.8.dp.toPx(), StrokeCap.Round)
                     }
+                }
+                // Current time: thin dashed line with a dot on top (the cursor is a solid line)
+                if (showNow && now in start..end) {
+                    val xn = x(now)
+                    drawLine(NowMark, Offset(xn, top), Offset(xn, bottom + below), 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())))
+                    drawCircle(NowMark, 2.5.dp.toPx(), Offset(xn, top))
                 }
                 // Cursor (long press)
                 if (cursorAlpha > 0f) {

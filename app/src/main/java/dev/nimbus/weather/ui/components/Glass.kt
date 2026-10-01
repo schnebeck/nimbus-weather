@@ -53,7 +53,7 @@ fun GlassCard(
     modifier: Modifier = Modifier,
     title: String? = null,
     icon: ImageVector? = null,
-    tint: Color = NimbusColors.CardFill,
+    tint: Color = cardFill(LocalCardShade.current),
     onClick: (() -> Unit)? = null,
     contentPadding: Boolean = true,
     info: Term? = null,
@@ -75,6 +75,15 @@ fun GlassCard(
         }
     }
 }
+
+/**
+ * 0..1 from the sky behind the cards ([dev.nimbus.weather.ui.background.SkyScene.cardShade]):
+ * on bright skies (overcast day, fog, snow) the glass gets darker so white and blue text stays
+ * readable – like the darker material of Apple Weather on bright backgrounds.
+ */
+val LocalCardShade = androidx.compose.runtime.compositionLocalOf { 0f }
+
+fun cardFill(shade: Float): Color = androidx.compose.ui.graphics.lerp(NimbusColors.CardFill, NimbusColors.CardFillBrightSky, shade)
 
 @Composable
 fun CardHeader(title: String, icon: ImageVector?, modifier: Modifier = Modifier, info: Term? = null) {

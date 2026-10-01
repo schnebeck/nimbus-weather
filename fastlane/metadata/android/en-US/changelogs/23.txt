@@ -1,0 +1,6 @@
+• Water levels: with no gauge within 10 km the nearest one up to 20 km is shown (e.g. the Leine in the east of Hannover)
+• Better contrast: cards get darker on a bright sky
+• 10 days: "Today" is open, a dashed line marks the current time
+• Settings: every card can be hidden
+• Places: long press to sort and delete; swipe-to-delete removed
+• Radar: neutral grey only for the weakest echoes, then blue-grey

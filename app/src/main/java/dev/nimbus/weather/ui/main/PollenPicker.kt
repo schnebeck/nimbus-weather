@@ -68,9 +68,9 @@ fun PollenTypePicker(selected: Set<PollenType>, onChange: (Set<PollenType>) -> U
         Spacer(Modifier.size(6.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             val all = selected.size == PollenType.entries.size
-            Chip(stringResource(R.string.pollen_group_all), all, null) { onChange(PollenType.entries.toSet()) }
+            SelectChip(stringResource(R.string.pollen_group_all), all, null) { onChange(PollenType.entries.toSet()) }
             PollenGroup.entries.forEach { g ->
-                Chip(stringResource(g.label), selected == g.types, null) { onChange(groupSelection(selected, g)) }
+                SelectChip(stringResource(g.label), selected == g.types, null) { onChange(groupSelection(selected, g)) }
             }
         }
         Spacer(Modifier.size(12.dp))
@@ -78,14 +78,14 @@ fun PollenTypePicker(selected: Set<PollenType>, onChange: (Set<PollenType>) -> U
         Spacer(Modifier.size(6.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             PollenType.entries.forEach { t ->
-                Chip(stringResource(pollenName(t)), t in selected, PollenColors.getValue(t)) { onChange(toggled(selected, t)) }
+                SelectChip(stringResource(pollenName(t)), t in selected, PollenColors.getValue(t)) { onChange(toggled(selected, t)) }
             }
         }
     }
 }
 
 @Composable
-private fun Chip(label: String, on: Boolean, dot: Color?, onClick: () -> Unit) {
+fun SelectChip(label: String, on: Boolean, dot: Color? = null, onClick: () -> Unit) {
     Row(
         Modifier.clip(RoundedCornerShape(16.dp))
             .background(if (on) Color(0x40FFFFFF) else Color.Transparent)

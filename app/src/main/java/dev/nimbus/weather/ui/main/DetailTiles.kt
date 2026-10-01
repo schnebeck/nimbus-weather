@@ -17,6 +17,7 @@
 
 package dev.nimbus.weather.ui.main
 
+import dev.nimbus.weather.data.model.WeatherCard
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -87,14 +88,16 @@ import kotlin.math.sin
 fun DetailTiles(data: WeatherData, now: Long) {
     val hours = remember(data, now) { Insights.upcomingHours(data, now) }
     val c = data.current
+    val cards = LocalSettings.current
     val tiles = buildList<@Composable (Modifier) -> Unit> {
-        add { m -> FeelsLikeTile(data, m) }
-        add { m -> UvTile(data, hours, m) }
-        add { m -> WindTile(data, m) }
-        if (c.humidity != null) add { m -> HumidityTile(data, m) }
-        if (c.visibility != null) add { m -> VisibilityTile(data, m) }
-        if (c.pressure != null) add { m -> PressureTile(data, hours, m) }
+        if (cards.shows(WeatherCard.FEELS_LIKE)) add { m -> FeelsLikeTile(data, m) }
+        if (cards.shows(WeatherCard.UV_INDEX)) add { m -> UvTile(data, hours, m) }
+        if (cards.shows(WeatherCard.WIND)) add { m -> WindTile(data, m) }
+        if (c.humidity != null && cards.shows(WeatherCard.HUMIDITY)) add { m -> HumidityTile(data, m) }
+        if (c.visibility != null && cards.shows(WeatherCard.VISIBILITY)) add { m -> VisibilityTile(data, m) }
+        if (c.pressure != null && cards.shows(WeatherCard.PRESSURE)) add { m -> PressureTile(data, hours, m) }
     }
+    if (tiles.isEmpty() && !cards.shows(WeatherCard.SUN)) return
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         tiles.chunked(2).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -103,7 +106,7 @@ fun DetailTiles(data: WeatherData, now: Long) {
                 else row.forEach { tile -> tile(Modifier.weight(1f).aspectRatio(1f)) }
             }
         }
-        SunCard(data, now)
+        if (cards.shows(WeatherCard.SUN)) SunCard(data, now)
     }
 }
 

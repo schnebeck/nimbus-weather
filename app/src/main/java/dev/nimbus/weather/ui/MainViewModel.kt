@@ -307,6 +307,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** New order of the saved places (ids in the wanted order; places not listed keep their place at the end). */
+    fun reorderPlaces(ids: List<String>) {
+        viewModelScope.launch {
+            store.updatePlaces { list -> ids.mapNotNull { id -> list.firstOrNull { it.id == id } } + list.filter { it.id !in ids } }
+        }
+    }
+
     fun removePlace(place: Place) {
         viewModelScope.launch {
             store.updatePlaces { list -> list.filterNot { it.id == place.id } }

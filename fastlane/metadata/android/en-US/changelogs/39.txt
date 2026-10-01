@@ -1,0 +1,3 @@
+• Meteogram: temperature in its colour gradient again, sunshine now light grey
+• Look-back: measurement in the colour gradient, forecast dashed white
+• Phone in landscape: the header collapses again after turning the phone

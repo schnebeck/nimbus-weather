@@ -230,7 +230,9 @@ private fun WeatherContent(
             if (index > 0) Float.MAX_VALUE else offset.toFloat()
         }
     }
-    val progress by remember { derivedStateOf { (scrolled / (expandedPx - collapsedPx)).coerceIn(0f, 1f) } }
+    // Keyed like [scrolled]: turning the phone switches between list and grid, and a progress kept
+    // from before still read the list – the header stayed open over the grid's cards
+    val progress by remember(columns, expandedPx, collapsedPx) { derivedStateOf { (scrolled / (expandedPx - collapsedPx)).coerceIn(0f, 1f) } }
     val raining = data.current.condition.isPrecipitation
     val tfToday = LocalTimeFormat.current
     val todayMeasured = remember(state.history, now / 600_000L) { TodayMeasured.of(state.history, tfToday.zoned(now).toLocalDate()) }

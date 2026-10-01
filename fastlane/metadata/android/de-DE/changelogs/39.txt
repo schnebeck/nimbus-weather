@@ -1,0 +1,3 @@
+• Meteogramm: Temperatur wieder im Farbverlauf, Sonnenschein jetzt hellgrau
+• Rückblick: Messung im Farbverlauf, Vorhersage weiß gestrichelt
+• Querformat auf dem Handy: die Kopfzeile klappt nach dem Drehen wieder ein

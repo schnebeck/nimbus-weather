@@ -50,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
@@ -86,16 +87,15 @@ import kotlin.math.roundToInt
 
 private val PrecipBar = Color(0xB38FD3FF)
 // Sunshine columns: wide and faint, so rain bars and the temperature curve stay readable on top.
-// Sunshine row: soft yellow, no outline – it must not compete with the temperature curve.
-private val SunFill = Color(0xFFE9C45A)
+// Sunshine row: light grey, no outline – the temperature curve has the warm colours.
+private val SunFill = Color(0xFFC3C9D2)
 private val SunTrack = Color(0x14FFFFFF)
 // Day slightly lighter, night clearly darker than the card: the two must be told apart at a glance.
 internal val DayTint = Color(0x14FFFFFF)
 internal val NightShade = Color(0x47000000)
 private val GridLine = Color(0x1FFFFFFF)
-// Temperature: red throughout – yellow is the sunshine's colour, blue the precipitation's
-private val TempLine = Color(0xFFFF6B5B)
-private val ForecastLine = TempLine
+// Look-back: the forecast dashed in white next to the measured curve in the temperature colours
+private val ForecastLine = Color(0xD9FFFFFF)
 private const val CURSOR_TIMEOUT_MS = 10_000L
 
 /** Wind colour by speed (km/h): calm white → Bft 6 yellow → gale orange → storm red. */
@@ -329,7 +329,7 @@ fun Meteogram(
                     }
                     drawPath(fp, ForecastLine, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 7f))))
                 }
-                // Temperature curve (measured in comparison mode: white)
+                // Temperature curve in the temperature colours (in comparison mode the measured one)
                 val path = Path()
                 var on = false
                 pts.forEachIndexed { i, h ->
@@ -337,7 +337,11 @@ fun Meteogram(
                     if (h.forecastOnly) { on = false; return@forEachIndexed }
                     if (!on) { path.moveTo(x(h.time), yT(temps[i])); on = true } else path.lineTo(x(h.time), yT(temps[i]))
                 }
-                drawPath(path, if (compare) Color.White else TempLine, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round))
+                val brush = Brush.verticalGradient(
+                    listOf(Insights.temperatureColor(pts.maxOf { it.temperature }), Insights.temperatureColor(pts.minOf { it.temperature })),
+                    startY = top, endY = bottom,
+                )
+                drawPath(path, brush, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round))
                 // Sunshine row label: sun glyph on the left (the day's total is in the legend)
                 if (sunTotalMin != null) {
                     val cy = bottom + sunGap.toPx() + (sunH - sunGap).toPx() / 2

@@ -63,6 +63,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -101,9 +102,9 @@ import dev.nimbus.weather.util.Texts
 import dev.nimbus.weather.util.TimeFormat
 import dev.nimbus.weather.util.Units
 
-private val MeasuredColor = Color.White
-// The forecast curve in the meteogram: temperature red, dashed
-private val ModelColor = Color(0xFFFF6B5B)
+/** Legend swatch of a temperature curve: the colours of the temperature scale, cool to warm. */
+private val TempSwatch = Brush.horizontalGradient(listOf(Insights.temperatureColor(5.0), Insights.temperatureColor(15.0), Insights.temperatureColor(25.0)))
+private val ModelColor = Color(0xD9FFFFFF)
 private val PrecipColor = Color(0xFF8FD3FF)
 
 fun modelName(m: ForecastModel) = when (m) {
@@ -284,7 +285,7 @@ private fun Legend(model: Boolean, settings: Settings, measuredAsBars: Boolean =
     if (!model) {
         // No station: the solid line / bars are forecast values.
         Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Canvas(Modifier.size(16.dp, 8.dp)) { drawLine(MeasuredColor, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.dp.toPx()) }
+            Canvas(Modifier.size(16.dp, 8.dp)) { drawLine(TempSwatch, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.dp.toPx()) }
             Spacer(Modifier.width(4.dp))
             Text(stringResource(R.string.history_legend_model, modelName(settings.model)), fontSize = 11.sp, color = NimbusColors.Secondary)
         }
@@ -293,7 +294,7 @@ private fun Legend(model: Boolean, settings: Settings, measuredAsBars: Boolean =
     Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         Canvas(Modifier.size(16.dp, 8.dp)) {
             if (measuredAsBars) drawRoundRect(PrecipColor, Offset(size.width * 0.25f, 0f), Size(size.width * 0.5f, size.height), CornerRadius(1.dp.toPx()))
-            else drawLine(MeasuredColor, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.dp.toPx())
+            else drawLine(TempSwatch, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.dp.toPx())
         }
         Spacer(Modifier.width(4.dp))
         Text(stringResource(R.string.history_legend_measured), fontSize = 11.sp, color = NimbusColors.Secondary)
@@ -308,7 +309,7 @@ private fun Legend(model: Boolean, settings: Settings, measuredAsBars: Boolean =
     }
 }
 
-/** The day as meteogram: measurement (white) against forecast (dashed), plus precipitation and wind. */
+/** The day as meteogram: measurement (temperature colours) against forecast (white, dashed), plus precipitation and wind. */
 @Composable
 private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, tf: TimeFormat) {
     val start = day.date.atStartOfDay(tf.zone).toInstant().toEpochMilli()

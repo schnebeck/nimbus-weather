@@ -241,18 +241,25 @@ private fun WeatherContent(
             item(key = "header-space") { Spacer(Modifier.height(ExpandedHeader + statusTop - 12.dp)) }
             if (stale) item(key = "offline") { OfflineBanner(data) }
             if (data.alerts.isNotEmpty() && cards.shows(WeatherCard.ALERTS)) item(key = "alerts") { AlertsCard(data.alerts) }
-            if (cards.shows(WeatherCard.HOURLY)) item(key = "hourly") { HourlyCard(data, now) }
-            if (cards.shows(WeatherCard.DAILY)) item(key = "daily") { DailyCard(data, now) }
-            if (cards.shows(WeatherCard.PRECIPITATION)) item(key = "precip") { PrecipitationCard(data, now, raining) }
-            if (cards.shows(WeatherCard.RADAR)) item(key = "radar") { RadarPreviewCard(data, onOpenRadar) }
-            if (TileCards.any(cards::shows)) item(key = "tiles") { DetailTiles(data, now) }
-            if (cards.shows(WeatherCard.MOON)) item(key = "moon") { MoonCard(data, now) }
-            if (data.airQuality?.europeanAqi != null && cards.shows(WeatherCard.AIR_QUALITY)) item(key = "aqi") { AirQualityCard(data) }
-            if (cards.shows(WeatherCard.POLLEN)) data.pollen?.let { p -> item(key = "pollen") { PollenForecastCard(p, now) } }
-            if (data.gauges.isNotEmpty() && cards.shows(WeatherCard.GAUGES)) item(key = "gauge") { GaugeCard(data.gauges, now) }
-            if (data.bathing.isNotEmpty() && cards.shows(WeatherCard.BATHING)) item(key = "bathing") { BathingCard(data.bathing, now) }
-            if (data.community != null && cards.shows(WeatherCard.COMMUNITY)) item(key = "community") { CommunityCard(data) }
-            if (cards.shows(WeatherCard.MODELS)) item(key = "models") { ModelComparisonCard(state.models, now, onRequestModels) }
+            // The cards in the order chosen in the settings (Settings → Cards)
+            cards.orderedCards().filter { cards.shows(it) }.forEach { card ->
+                when (card) {
+                    WeatherCard.HOURLY -> item(key = "hourly") { HourlyCard(data, now) }
+                    WeatherCard.DAILY -> item(key = "daily") { DailyCard(data, now) }
+                    WeatherCard.PRECIPITATION -> item(key = "precip") { PrecipitationCard(data, now, raining) }
+                    WeatherCard.RADAR -> item(key = "radar") { RadarPreviewCard(data, onOpenRadar) }
+                    WeatherCard.TILES -> if (cards.orderedTiles().any(cards::shows)) item(key = "tiles") { DetailTiles(data, now) }
+                    WeatherCard.SUN -> item(key = "sun") { SunCard(data, now) }
+                    WeatherCard.MOON -> item(key = "moon") { MoonCard(data, now) }
+                    WeatherCard.AIR_QUALITY -> if (data.airQuality?.europeanAqi != null) item(key = "aqi") { AirQualityCard(data) }
+                    WeatherCard.POLLEN -> data.pollen?.let { p -> item(key = "pollen") { PollenForecastCard(p, now) } }
+                    WeatherCard.GAUGES -> if (data.gauges.isNotEmpty()) item(key = "gauge") { GaugeCard(data.gauges, now) }
+                    WeatherCard.BATHING -> if (data.bathing.isNotEmpty()) item(key = "bathing") { BathingCard(data.bathing, now) }
+                    WeatherCard.COMMUNITY -> if (data.community != null) item(key = "community") { CommunityCard(data) }
+                    WeatherCard.MODELS -> item(key = "models") { ModelComparisonCard(state.models, now, onRequestModels) }
+                    else -> Unit
+                }
+            }
             item(key = "sources") { SourcesFooter(data) }
         }
         Header(data, progress, statusTop)
@@ -371,8 +378,3 @@ private fun LoadingOrError(place: Place, state: PlaceState?, onRetry: () -> Unit
     }
 }
 
-/** The small tiles and the sun card, grouped in one list item. */
-private val TileCards = listOf(
-    WeatherCard.FEELS_LIKE, WeatherCard.UV_INDEX, WeatherCard.WIND, WeatherCard.HUMIDITY,
-    WeatherCard.VISIBILITY, WeatherCard.PRESSURE, WeatherCard.SUN,
-)

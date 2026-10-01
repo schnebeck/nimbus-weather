@@ -98,15 +98,19 @@ fun DetailTiles(data: WeatherData, now: Long) {
     val hours = remember(data, now) { Insights.upcomingHours(data, now) }
     val c = data.current
     val cards = LocalSettings.current
-    val tiles = buildList<@Composable (Modifier) -> Unit> {
-        if (cards.shows(WeatherCard.FEELS_LIKE)) add { m -> FeelsLikeTile(data, m) }
-        if (cards.shows(WeatherCard.UV_INDEX)) add { m -> UvTile(data, hours, m) }
-        if (cards.shows(WeatherCard.WIND)) add { m -> WindTile(data, m) }
-        if (c.humidity != null && cards.shows(WeatherCard.HUMIDITY)) add { m -> HumidityTile(data, m) }
-        if (c.visibility != null && cards.shows(WeatherCard.VISIBILITY)) add { m -> VisibilityTile(data, m) }
-        if (c.pressure != null && cards.shows(WeatherCard.PRESSURE)) add { m -> PressureTile(data, hours, m) }
+    // In the user's order (settings), hidden ones and those without data left out
+    val tiles = cards.orderedTiles().filter { cards.shows(it) }.mapNotNull { t ->
+        when (t) {
+            WeatherCard.FEELS_LIKE -> @Composable { m: Modifier -> FeelsLikeTile(data, m) }
+            WeatherCard.UV_INDEX -> @Composable { m: Modifier -> UvTile(data, hours, m) }
+            WeatherCard.WIND -> @Composable { m: Modifier -> WindTile(data, m) }
+            WeatherCard.HUMIDITY -> if (c.humidity != null) @Composable { m: Modifier -> HumidityTile(data, m) } else null
+            WeatherCard.VISIBILITY -> if (c.visibility != null) @Composable { m: Modifier -> VisibilityTile(data, m) } else null
+            WeatherCard.PRESSURE -> if (c.pressure != null) @Composable { m: Modifier -> PressureTile(data, hours, m) } else null
+            else -> null
+        }
     }
-    if (tiles.isEmpty() && !cards.shows(WeatherCard.SUN)) return
+    if (tiles.isEmpty()) return
     androidx.compose.foundation.layout.BoxWithConstraints {
     val side = (maxWidth - 12.dp) / 2
     val full = maxWidth
@@ -120,7 +124,6 @@ fun DetailTiles(data: WeatherData, now: Long) {
                 else row.forEach { tile -> tile(Modifier.weight(1f).heightIn(min = side).fillMaxHeight()) }
             }
         }
-        if (cards.shows(WeatherCard.SUN)) SunCard(data, now)
     }
     }
 }
@@ -533,7 +536,7 @@ private fun PressureTile(data: WeatherData, hours: List<dev.nimbus.weather.data.
  * tinted by light phase: day, golden hour, blue hour, night ([SunPhases]).
  */
 @Composable
-private fun SunCard(data: WeatherData, now: Long) {
+fun SunCard(data: WeatherData, now: Long) {
     val tf = LocalTimeFormat.current
     val explain = LocalExplain.current
     val lat = data.place.latitude

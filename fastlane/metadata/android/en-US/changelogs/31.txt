@@ -1,0 +1,2 @@
+• Settings → Cards: order and visibility of all cards – drag to sort, switch to hide; the small tiles can be sorted among themselves
+• Hourly row: "Sunset" no longer cut off in German

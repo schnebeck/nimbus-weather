@@ -36,11 +36,20 @@ enum class WindUnit { KMH, MS, MPH, KNOTS, BEAUFORT }
 @Serializable
 enum class PrecipitationUnit { MM, INCH }
 
-/** Cards of the weather page that can be switched off in the settings (in page order). */
+/**
+ * Cards of the weather page that can be sorted and switched off in the settings. [TILES] is the
+ * block of small tiles (feels like … pressure), which have an order of their own.
+ */
 @Serializable
 enum class WeatherCard {
     ALERTS, HOURLY, DAILY, PRECIPITATION, RADAR, FEELS_LIKE, UV_INDEX, WIND, HUMIDITY, VISIBILITY, PRESSURE,
-    SUN, MOON, AIR_QUALITY, POLLEN, GAUGES, BATHING, COMMUNITY, MODELS,
+    SUN, MOON, AIR_QUALITY, POLLEN, GAUGES, BATHING, COMMUNITY, MODELS, TILES;
+
+    companion object {
+        /** Default order of the page below the alerts (which always stay on top). */
+        val DEFAULT_ORDER = listOf(HOURLY, DAILY, PRECIPITATION, RADAR, TILES, SUN, MOON, AIR_QUALITY, POLLEN, GAUGES, BATHING, COMMUNITY, MODELS)
+        val DEFAULT_TILES = listOf(FEELS_LIKE, UV_INDEX, WIND, HUMIDITY, VISIBILITY, PRESSURE)
+    }
 }
 
 @Serializable
@@ -57,6 +66,10 @@ data class Settings(
     val pollenTypes: Set<PollenType> = PollenType.entries.toSet(),
     /** Cards the user switched off. */
     val hiddenCards: Set<WeatherCard> = emptySet(),
+    /** Own order of the cards (see [orderedCards]); empty = default. */
+    val cardOrder: List<WeatherCard> = emptyList(),
+    /** Own order of the small tiles (see [orderedTiles]); empty = default. */
+    val tileOrder: List<WeatherCard> = emptyList(),
     /** Radius of the bathing water card in km. */
     val bathingRadiusKm: Int = 50,
     /** Favourite bathing waters (EU ids), shown at any distance. */
@@ -64,7 +77,22 @@ data class Settings(
 ) {
     fun shows(card: WeatherCard) = card !in hiddenCards
 
+    /** The page order: the user's, cards added in later versions at their default place. */
+    fun orderedCards(): List<WeatherCard> = merged(cardOrder, WeatherCard.DEFAULT_ORDER)
+    fun orderedTiles(): List<WeatherCard> = merged(tileOrder, WeatherCard.DEFAULT_TILES)
+
     companion object {
+        /** [own] order with the cards it lacks inserted after their default predecessor. */
+        fun merged(own: List<WeatherCard>, default: List<WeatherCard>): List<WeatherCard> {
+            val out = own.filter { it in default }.distinct().toMutableList()
+            default.forEachIndexed { i, c ->
+                if (c in out) return@forEachIndexed
+                val before = default.subList(0, i).lastOrNull { it in out }
+                out.add(before?.let { out.indexOf(it) + 1 } ?: 0, c)
+            }
+            return out
+        }
+
         private val FAHRENHEIT_COUNTRIES = setOf("US", "LR", "MM", "BS", "BZ", "KY", "PW", "FM", "MH")
 
         /** Defaults for a first start: units as customary in the country of the device locale. */

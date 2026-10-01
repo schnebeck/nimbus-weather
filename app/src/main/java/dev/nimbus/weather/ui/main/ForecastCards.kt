@@ -183,7 +183,13 @@ private fun SunCell(time: String, rise: Boolean) {
     Column(Modifier.width(56.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(time, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1)
         Box(Modifier.height(46.dp), contentAlignment = Alignment.Center) { SunHorizonGlyph(rise) }
-        Text(stringResource(if (rise) R.string.sunrise else R.string.sunset), fontSize = 11.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        // Short label ("Untergang"), shrinking a little rather than being cut off ("Sonnenu…")
+        androidx.compose.foundation.text.BasicText(
+            stringResource(if (rise) R.string.hour_sunrise else R.string.hour_sunset),
+            style = androidx.compose.ui.text.TextStyle(fontSize = 11.sp, color = Color.White, textAlign = androidx.compose.ui.text.style.TextAlign.Center),
+            maxLines = 1,
+            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = 11.sp, stepSize = 0.5.sp),
+        )
     }
 }
 

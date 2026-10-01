@@ -60,8 +60,8 @@ No ads, no account, no Google services. The app speaks English and German.
   algae) where states publish them openly – see [docs/BATHING.md](docs/BATHING.md).
 - Rain radar: DWD for Germany, RainViewer for Europe, one colour scale for rain and snow, temperature
   and wind layers, satellite and warning map.
-- An ⓘ on every card explains the terms. Units follow the country on first start; the cards to show
-  can be chosen in the settings, places are sorted or deleted after a long press.
+- An ⓘ on every card explains the terms. Units follow the country on first start; the order and visibility of
+  the cards can be set in the settings, places are sorted or deleted after a long press.
 
 ## Data sources
 

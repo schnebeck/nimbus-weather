@@ -1,0 +1,2 @@
+• Einstellungen → Kacheln: Reihenfolge und Sichtbarkeit aller Kacheln – ziehen zum Sortieren, Schalter zum Ausblenden; die kleinen Kacheln lassen sich untereinander sortieren
+• Stundenleiste: „Untergang“ statt abgeschnittenem „Sonnenu…“

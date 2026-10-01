@@ -22,7 +22,9 @@ import dev.nimbus.weather.data.model.Settings
 import dev.nimbus.weather.data.model.TemperatureUnit
 import dev.nimbus.weather.data.model.WindUnit
 import dev.nimbus.weather.util.Units
+import dev.nimbus.weather.data.model.WeatherCard as W
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.Locale
 
@@ -51,5 +53,22 @@ class SettingsLocaleTest {
         assertEquals("21 °C", Units.tempFull(20.6, TemperatureUnit.CELSIUS))
         assertEquals("70 °F", Units.tempFull(21.0, TemperatureUnit.FAHRENHEIT))
         assertEquals("–", Units.tempFull(null, TemperatureUnit.CELSIUS))
+    }
+
+    @Test
+    fun `own card order keeps new cards at their default place`() {
+        // Saved before BATHING existed, with the moon moved to the top
+        val own = listOf(W.MOON, W.HOURLY, W.DAILY, W.PRECIPITATION, W.RADAR, W.TILES, W.SUN, W.AIR_QUALITY, W.POLLEN, W.GAUGES, W.COMMUNITY, W.MODELS)
+        val s = dev.nimbus.weather.data.model.Settings(cardOrder = own)
+        val order = s.orderedCards()
+        assertEquals(W.MOON, order.first())
+        assertEquals(order.indexOf(W.GAUGES) + 1, order.indexOf(W.BATHING))     // after its default predecessor
+        assertEquals(W.DEFAULT_ORDER.size, order.size)
+        assertEquals(W.DEFAULT_ORDER, dev.nimbus.weather.data.model.Settings().orderedCards())
+        // tiles: own order, unknown and duplicate entries dropped
+        val t = dev.nimbus.weather.data.model.Settings(tileOrder = listOf(W.WIND, W.MOON, W.WIND, W.FEELS_LIKE)).orderedTiles()
+        assertEquals(W.DEFAULT_TILES.toSet(), t.toSet())
+        assertEquals(6, t.size)
+        assertTrue(t.indexOf(W.WIND) < t.indexOf(W.FEELS_LIKE))                 // own relative order kept
     }
 }

@@ -483,7 +483,7 @@
     <string name="src_lhp_alerts">Flood alerts: LHP</string>
     <string name="outlook_precip_chance">Chance of precipitation %1$d %%.</string>
     <string name="settings_cards">Cards</string>
-    <string name="settings_cards_desc">Which cards the weather page shows. Tap to switch one off or on again.</string>
+    <string name="settings_cards_desc">Drag ≡ to sort, the switch hides a card. The small tiles are one block on the page – expand it to sort them among themselves.</string>
     <string name="places_edit_done">Done</string>
     <string name="places_edit_hint">Drag ≡ to sort, ⊖ to delete</string>
     <string name="places_long_press_hint">Long press a place to sort or delete</string>
@@ -538,4 +538,14 @@
     <string name="term_bathing_body">The official EU bathing sites within the chosen radius – lakes, rivers, coasts and estuaries – nearest first. The star keeps a site as a favourite; it then appears on top, even when it is farther away.\n\n• Dot: the current assessment of the health office where published (red: bathing not advised, yellow: mind the notices, e.g. blue-green algae); otherwise the EU classification (blue excellent, green good, yellow sufficient, red poor)\n• EU classification: hygienic quality (faecal bacteria) of the last four seasons under the EU bathing water directive – it says nothing about today\n• Temperature with a date: last sample of the health office (Berlin, Schleswig-Holstein); "Sea": sea temperature from an ocean model\n\nIn the season (usually May 15 to September 15) samples are taken every two to four weeks. Blue-green algae (cyanobacteria) can multiply within hours when it is warm and irritate skin and mucous membranes – do not bathe in greenish, cloudy water with streaks, especially not with children and dogs.\n\nSources: European Environment Agency (location, classification), LAGeSo Berlin and the state of Schleswig-Holstein (samples), Open-Meteo (sea temperature). Other states do not publish their current values openly yet; there the link leads to the state\'s bathing water profile.</string>
     <string name="gauge_chart_hint">Long press for the values</string>
     <string name="gauge_chart_predicted">forecast</string>
+    <string name="settings_cards_arrange">Order and visibility</string>
+    <string name="settings_cards_count">%1$d of %2$d cards shown</string>
+    <string name="settings_cards_fixed">stays on top</string>
+    <string name="settings_cards_reset">Default order</string>
+    <string name="settings_cards_tiles">Small tiles</string>
+    <string name="settings_cards_tiles_expand">Expand or collapse the small tiles</string>
+    <string name="move_up">Move up</string>
+    <string name="move_down">Move down</string>
+    <string name="hour_sunrise">Sunrise</string>
+    <string name="hour_sunset">Sunset</string>
 </resources>

@@ -71,4 +71,23 @@ class SettingsLocaleTest {
         assertEquals(6, t.size)
         assertTrue(t.indexOf(W.WIND) < t.indexOf(W.FEELS_LIKE))                 // own relative order kept
     }
+
+    @Test
+    fun `pressure chart is opt-in and switches independently`() {
+        val s = dev.nimbus.weather.data.model.Settings()
+        assertTrue(!s.shows(W.PRESSURE_CHART))                                   // off for everyone at first
+        assertTrue(s.shows(W.PRESSURE))
+        val on = s.withCard(W.PRESSURE_CHART, true).withCard(W.PRESSURE, false)
+        assertTrue(on.shows(W.PRESSURE_CHART))
+        assertTrue(!on.shows(W.PRESSURE))
+        assertEquals(W.TILES, on.orderedCards()[on.orderedCards().indexOf(W.PRESSURE_CHART) - 1])
+    }
+
+    @Test
+    fun `fast pressure falls of 3 hPa in 3 hours are marked`() {
+        val p = listOf(1012.0, 1011.5, 1010.5, 1008.8, 1007.0, 1006.5, 1006.4)
+        val fast = dev.nimbus.weather.ui.main.fastFallHours(p)
+        assertTrue(0 in fast && 3 in fast)                                         // 1012.0 -> 1008.8 within 3 h
+        assertTrue(dev.nimbus.weather.ui.main.fastFallHours(listOf(1012.0, 1011.0, 1010.0, 1009.5)).isEmpty())
+    }
 }

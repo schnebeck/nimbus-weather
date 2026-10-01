@@ -548,4 +548,10 @@
     <string name="move_down">Move down</string>
     <string name="hour_sunrise">Sunrise</string>
     <string name="hour_sunset">Sunset</string>
+    <string name="pressure_chart_title">Pressure trend</string>
+    <string name="pressure_chart_rising">rising, %1$s hPa in 3 h</string>
+    <string name="pressure_chart_falling">falling, %1$s hPa in 3 h</string>
+    <string name="pressure_chart_steady">steady, %1$s hPa in 3 h</string>
+    <string name="pressure_chart_hint">Dashed: forecast · long press for the values of each hour</string>
+    <string name="pressure_chart_hint_fall">Orange: fast fall (3 hPa or more in 3 h) · long press for values</string>
 </resources>

@@ -250,6 +250,7 @@ private fun WeatherContent(
                     WeatherCard.RADAR -> item(key = "radar") { RadarPreviewCard(data, onOpenRadar) }
                     WeatherCard.TILES -> if (cards.orderedTiles().any(cards::shows)) item(key = "tiles") { DetailTiles(data, now) }
                     WeatherCard.SUN -> item(key = "sun") { SunCard(data, now) }
+                    WeatherCard.PRESSURE_CHART -> item(key = "pressure-chart") { PressureCard(data, now) }
                     WeatherCard.MOON -> item(key = "moon") { MoonCard(data, now) }
                     WeatherCard.AIR_QUALITY -> if (data.airQuality?.europeanAqi != null) item(key = "aqi") { AirQualityCard(data) }
                     WeatherCard.POLLEN -> data.pollen?.let { p -> item(key = "pollen") { PollenForecastCard(p, now) } }

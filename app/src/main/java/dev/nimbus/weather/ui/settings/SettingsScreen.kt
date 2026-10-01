@@ -227,6 +227,7 @@ private fun cardIcon(c: WeatherCard): androidx.compose.ui.graphics.vector.ImageV
     WeatherCard.BATHING -> Icons.Outlined.Pool
     WeatherCard.COMMUNITY -> Icons.Outlined.Groups
     WeatherCard.MODELS -> Icons.Outlined.QueryStats
+    WeatherCard.PRESSURE_CHART -> Icons.Outlined.Timeline
 }
 
 /**
@@ -322,7 +323,7 @@ private fun CardRow(
         }
         Switch(
             checked = shown, enabled = enabled,
-            onCheckedChange = { v -> onChange { st -> st.copy(hiddenCards = if (v) st.hiddenCards - card else st.hiddenCards + card) } },
+            onCheckedChange = { v -> onChange { st -> st.withCard(card, v) } },
             colors = SwitchDefaults.colors(checkedTrackColor = Color(0xFF3D8BFF), checkedThumbColor = Color.White),
         )
     }
@@ -348,6 +349,7 @@ private fun cardLabel(c: WeatherCard): Int = when (c) {
     WeatherCard.GAUGES -> R.string.gauge_title_level
     WeatherCard.BATHING -> R.string.bathing_title
     WeatherCard.TILES -> R.string.settings_cards_tiles
+    WeatherCard.PRESSURE_CHART -> R.string.pressure_chart_title
     WeatherCard.COMMUNITY -> R.string.community_sensors
     WeatherCard.MODELS -> R.string.model_comparison
 }

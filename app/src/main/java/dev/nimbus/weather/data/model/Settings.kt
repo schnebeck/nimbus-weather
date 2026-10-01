@@ -43,11 +43,13 @@ enum class PrecipitationUnit { MM, INCH }
 @Serializable
 enum class WeatherCard {
     ALERTS, HOURLY, DAILY, PRECIPITATION, RADAR, FEELS_LIKE, UV_INDEX, WIND, HUMIDITY, VISIBILITY, PRESSURE,
-    SUN, MOON, AIR_QUALITY, POLLEN, GAUGES, BATHING, COMMUNITY, MODELS, TILES;
+    SUN, MOON, AIR_QUALITY, POLLEN, GAUGES, BATHING, COMMUNITY, MODELS, TILES, PRESSURE_CHART;
 
     companion object {
         /** Default order of the page below the alerts (which always stay on top). */
-        val DEFAULT_ORDER = listOf(HOURLY, DAILY, PRECIPITATION, RADAR, TILES, SUN, MOON, AIR_QUALITY, POLLEN, GAUGES, BATHING, COMMUNITY, MODELS)
+        val DEFAULT_ORDER = listOf(HOURLY, DAILY, PRECIPITATION, RADAR, TILES, PRESSURE_CHART, SUN, MOON, AIR_QUALITY, POLLEN, GAUGES, BATHING, COMMUNITY, MODELS)
+        /** Alternatives that are off until switched on (e.g. the pressure chart next to the small tile). */
+        val OPT_IN = setOf(PRESSURE_CHART)
         val DEFAULT_TILES = listOf(FEELS_LIKE, UV_INDEX, WIND, HUMIDITY, VISIBILITY, PRESSURE)
     }
 }
@@ -66,6 +68,8 @@ data class Settings(
     val pollenTypes: Set<PollenType> = PollenType.entries.toSet(),
     /** Cards the user switched off. */
     val hiddenCards: Set<WeatherCard> = emptySet(),
+    /** Opt-in cards ([WeatherCard.OPT_IN]) the user switched on. */
+    val enabledCards: Set<WeatherCard> = emptySet(),
     /** Own order of the cards (see [orderedCards]); empty = default. */
     val cardOrder: List<WeatherCard> = emptyList(),
     /** Own order of the small tiles (see [orderedTiles]); empty = default. */
@@ -75,7 +79,12 @@ data class Settings(
     /** Favourite bathing waters (EU ids), shown at any distance. */
     val bathingFavorites: Set<String> = emptySet(),
 ) {
-    fun shows(card: WeatherCard) = card !in hiddenCards
+    fun shows(card: WeatherCard) = if (card in WeatherCard.OPT_IN) card in enabledCards else card !in hiddenCards
+
+    /** Switches a card on or off. */
+    fun withCard(card: WeatherCard, on: Boolean): Settings =
+        if (card in WeatherCard.OPT_IN) copy(enabledCards = if (on) enabledCards + card else enabledCards - card)
+        else copy(hiddenCards = if (on) hiddenCards - card else hiddenCards + card)
 
     /** The page order: the user's, cards added in later versions at their default place. */
     fun orderedCards(): List<WeatherCard> = merged(cardOrder, WeatherCard.DEFAULT_ORDER)

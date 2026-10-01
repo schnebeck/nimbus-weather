@@ -1,0 +1,1 @@
+• New card "Pressure trend" (switch on in Settings → Cards): today 0–24 h, trend over 3 h, fast falls in orange, long press for hourly values

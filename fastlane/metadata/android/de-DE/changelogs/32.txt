@@ -1,0 +1,1 @@
+• Neue Kachel „Luftdruckverlauf“ (in Einstellungen → Kacheln einschalten): heute 0–24 Uhr, Tendenz in 3 Std., starke Druckfälle orange, lange drücken für Stundenwerte

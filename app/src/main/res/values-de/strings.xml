@@ -537,4 +537,10 @@
     <string name="move_down">Nach unten</string>
     <string name="hour_sunrise">Aufgang</string>
     <string name="hour_sunset">Untergang</string>
+    <string name="pressure_chart_title">Luftdruckverlauf</string>
+    <string name="pressure_chart_rising">steigt, %1$s hPa in 3 Std.</string>
+    <string name="pressure_chart_falling">fällt, %1$s hPa in 3 Std.</string>
+    <string name="pressure_chart_steady">gleichbleibend, %1$s hPa in 3 Std.</string>
+    <string name="pressure_chart_hint">Gestrichelt: Vorhersage · lange drücken für Stundenwerte</string>
+    <string name="pressure_chart_hint_fall">Orange: starker Druckfall (ab 3 hPa in 3 Std.) · lange drücken für Werte</string>
 </resources>

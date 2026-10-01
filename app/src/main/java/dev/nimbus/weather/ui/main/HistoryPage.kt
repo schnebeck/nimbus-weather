@@ -102,7 +102,8 @@ import dev.nimbus.weather.util.TimeFormat
 import dev.nimbus.weather.util.Units
 
 private val MeasuredColor = Color.White
-private val ModelColor = Color(0xFFFFC56B)
+// The forecast curve in the meteogram: temperature red, dashed
+private val ModelColor = Color(0xFFFF6B5B)
 private val PrecipColor = Color(0xFF8FD3FF)
 
 fun modelName(m: ForecastModel) = when (m) {

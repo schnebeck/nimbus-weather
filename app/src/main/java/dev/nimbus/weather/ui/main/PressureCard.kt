@@ -97,7 +97,13 @@ fun PressureCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) 
     val tf = LocalTimeFormat.current
     val start = remember(now / 3_600_000L) { tf.zoned(now).toLocalDate().atStartOfDay(tf.zone).toInstant().toEpochMilli() }
     val end = start + 24 * 3_600_000L
-    val points = remember(data, start) { data.hourly.filter { it.time in start..end && it.pressure != null } }
+    // Hours already over show the station's reading instead of the forecast (the comparison of the
+    // two is in the look-back)
+    val readings = measured?.pressure.orEmpty()
+    val points = remember(data, start, readings, now / 3_600_000L) {
+        data.hourly.filter { it.time in start..end && it.pressure != null }
+            .map { p -> readings[p.time]?.takeIf { p.time <= now }?.let { p.copy(pressure = it) } ?: p }
+    }
     if (points.size < 2) return
     val current = data.current.pressure ?: points.minBy { abs(it.time - now) }.pressure!!
     val in3h = points.firstOrNull { it.time >= now + 3 * 3_600_000L }?.pressure
@@ -125,14 +131,14 @@ fun PressureCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) 
             }
         }
         Spacer(Modifier.height(8.dp))
-        PressureChart(points, start, end, now, nightsFromDaily(data.daily, start, end), measured?.pressure.orEmpty().filterKeys { it in start..now })
+        PressureChart(points, start, end, now, nightsFromDaily(data.daily, start, end), readings.filterKeys { it in start..now })
     }
 }
 
 @Composable
 private fun PressureChart(
     points: List<HourlyPoint>, start: Long, end: Long, now: Long, nights: List<LongRange>,
-    /** Station readings (hPa) of the hours so far; with them the model curve is shown dashed throughout. */
+    /** Station readings (hPa) of the hours so far – already in [points]; marks which values are measured. */
     measured: Map<Long, Double>,
 ) {
     val tf = LocalTimeFormat.current
@@ -140,8 +146,8 @@ private fun PressureChart(
     val labelStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Tertiary)
     val unitStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Secondary, fontWeight = FontWeight.SemiBold)
     val values = points.map { it.pressure!! }
-    val hasMeasured = measured.size >= 2
-    val allValues = values + measured.values
+    val hasMeasured = measured.isNotEmpty()
+    val allValues = values
     // At least 6 hPa span around the data; the axis in whole hPa
     val mid = (allValues.min() + allValues.max()) / 2
     val half = maxOf(3.0, (allValues.max() - allValues.min()) / 2 + 1.0)
@@ -210,16 +216,7 @@ private fun PressureChart(
                 drawText(t, topLeft = Offset((xm - t.size.width / 2f).coerceIn(0f, size.width - t.size.width), bottom + 4.dp.toPx()))
                 mark += 3 * 3_600_000L
             }
-            // With station readings: measured solid white, the model dashed for the whole day
-            if (hasMeasured) {
-                val model = Path()
-                points.forEachIndexed { i, p -> val o = Offset(x(p.time), y(p.pressure!!)); if (i == 0) model.moveTo(o.x, o.y) else model.lineTo(o.x, o.y) }
-                drawPath(model, Color.White.copy(alpha = 0.55f), style = Stroke(1.8.dp.toPx(), cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))))
-                val m = Path()
-                measured.entries.sortedBy { it.key }.forEachIndexed { i, (t, v) -> val o = Offset(x(t), y(v)); if (i == 0) m.moveTo(o.x, o.y) else m.lineTo(o.x, o.y) }
-                drawPath(m, Color.White, style = Stroke(2.4.dp.toPx(), cap = StrokeCap.Round))
-            }
-            // Without: the day so far solid, the forecast dashed; fast falls in orange
+            // The day so far solid (measured where there are readings), the forecast dashed; fast falls in orange
             val past = Path(); val future = Path()
             var pastStarted = false; var futureStarted = false
             points.forEachIndexed { i, p ->
@@ -229,10 +226,8 @@ private fun PressureChart(
                     if (!futureStarted) { future.moveTo(o.x, o.y); futureStarted = true } else future.lineTo(o.x, o.y)
                 }
             }
-            if (!hasMeasured) {
-                drawPath(past, Color.White, style = Stroke(2.2.dp.toPx(), cap = StrokeCap.Round))
-                drawPath(future, Color.White.copy(alpha = 0.6f), style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))))
-            }
+            drawPath(past, Color.White, style = Stroke(2.2.dp.toPx(), cap = StrokeCap.Round))
+            drawPath(future, Color.White.copy(alpha = 0.6f), style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))))
             points.indices.filter { it in fast && it + 1 in fast && it + 1 <= points.lastIndex }.forEach { i ->
                 drawLine(FastFall, Offset(x(points[i].time), y(points[i].pressure!!)), Offset(x(points[i + 1].time), y(points[i + 1].pressure!!)), 3.dp.toPx(), StrokeCap.Round)
             }
@@ -246,7 +241,7 @@ private fun PressureChart(
                 val p = points[selected.coerceIn(0, points.lastIndex)]
                 val xc = x(p.time)
                 drawLine(Color.White.copy(alpha = 0.85f * cursorAlpha), Offset(xc, top - 2.dp.toPx()), Offset(xc, bottom), 1.5.dp.toPx())
-                val v = measured[p.time] ?: p.pressure!!
+                val v = p.pressure!!
                 drawCircle(Color(0xFF1A2A40).copy(alpha = cursorAlpha), 5.dp.toPx(), Offset(xc, y(v)))
                 drawCircle(Color.White.copy(alpha = cursorAlpha), 3.dp.toPx(), Offset(xc, y(v)))
             }
@@ -265,7 +260,7 @@ private fun PressureChart(
             val p = points[selected.coerceIn(0, points.lastIndex)]
             val m = measured[p.time]
             Text(
-                if (m != null) stringResource(R.string.pressure_chart_readout_measured, tf.time(p.time), m.roundToInt(), p.pressure!!.roundToInt())
+                if (m != null && p.time <= now) stringResource(R.string.pressure_chart_readout_measured, tf.time(p.time), m.roundToInt())
                 else tf.time(p.time) + " · " + p.pressure!!.roundToInt() + NBSP + "hPa" +
                     (if (p.time > now) " · " + stringResource(R.string.forecast) else ""),
                 fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White, modifier = Modifier.alpha(cursorAlpha),

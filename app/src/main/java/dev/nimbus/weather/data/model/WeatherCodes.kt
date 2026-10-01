@@ -19,6 +19,22 @@ package dev.nimbus.weather.data.model
 
 /** Maps WMO weather interpretation codes (as used by Open-Meteo) to [Condition]. */
 object WeatherCodes {
+    /**
+     * Heavy rain from this rate on (mm/h) – the DWD's class "stark", also used by the precipitation
+     * notice. The model's own "heavy" codes (65, 82) start lower; with a known rate below it they
+     * become plain rain, so the header never says "heavy rain" above a notice "moderate rain".
+     */
+    const val HEAVY_RAIN_MM_H = 10.0
+
+    /** Heavy snow from this rate on (mm/h water equivalent), as in the precipitation notice. */
+    const val HEAVY_SNOW_MM_H = 4.0
+
+    /** [rateMmPerHour]: precipitation rate of the same interval, if known. */
+    fun fromWmo(code: Int?, rateMmPerHour: Double?): Condition {
+        val c = fromWmo(code)
+        return if (c == Condition.HEAVY_RAIN && rateMmPerHour != null && rateMmPerHour < HEAVY_RAIN_MM_H) Condition.RAIN else c
+    }
+
     fun fromWmo(code: Int?): Condition = when (code) {
         null -> Condition.CLOUDY
         0 -> Condition.CLEAR
@@ -60,10 +76,10 @@ object WeatherCodes {
         if (thunder) return Condition.THUNDERSTORM
         if (p >= 0.1) {
             return when {
-                cold && p >= 2.0 -> Condition.HEAVY_SNOW
+                cold && p >= HEAVY_SNOW_MM_H -> Condition.HEAVY_SNOW
                 cold -> Condition.SNOW
                 sleety -> Condition.SLEET
-                p >= 4.0 -> Condition.HEAVY_RAIN
+                p >= HEAVY_RAIN_MM_H -> Condition.HEAVY_RAIN
                 p < 0.3 -> Condition.DRIZZLE
                 else -> Condition.RAIN
             }

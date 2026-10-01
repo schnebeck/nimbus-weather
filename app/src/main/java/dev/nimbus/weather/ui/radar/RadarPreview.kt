@@ -77,6 +77,8 @@ object RadarPreview {
         timeline.frames.getOrNull(timeline.nowIndex)?.let { fetchOverlay(mapHttp, it, lat, lon, w, h) }
     }
 
+    private const val OVERLAY_SCALE = 2
+
     /** Same place and size share the pictures; a moving location gets new ones every ~100 m. */
     fun key(lat: Double, lon: Double, wDp: Int, hDp: Int) =
         String.format(Locale.ROOT, "%.3f_%.3f_%dx%d", lat, lon, wDp, hDp)
@@ -100,7 +102,7 @@ object RadarPreview {
         linesFile(key, lang)?.takeIf { it.exists() }?.let { runCatching { BitmapFactory.decodeFile(it.path) }.getOrNull() }
     }
     // The radar picture depends on the colour scale (setting): kept per scale
-    private fun ok(key: String) = "${key}_c${RadarPalette.scheme.ordinal}_v${RadarSources.TILE_VERSION}"
+    private fun ok(key: String) = "${key}_c${RadarPalette.scheme.ordinal}_v${RadarSources.TILE_VERSION}_s$OVERLAY_SCALE"
     private fun overlayFile(key: String) = dir?.let { File(it, "radar_${ok(key)}.png") }
     private fun overlayTimeFile(key: String) = dir?.let { File(it, "radar_${ok(key)}.time") }
 
@@ -154,7 +156,9 @@ object RadarPreview {
         val t = frame.dwdTime ?: return null
         val url = RadarSources.DWD_WMS + "?service=WMS&version=1.1.1&request=GetMap&layers=${RadarSources.DWD_LAYER}" +
             "&styles=&format=image/png&transparent=true&srs=EPSG:3857&bbox=${bbox(lat, lon, wDp, hDp)}" +
-            "&width=$wDp&height=$hDp&time=$t&v=${RadarSources.TILE_VERSION}&c=${RadarPalette.scheme.ordinal}"
+            // twice the dp size: enough pixels per radar cell for the smoothing (at 1 px per dp
+            // the cells stayed blocks, scaled up on the screen)
+            "&width=${wDp * OVERLAY_SCALE}&height=${hDp * OVERLAY_SCALE}&time=$t&v=${RadarSources.TILE_VERSION}&c=${RadarPalette.scheme.ordinal}"
         val started = System.currentTimeMillis()
         val bmp = withContext(Dispatchers.IO) {
             runCatching {

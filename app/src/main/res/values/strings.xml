@@ -329,6 +329,7 @@
     <string name="history_at">at %1$s</string>
     <string name="history_temp_chart">Temperature</string>
     <string name="history_legend_measured">Measured</string>
+    <string name="measured_word">measured</string>
     <string name="history_legend_model">Forecast (%1$s)</string>
     <string name="history_error_mean">Mean deviation of the forecast: %1$s</string>
     <string name="history_precip_chart">Precipitation per Hour</string>
@@ -562,9 +563,9 @@
     <string name="places_undo_order">Order of places changed</string>
     <string name="precip_measured_so_far">%1$s measured so far (%2$s)</string>
     <string name="precip_chart_hint_measured">Dark blue: measured · light blue: forecast · line: chance · long press</string>
-    <string name="precip_chart_readout_measured">%1$s–%2$s · measured %3$s · forecast %4$s</string>
+    <string name="precip_chart_readout_measured">%1$s–%2$s · measured %3$s</string>
     <string name="pressure_chart_hint_measured">Solid: measured · dashed: forecast · long press for values</string>
-    <string name="pressure_chart_readout_measured">%1$s · measured %2$d hPa · forecast %3$d hPa</string>
+    <string name="pressure_chart_readout_measured">%1$s · measured %2$d hPa</string>
     <string name="settings_radar_colors">Radar colours</string>
     <string name="settings_radar_colors_desc">Contrast: rain green → yellow → red → magenta, snow turquoise → white → violet – many steps easy to tell apart. Blue: calmer, rain light to dark blue, snow pink to violet.</string>
     <string name="radar_colors_contrast">Contrast</string>

@@ -1,0 +1,4 @@
+• Radar: cells smoothed at every zoom level instead of blocks, in the precipitation map too
+• Today (meteogram, precipitation, pressure): hours already over show the readings instead of the forecast
+• Heavy rain only from 10 mm/h, as with the DWD – header and precipitation notice agree
+• Meteogram: temperature in red (yellow stays the sunshine's colour)

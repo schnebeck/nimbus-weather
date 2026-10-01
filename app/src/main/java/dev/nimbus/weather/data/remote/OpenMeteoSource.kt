@@ -232,7 +232,11 @@ class OpenMeteoSource(
                     time = (cur.l("time") ?: 0L) * 1000,
                     temperature = temp,
                     apparentTemperature = cur.d("apparent_temperature"),
-                    condition = WeatherCodes.fromWmo(cur.d("weather_code")?.toInt()),
+                    // "current" values cover the preceding interval (15 minutes)
+                    condition = WeatherCodes.fromWmo(
+                        cur.d("weather_code")?.toInt(),
+                        cur.d("precipitation")?.times(3600.0 / (cur.l("interval")?.takeIf { it > 0 } ?: 900L)),
+                    ),
                     isDay = (cur.d("is_day") ?: 1.0) > 0.5,
                     humidity = cur.d("relative_humidity_2m"),
                     dewPoint = cur.d("dew_point_2m"),
@@ -270,7 +274,7 @@ class OpenMeteoSource(
                         time = time * 1000,
                         temperature = tt,
                         apparentTemperature = app.at(i),
-                        condition = WeatherCodes.fromWmo(wc.at(i)?.toInt()),
+                        condition = WeatherCodes.fromWmo(wc.at(i)?.toInt(), pr.at(i)),
                         isDay = (day.at(i) ?: 1.0) > 0.5,
                         precipitation = pr.at(i),
                         precipitationProbability = pp.at(i),

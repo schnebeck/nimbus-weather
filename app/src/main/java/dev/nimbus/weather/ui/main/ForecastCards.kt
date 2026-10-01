@@ -218,7 +218,7 @@ private fun SunHorizonGlyph(rise: Boolean) {
 // Daily
 
 @Composable
-fun DailyCard(data: WeatherData, now: Long) {
+fun DailyCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) {
     val settings = LocalSettings.current
     val tf = LocalTimeFormat.current
     val days = remember(data, now) {
@@ -249,6 +249,7 @@ fun DailyCard(data: WeatherData, now: Long) {
                 hours = data.hourly.filter { it.time in d.date..d.date + 24 * 3_600_000L },
                 daily = data.daily,
                 now = now,
+                measured = if (isToday) measured else null,
             )
         }
     }
@@ -258,6 +259,8 @@ fun DailyCard(data: WeatherData, now: Long) {
 private fun DayRow(
     day: DailyPoint, label: String, min: Double, max: Double, currentTemp: Double?,
     expanded: Boolean, onClick: () -> Unit, hours: List<HourlyPoint>, daily: List<DailyPoint>, now: Long,
+    /** Today: station readings for the hours already over (shown instead of the forecast). */
+    measured: TodayMeasured? = null,
 ) {
     val settings = LocalSettings.current
     Column(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
@@ -285,7 +288,7 @@ private fun DayRow(
         ) {
             val end = day.date + 24 * 3_600_000L
             Meteogram(
-                hours.map { it.toMeteo() }, day.date, end, nightsFromDaily(daily, day.date, end), now,
+                hours.map { h -> h.toMeteo().let { measured?.apply(it, now) ?: it } }, day.date, end, nightsFromDaily(daily, day.date, end), now,
                 Modifier.fillMaxWidth().bleed(CARD_BLEED).padding(bottom = 12.dp),
                 showNow = currentTemp != null,   // today only
             )

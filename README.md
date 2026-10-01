@@ -70,7 +70,8 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   Aktuelle Werte stammen, wo möglich, von der nächsten DWD-Station.
 - **Meteogramm** je Tag (00–24 Uhr): Temperatur, Niederschlag, Sonnenscheindauer und Wind pro Stunde,
   Nachtschattierung, Legende mit Tagessummen. Langes Drücken blendet einen Cursor mit allen Werten
-  der Stunde ein.
+  der Stunde ein. Heute zeigen Meteogramm, Niederschlag und Luftdruck für die vergangenen Stunden
+  die Messwerte der DWD-Station, danach die Vorhersage.
 - **Rückblick** per Wischen nach rechts: heute bisher, gestern, vorgestern – DWD-Messwerte im
   Vergleich zur Vorhersage des gewählten Modells, mit mittlerer Abweichung; dazu das Regenradar
   des ganzen Tages in 5-Minuten-Schritten zum Abspielen, Verschieben und Zoomen (Deutschland).
@@ -91,10 +92,11 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   Quellen je Bundesland: [docs/BATHING.md](docs/BATHING.md).
 - **Regenradar**: DWD-Radar mit 2-h-Vorhersage für Deutschland, RainViewer für Europa, einheitliche
   Farbskala für Regen (grün → gelb → rot → magenta) und Schnee (türkis → weiß → violett, pro Pixel
-  nach der Temperatur), wahlweise ruhiger in Blau bzw. Rosa–Violett; deckende Farben, Straßen,
-  Grenzen und Namen über dem Radar; Temperatur- (mit Isothermen) und Windebene, Satellit, Warnkarte, Rückblick bis 24 h. Im WLAN hält die App die
-  2-Stunden-Schleife des aktuellen Orts etwa alle 15 Minuten aktuell, auch im Hintergrund. Ohne
-  Verbindung zeigt das Radar die gespeicherten Bilder; nichts wartet endlos.
+  nach der Temperatur), wahlweise ruhiger in Blau bzw. Rosa–Violett; die Radarzellen in jeder
+  Zoomstufe geglättet statt als Blöcke; deckende Farben, Straßen, Grenzen und Namen über dem Radar;
+  Temperatur- (mit Isothermen) und Windebene, Satellit, Warnkarte, Rückblick bis 24 h. Im WLAN hält
+  die App die 2-Stunden-Schleife des aktuellen Orts etwa alle 15 Minuten aktuell, auch im
+  Hintergrund. Ohne Verbindung zeigt das Radar die gespeicherten Bilder; nichts wartet endlos.
 - **Akku**: Der animierte Himmel läuft mit 30 Bildern/s (Regen, Schnee: 60), nach einer Minute ohne
   Berührung mit 15; im Energiesparmodus des Systems steht er still.
 - **Lexikon**: ⓘ an jeder Karte erklärt die Begriffe.

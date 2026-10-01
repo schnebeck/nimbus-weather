@@ -23,6 +23,7 @@ import dev.nimbus.weather.data.model.Condition
 import dev.nimbus.weather.data.model.HourlyPoint
 import dev.nimbus.weather.data.model.MinutelyPoint
 import dev.nimbus.weather.data.model.WeatherData
+import dev.nimbus.weather.data.model.WeatherCodes
 
 /** Pure helper logic behind the card texts – kept free of Android types for unit tests. */
 object Insights {
@@ -79,11 +80,11 @@ object Insights {
         }
         val intensity = if (kind == PrecipKind.SNOW) when {
             rate < 1.0 -> Intensity.LIGHT
-            rate < 4.0 -> Intensity.MODERATE
+            rate < WeatherCodes.HEAVY_SNOW_MM_H -> Intensity.MODERATE
             else -> Intensity.HEAVY
         } else when {
             rate < 2.5 -> Intensity.LIGHT
-            rate < 10.0 -> Intensity.MODERATE
+            rate < WeatherCodes.HEAVY_RAIN_MM_H -> Intensity.MODERATE
             else -> Intensity.HEAVY
         }
         fun round5(t: Long) = (t + 150_000L) / 300_000L * 300_000L

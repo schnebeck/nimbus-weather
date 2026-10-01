@@ -171,10 +171,10 @@ fun WeatherPage(
 ) {
     val context = LocalContext.current
     val now = rememberNow()
-    // Today's station readings for the day charts (measured next to forecast), Germany only
+    // Today's station readings for the day charts (measured instead of forecast for the hours over), Germany only
     LaunchedEffect(place.id, isActive) {
         if (isActive && dev.nimbus.weather.data.repo.WeatherRepository.isInDwdArea(place.latitude, place.longitude) &&
-            (settings.shows(WeatherCard.PRECIPITATION) || settings.shows(WeatherCard.PRESSURE_CHART))
+            (settings.shows(WeatherCard.PRECIPITATION) || settings.shows(WeatherCard.PRESSURE_CHART) || settings.shows(WeatherCard.DAILY))
         ) onRequestHistory()
     }
     val raw = state?.data
@@ -245,7 +245,7 @@ private fun WeatherContent(
         cards.orderedCards().filter { cards.shows(it) }.forEach { card ->
             when (card) {
                 WeatherCard.HOURLY -> add(PageItem("hourly", true) { HourlyCard(data, now) })
-                WeatherCard.DAILY -> add(PageItem("daily") { DailyCard(data, now) })
+                WeatherCard.DAILY -> add(PageItem("daily") { DailyCard(data, now, todayMeasured) })
                 WeatherCard.PRECIPITATION -> add(PageItem("precip") { PrecipitationCard(data, now, raining, todayMeasured) })
                 WeatherCard.RADAR -> add(PageItem("radar") { RadarPreviewCard(data, onOpenRadar) })
                 WeatherCard.TILES -> if (cards.orderedTiles().any(cards::shows)) add(PageItem("tiles") { DetailTiles(data, now) })

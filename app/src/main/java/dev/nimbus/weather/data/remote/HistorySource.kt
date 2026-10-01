@@ -120,7 +120,7 @@ class HistorySource(
                 val time = (t[i] ?: return@mapNotNull null) * 1000
                 time to HistoryHour.Modelled(
                     temperature = temp.at(i), precipitation = pr.at(i), windSpeed = ws.at(i), windGust = wg.at(i),
-                    sunshineMinutes = sun.at(i)?.div(60.0), condition = WeatherCodes.fromWmo(wc.at(i)?.toInt()),
+                    sunshineMinutes = sun.at(i)?.div(60.0), condition = WeatherCodes.fromWmo(wc.at(i)?.toInt(), pr.at(i)),
                     isDay = (day.at(i) ?: 1.0) > 0.5,
                 )
             }.toMap()
@@ -151,7 +151,7 @@ class HistorySource(
 
         fun condition(condition: String?, icon: String?, precipitation: Double?): Condition? = when (condition) {
             "fog" -> Condition.FOG
-            "rain" -> if ((precipitation ?: 0.0) >= 4.0) Condition.HEAVY_RAIN else if ((precipitation ?: 0.0) < 0.3) Condition.DRIZZLE else Condition.RAIN
+            "rain" -> if ((precipitation ?: 0.0) >= WeatherCodes.HEAVY_RAIN_MM_H) Condition.HEAVY_RAIN else if ((precipitation ?: 0.0) < 0.3) Condition.DRIZZLE else Condition.RAIN
             "sleet" -> Condition.SLEET
             "snow" -> Condition.SNOW
             "hail" -> Condition.SHOWERS

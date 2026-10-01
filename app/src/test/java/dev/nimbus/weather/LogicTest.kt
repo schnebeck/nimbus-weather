@@ -78,6 +78,10 @@ class LogicTest {
         assertEquals(Condition.CLEAR, WeatherCodes.fromWmo(0))
         assertEquals(Condition.FOG, WeatherCodes.fromWmo(45))
         assertEquals(Condition.HEAVY_RAIN, WeatherCodes.fromWmo(65))
+        // the model's "heavy" codes need 10 mm/h, like the precipitation notice
+        assertEquals(Condition.RAIN, WeatherCodes.fromWmo(65, 3.1))
+        assertEquals(Condition.HEAVY_RAIN, WeatherCodes.fromWmo(65, 12.0))
+        assertEquals(Condition.HEAVY_RAIN, WeatherCodes.fromWmo(65, null))
         assertEquals(Condition.SNOW, WeatherCodes.fromWmo(71))
         assertEquals(Condition.THUNDERSTORM, WeatherCodes.fromWmo(99))
         assertEquals(Condition.CLOUDY, WeatherCodes.fromWmo(null))

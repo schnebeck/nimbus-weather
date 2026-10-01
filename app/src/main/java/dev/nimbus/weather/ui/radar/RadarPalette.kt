@@ -64,6 +64,10 @@ object RadarPalette {
 
     private val contrastLuts = buildLut(rainStops) to buildLut(snowStops)
     private val blueLuts = buildLut(blueRainStops) to buildLut(blueSnowStops)
+    /** The same in steps of 1/[FINE] dBZ, for smoothed reflectivities (one lookup per pixel). */
+    private const val FINE = 8
+    private val contrastFine = fine(contrastLuts.first) to fine(contrastLuts.second)
+    private val blueFine = fine(blueLuts.first) to fine(blueLuts.second)
 
     /** The scale in use (from the settings); the tile URLs carry it, so cached tiles never mix scales. */
     @Volatile var scheme: dev.nimbus.weather.data.model.RadarColors = dev.nimbus.weather.data.model.RadarColors.CONTRAST
@@ -91,6 +95,24 @@ object RadarPalette {
     }
 
     fun colorFor(dbz: Int, snow: Boolean): Int = colorFor(dbz, if (snow) 1f else 0f)
+
+    /** As [colorFor], for a smoothed (fractional) reflectivity: no steps between whole dBZ. */
+    fun colorFor(dbz: Float, snow: Float): Int {
+        if (dbz < 8f) return 0
+        val (rain, snowLut) = if (scheme == dev.nimbus.weather.data.model.RadarColors.BLUE) blueFine else contrastFine
+        val i = (dbz * FINE).toInt().coerceAtMost(rain.lastIndex)
+        return when {
+            snow <= 0f -> rain[i]
+            snow >= 1f -> snowLut[i]
+            else -> lerpArgb(rain[i], snowLut[i], snow)
+        }
+    }
+
+    private fun fine(lut: IntArray) = IntArray((lut.size - 1) * FINE + 1) { k ->
+        val i = k / FINE
+        val f = (k % FINE).toFloat() / FINE
+        if (f == 0f) lut[i] else lerpArgb(lut[i], lut[i + 1], f)
+    }
 
     /** Test hook (demo mode): shifts the temperatures used for the rain/snow decision. */
     @Volatile var demoTempOffset = 0f
@@ -242,39 +264,158 @@ object RadarPalette {
         return dist(a, b) + da * da
     }
 
+    private const val MIN_DBZ = 8f
+
+    /** Grid spacing of the radar composites (DWD: 1 km; RainViewer's European mosaic is similar). */
+    private const val CELL_KM = 1.0
+
+    /**
+     * Smoothing radius in pixels for a tile of [w] pixels covering [geo]: half a radar cell. Below
+     * two pixels per cell (zoomed out) nothing is smoothed – the cells are already about pixel-sized.
+     */
+    fun smoothRadius(geo: TileGeo, w: Int): Int {
+        val pxPerKm = 1000.0 / (geo.widthM / w * kotlin.math.cos(Math.toRadians(geo.centerLat)))
+        return (pxPerKm * CELL_KM / 2).toInt().coerceIn(0, 64)
+    }
+
+    /** Pixels needed around a tile so that smoothing with [radius] sees its neighbours. */
+    fun smoothMargin(radius: Int): Int = 2 * radius.coerceAtLeast(0)
+
+    /**
+     * Reflectivity of every pixel of a decoded tile ([w]×[h]): dBZ, the wet share (0 = dry, 1 =
+     * precipitation) and the share the source marks as snow.
+     *
+     * With [radius] > 0 the radar cells – shown as hard blocks when zoomed in – are smoothed in two
+     * dimensions: a normalized convolution (two box passes one cell wide – a quadratic B-spline
+     * over two cells, so the contours come out round instead of as rounded squares) averages the dBZ of the wet pixels only, so the edge of a rain area neither darkens
+     * nor fades towards dry ground, and the wet share falls from 1 to 0 across the cell edge. It
+     * works on reflectivity, not on colours: in between two classes lie the colours between them.
+     */
+    class Field(val dbz: FloatArray, val wet: FloatArray, val snow: FloatArray)
+
+    fun field(px: IntArray, w: Int, h: Int, source: Source, radius: Int): Field? {
+        val n = w * h
+        val dbz = FloatArray(n)
+        val wet = FloatArray(n)
+        var snow: FloatArray? = null
+        var any = false
+        // Neighbouring pixels mostly share a colour: look a colour up once per run, not per pixel
+        var lastArgb = 0
+        var lastCode = NONE
+        for (i in 0 until n) {
+            val argb = px[i]
+            val code = if (argb == lastArgb) lastCode else decode(argb, source).also { lastArgb = argb; lastCode = it }
+            if (code == NONE) continue
+            wet[i] = 1f
+            dbz[i] = (code and 0xFF).toFloat()
+            if ((code and SNOW_FLAG) != 0) (snow ?: FloatArray(n).also { snow = it })[i] = 1f
+            any = true
+        }
+        if (!any) return null
+        if (radius <= 0) return Field(dbz, wet, snow ?: FloatArray(n))
+        // dbz and snow are already weighted by wet (0 where dry). The share of the kernel inside the
+        // image is separable (columns × rows), so the image border needs no neighbours (RainViewer).
+        val r = radius
+        val tmp = FloatArray(n)
+        val col = FloatArray(w)
+        val channels = listOfNotNull(dbz, wet, snow)
+        for (a in channels) repeat(2) { boxBlur(a, tmp, col, w, h, r) }
+        val inX = FloatArray(w) { 1f }.also { line -> repeat(2) { boxBlur(line, FloatArray(w), FloatArray(w), w, 1, r) } }
+        val inY = FloatArray(h) { 1f }.also { line -> repeat(2) { boxBlur(line, FloatArray(h), FloatArray(h), h, 1, r) } }
+        val sn = snow
+        for (y in 0 until h) {
+            val iy = inY[y]
+            val o = y * w
+            for (x in 0 until w) {
+                val i = o + x
+                val c = wet[i]
+                if (c > 1e-4f) {
+                    // an average of echoes ≥ 8 dBZ: never below (rounding would make faint
+                    // echoes flicker in and out, column by column)
+                    dbz[i] = maxOf(dbz[i] / c, MIN_DBZ)
+                    if (sn != null) sn[i] /= c
+                } else {
+                    dbz[i] = 0f
+                    if (sn != null) sn[i] = 0f
+                }
+                wet[i] = c / (inX[x] * iy)
+            }
+        }
+        return Field(dbz, wet, sn ?: FloatArray(n))
+    }
+
+    /**
+     * Box filter of width 2[r]+1, horizontal then vertical, both running along the rows (the
+     * vertical pass keeps one running sum per column in [col]) – fast on large tiles.
+     */
+    private fun boxBlur(a: FloatArray, tmp: FloatArray, col: FloatArray, w: Int, h: Int, r: Int) {
+        val k = 1f / (2 * r + 1)
+        for (y in 0 until h) {
+            val o = y * w
+            var sum = 0f
+            for (x in 0..minOf(r, w - 1)) sum += a[o + x]
+            for (x in 0 until w) {
+                tmp[o + x] = sum * k
+                val add = x + r + 1
+                val sub = x - r
+                if (add < w) sum += a[o + add]
+                if (sub >= 0) sum -= a[o + sub]
+            }
+        }
+        if (h == 1) { System.arraycopy(tmp, 0, a, 0, w); return }
+        java.util.Arrays.fill(col, 0f)
+        for (y in 0..minOf(r, h - 1)) { val o = y * w; for (x in 0 until w) col[x] += tmp[o + x] }
+        for (y in 0 until h) {
+            val o = y * w
+            for (x in 0 until w) a[o + x] = col[x] * k
+            val add = y + r + 1
+            val sub = y - r
+            if (add < h) { val oa = add * w; for (x in 0 until w) col[x] += tmp[oa + x] }
+            if (sub >= 0) { val os = sub * w; for (x in 0 until w) col[x] -= tmp[os + x] }
+        }
+    }
+
+    /** Wet share at which a smoothed pixel is drawn half transparent (the old cell edge). */
+    private fun edgeAlpha(wet: Float): Float = ((wet - 0.35f) / 0.3f).coerceIn(0f, 1f).let { it * it * (3 - 2 * it) }
+
     /**
      * Recoloured tile, or null if the tile contains no precipitation at all.
      * With [geo] and [timeMs] the rain/snow decision uses the 2 m temperature at every pixel.
+     * [margin] pixels on each side only feed the smoothing ([radius]) and are cut off; [geo]
+     * covers the whole image, margin included.
      */
-    fun recolor(bitmap: Bitmap, source: Source, geo: TileGeo? = null, timeMs: Long? = null): Bitmap? {
-        val w = bitmap.width
-        val h = bitmap.height
-        val px = IntArray(w * h)
-        bitmap.getPixels(px, 0, w, 0, 0, w, h)
+    fun recolor(bitmap: Bitmap, source: Source, geo: TileGeo? = null, timeMs: Long? = null, margin: Int = 0, radius: Int = 0): Bitmap? {
+        val fw = bitmap.width
+        val fh = bitmap.height
+        val w = fw - 2 * margin
+        val h = fh - 2 * margin
+        if (w <= 0 || h <= 0) return null
+        val src = IntArray(fw * fh)
+        bitmap.getPixels(src, 0, fw, 0, 0, fw, fh)
+        val f = field(src, fw, fh, source, radius) ?: return null
         // Tiles at low zoom are wider than the grid: look it up by overlap, not by the tile centre.
         val grid = if (geo != null && timeMs != null) WeatherGridStore.gridOverlapping(geo, timeMs) else null
-        val field = if (grid != null && timeMs != null) grid.temp[grid.hourIndex(timeMs)] else null
+        val temp = if (grid != null && timeMs != null) grid.temp[grid.hourIndex(timeMs)] else null
         // Latitude depends only on the row and longitude only on the column (Mercator tiles).
         // RainViewer only outside the DWD radar area (inside it the DWD layer shows the same rain)
         val masked = source == Source.RAINVIEWER && geo != null && DwdCoverage.ready
-        val needCoords = (field != null || masked) && geo != null
-        val rowLat = if (needCoords) DoubleArray(h) { geo!!.latAt((it + 0.5) / h) } else null
-        val colLon = if (needCoords) DoubleArray(w) { geo!!.lonAt((it + 0.5) / w) } else null
+        val needCoords = (temp != null || masked) && geo != null
+        val rowLat = if (needCoords) DoubleArray(h) { geo!!.latAt((it + margin + 0.5) / fh) } else null
+        val colLon = if (needCoords) DoubleArray(w) { geo!!.lonAt((it + margin + 0.5) / fw) } else null
+        val px = IntArray(w * h)
         var any = false
         for (y in 0 until h) {
             for (x in 0 until w) {
-                val i = y * w + x
-                val code = decode(px[i], source)
-                if (code == NONE || masked && DwdCoverage.covers(rowLat!![y], colLon!![x])) {
-                    px[i] = 0
-                    continue
-                }
-                val sourceSnow = if ((code and SNOW_FLAG) != 0) 1f else 0f
-                val snow = if (field != null && rowLat != null && colLon != null) {
-                    grid?.sampleNear(field, rowLat[y], colLon[x])?.let { snowFraction(it) } ?: sourceSnow
+                val fi = (y + margin) * fw + x + margin
+                val wet = f.wet[fi]
+                if (wet < 0.35f || masked && DwdCoverage.covers(rowLat!![y], colLon!![x])) continue
+                val sourceSnow = f.snow[fi]
+                val snow = if (temp != null && rowLat != null && colLon != null) {
+                    grid?.sampleNear(temp, rowLat[y], colLon[x])?.let { snowFraction(it) } ?: sourceSnow
                 } else sourceSnow
-                val c = colorFor(code and 0xFF, snow)
-                px[i] = c
+                var c = colorFor(f.dbz[fi], snow)
+                if (wet < 0.65f && c != 0) c = (((c ushr 24) * edgeAlpha(wet)).toInt() shl 24) or (c and 0xFFFFFF)
+                px[y * w + x] = c
                 if (c != 0) any = true
             }
         }
@@ -289,7 +430,17 @@ object RadarPalette {
 class TileGeo(private val minX: Double, private val minY: Double, private val maxX: Double, private val maxY: Double) {
     fun lonAt(fx: Double) = Math.toDegrees((minX + fx * (maxX - minX)) / R)
     fun latAt(fy: Double) = Math.toDegrees(kotlin.math.atan(kotlin.math.sinh((maxY - fy * (maxY - minY)) / R)))
+    val widthM: Double get() = maxX - minX
     val centerLat: Double get() = latAt(0.5)
+
+    /** The same tile grown by [px] pixels of a [w]×[h] image on every side. */
+    fun grown(px: Int, w: Int, h: Int): TileGeo {
+        val dx = (maxX - minX) / w * px
+        val dy = (maxY - minY) / h * px
+        return TileGeo(minX - dx, minY - dy, maxX + dx, maxY + dy)
+    }
+
+    fun bbox(): String = String.format(java.util.Locale.US, "%.3f,%.3f,%.3f,%.3f", minX, minY, maxX, maxY)
     val centerLon: Double get() = lonAt(0.5)
     val north: Double get() = latAt(0.0)
     val south: Double get() = latAt(1.0)
@@ -375,7 +526,33 @@ class RadarTileInterceptor : Interceptor {
             url.host == "tilecache.rainviewer.com" -> RadarPalette.Source.RAINVIEWER
             else -> null
         }
-        val response = chain.proceed(request)
+        // DWD tiles are requested with a margin, so the smoothing at the tile edges sees the same
+        // neighbouring radar cells as the next tile – no seams. (RainViewer tiles come from a fixed
+        // tile grid: smoothed inside the tile only.)
+        var dwdGeo: TileGeo? = null
+        var margin = 0
+        var radius = 0
+        var call = request
+        if (source == RadarPalette.Source.DWD && url.queryParameter("srs") == "EPSG:3857") {
+            val g = TileGeo.fromBbox(url.queryParameter("bbox"))
+            val w = url.queryParameter("width")?.toIntOrNull()
+            val h = url.queryParameter("height")?.toIntOrNull()
+            if (g != null && w != null && h != null) {
+                radius = RadarPalette.smoothRadius(g, w)
+                margin = RadarPalette.smoothMargin(radius)
+                dwdGeo = g.grown(margin, w, h)
+                if (margin > 0) {
+                    call = request.newBuilder().url(
+                        url.newBuilder()
+                            .setQueryParameter("bbox", dwdGeo.bbox())
+                            .setQueryParameter("width", (w + 2 * margin).toString())
+                            .setQueryParameter("height", (h + 2 * margin).toString())
+                            .build(),
+                    ).build()
+                }
+            }
+        }
+        val response = chain.proceed(call)
         if (source != null) RadarTileStats.requests.incrementAndGet()
         if (source == null || !response.isSuccessful) return response
         val contentType = response.header("Content-Type") ?: ""
@@ -387,7 +564,7 @@ class RadarTileInterceptor : Interceptor {
         val geo: TileGeo?
         val time: Long?
         if (source == RadarPalette.Source.DWD) {
-            geo = TileGeo.fromBbox(url.queryParameter("bbox"))
+            geo = dwdGeo ?: TileGeo.fromBbox(url.queryParameter("bbox"))
             time = url.queryParameter("time")?.let { runCatching { java.time.Instant.parse(it).toEpochMilli() }.getOrNull() }
         } else {
             // /v2/radar/<id>/512/{z}/{x}/{y}/2/1_1.png
@@ -402,7 +579,8 @@ class RadarTileInterceptor : Interceptor {
         val opts = BitmapFactory.Options().apply { inPremultiplied = false }
         val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
             ?: return response.newBuilder().body(bytes.toResponseBody("image/png".toMediaType())).build()
-        val recolored = RadarPalette.recolor(decoded, source, geo, time)
+        if (source == RadarPalette.Source.RAINVIEWER && geo != null) radius = RadarPalette.smoothRadius(geo, decoded.width)
+        val recolored = RadarPalette.recolor(decoded, source, geo, time, margin, radius)
         decoded.recycle()
         // No precipitation in this tile: skip the PNG encoding entirely.
         if (recolored == null) return empty(response)

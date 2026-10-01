@@ -269,6 +269,10 @@ fun PrecipitationCard(data: WeatherData, now: Long, raining: Boolean = false, me
     if (hours.size < 2) return
     val unit = stringResource(Texts.precipUnit(s.precipitationUnit))
     val today = data.daily.lastOrNull { it.date <= now } ?: data.daily.firstOrNull()
+    // Hours already over with a station reading count as measured, the others as forecast
+    val readings = measured?.precipitation.orEmpty().filterKeys { it > dayStart && it <= now }
+    val todaySum = if (readings.isEmpty()) today?.precipitationSum ?: 0.0
+    else readings.values.sum() + hours.filter { it.time !in readings }.sumOf { it.precipitation ?: 0.0 }
     // The rest of the day: hours not yet over
     val rest = hours.filter { it.time > now }
     val next = rest.sumOf { it.precipitation ?: 0.0 }
@@ -285,16 +289,15 @@ fun PrecipitationCard(data: WeatherData, now: Long, raining: Boolean = false, me
         }
         Row(verticalAlignment = Alignment.Bottom) {
             Text(
-                stringResource(R.string.precip_today_amount, Units.precipitationNumber(today?.precipitationSum ?: 0.0, s.precipitationUnit) + NBSP + unit),
+                stringResource(R.string.precip_today_amount, Units.precipitationNumber(todaySum, s.precipitationUnit) + NBSP + unit),
                 fontSize = 20.sp, fontWeight = FontWeight.Medium, color = Color.White,
             )
         }
         Text(stringResource(R.string.precip_next_amount, Units.precipitationNumber(next, s.precipitationUnit) + NBSP + unit), fontSize = 14.sp, color = NimbusColors.Secondary)
         // What the station has measured so far today
-        measured?.precipitation?.takeIf { it.isNotEmpty() }?.let { m ->
-            val sum = m.filterKeys { it > dayStart && it <= now }.values.sum()
+        if (readings.isNotEmpty()) {
             Text(
-                stringResource(R.string.precip_measured_so_far, Units.precipitationNumber(sum, s.precipitationUnit) + NBSP + unit, measured.station ?: "DWD"),
+                stringResource(R.string.precip_measured_so_far, Units.precipitationNumber(readings.values.sum(), s.precipitationUnit) + NBSP + unit, measured?.station ?: "DWD"),
                 fontSize = 14.sp, color = NimbusColors.Secondary,
             )
         }
@@ -305,14 +308,15 @@ fun PrecipitationCard(data: WeatherData, now: Long, raining: Boolean = false, me
             fontSize = 14.sp, color = Color.White,
         )
         Spacer(Modifier.height(10.dp))
-        PrecipChart(hours, nightsFromDaily(data.daily, dayStart, dayStart + 24 * 3_600_000L), now, measured?.precipitation.orEmpty(), Modifier.fillMaxWidth().bleed(CARD_BLEED))
+        PrecipChart(hours, nightsFromDaily(data.daily, dayStart, dayStart + 24 * 3_600_000L), now, readings, Modifier.fillMaxWidth().bleed(CARD_BLEED))
     }
 }
 
 /**
  * Today from 00:00 to 24:00 in the style of the meteogram (hours already over paler, a dashed
- * mark at the current time): amount per hour as bars (right axis, mm or in), chance
- * of precipitation as a line (left axis, %), night shading. Each bar covers the hour before its
+ * mark at the current time): amount per hour as bars (right axis, mm or in) – measured (dark blue)
+ * for the hours already over, where a station reading exists, else forecast –, chance
+ * of precipitation as a line (left axis, %) over the forecast hours, night shading. Each bar covers the hour before its
  * time stamp (like the model values). A long press shows a cursor with the values of the hour –
  * dragging moves it, it fades out after 10 s, as in the 10-day forecast.
  */
@@ -335,7 +339,7 @@ private fun PrecipChart(
     val amounts = hours.map { Units.precipitationValue(it.precipitation ?: 0.0, s.precipitationUnit) }
     val measuredAmounts = hours.map { h -> measured[h.time]?.takeIf { h.time <= now }?.let { Units.precipitationValue(it, s.precipitationUnit) } }
     val hasMeasured = measuredAmounts.any { it != null }
-    val amountMax = maxOf(if (inch) 0.04 else 1.0, amounts.max(), measuredAmounts.maxOf { it ?: 0.0 }).let { if (inch) kotlin.math.ceil(it * 20) / 20 else kotlin.math.ceil(it) }
+    val amountMax = maxOf(if (inch) 0.04 else 1.0, amounts.filterIndexed { i, _ -> measuredAmounts[i] == null }.maxOrNull() ?: 0.0, measuredAmounts.maxOf { it ?: 0.0 }).let { if (inch) kotlin.math.ceil(it * 20) / 20 else kotlin.math.ceil(it) }
     fun amountLabel(k: Int): String = when {
         k == 0 -> "0"
         inch -> String.format(java.util.Locale.getDefault(), "%.2f", amountMax * k / 2)
@@ -422,30 +426,22 @@ private fun PrecipChart(
                 val m = measuredAmounts[i]
                 val left = centre(i) - bw * 0.36f
                 if (m != null) {
-                    // Hour over, with a station reading: measured as a solid dark blue bar, the
-                    // forecast laid over it in translucent light blue with a thin outline – a light
-                    // overhang means less fell than forecast, dark above the outline means more
-                    val w = bw * 0.72f
+                    // Hour over, with a station reading: the measured amount instead of the forecast
                     val mh = bottom - yA(m)
-                    if (mh > 0.5f) drawRoundRect(MeasuredBar, Offset(left, bottom - mh), Size(w, mh), CornerRadius(2.dp.toPx()))
-                    if (bh > 0.5f) {
-                        drawRoundRect(ForecastOverlay, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()))
-                        drawRoundRect(
-                            AmountBar, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()),
-                            style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()),
-                        )
-                    }
+                    if (mh > 0.5f) drawRoundRect(MeasuredBar, Offset(left, bottom - mh), Size(bw * 0.72f, mh), CornerRadius(2.dp.toPx()))
                 } else {
                     // hours already over without a reading: paler (model values, not measurements)
                     val c = if (hours[i].time <= now) AmountBar.copy(alpha = 0.4f) else AmountBar
                     if (bh > 0.5f) drawRoundRect(c, Offset(left, bottom - bh), Size(bw * 0.72f, bh), CornerRadius(2.dp.toPx()))
                 }
             }
-            // Chance: line with small points
+            // Chance: a line over the hours without a measurement (a chance makes no sense for those)
             val line = androidx.compose.ui.graphics.Path()
+            var lineStarted = false
             hours.forEachIndexed { i, h ->
+                if (measuredAmounts[i] != null) return@forEachIndexed
                 val y = yP(h.precipitationProbability ?: 0.0)
-                if (i == 0) line.moveTo(centre(i), y) else line.lineTo(centre(i), y)
+                if (!lineStarted) { line.moveTo(centre(i), y); lineStarted = true } else line.lineTo(centre(i), y)
             }
             drawPath(line, ChanceLine, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
             // Current time
@@ -458,9 +454,11 @@ private fun PrecipChart(
                 val i = selected.coerceIn(0, hours.lastIndex)
                 val xc = centre(i)
                 drawLine(Color.White.copy(alpha = 0.85f * cursorAlpha), Offset(xc, top - 2.dp.toPx()), Offset(xc, bottom), 1.5.dp.toPx())
-                val yc = yP(hours[i].precipitationProbability ?: 0.0)
-                drawCircle(Color(0xFF1A2A40).copy(alpha = cursorAlpha), 5.dp.toPx(), Offset(xc, yc))
-                drawCircle(ChanceLine.copy(alpha = cursorAlpha), 3.dp.toPx(), Offset(xc, yc))
+                if (measuredAmounts[i] == null) {
+                    val yc = yP(hours[i].precipitationProbability ?: 0.0)
+                    drawCircle(Color(0xFF1A2A40).copy(alpha = cursorAlpha), 5.dp.toPx(), Offset(xc, yc))
+                    drawCircle(ChanceLine.copy(alpha = cursorAlpha), 3.dp.toPx(), Offset(xc, yc))
+                }
             }
         }
         // Legend, or the values of the hour under the cursor – same place, so the card keeps its height
@@ -478,7 +476,7 @@ private fun PrecipChart(
                 measuredAmounts[sel]?.let { m ->
                     stringResource(
                         R.string.precip_chart_readout_measured, tf.time(h.time - 3_600_000L), tf.time(h.time),
-                        Units.precipitationNumber(measured[h.time] ?: 0.0, s.precipitationUnit) + NBSP + pUnit, forecastText,
+                        Units.precipitationNumber(measured[h.time] ?: 0.0, s.precipitationUnit) + NBSP + pUnit,
                     )
                 } ?: stringResource(
                     R.string.precip_chart_readout,
@@ -495,8 +493,6 @@ private fun PrecipChart(
 private val AmountBar = Color(0xE08CC8FF)
 /** Measured amount (DWD station): dark blue. */
 private val MeasuredBar = Color(0xFF2563EB)
-/** Forecast laid over a measured bar: translucent light blue. */
-private val ForecastOverlay = Color(0x668CC8FF)
 /** Chance of precipitation: white line, like the other curves (the bars are blue). */
 private val ChanceLine = Color(0xF2FFFFFF)
 

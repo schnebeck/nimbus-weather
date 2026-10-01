@@ -50,7 +50,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
@@ -94,7 +93,9 @@ private val SunTrack = Color(0x14FFFFFF)
 internal val DayTint = Color(0x14FFFFFF)
 internal val NightShade = Color(0x47000000)
 private val GridLine = Color(0x1FFFFFFF)
-private val ForecastLine = Color(0xFFFFC56B)
+// Temperature: red throughout – yellow is the sunshine's colour, blue the precipitation's
+private val TempLine = Color(0xFFFF6B5B)
+private val ForecastLine = TempLine
 private const val CURSOR_TIMEOUT_MS = 10_000L
 
 /** Wind colour by speed (km/h): calm white → Bft 6 yellow → gale orange → storm red. */
@@ -127,6 +128,8 @@ data class MeteoPoint(
     val sunshine: Double? = null,
     /** Look-back of today: an hour still to come – only the forecast, drawn dashed and paler. */
     val forecastOnly: Boolean = false,
+    /** Today in the forecast: an hour already over, with the station's readings in place of the forecast. */
+    val measured: Boolean = false,
 )
 
 fun HourlyPoint.toMeteo() = MeteoPoint(
@@ -334,11 +337,7 @@ fun Meteogram(
                     if (h.forecastOnly) { on = false; return@forEachIndexed }
                     if (!on) { path.moveTo(x(h.time), yT(temps[i])); on = true } else path.lineTo(x(h.time), yT(temps[i]))
                 }
-                val brush = if (compare) Brush.linearGradient(listOf(Color.White, Color.White)) else Brush.verticalGradient(
-                    listOf(Insights.temperatureColor(pts.maxOf { it.temperature }), Insights.temperatureColor(pts.minOf { it.temperature })),
-                    startY = top, endY = bottom,
-                )
-                drawPath(path, brush, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round))
+                drawPath(path, if (compare) Color.White else TempLine, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round))
                 // Sunshine row label: sun glyph on the left (the day's total is in the legend)
                 if (sunTotalMin != null) {
                     val cy = bottom + sunGap.toPx() + (sunH - sunGap).toPx() / 2
@@ -456,11 +455,13 @@ private fun readoutLines(h: MeteoPoint): List<String> {
     val pUnit = stringResource(Texts.precipUnit(s.precipitationUnit))
     val humidity = stringResource(R.string.humidity)
     val forecastWord = stringResource(R.string.forecast)
+    val measuredWord = stringResource(R.string.measured_word)
     val sunWord = stringResource(R.string.sunshine_short)
     val first = buildString {
         append(Units.temp(h.temperature, s.temperatureUnit)).append(" · ").append(stringResource(Texts.condition(h.condition, h.isDay)))
         when {
             h.forecastOnly -> append(" · ").append(forecastWord)
+            h.measured -> append(" · ").append(measuredWord)
             h.forecastTemperature != null -> append(" · ").append(forecastWord).append(' ').append(Units.temp(h.forecastTemperature, s.temperatureUnit))
             h.apparentTemperature != null -> append(" · ").append(stringResource(R.string.feels_like_short, Units.temp(h.apparentTemperature, s.temperatureUnit)))
         }

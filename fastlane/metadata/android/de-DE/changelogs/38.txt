@@ -1,0 +1,4 @@
+• Radar: Zellen in jeder Zoomstufe geglättet statt blockig, auch in der Niederschlagskarte
+• Heute (Meteogramm, Niederschlag, Luftdruck): vergangene Stunden zeigen die Messwerte statt der Vorhersage
+• Starkregen erst ab 10 mm/h wie beim DWD – Kopfzeile und Niederschlagshinweis passen zusammen
+• Meteogramm: Temperatur in Rot (Gelb bleibt der Sonnenschein)

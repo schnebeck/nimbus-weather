@@ -20,6 +20,7 @@ package dev.nimbus.weather.data.remote
 import dev.nimbus.weather.data.model.AlertSeverity
 import dev.nimbus.weather.data.model.Condition
 import dev.nimbus.weather.data.model.WeatherAlert
+import dev.nimbus.weather.data.model.WeatherCodes
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -90,7 +91,7 @@ class BrightSkySource(private val http: OkHttpClient, private val baseUrl: Strin
             val condStr = w.s("condition")
             val condition = when (condStr) {
                 "fog" -> Condition.FOG
-                "rain" -> if ((w.d("precipitation_60") ?: 0.0) >= 4.0) Condition.HEAVY_RAIN else Condition.RAIN
+                "rain" -> if ((w.d("precipitation_60") ?: 0.0) >= WeatherCodes.HEAVY_RAIN_MM_H) Condition.HEAVY_RAIN else Condition.RAIN
                 "sleet" -> Condition.SLEET
                 "snow" -> Condition.SNOW
                 "hail" -> Condition.SHOWERS

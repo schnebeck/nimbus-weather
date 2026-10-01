@@ -318,6 +318,7 @@
     <string name="history_at">um %1$s</string>
     <string name="history_temp_chart">Temperaturverlauf</string>
     <string name="history_legend_measured">Messung</string>
+    <string name="measured_word">gemessen</string>
     <string name="history_legend_model">Vorhersage (%1$s)</string>
     <string name="history_error_mean">Mittlere Abweichung der Vorhersage: %1$s</string>
     <string name="history_precip_chart">Niederschlag pro Stunde</string>
@@ -551,9 +552,9 @@
     <string name="places_undo_order">Reihenfolge der Orte geändert</string>
     <string name="precip_measured_so_far">bisher gemessen %1$s (%2$s)</string>
     <string name="precip_chart_hint_measured">Dunkelblau: gemessen · hellblau: Vorhersage · Linie: Wahrscheinlichkeit · lange drücken</string>
-    <string name="precip_chart_readout_measured">%1$s–%2$s · gemessen %3$s · Vorhersage %4$s</string>
+    <string name="precip_chart_readout_measured">%1$s–%2$s · gemessen %3$s</string>
     <string name="pressure_chart_hint_measured">Durchgezogen: gemessen · gestrichelt: Vorhersage · lange drücken für Werte</string>
-    <string name="pressure_chart_readout_measured">%1$s · gemessen %2$d hPa · Vorhersage %3$d hPa</string>
+    <string name="pressure_chart_readout_measured">%1$s · gemessen %2$d hPa</string>
     <string name="settings_radar_colors">Radarfarben</string>
     <string name="settings_radar_colors_desc">Kontrast: Regen grün → gelb → rot → magenta, Schnee türkis → weiß → violett – viele Stufen gut unterscheidbar. Blau: ruhiger, Regen hell- bis dunkelblau, Schnee rosa bis violett.</string>
     <string name="radar_colors_contrast">Kontrast</string>

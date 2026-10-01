@@ -104,7 +104,9 @@ class HistoryTest {
     fun `bright sky conditions`() {
         assertEquals(Condition.CLEAR, HistorySource.condition("dry", "clear-night", 0.0))
         assertEquals(Condition.DRIZZLE, HistorySource.condition("rain", "rain", 0.1))
-        assertEquals(Condition.HEAVY_RAIN, HistorySource.condition("rain", "rain", 5.0))
+        // heavy from 10 mm/h on (DWD class "stark", as in the precipitation notice)
+        assertEquals(Condition.RAIN, HistorySource.condition("rain", "rain", 5.0))
+        assertEquals(Condition.HEAVY_RAIN, HistorySource.condition("rain", "rain", 10.0))
         assertNull(HistorySource.condition("dry", null, null))
     }
 }

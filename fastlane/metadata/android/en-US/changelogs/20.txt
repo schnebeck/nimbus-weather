@@ -1,0 +1,2 @@
+• Fixed: with DWD ICON the chance of precipitation did not match the amount (e.g. "rain likely (0 %)") – for the first 48 hours it now comes from ICON-D2 itself
+• Short forecast without a repeated sentence when the rain is already announced

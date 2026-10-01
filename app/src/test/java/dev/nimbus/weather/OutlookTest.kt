@@ -69,4 +69,24 @@ class OutlookTest {
         val road = MapStyle.toSlate(MapStyle.parseColor("hsl(0,0%,25%)")!!, isLine = true)
         assertTrue(road.lightness > slate.lightness + 0.2)            // roads clearly lighter than land
     }
+
+    @Test fun amountWithoutMatchingChanceIsNotQuoted() {
+        // Norden, 1 Oct 2026: 0.4 mm at 03:00 but 0 % from another ensemble – no "(0 %)".
+        val hours = (1..6).map { if (it >= 3) h(it, 17.0, Condition.RAIN, p = 0.0, mm = 0.4) else h(it, 18.0) }
+        assertEquals(Outlook.Precip.Likely(Condition.RAIN, now + 3 * 3_600_000L, null), Outlook.precipitation(Condition.CLOUDY, hours, emptyList(), now))
+        val supported = (1..6).map { if (it >= 3) h(it, 17.0, Condition.RAIN, p = 85.0, mm = 0.4) else h(it, 18.0) }
+        assertEquals(90, (Outlook.precipitation(Condition.CLOUDY, supported, emptyList(), now) as Outlook.Precip.Likely).chance)
+    }
+
+    @Test fun iconD2ChanceReplacesTheSeamlessOne() {
+        val hours = listOf(
+            dev.nimbus.weather.data.model.HourlyPoint(now, 17.0, condition = Condition.RAIN, isDay = false, precipitation = 0.4, precipitationProbability = 0.0),
+            dev.nimbus.weather.data.model.HourlyPoint(now + 3_600_000L, 17.0, condition = Condition.RAIN, isDay = false, precipitation = 1.3, precipitationProbability = 3.0),
+        )
+        val day = dev.nimbus.weather.data.model.DailyPoint(now - 3 * 3_600_000L, Condition.RAIN, 20.0, 16.0, precipitationProbability = 3.0)
+        val f = dev.nimbus.weather.data.remote.ModelForecast("Europe/Berlin", 7200, null, hours, listOf(day), emptyList())
+        val merged = dev.nimbus.weather.data.remote.OpenMeteoSource.withChance(f, mapOf(now to 85.0, now + 3_600_000L to 85.0))
+        assertEquals(listOf(85.0, 85.0), merged.hourly.map { it.precipitationProbability })
+        assertEquals(85.0, merged.daily[0].precipitationProbability!!, 0.0)
+    }
 }

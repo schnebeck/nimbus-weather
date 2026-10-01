@@ -1,0 +1,2 @@
+• Behoben: Niederschlagswahrscheinlichkeit passte bei DWD ICON nicht zur Niederschlagsmenge (z. B. „Regen wahrscheinlich (0 %)“) – jetzt kommt sie für die ersten 48 Stunden aus ICON-D2 selbst
+• Kurzvorhersage ohne doppelten Satz, wenn der Regen schon angekündigt ist

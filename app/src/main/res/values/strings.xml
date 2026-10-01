@@ -492,4 +492,5 @@
     <string name="gauge_open_state_page">Gauge page of the state ›</string>
     <string name="src_gauges">Water levels: %1$s</string>
     <string name="src_lhp_alerts">Flood alerts: LHP</string>
+    <string name="outlook_precip_chance">Chance of precipitation %1$d %%.</string>
 </resources>

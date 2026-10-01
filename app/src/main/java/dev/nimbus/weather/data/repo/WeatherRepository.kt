@@ -55,6 +55,11 @@ class WeatherRepository(
         val primaryJob = async {
             runCatching { openMeteo.forecast(lat, lon, primaryModel) }
         }
+        // DWD ICON: chance of precipitation that matches the ICON-D2 amounts (see iconD2Chance)
+        val d2ChanceJob = async {
+            if (settings.model != ForecastModel.DWD_ICON) emptyMap()
+            else runCatching { openMeteo.iconD2Chance(lat, lon) }.getOrDefault(emptyMap())
+        }
         val fillJob = async {
             if (primaryModel == ForecastModel.BEST_MATCH.openMeteoId) null
             else runCatching { openMeteo.forecast(lat, lon, ForecastModel.BEST_MATCH.openMeteoId) }.getOrNull()
@@ -82,7 +87,8 @@ class WeatherRepository(
             else kotlinx.coroutines.withTimeoutOrNull(10_000L) { runCatching { gauges.lhp.alerts(lat, lon) }.getOrNull() }.orEmpty()
         }
 
-        val primaryResult = primaryJob.await()
+        val d2Chance = d2ChanceJob.await()
+        val primaryResult = primaryJob.await().map { dev.nimbus.weather.data.remote.OpenMeteoSource.withChance(it, d2Chance) }
         val fill = fillJob.await()
         val primary = primaryResult.getOrNull()
         val sources = mutableListOf<Source>()

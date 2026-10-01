@@ -134,6 +134,24 @@ class OpenMeteoSource(
         return parseForecast(http.getJson(url.toString()))
     }
 
+    /**
+     * Chance of precipitation of ICON-D2 itself (from its own ensemble), first ~48 h. The
+     * "icon_seamless" series takes the amounts from ICON-D2 but the chance from the coarser
+     * ICON-EU ensemble – both can contradict each other (0.4 mm of rain at 0 %).
+     */
+    suspend fun iconD2Chance(lat: Double, lon: Double): Map<Long, Double> {
+        val url = "$baseUrl/v1/forecast".toHttpUrl().newBuilder()
+            .addQueryParameter("latitude", fmt(lat))
+            .addQueryParameter("longitude", fmt(lon))
+            .addQueryParameter("models", "icon_d2")
+            .addQueryParameter("timeformat", "unixtime")
+            .addQueryParameter("past_hours", "24")
+            .addQueryParameter("forecast_hours", "48")
+            .addQueryParameter("hourly", "precipitation_probability")
+            .build()
+        return parseChance(http.getJson(url.toString()))
+    }
+
     suspend fun airQuality(lat: Double, lon: Double): AirQuality {
         val url = "$airQualityUrl/v1/air-quality".toHttpUrl().newBuilder()
             .addQueryParameter("latitude", fmt(lat))
@@ -179,6 +197,30 @@ class OpenMeteoSource(
         const val POLLEN = "alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,ragweed_pollen,olive_pollen"
 
         fun fmt(v: Double) = String.format(Locale.US, "%.4f", v)
+
+        fun parseChance(root: JsonElement): Map<Long, Double> {
+            val h = root.obj()?.o("hourly") ?: return emptyMap()
+            val t = h.longs("time"); val p = h.doubles("precipitation_probability")
+            return t.indices.mapNotNull { i -> val time = t[i] ?: return@mapNotNull null; p.at(i)?.let { time * 1000 to it } }.toMap()
+        }
+
+        /**
+         * Replaces the chance of precipitation where [chance] has a value, and recomputes the daily
+         * maximum from the hours, so hourly and daily view agree.
+         */
+        fun withChance(f: ModelForecast, chance: Map<Long, Double>): ModelForecast {
+            if (chance.isEmpty()) return f
+            val hourly = f.hourly.map { h -> chance[h.time]?.let { h.copy(precipitationProbability = it) } ?: h }
+            val daily = f.daily.map { d ->
+                val covered = hourly.filter { it.time >= d.date && it.time < d.date + 24 * 3_600_000L && chance.containsKey(it.time) }
+                if (covered.isEmpty()) d
+                else {
+                    val all = hourly.filter { it.time >= d.date && it.time < d.date + 24 * 3_600_000L }.mapNotNull { it.precipitationProbability }
+                    d.copy(precipitationProbability = all.maxOrNull() ?: d.precipitationProbability)
+                }
+            }
+            return f.copy(hourly = hourly, daily = daily)
+        }
 
         fun parseForecast(root: JsonElement): ModelForecast {
             val o = root.obj() ?: error("Invalid Open-Meteo response")

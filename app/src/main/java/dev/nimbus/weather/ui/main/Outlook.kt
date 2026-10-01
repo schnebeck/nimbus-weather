@@ -56,6 +56,7 @@ data class Outlook(
 
     companion object {
         const val WINDOW_HOURS = 12
+        const val MIN_CHANCE_TO_QUOTE = 30.0
 
         fun from(data: WeatherData, now: Long, isAfternoon: Boolean): Outlook {
             val hours = Insights.upcomingHours(data, now, WINDOW_HOURS + 1).drop(1)
@@ -98,7 +99,10 @@ data class Outlook(
             }
             val likely = hours.firstOrNull { (it.precipitationProbability ?: 0.0) >= 60 || (it.precipitation ?: 0.0) >= 0.3 }
             if (likely != null) {
-                return Precip.Likely(precipCondition(likely), likely.time, likely.precipitationProbability?.let { Insights.chanceLabel(it) })
+                // The chance is only mentioned if it supports the statement: models can deliver a
+                // measurable amount together with a (much) lower chance from another ensemble.
+                val chance = likely.precipitationProbability?.takeIf { it >= MIN_CHANCE_TO_QUOTE }?.let { Insights.chanceLabel(it) }
+                return Precip.Likely(precipCondition(likely), likely.time, chance)
             }
             val possible = hours.filter { (it.precipitationProbability ?: 0.0) >= 30 }.maxByOrNull { it.precipitationProbability ?: 0.0 }
             if (possible != null) {
@@ -143,8 +147,13 @@ fun OutlookCard(data: WeatherData, now: Long) {
                 is Outlook.Temp.Steady -> str(dev.nimbus.weather.R.string.outlook_temp_steady, temp(t.around))
             },
         )
-        add(
-            when (val p = o.precipitation) {
+        val p0 = o.precipitation
+        // "Cloudy at first, rain from around 03:00." already says it – no second sentence.
+        val announced = p0 is Outlook.Precip.Likely && o.change?.let { (c, t) -> c.isPrecipitation && kotlin.math.abs(t - p0.from) <= 3_600_000L } == true
+        if (announced) {
+            (p0 as Outlook.Precip.Likely).chance?.let { add(str(dev.nimbus.weather.R.string.outlook_precip_chance, it)) }
+        } else add(
+            when (val p = p0) {
                 Outlook.Precip.Dry -> str(dev.nimbus.weather.R.string.outlook_dry)
                 is Outlook.Precip.Likely -> if (p.chance != null) str(dev.nimbus.weather.R.string.outlook_precip_likely, phrase(p.condition), tf.time(p.from), p.chance)
                 else str(dev.nimbus.weather.R.string.outlook_precip_likely_nochance, phrase(p.condition), tf.time(p.from))

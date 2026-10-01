@@ -60,7 +60,7 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
         private set
 
     /** Installs the layers: colour field above the base map, labels and arrows on top. */
-    fun install(style: Style, fieldBelow: String) {
+    fun install(style: Style, fieldBelow: String, linesBelow: String? = null) {
         this.style = style
         val empty = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
         val quad = LatLngQuad(LatLng(1.0, 0.0), LatLng(1.0, 1.0), LatLng(0.0, 1.0), LatLng(0.0, 0.0))
@@ -71,19 +71,31 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
             ),
             fieldBelow,
         )
-        // Isolines as vector lines: crisp at every zoom level.
+        // Isolines as vector lines above the radar, below roads and names: a thin light line on a
+        // slightly wider dark one – low in contrast, yet clearly set off on any radar colour.
         style.addSource(GeoJsonSource(ISO))
-        style.addLayerBelow(
-            org.maplibre.android.style.layers.LineLayer(ISO, ISO).withProperties(
-                PropertyFactory.lineColor("#FFFFFF"),
-                // Soft lines: they mark the borders without dominating the map.
-                PropertyFactory.lineOpacity(0.4f),
-                PropertyFactory.lineWidth(Expression.interpolate(Expression.linear(), Expression.zoom(), Expression.stop(5, 0.6f), Expression.stop(10, 1.2f))),
+        fun addLine(layer: org.maplibre.android.style.layers.LineLayer) =
+            if (linesBelow != null) style.addLayerBelow(layer, linesBelow) else style.addLayerBelow(layer, fieldBelow)
+        val width = Expression.interpolate(Expression.linear(), Expression.zoom(), Expression.stop(5, 0.6f), Expression.stop(10, 1.2f))
+        addLine(
+            org.maplibre.android.style.layers.LineLayer(ISO_CASING, ISO).withProperties(
+                PropertyFactory.lineColor("#000000"),
+                PropertyFactory.lineOpacity(0.28f),
+                PropertyFactory.lineWidth(Expression.interpolate(Expression.linear(), Expression.zoom(), Expression.stop(5, 2.0f), Expression.stop(10, 2.8f))),
                 PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
                 PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
                 PropertyFactory.visibility(Property.NONE),
             ),
-            fieldBelow,
+        )
+        addLine(
+            org.maplibre.android.style.layers.LineLayer(ISO, ISO).withProperties(
+                PropertyFactory.lineColor("#FFFFFF"),
+                PropertyFactory.lineOpacity(0.55f),
+                PropertyFactory.lineWidth(width),
+                PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+                PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
+                PropertyFactory.visibility(Property.NONE),
+            ),
         )
         style.addImage(ARROW, arrowBitmap(), true)
         style.addSource(GeoJsonSource(WIND))
@@ -94,16 +106,17 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
                 PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP),
                 PropertyFactory.iconSize(Expression.get("s")),
                 PropertyFactory.iconColor(windColor()),
-                PropertyFactory.iconHaloColor("#99000000"),
-                PropertyFactory.iconHaloWidth(1.2f),
+                // Dark rim: the arrows stay visible on the light radar colours (yellow, white)
+                PropertyFactory.iconHaloColor("#CC000000"),
+                PropertyFactory.iconHaloWidth(1.6f),
                 PropertyFactory.textField(Expression.get("v")),
                 // The map style only serves Noto Sans; the MapLibre default font would not load.
                 PropertyFactory.textFont(arrayOf("Noto Sans Regular")),
                 PropertyFactory.textSize(10f),
                 PropertyFactory.textOffset(arrayOf(0f, 1.5f)),
                 PropertyFactory.textColor(windColor()),
-                PropertyFactory.textHaloColor("#B3000000"),
-                PropertyFactory.textHaloWidth(1.2f),
+                PropertyFactory.textHaloColor("#CC000000"),
+                PropertyFactory.textHaloWidth(1.5f),
                 PropertyFactory.iconAllowOverlap(true),
                 PropertyFactory.iconIgnorePlacement(true),
                 PropertyFactory.textAllowOverlap(true),
@@ -119,8 +132,8 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
                 PropertyFactory.textField(Expression.get("t")),
                 PropertyFactory.textSize(13f),
                 PropertyFactory.textColor("#FFFFFF"),
-                PropertyFactory.textHaloColor("#B3000000"),
-                PropertyFactory.textHaloWidth(1.4f),
+                PropertyFactory.textHaloColor("#CC000000"),
+                PropertyFactory.textHaloWidth(1.6f),
                 PropertyFactory.textFont(arrayOf("Noto Sans Bold")),
                 // Temperature and wind share the grid points and are offset against each other, so
                 // both layers may overlap – otherwise MapLibre's collision check hides one of them.
@@ -138,6 +151,7 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
         val s = style ?: return
         s.getLayer(FIELD)?.setProperties(PropertyFactory.rasterOpacity(if (temperature) 0.6f else 0f))
         s.getLayer(ISO)?.setProperties(PropertyFactory.visibility(if (temperature) Property.VISIBLE else Property.NONE))
+        s.getLayer(ISO_CASING)?.setProperties(PropertyFactory.visibility(if (temperature) Property.VISIBLE else Property.NONE))
         s.getLayer(TEMP)?.setProperties(
             PropertyFactory.visibility(if (temperature) Property.VISIBLE else Property.NONE),
             // With wind arrows at the same points the temperature moves up a bit.
@@ -231,6 +245,7 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
         const val WIND = "ov-wind"
         const val ARROW = "ov-arrow"
         const val ISO = "ov-isolines"
+        const val ISO_CASING = "ov-isolines-casing"
 
         /** Zoom at which points [step]° apart are ~90 dp apart (MapLibre world = 512 · 2^zoom dp). */
         fun thinZoom(step: Double): Double = kotlin.math.log2(90.0 * 360.0 / (512.0 * step))

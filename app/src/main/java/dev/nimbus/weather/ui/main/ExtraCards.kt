@@ -245,6 +245,7 @@ fun RadarPreviewCard(data: WeatherData, onOpen: () -> Unit) {
             SideEffect { RadarPreview.cardSize = wDp to hDp }
             var base by remember(key) { mutableStateOf<android.graphics.Bitmap?>(null) }
             var overlay by remember(key) { mutableStateOf<android.graphics.Bitmap?>(null) }
+            var lines by remember(key) { mutableStateOf<android.graphics.Bitmap?>(null) }
             DisposableEffect(key, inDwd) {
                 var snapshotter: MapSnapshotter? = null
                 var cancelled = false
@@ -255,10 +256,13 @@ fun RadarPreviewCard(data: WeatherData, onOpen: () -> Unit) {
                     // 1. at once: the stored base map and the last radar picture of this place
                     scope.launch {
                         RadarPreview.storedOverlay(key)?.let { o -> if (overlay == null) { overlay = o.bitmap; radarTime = o.time }; lap("stored radar") }
+                        RadarPreview.storedLines(key, lang)?.let { lines = it }
                         RadarPreview.storedBase(key, lang)?.let { base = it; lap("stored base") }
                             ?: run {
                                 // first time for this place and size: render the base map once
-                                RadarPreview.renderBase(context, mapHttp, lat, lon, wDp, hDp, density.density, lang)?.let { base = it; lap("rendered base") }
+                                RadarPreview.renderBase(context, mapHttp, lat, lon, wDp, hDp, density.density, lang)?.let {
+                                    base = it; lines = RadarPreview.storedLines(key, lang); lap("rendered base")
+                                }
                             }
                     }
                     // 2. meanwhile: the latest radar picture (one small request)
@@ -286,7 +290,7 @@ fun RadarPreviewCard(data: WeatherData, onOpen: () -> Unit) {
                     if (cancelled) return@launch
                     val style = dev.nimbus.weather.ui.radar.MapStyle.builder(
                         mapHttp, lang,
-                        if (timeline != null && frame != null) RadarSnapshot.rasters(timeline, listOf(0 to frame), 0.85f) else emptyList(),
+                        if (timeline != null && frame != null) RadarSnapshot.rasters(timeline, listOf(0 to frame), 1f) else emptyList(),
                     )
                     if (cancelled) return@launch
                     snapshotter = RadarSnapshot.create(context, style, lat, lon, wDp, hDp, density.density).also { snap ->
@@ -314,9 +318,14 @@ fun RadarPreviewCard(data: WeatherData, onOpen: () -> Unit) {
                 if (radar != null) {
                     drawImage(
                         radar.asImageBitmap(), srcOffset = IntOffset.Zero, srcSize = IntSize(radar.width, radar.height),
-                        dstOffset = IntOffset.Zero, dstSize = dst, alpha = 0.85f,
+                        dstOffset = IntOffset.Zero, dstSize = dst,
                         filterQuality = androidx.compose.ui.graphics.FilterQuality.Low,
                     )
+                }
+                // Roads, borders and names above the radar, as on the radar screen
+                val ln = if (inDwd) lines else null
+                if (ln != null) {
+                    drawImage(ln.asImageBitmap(), srcOffset = IntOffset.Zero, srcSize = IntSize(ln.width, ln.height), dstOffset = IntOffset.Zero, dstSize = dst)
                 }
                 val c = Offset(size.width / 2, size.height / 2)
                 drawCircle(Color(0x553D8BFF), 16.dp.toPx(), c)

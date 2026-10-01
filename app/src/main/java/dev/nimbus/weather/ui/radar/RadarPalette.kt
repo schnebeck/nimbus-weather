@@ -28,36 +28,56 @@ import java.io.ByteArrayOutputStream
 /**
  * Unified radar colour scale. Both DWD (WN composite, dBZ intervals) and RainViewer
  * ("Universal Blue" scheme) tiles are decoded back to reflectivity (dBZ) and recoloured, so the
- * map shows one consistent palette across the German border. Rain goes from white via grey to
- * blue, snow from pale pink to dark violet; the phase comes from the 2 m temperature at each pixel.
+ * map shows one consistent palette across the German border. The phase comes from the 2 m
+ * temperature at each pixel (rain above 1 °C, snow below 0 °C, blended in between).
+ *
+ * Each scale runs through two dark points with a different hue on either side, so neighbouring
+ * steps stay apart where most echoes are (17–35 dBZ) and the rare extremes stand out:
+ * - rain: light green → dark green (17) → yellow (33) → dark red (49) → magenta (56)
+ * - snow: turquoise → dark blue (17) → white (33) → dark violet (49) → pink (56)
+ * No colour appears in both scales. The colours are opaque (only the weakest echoes fade in), so
+ * the map shows them exactly as in the legend; roads, borders and names are drawn on top.
  */
 object RadarPalette {
-    /**
-     * dBZ → ARGB for rain (above 0 °C): white → light grey (neutral only for the weakest echoes,
-     * the first tenth of the legend) → blue-grey → light blue → dark blue. The blue-grey stays
-     * lighter than the dark base map so weak rain remains visible.
-     */
     private val rainStops = listOf(
-        8 to 0x80FFFFFF.toInt(), 14 to 0xB0DEDEDE.toInt(), 20 to 0xD0AFBCCF.toInt(), 26 to 0xE08A9FC2.toInt(),
-        32 to 0xF08CC8FF.toInt(), 40 to 0xF53D8BFF.toInt(), 48 to 0xFA1440C8.toInt(), 56 to 0xFF0A1F7A.toInt(),
+        8 to 0x59A8F0A0.toInt(), 10 to 0x8CA8F0A0.toInt(), 12 to 0xFF96E592.toInt(), 17 to 0xFF145F2A.toInt(),
+        33 to 0xFFF5E43A.toInt(), 49 to 0xFF6E1212.toInt(), 56 to 0xFFFF2BD6.toInt(),
     )
 
-    /** dBZ → ARGB for snow (0 °C and below): pale pink (white with a hint of pink) → dark violet. */
     private val snowStops = listOf(
-        8 to 0x80FFF2F8.toInt(), 16 to 0xB0F7D2E6.toInt(), 24 to 0xD0E7A3CF.toInt(), 32 to 0xE8C86FBF.toInt(),
-        40 to 0xF29A45AE.toInt(), 50 to 0xFA6A2390.toInt(), 60 to 0xFF45106E.toInt(),
+        8 to 0x597EEBF0.toInt(), 10 to 0x8C7EEBF0.toInt(), 12 to 0xFF6FD9E8.toInt(), 17 to 0xFF1A3C8C.toInt(),
+        33 to 0xFFFFFFFF.toInt(), 49 to 0xFF4A1C80.toInt(), 56 to 0xFFFF9EE8.toInt(),
     )
 
-    private val rainLut = buildLut(rainStops)
-    private val snowLut = buildLut(snowStops)
+    /**
+     * The calm alternative (setting "Radar colours: blue"): rain from the lightest light blue to
+     * the darkest dark blue, snow from the lightest pink to the darkest violet – opaque as well.
+     */
+    private val blueRainStops = listOf(
+        8 to 0x59D6ECFF.toInt(), 10 to 0x8CD6ECFF.toInt(), 12 to 0xFFCDE6FF.toInt(), 24 to 0xFF7FB6F5.toInt(),
+        36 to 0xFF2F6FE0.toInt(), 46 to 0xFF153C9E.toInt(), 56 to 0xFF07144D.toInt(),
+    )
+    private val blueSnowStops = listOf(
+        8 to 0x59FFE4F2.toInt(), 10 to 0x8CFFE4F2.toInt(), 12 to 0xFFFFDDEF.toInt(), 24 to 0xFFF0A6D8.toInt(),
+        36 to 0xFFC45CC0.toInt(), 46 to 0xFF7E2899.toInt(), 56 to 0xFF3A0B5C.toInt(),
+    )
+
+    private val contrastLuts = buildLut(rainStops) to buildLut(snowStops)
+    private val blueLuts = buildLut(blueRainStops) to buildLut(blueSnowStops)
+
+    /** The scale in use (from the settings); the tile URLs carry it, so cached tiles never mix scales. */
+    @Volatile var scheme: dev.nimbus.weather.data.model.RadarColors = dev.nimbus.weather.data.model.RadarColors.CONTRAST
+    private val luts get() = if (scheme == dev.nimbus.weather.data.model.RadarColors.BLUE) blueLuts else contrastLuts
+    private val rainLut get() = luts.first
+    private val snowLut get() = luts.second
 
     /** Range of the legends; colours are sampled evenly, so a position on the bar is linear in dBZ. */
     const val LEGEND_MIN_DBZ = 10
     const val LEGEND_MAX_DBZ = 56
 
     /** Colours for the legends (light → heavy). */
-    val legendRain: List<Int> = (LEGEND_MIN_DBZ..LEGEND_MAX_DBZ step 2).map { rainLut[it] }
-    val legendSnow: List<Int> = (LEGEND_MIN_DBZ..LEGEND_MAX_DBZ step 2).map { snowLut[it] }
+    val legendRain: List<Int> get() = (LEGEND_MIN_DBZ..LEGEND_MAX_DBZ step 2).map { rainLut[it] }
+    val legendSnow: List<Int> get() = (LEGEND_MIN_DBZ..LEGEND_MAX_DBZ step 2).map { snowLut[it] }
 
     /** [snow]: 0 = rain, 1 = snow, in between sleet (colours are blended). */
     fun colorFor(dbz: Int, snow: Float): Int {

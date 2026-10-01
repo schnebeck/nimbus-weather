@@ -1,0 +1,4 @@
+• Radar: new colour scale with more steps – rain green → yellow → red → magenta, snow turquoise → white → violet
+• Radar: opaque colours, roads, borders and place names above the precipitation
+• Radar: subtle isotherms with a dark outline, labels easier to read
+• Settings: the old blue/pink scale as the "Radar colours" option

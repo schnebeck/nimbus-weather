@@ -84,14 +84,14 @@ object RadarSources {
      * Bumped whenever the tile colouring changes: radar tiles were once cached already recoloured,
      * a new URL makes sure old colours never come back from MapLibre's or OkHttp's cache.
      */
-    const val TILE_VERSION = 5
+    const val TILE_VERSION = 6
 
     fun dwdTileUrl(layer: String, time: String?): String =
         "$DWD_WMS?service=WMS&version=1.1.1&request=GetMap&layers=$layer&styles=&format=image/png&transparent=true" +
             "&srs=EPSG:3857&bbox={bbox-epsg-3857}&width=512&height=512" + (time?.let { "&time=$it" } ?: "") +
-            (if (layer.contains("Radar")) "&v=$TILE_VERSION" else "")
+            (if (layer.contains("Radar")) "&v=$TILE_VERSION&c=${RadarPalette.scheme.ordinal}" else "")
 
-    fun rainViewerTileUrl(host: String, path: String): String = "$host$path/512/{z}/{x}/{y}/2/1_1.png?v=$TILE_VERSION"
+    fun rainViewerTileUrl(host: String, path: String): String = "$host$path/512/{z}/{x}/{y}/2/1_1.png?v=$TILE_VERSION&c=${RadarPalette.scheme.ordinal}"
 
     fun isoTime(ms: Long): String = Instant.ofEpochMilli(ms).toString().replace("Z", "").let {
         // 2026-09-28T20:40:00 -> 2026-09-28T20:40:00.000Z

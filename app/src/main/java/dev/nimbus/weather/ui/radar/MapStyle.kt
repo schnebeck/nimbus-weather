@@ -51,15 +51,28 @@ object MapStyle {
      * label layer. MapSnapshotter needs this: with a JSON style it finishes loading synchronously
      * in its constructor, before sources could be added through the builder ("invalid native peer").
      */
-    suspend fun builder(http: OkHttpClient, language: String, rasters: List<Raster> = emptyList()): Style.Builder {
+    suspend fun builder(http: OkHttpClient, language: String, rasters: List<Raster> = emptyList(), part: Part = Part.ALL): Style.Builder {
         val style = runCatching { localized(http, language) }.getOrNull()
             ?: return Style.Builder().fromUri(STYLE_URL)
-        return Style.Builder().fromJson(withRasters(style, rasters).toString())
+        return Style.Builder().fromJson(part(withRasters(style, rasters), part).toString())
+    }
+
+    /** The whole map, only its areas (below the radar), or only lines and names (above it, on transparent). */
+    enum class Part { ALL, AREAS, LINES }
+
+    fun part(style: JsonObject, part: Part): JsonObject {
+        if (part == Part.ALL) return style
+        val layers = (style["layers"] as? JsonArray)?.toList() ?: return style
+        val kept = layers.filter { l ->
+            val t = ((l as? JsonObject)?.get("type") as? JsonPrimitive)?.content
+            if (part == Part.LINES) t in OVER_RADAR else t !in OVER_RADAR
+        }
+        return JsonObject(style + ("layers" to JsonArray(kept)))
     }
 
     private suspend fun localized(http: OkHttpClient, language: String): JsonObject = mutex.withLock {
         cache[language]?.let { return it }
-        val out = slate(localize(http.getJson(STYLE_URL).jsonObject, language))
+        val out = fillsFirst(slate(localize(http.getJson(STYLE_URL).jsonObject, language)))
         cache[language] = out
         out
     }
@@ -88,10 +101,30 @@ object MapStyle {
             }
         }
         val layers = (style["layers"] as? JsonArray)?.toMutableList() ?: mutableListOf()
-        val firstLabel = layers.indexOfFirst { (it as? JsonObject)?.get("type")?.toString() == "\"symbol\"" }
-            .let { if (it < 0) layers.size else it }
-        layers.addAll(firstLabel, newLayers)
+        // Radar above all areas, below rivers, roads, borders and names
+        layers.addAll(radarIndex(layers), newLayers)
         return JsonObject(style + mapOf("sources" to JsonObject(sources), "layers" to JsonArray(layers)))
+    }
+
+    /** Index of the first layer that is drawn above the radar: the first line or label layer. */
+    fun radarIndex(layers: List<JsonElement>): Int =
+        layers.indexOfFirst { (it as? JsonObject)?.get("type")?.let { t -> t is JsonPrimitive && t.content in OVER_RADAR } == true }
+            .let { if (it < 0) layers.size else it }
+
+    private val OVER_RADAR = setOf("line", "symbol")
+
+    /**
+     * Moves every area layer (fill) in front of the first line or label layer, keeping their own
+     * order: the radar is inserted between the two groups, so areas such as buildings lie below
+     * it and every line and name above it (in the original style buildings come after rivers).
+     */
+    fun fillsFirst(style: JsonObject): JsonObject {
+        val layers = (style["layers"] as? JsonArray)?.toList() ?: return style
+        fun type(e: JsonElement) = ((e as? JsonObject)?.get("type") as? JsonPrimitive)?.content
+        val cut = radarIndex(layers)
+        val late = layers.drop(cut)
+        val ordered = layers.take(cut) + late.filter { type(it) !in OVER_RADAR } + late.filter { type(it) in OVER_RADAR }
+        return JsonObject(style + ("layers" to JsonArray(ordered)))
     }
 
     /** Replaces every label expression that reads a name by "name in [language], else local name". */

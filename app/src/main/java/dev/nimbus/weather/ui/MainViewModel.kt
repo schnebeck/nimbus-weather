@@ -130,6 +130,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
             combine(store.settings, store.places) { s, p -> s to p }.collect { (settings, places) ->
+                dev.nimbus.weather.ui.radar.RadarPalette.scheme = settings.radarColors
                 val first = !_state.value.initialized
                 val prev = lastSettings
                 lastSettings = settings

@@ -105,27 +105,29 @@ class WeatherGridTest {
         val rain = RadarPalette.colorFor(40, 0f)
         val snow = RadarPalette.colorFor(40, 1f)
         val sleet = RadarPalette.colorFor(40, 0.5f)
-        // weak rain is neutral white/grey, weak snow is pale pink
-        val weakRain = RadarPalette.colorFor(10, 0f)
-        val weakSnow = RadarPalette.colorFor(10, 1f)
-        assertTrue(kotlin.math.abs(((weakRain shr 16) and 0xFF) - (weakRain and 0xFF)) < 8)
-        assertTrue(((weakSnow shr 16) and 0xFF) > ((weakSnow shr 8) and 0xFF))
+        // weak rain is light green, weak snow turquoise; strong rain magenta, strong snow pink
+        fun r(c: Int) = (c shr 16) and 0xFF
+        fun g(c: Int) = (c shr 8) and 0xFF
+        fun bl(c: Int) = c and 0xFF
+        val weakRain = RadarPalette.colorFor(14, 0f)
+        val weakSnow = RadarPalette.colorFor(14, 1f)
+        assertTrue(g(weakRain) > r(weakRain) && g(weakRain) > bl(weakRain))
+        assertTrue(bl(weakSnow) > r(weakSnow))
         assertNotEquals(rain, snow)
         assertTrue(sleet != rain && sleet != snow)
-        // rain is blue-dominated, snow has a strong red share (pink/violet)
-        assertTrue((rain and 0xFF) > ((rain shr 16) and 0xFF))
-        assertTrue(((snow shr 16) and 0xFF) > ((snow shr 8) and 0xFF))
+        // mid range: rain yellowish (red and green high, blue low), snow near white
+        val midRain = RadarPalette.colorFor(33, 0f)
+        val midSnow = RadarPalette.colorFor(33, 1f)
+        assertTrue(r(midRain) > 200 && g(midRain) > 200 && bl(midRain) < 100)
+        assertTrue(r(midSnow) > 230 && g(midSnow) > 230 && bl(midSnow) > 230)
     }
 
     @Test
-    fun `rain legend is neutral grey only in its first tenth, then blue-grey`() {
-        val legend = RadarPalette.legendRain
-        legend.forEachIndexed { i, c ->
-            val pos = i.toFloat() / legend.lastIndex
-            val r = (c shr 16) and 0xFF
-            val b = c and 0xFF
-            if (pos <= 0.10f) assertTrue("neutral at $pos", kotlin.math.abs(r - b) <= 4)
-            if (pos >= 0.13f) assertTrue("blue share at $pos", b - r >= 8)
+    fun `colours are opaque except the weakest echoes`() {
+        for (d in 12..56) {
+            assertEquals(255, RadarPalette.colorFor(d, 0f) ushr 24)
+            assertEquals(255, RadarPalette.colorFor(d, 1f) ushr 24)
         }
+        assertTrue((RadarPalette.colorFor(9, 0f) ushr 24) < 255)
     }
 }

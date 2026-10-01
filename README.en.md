@@ -58,8 +58,9 @@ No ads, no account, no Google services. The app speaks English and German.
 - Bathing waters: all official EU bathing sites within an adjustable radius plus favourites, with
   EU classification, sea temperature at coasts and the latest samples (water temperature, blue-green
   algae) where states publish them openly – see [docs/BATHING.md](docs/BATHING.md).
-- Rain radar: DWD for Germany, RainViewer for Europe, one colour scale for rain and snow, temperature
-  and wind layers, satellite and warning map.
+- Rain radar: DWD for Germany, RainViewer for Europe, one colour scale for rain (green → yellow → red →
+  magenta) and snow (turquoise → white → violet), optionally calmer in blue and pink–violet; roads,
+  borders and names above the radar; temperature (with isotherms) and wind layers, satellite and warning map.
 - An ⓘ on every card explains the terms. Units follow the country on first start; the order and visibility of
   the cards can be set in the settings, places are sorted or deleted after a long press.
 - Tablets: two columns of cards from 600 dp, a places sidebar in landscape on large tablets.

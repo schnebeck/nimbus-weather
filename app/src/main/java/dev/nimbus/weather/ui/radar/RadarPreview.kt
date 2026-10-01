@@ -91,31 +91,47 @@ object RadarPreview {
         return String.format(Locale.ROOT, "%.1f,%.1f,%.1f,%.1f", x - hw, y - hh, x + hw, y + hh)
     }
 
-    private fun baseFile(key: String, lang: String) = dir?.let { File(it, "base_${key}_$lang.png") }
-    private fun overlayFile(key: String) = dir?.let { File(it, "radar_$key.png") }
-    private fun overlayTimeFile(key: String) = dir?.let { File(it, "radar_$key.time") }
+    // v2: areas only; the lines and names are kept apart and drawn above the radar
+    private fun baseFile(key: String, lang: String) = dir?.let { File(it, "base2_${key}_$lang.png") }
+    private fun linesFile(key: String, lang: String) = dir?.let { File(it, "lines2_${key}_$lang.png") }
+
+    /** Roads, borders and names of the place (transparent), drawn above the radar picture. */
+    suspend fun storedLines(key: String, lang: String): Bitmap? = withContext(Dispatchers.IO) {
+        linesFile(key, lang)?.takeIf { it.exists() }?.let { runCatching { BitmapFactory.decodeFile(it.path) }.getOrNull() }
+    }
+    // The radar picture depends on the colour scale (setting): kept per scale
+    private fun ok(key: String) = "${key}_c${RadarPalette.scheme.ordinal}_v${RadarSources.TILE_VERSION}"
+    private fun overlayFile(key: String) = dir?.let { File(it, "radar_${ok(key)}.png") }
+    private fun overlayTimeFile(key: String) = dir?.let { File(it, "radar_${ok(key)}.time") }
 
     suspend fun storedBase(key: String, lang: String): Bitmap? = withContext(Dispatchers.IO) {
         baseFile(key, lang)?.takeIf { it.exists() }?.let { runCatching { BitmapFactory.decodeFile(it.path) }.getOrNull() }
     }
 
     /** Last radar picture of the place: from memory, else from disk. */
-    suspend fun storedOverlay(key: String): Overlay? = overlays[key] ?: withContext(Dispatchers.IO) {
+    suspend fun storedOverlay(key: String): Overlay? = overlays[ok(key)] ?: withContext(Dispatchers.IO) {
         val t = overlayTimeFile(key)?.takeIf { it.exists() }?.readText()?.trim()?.toLongOrNull() ?: return@withContext null
         val f = overlayFile(key)
         // An empty picture (no precipitation) is stored as time only
         val bmp = f?.takeIf { it.exists() }?.let { runCatching { BitmapFactory.decodeFile(it.path) }.getOrNull() }
-        Overlay(t, bmp).also { overlays[key] = it }
+        Overlay(t, bmp).also { overlays[ok(key)] = it }
     }
 
     /** Renders the base map (no radar) off-screen and stores it. Must be started on the main thread. */
     suspend fun renderBase(context: Context, mapHttp: OkHttpClient, lat: Double, lon: Double, wDp: Int, hDp: Int, density: Float, lang: String): Bitmap? {
-        val style = MapStyle.builder(mapHttp, lang)
-        val bmp = renderMutex.withLock { suspendCancellableCoroutine<Bitmap?> { cont ->
-            val snap = RadarSnapshot.create(context, style, lat, lon, wDp, hDp, density)
-            snap.start({ s -> if (cont.isActive) cont.resume(s.bitmap) }, { _ -> if (cont.isActive) cont.resume(null) })
-            cont.invokeOnCancellation { snap.cancel() }
-        } } ?: return null
+        suspend fun snapshot(part: MapStyle.Part): Bitmap? {
+            val style = MapStyle.builder(mapHttp, lang, part = part)
+            return renderMutex.withLock { suspendCancellableCoroutine<Bitmap?> { cont ->
+                val snap = RadarSnapshot.create(context, style, lat, lon, wDp, hDp, density)
+                snap.start({ s -> if (cont.isActive) cont.resume(s.bitmap) }, { _ -> if (cont.isActive) cont.resume(null) })
+                cont.invokeOnCancellation { snap.cancel() }
+            } }
+        }
+        val bmp = snapshot(MapStyle.Part.AREAS) ?: return null
+        val lines = snapshot(MapStyle.Part.LINES)
+        withContext(Dispatchers.IO) {
+            runCatching { lines?.let { l -> linesFile(key(lat, lon, wDp, hDp), lang)?.let { f -> f.parentFile?.mkdirs(); f.outputStream().use { l.compress(Bitmap.CompressFormat.PNG, 100, it) } } } }
+        }
         withContext(Dispatchers.IO) {
             runCatching {
                 val d = dir ?: return@runCatching
@@ -134,11 +150,11 @@ object RadarPreview {
      */
     suspend fun fetchOverlay(mapHttp: OkHttpClient, frame: RadarFrame, lat: Double, lon: Double, wDp: Int, hDp: Int): Overlay? {
         val key = key(lat, lon, wDp, hDp)
-        overlays[key]?.takeIf { it.time == frame.time }?.let { return it }
+        overlays[ok(key)]?.takeIf { it.time == frame.time }?.let { return it }
         val t = frame.dwdTime ?: return null
         val url = RadarSources.DWD_WMS + "?service=WMS&version=1.1.1&request=GetMap&layers=${RadarSources.DWD_LAYER}" +
             "&styles=&format=image/png&transparent=true&srs=EPSG:3857&bbox=${bbox(lat, lon, wDp, hDp)}" +
-            "&width=$wDp&height=$hDp&time=$t&v=${RadarSources.TILE_VERSION}"
+            "&width=$wDp&height=$hDp&time=$t&v=${RadarSources.TILE_VERSION}&c=${RadarPalette.scheme.ordinal}"
         val started = System.currentTimeMillis()
         val bmp = withContext(Dispatchers.IO) {
             runCatching {
@@ -153,7 +169,7 @@ object RadarPreview {
         }.getOrElse { return null }
         if (dev.nimbus.weather.BuildConfig.DEBUG) android.util.Log.d("NimbusPreview", "radar request ${System.currentTimeMillis() - started} ms, time $t")
         val overlay = Overlay(frame.time, bmp)
-        overlays[key] = overlay
+        overlays[ok(key)] = overlay
         withContext(Dispatchers.IO) {
             runCatching {
                 dir?.mkdirs()

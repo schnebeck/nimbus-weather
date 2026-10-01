@@ -236,7 +236,7 @@
     <string name="overlay_temperature">Temperatur</string>
     <string name="overlay_wind">Wind</string>
     <string name="legend_rain">Regen</string>
-    <string name="legend_snow">Schnee / Schneeregen</string>
+    <string name="legend_snow">Schnee</string>
 
     <string name="settings_preload_radar">Radar vorladen</string>
     <string name="settings_preload_radar_desc">Radarschleife für den aktuellen Ort im WLAN aktuell halten (etwa alle 15 Minuten, auch im Hintergrund), damit sie sofort erscheint</string>
@@ -554,4 +554,8 @@
     <string name="precip_chart_readout_measured">%1$s–%2$s · gemessen %3$s · Vorhersage %4$s</string>
     <string name="pressure_chart_hint_measured">Durchgezogen: gemessen · gestrichelt: Vorhersage · lange drücken für Werte</string>
     <string name="pressure_chart_readout_measured">%1$s · gemessen %2$d hPa · Vorhersage %3$d hPa</string>
+    <string name="settings_radar_colors">Radarfarben</string>
+    <string name="settings_radar_colors_desc">Kontrast: Regen grün → gelb → rot → magenta, Schnee türkis → weiß → violett – viele Stufen gut unterscheidbar. Blau: ruhiger, Regen hell- bis dunkelblau, Schnee rosa bis violett.</string>
+    <string name="radar_colors_contrast">Kontrast</string>
+    <string name="radar_colors_blue">Blau</string>
 </resources>

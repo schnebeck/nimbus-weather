@@ -90,8 +90,9 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   in Berlin und Schleswig-Holstein die letzten Proben mit Wassertemperatur und Blaualgen-Hinweisen.
   Quellen je Bundesland: [docs/BATHING.md](docs/BATHING.md).
 - **Regenradar**: DWD-Radar mit 2-h-Vorhersage für Deutschland, RainViewer für Europa, einheitliche
-  Farbskala für Regen (weiß → blau) und Schnee (rosa → violett, pro Pixel nach der Temperatur),
-  Temperatur- und Windebene, Satellit, Warnkarte, Rückblick bis 24 h. Im WLAN hält die App die
+  Farbskala für Regen (grün → gelb → rot → magenta) und Schnee (türkis → weiß → violett, pro Pixel
+  nach der Temperatur), wahlweise ruhiger in Blau bzw. Rosa–Violett; deckende Farben, Straßen,
+  Grenzen und Namen über dem Radar; Temperatur- (mit Isothermen) und Windebene, Satellit, Warnkarte, Rückblick bis 24 h. Im WLAN hält die App die
   2-Stunden-Schleife des aktuellen Orts etwa alle 15 Minuten aktuell, auch im Hintergrund. Ohne
   Verbindung zeigt das Radar die gespeicherten Bilder; nichts wartet endlos.
 - **Akku**: Der animierte Himmel läuft mit 30 Bildern/s (Regen, Schnee: 60), nach einer Minute ohne

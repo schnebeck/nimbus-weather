@@ -184,8 +184,10 @@ private class RadarMapController {
         while (hi + 1 in loaded) hi++
         return lo..hi
     }
-    /** Frame opacity; 1 when the temperature field is shown so colours do not mix. */
-    var frameOpacity = 0.85f
+    /** Radar frames are opaque: the colours on the map match the legend exactly. */
+    var frameOpacity = 1f
+    /** First layer drawn above the radar (lines and names); overlays such as isolines go below it. */
+    var anchor: String? = null
 
     /** Satellite and warning layers; the radar frames are inserted between them. */
     fun installBase(style: Style) {
@@ -194,7 +196,10 @@ private class RadarMapController {
         // 300 ms and keeps rendering at full frame rate meanwhile – with a frame change every
         // 450 ms the map rendered almost continuously. Frame changes are hard cuts anyway.
         style.transition = org.maplibre.android.style.layers.TransitionOptions(0, 0, false)
-        val below = style.layers.firstOrNull { it is SymbolLayer }?.id
+        // Satellite, radar and warnings between the areas and the lines: rivers, roads, borders
+        // and names stay visible on top of the (opaque) radar colours
+        val below = style.layers.firstOrNull { it is SymbolLayer || it is org.maplibre.android.style.layers.LineLayer }?.id
+        anchor = below
         fun add(layer: RasterLayer) = if (below != null) style.addLayerBelow(layer, below) else style.addLayer(layer)
         style.addSource(RasterSource("sat", TileSet("2.2.0", RadarSources.dwdTileUrl(RadarSources.SAT_LAYER, null)).apply { maxZoom = 9f }, 512).apply { prefetchZoomDelta = 0 })
         add(RasterLayer("sat", "sat").withProperties(PropertyFactory.rasterOpacity(0f), PropertyFactory.rasterFadeDuration(0f), PropertyFactory.visibility(Property.NONE)))
@@ -456,7 +461,7 @@ fun RadarScreen(
             map.setMinZoomPreference(3.0)
             map.setStyle(styleBuilder) { style ->
                 controller.installBase(style)
-                overlays.install(style, fieldBelow = "sat")
+                overlays.install(style, fieldBelow = "sat", linesBelow = controller.anchor)
                 overlays.setVisible(showTemp, showWind)
                 // Panned far away: load the temperature/wind grid for the new area.
                 map.addOnCameraIdleListener { gridCheck++ }
@@ -587,7 +592,7 @@ fun RadarScreen(
     LaunchedEffect(showTemp, showWind, styleReady) {
         if (!styleReady) return@LaunchedEffect
         overlays.setVisible(showTemp && !archive, showWind && !archive)
-        controller.frameOpacity = if (showTemp && !archive) 1f else 0.85f
+        controller.frameOpacity = 1f
         controller.show(frame, force = true)
     }
     // The visible map has priority over background preloading.
@@ -849,20 +854,25 @@ private fun TimelineSlider(tl: RadarTimeline, frame: Int, onChange: (Int) -> Uni
     )
 }
 
-/** Rain (blue → red) and, where it can snow, snow (pink → violet) scales, plus the temperature scale when shown. */
+/** Rain (green → yellow → red) and, where it can snow, snow (turquoise → white → violet) scales, plus the temperature scale when shown. */
+/** Land colour of the slate map style, under the legend bars. */
+private val MapLand = Color(0xFF505E6F)
+
 @Composable
 private fun Legend(showTemp: Boolean, showSnow: Boolean, unit: dev.nimbus.weather.data.model.TemperatureUnit) {
     @Composable
     fun Bar(label: String, colors: List<Color>, modifier: Modifier) {
         Column(modifier) {
             Text(label, fontSize = 10.sp, color = NimbusColors.Secondary)
-            Canvas(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp))) {
+            Canvas(Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))) {
+                // On the map's land colour: the weakest, fading-in steps look exactly as on the map
+                drawRect(MapLand)
                 drawRect(Brush.horizontalGradient(colors))
             }
         }
     }
     Row(verticalAlignment = Alignment.Bottom) {
-        Bar(stringResource(R.string.legend_rain), RadarPalette.legendRain.map { Color(it) }, Modifier.weight(1.4f))
+        Bar(stringResource(R.string.legend_rain), RadarPalette.legendRain.map { Color(it) }, Modifier.weight(1f))
         if (showSnow) {
             Spacer(Modifier.width(10.dp))
             Bar(stringResource(R.string.legend_snow), RadarPalette.legendSnow.map { Color(it) }, Modifier.weight(1f))

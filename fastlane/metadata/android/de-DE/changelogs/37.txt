@@ -1,0 +1,4 @@
+• Radar: neue Farbskala mit mehr Stufen – Regen grün → gelb → rot → magenta, Schnee türkis → weiß → violett
+• Radar: deckende Farben, Straßen, Grenzen und Ortsnamen liegen über dem Niederschlag
+• Radar: Isothermen dezent mit dunkler Kontur, Beschriftungen besser lesbar
+• Einstellungen: alte Blau-/Rosa-Skala als Option „Radarfarben“

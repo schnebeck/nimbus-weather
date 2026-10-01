@@ -47,6 +47,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -171,6 +172,18 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                 Section(stringResource(R.string.settings_cards)) { CardsAccordion(settings, cardsChange) }
             }
             item {
+                Section(stringResource(R.string.settings_radar_colors)) {
+                    Text(stringResource(R.string.settings_radar_colors_desc), fontSize = 13.sp, color = NimbusColors.Secondary, lineHeight = 18.sp)
+                    Spacer(Modifier.size(10.dp))
+                    Segmented(
+                        listOf(stringResource(R.string.radar_colors_contrast), stringResource(R.string.radar_colors_blue)),
+                        dev.nimbus.weather.data.model.RadarColors.entries.indexOf(settings.radarColors),
+                    ) { i -> onChange { it.copy(radarColors = dev.nimbus.weather.data.model.RadarColors.entries[i]) } }
+                    Spacer(Modifier.size(10.dp))
+                    RadarScalePreview(settings.radarColors)
+                }
+            }
+            item {
                 Section(stringResource(R.string.bathing_title)) {
                     Text(stringResource(R.string.settings_bathing_desc), fontSize = 13.sp, color = NimbusColors.Secondary, lineHeight = 18.sp)
                     Spacer(Modifier.size(10.dp))
@@ -216,6 +229,30 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
 }
 
 private val BathingRadii = listOf(10, 25, 50, 100)
+
+/** Both scales of the chosen radar colours on the map's land colour, as on the radar screen. */
+@Composable
+private fun RadarScalePreview(colors: dev.nimbus.weather.data.model.RadarColors) {
+    val (rain, snow) = remember(colors) {
+        val before = dev.nimbus.weather.ui.radar.RadarPalette.scheme
+        dev.nimbus.weather.ui.radar.RadarPalette.scheme = colors
+        val r = dev.nimbus.weather.ui.radar.RadarPalette.legendRain.map { Color(it) }
+        val s = dev.nimbus.weather.ui.radar.RadarPalette.legendSnow.map { Color(it) }
+        dev.nimbus.weather.ui.radar.RadarPalette.scheme = before
+        r to s
+    }
+    @Composable
+    fun bar(label: String, c: List<Color>) {
+        Text(label, fontSize = 12.sp, color = NimbusColors.Secondary)
+        androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp))) {
+            drawRect(Color(0xFF505E6F))
+            drawRect(androidx.compose.ui.graphics.Brush.horizontalGradient(c))
+        }
+        Spacer(Modifier.size(6.dp))
+    }
+    bar(stringResource(R.string.legend_rain), rain)
+    bar(stringResource(R.string.legend_snow), snow)
+}
 
 /**
  * Wraps the changes of the cards list: each one shows a snackbar with what changed and "Undo",

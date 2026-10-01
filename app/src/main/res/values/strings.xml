@@ -247,7 +247,7 @@
     <string name="overlay_temperature">Temperature</string>
     <string name="overlay_wind">Wind</string>
     <string name="legend_rain">Rain</string>
-    <string name="legend_snow">Snow / sleet</string>
+    <string name="legend_snow">Snow</string>
 
     <string name="settings_preload_radar">Preload radar</string>
     <string name="settings_preload_radar_desc">Keep the radar loop of the current place up to date on Wi-Fi (about every 15 minutes, also in the background), so it opens instantly</string>
@@ -565,4 +565,8 @@
     <string name="precip_chart_readout_measured">%1$s–%2$s · measured %3$s · forecast %4$s</string>
     <string name="pressure_chart_hint_measured">Solid: measured · dashed: forecast · long press for values</string>
     <string name="pressure_chart_readout_measured">%1$s · measured %2$d hPa · forecast %3$d hPa</string>
+    <string name="settings_radar_colors">Radar colours</string>
+    <string name="settings_radar_colors_desc">Contrast: rain green → yellow → red → magenta, snow turquoise → white → violet – many steps easy to tell apart. Blue: calmer, rain light to dark blue, snow pink to violet.</string>
+    <string name="radar_colors_contrast">Contrast</string>
+    <string name="radar_colors_blue">Blue</string>
 </resources>

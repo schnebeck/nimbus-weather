@@ -54,6 +54,10 @@ enum class WeatherCard {
     }
 }
 
+/** Colour scale of the radar: high-contrast (green/yellow/red, turquoise/white/violet) or the calm blue one. */
+@Serializable
+enum class RadarColors { CONTRAST, BLUE }
+
 @Serializable
 data class Settings(
     val model: ForecastModel = ForecastModel.DWD_ICON,
@@ -74,6 +78,7 @@ data class Settings(
     val cardOrder: List<WeatherCard> = emptyList(),
     /** Own order of the small tiles (see [orderedTiles]); empty = default. */
     val tileOrder: List<WeatherCard> = emptyList(),
+    val radarColors: RadarColors = RadarColors.CONTRAST,
     /** Radius of the bathing water card in km. */
     val bathingRadiusKm: Int = 50,
     /** Favourite bathing waters (EU ids), shown at any distance. */

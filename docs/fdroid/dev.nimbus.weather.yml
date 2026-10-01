@@ -18,9 +18,9 @@ RepoType: git
 Repo: https://github.com/schnebeck/nimbus-weather.git
 
 Builds:
-  - versionName: 1.13.2
-    versionCode: 25
-    commit: 20e678c201a02298ecc2261f020b95dc4db56df9
+  - versionName: 1.14.0
+    versionCode: 27
+    commit: 2fa082670cbf6f28689a7260117abb398fc440fd
     subdir: app
     sudo:
       - apt-get update
@@ -32,5 +32,5 @@ Builds:
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.13.2
-CurrentVersionCode: 25
+CurrentVersion: 1.14.0
+CurrentVersionCode: 27

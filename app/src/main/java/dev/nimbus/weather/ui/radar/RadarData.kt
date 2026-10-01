@@ -168,7 +168,7 @@ object RadarSources {
         val latest = withTimeoutOrNull(DISCOVERY_TIMEOUT_MS) { runCatching { latestDwdAnalysis(http) }.getOrNull() }
             ?.also { latestAnalysis = it }
             ?: latestAnalysis ?: ((now - 10 * 60_000L) / ARCHIVE_STEP_MS * ARCHIVE_STEP_MS)
-        val end = minOf(dayStart + 24 * 3_600_000L, latest)
+        val end = minOf(dayStart + 24 * 3_600_000L - ARCHIVE_STEP_MS, latest)      // 00:00 … 23:55
         val frames = (0..((end - dayStart) / ARCHIVE_STEP_MS).toInt()).map { k ->
             val t = dayStart + k * ARCHIVE_STEP_MS
             RadarFrame(t, false, isoTime(t), null)

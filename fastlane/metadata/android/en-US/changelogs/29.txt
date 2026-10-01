@@ -1,0 +1,1 @@
+• Radar of the day: plays in 15-minute steps and buffers like a video player instead of stuttering frame by frame; starts within seconds

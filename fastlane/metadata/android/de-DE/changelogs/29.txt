@@ -1,0 +1,1 @@
+• Radar des Tages: spielt in 15-Minuten-Schritten und puffert wie ein Videoplayer, statt Bild für Bild zu stocken; startet nach wenigen Sekunden

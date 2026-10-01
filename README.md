@@ -73,8 +73,10 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   der Stunde ein. Heute zeigen Meteogramm, Niederschlag und Luftdruck für die vergangenen Stunden
   die Messwerte der DWD-Station, danach die Vorhersage.
 - **Rückblick** per Wischen nach rechts: heute bisher, gestern, vorgestern – DWD-Messwerte im
-  Vergleich zur Vorhersage des gewählten Modells, mit mittlerer Abweichung; dazu das Regenradar
-  des ganzen Tages in 5-Minuten-Schritten zum Abspielen, Verschieben und Zoomen (Deutschland).
+  Vergleich zur Vorhersage des gewählten Modells, mit mittlerer Abweichung, Stundenwerte als Tabelle
+  Messung | Vorhersage; Niederschlag gemessen und vorhergesagt mit Wahrscheinlichkeit; dazu das
+  Regenradar des ganzen Tages in 5-Minuten-Schritten zum Abspielen, Verschieben und Zoomen
+  (Deutschland).
 - **Sonne und Mond**: Sonnenbogen mit fester Skala je Ort (die Bogenhöhe zeigt die Jahreszeit),
   Lichtphasen Tag, Morgen-/Abendrot, Blaue Stunde und Nacht, Tageslänge; Mondphase, Auf- und Untergang.
 - **Umwelt**: Luftqualität, Pollenflug (DWD-Index und Zusammensetzung, Arten wählbar – z. B. nur

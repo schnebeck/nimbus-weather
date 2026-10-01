@@ -489,7 +489,6 @@
     <string name="places_edit_hint">Hold and drag ≡ to sort, ⊖ to delete</string>
     <string name="places_long_press_hint">Long press a place to sort or delete</string>
     <string name="places_drag">Move</string>
-    <string name="precip_chart_readout">%1$s–%2$s · %3$s · chance %4$s %%</string>
     <string name="pn_rain_light">Light rain</string>
     <string name="pn_rain_moderate">Moderate rain</string>
     <string name="pn_rain_heavy">Heavy rain</string>
@@ -563,11 +562,14 @@
     <string name="places_undo_order">Order of places changed</string>
     <string name="precip_measured_so_far">%1$s measured so far (%2$s)</string>
     <string name="precip_chart_hint_measured">Dark blue: measured · light blue: forecast · line: chance · long press</string>
-    <string name="precip_chart_readout_measured">%1$s–%2$s · measured %3$s</string>
     <string name="pressure_chart_hint_measured">Solid: measured · dashed: forecast · long press for values</string>
-    <string name="pressure_chart_readout_measured">%1$s · measured %2$d hPa</string>
     <string name="settings_radar_colors">Radar colours</string>
     <string name="settings_radar_colors_desc">Contrast: rain green → yellow → red → magenta, snow turquoise → white → violet – many steps easy to tell apart. Blue: calmer, rain light to dark blue, snow pink to violet.</string>
     <string name="radar_colors_contrast">Contrast</string>
     <string name="radar_colors_blue">Blue</string>
+    <string name="readout_temperature">Temperature</string>
+    <string name="readout_feels">Feels like</string>
+    <string name="readout_chance">Chance</string>
+    <string name="readout_time">Time</string>
+    <string name="history_precip_title">Precipitation</string>
 </resources>

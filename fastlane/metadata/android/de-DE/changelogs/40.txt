@@ -1,0 +1,4 @@
+• Stundenwerte unter den Diagrammen als ruhige Tabelle – beim Schieben springt nichts mehr
+• Rückblick: Messung und Vorhersage nebeneinander (Temperatur, Niederschlag, Wind, Böen, Sonne)
+• Rückblick: neue Karte Niederschlag mit Messung, Vorhersage und Wahrscheinlichkeit
+• Kopf: halber Abstand zur ersten Karte, beim Scrollen wieder Luft unter der Kopfzeile

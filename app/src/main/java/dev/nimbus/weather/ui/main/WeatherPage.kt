@@ -101,8 +101,10 @@ val LocalSettings = staticCompositionLocalOf { Settings() }
 val LocalSettingsUpdater = staticCompositionLocalOf<((Settings) -> Settings) -> Unit> { {} }
 val LocalTimeFormat = staticCompositionLocalOf { TimeFormat("UTC", true) }
 
-private val ExpandedHeader = 316.dp
-private val CollapsedHeader = 118.dp
+// Expanded: the big header ends with the station line; half the former gap below it
+private val ExpandedHeader = 288.dp
+// Collapsed: name and "15 °C | Rain" end at about 124 dp – the cards start a little below
+private val CollapsedHeader = 134.dp
 /** Top of the city name, below the top bar with menu and radar buttons. */
 val HeaderTop = 58.dp
 

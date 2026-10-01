@@ -45,6 +45,8 @@ data class HistoryHour(
     data class Modelled(
         val temperature: Double?, val precipitation: Double?, val windSpeed: Double?, val windGust: Double?,
         val sunshineMinutes: Double?, val condition: Condition, val isDay: Boolean,
+        /** Chance of precipitation (%) the model gave for the hour. */
+        val chance: Double? = null,
     )
 }
 
@@ -102,7 +104,7 @@ class HistorySource(
         .addQueryParameter("timezone", "auto")
         .addQueryParameter("timeformat", "unixtime")
         .addQueryParameter("wind_speed_unit", "kmh")
-        .addQueryParameter("hourly", "temperature_2m,precipitation,weather_code,is_day,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover,sunshine_duration")
+        .addQueryParameter("hourly", "temperature_2m,precipitation,precipitation_probability,weather_code,is_day,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover,sunshine_duration")
         .build().toString()
 
     companion object {
@@ -115,13 +117,13 @@ class HistorySource(
             val t = h.longs("time")
             val temp = h.doubles("temperature_2m"); val pr = h.doubles("precipitation"); val wc = h.doubles("weather_code")
             val day = h.doubles("is_day"); val ws = h.doubles("wind_speed_10m"); val wg = h.doubles("wind_gusts_10m")
-            val sun = h.doubles("sunshine_duration")
+            val sun = h.doubles("sunshine_duration"); val pp = h.doubles("precipitation_probability")
             val map = t.indices.mapNotNull { i ->
                 val time = (t[i] ?: return@mapNotNull null) * 1000
                 time to HistoryHour.Modelled(
                     temperature = temp.at(i), precipitation = pr.at(i), windSpeed = ws.at(i), windGust = wg.at(i),
                     sunshineMinutes = sun.at(i)?.div(60.0), condition = WeatherCodes.fromWmo(wc.at(i)?.toInt(), pr.at(i)),
-                    isDay = (day.at(i) ?: 1.0) > 0.5,
+                    isDay = (day.at(i) ?: 1.0) > 0.5, chance = pp.at(i),
                 )
             }.toMap()
             return zone to map

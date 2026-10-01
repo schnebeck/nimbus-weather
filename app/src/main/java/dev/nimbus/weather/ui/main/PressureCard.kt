@@ -258,12 +258,14 @@ private fun PressureChart(
                 autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = 11.sp, stepSize = 0.5.sp),
             )
             val p = points[selected.coerceIn(0, points.lastIndex)]
-            val m = measured[p.time]
-            Text(
-                if (m != null && p.time <= now) stringResource(R.string.pressure_chart_readout_measured, tf.time(p.time), m.roundToInt())
-                else tf.time(p.time) + " · " + p.pressure!!.roundToInt() + NBSP + "hPa" +
-                    (if (p.time > now) " · " + stringResource(R.string.forecast) else ""),
-                fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White, modifier = Modifier.alpha(cursorAlpha),
+            val m = measured[p.time]?.takeIf { p.time <= now }
+            // Fixed cells: sliding the cursor changes the values, nothing moves
+            ReadoutCells(
+                listOf(
+                    stringResource(R.string.readout_time) to tf.time(p.time),
+                    stringResource(if (m != null) R.string.history_legend_measured else R.string.forecast) to "${(m ?: p.pressure!!).roundToInt()}" + NBSP + "hPa",
+                ),
+                Modifier.alpha(cursorAlpha),
             )
         }
     }

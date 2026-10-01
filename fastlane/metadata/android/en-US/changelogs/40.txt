@@ -1,0 +1,4 @@
+• Hourly values below the charts as a calm table – nothing jumps while sliding
+• Look-back: measured and forecast side by side (temperature, precipitation, wind, gusts, sun)
+• Look-back: new precipitation card with measurement, forecast and chance
+• Header: half the gap to the first card, room below the header again while scrolling

@@ -179,6 +179,7 @@ fun HistoryPage(
                         item(key = "summary") { SummaryCard(summary, history, settings, tf) }
                         // Right after midnight there is only one hour – nothing to draw yet.
                         if (day.hours.size >= 2) item(key = "course") { DayCourseCard(day, summary, settings, tf) }
+                        if (day.hours.count { it.model != null || it.measured?.precipitation != null } >= 2) item(key = "precip") { PrecipDayCard(day, tf) }
                         // The DWD keeps about 3½ days of radar: the whole day, in 5-minute steps (Germany)
                         if (WeatherRepository.isInDwdArea(place.latitude, place.longitude)) item(key = "radar") {
                             val start = day.date.atStartOfDay(history.zone).toInstant().toEpochMilli()
@@ -325,6 +326,9 @@ private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, 
                     time = h.time, temperature = ft, condition = f.condition, isDay = f.isDay,
                     precipitation = f.precipitation, windSpeed = f.windSpeed, windGust = f.windGust,
                     forecastTemperature = ft, sunshine = f.sunshineMinutes, forecastOnly = true,
+                    compare = HourCompare(
+                        null, ft, null, f.precipitation, f.chance, null, null, f.windSpeed, null, f.windGust, null, f.sunshineMinutes,
+                    ),
                 )
             }
             val temp = m?.temperature ?: f?.temperature ?: return@mapNotNull null
@@ -340,6 +344,11 @@ private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, 
                 forecastTemperature = if (m?.temperature != null) f?.temperature else null,
                 forecastPrecipitation = if (m?.precipitation != null) f?.precipitation else null,
                 sunshine = m?.sunshineMinutes ?: f?.sunshineMinutes,
+                // the readout table shows both apart, an empty cell where one is missing
+                compare = HourCompare(
+                    m?.temperature, f?.temperature, m?.precipitation, f?.precipitation, f?.chance,
+                    m?.windSpeed, m?.windDirection, f?.windSpeed, m?.windGust, f?.windGust, m?.sunshineMinutes, f?.sunshineMinutes,
+                ),
             )
         }
     }
@@ -359,6 +368,28 @@ private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, 
                 fontSize = 13.sp, color = Color.White, modifier = Modifier.padding(top = 6.dp),
             )
         }
+    }
+}
+
+/**
+ * The day's precipitation: measured amount (dark blue) under the forecast amount (translucent
+ * light blue), and the forecast chance as a line – hour by hour, with a cursor.
+ */
+@Composable
+private fun PrecipDayCard(day: HistoryDay, tf: TimeFormat) {
+    val start = day.date.atStartOfDay(tf.zone).toInstant().toEpochMilli()
+    val asOf = remember(day) { System.currentTimeMillis() }
+    // Each value covers the hour before its time: 01:00 … 24:00 make the day
+    val hours = remember(day) {
+        day.hours.filter { it.time > start && it.time <= start + 24 * 3_600_000L }
+            .map { h -> PrecipHour(h.time, h.model?.precipitation, h.model?.chance, h.measured?.precipitation) }
+    }
+    if (hours.size < 2) return
+    val nights = remember(day) {
+        nightsFromFlags(day.hours.mapNotNull { h -> h.model?.let { MeteoPoint(h.time, 0.0, it.condition, it.isDay, null) } })
+    }
+    dev.nimbus.weather.ui.components.GlassCard(title = stringResource(R.string.history_precip_title), icon = Icons.Outlined.WaterDrop) {
+        PrecipChart(hours, nights, asOf, compare = true, Modifier.fillMaxWidth().bleed(CARD_BLEED), endOfDay = start + 24 * 3_600_000L)
     }
 }
 

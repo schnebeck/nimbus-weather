@@ -54,8 +54,9 @@ No ads, no account, no Google services. The app speaks English and German.
   10-day forecast with chance of precipitation, detail tiles, air quality, pollen, citizen sensors and
   a comparison of eight weather models.
 - Day meteogram (today: station readings for the hours already over, then the forecast – also in the
-  precipitation and pressure charts), look back at the past days (measured versus forecast) with the
-  rain radar of the whole day in 5-minute steps, sun and moon card with light phases.
+  precipitation and pressure charts), look back at the past days (measured versus forecast, hour by
+  hour as a table, precipitation measured and forecast with its chance) with the rain radar of the
+  whole day in 5-minute steps, sun and moon card with light phases.
 - Bathing waters: all official EU bathing sites within an adjustable radius plus favourites, with
   EU classification, sea temperature at coasts and the latest samples (water temperature, blue-green
   algae) where states publish them openly – see [docs/BATHING.md](docs/BATHING.md).

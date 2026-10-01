@@ -130,6 +130,17 @@ data class MeteoPoint(
     val forecastOnly: Boolean = false,
     /** Today in the forecast: an hour already over, with the station's readings in place of the forecast. */
     val measured: Boolean = false,
+    /** Look-back: what was measured and what was forecast, kept apart for the readout table. */
+    val compare: HourCompare? = null,
+)
+
+/** One hour of the look-back: measured (M) and forecast (F) values; null where there is none. */
+data class HourCompare(
+    val tempM: Double?, val tempF: Double?,
+    val precipM: Double?, val precipF: Double?, val chanceF: Double?,
+    val windM: Double?, val windDirM: Double?, val windF: Double?,
+    val gustM: Double?, val gustF: Double?,
+    val sunM: Double?, val sunF: Double?,
 )
 
 fun HourlyPoint.toMeteo() = MeteoPoint(
@@ -169,7 +180,7 @@ fun Meteogram(
     val measurer = rememberTextMeasurer()
     val pts = remember(points, start, end) { points.filter { it.time in start..end }.sortedBy { it.time } }
     if (pts.size < 2) return
-    val compare = pts.any { it.forecastTemperature != null }
+    val compare = pts.any { it.forecastTemperature != null || it.compare != null }
     val span = (end - start).toFloat()
     var selected by remember(start) {
         mutableStateOf(pts.indexOfLast { it.time <= now }.takeIf { now in start..end && it >= 0 } ?: pts.indexOfFirst { it.time >= start + 12 * 3_600_000L }.coerceAtLeast(0))
@@ -389,7 +400,7 @@ fun Meteogram(
                 WeatherIcon(h.condition, h.isDay, size = 22.dp, modifier = Modifier.offset(x = xDp(centre) - 11.dp, y = labelsH + 4.dp))
             }
         }
-        Readout(pts[selected.coerceIn(0, pts.lastIndex)], pts, highlighted = cursorOn)
+        Readout(pts[selected.coerceIn(0, pts.lastIndex)], highlighted = cursorOn, compare = compare)
         BarLegend(precipTotal, sunTotalMin)
         // Always laid out (only faded), so the card does not change height with the cursor
         Text(
@@ -451,55 +462,36 @@ private fun BarLegend(precipTotal: Double?, sunMinutes: Double?) {
 }
 
 /** The three text lines of the readout for one hour. */
+/**
+ * Values at the cursor position as a table – every value in its own fixed cell, so nothing
+ * jumps while the cursor moves, and the table always has the same rows (the card keeps its
+ * height). Look-back: measurement and forecast side by side.
+ */
 @Composable
-private fun readoutLines(h: MeteoPoint): List<String> {
+private fun Readout(h: MeteoPoint, highlighted: Boolean, compare: Boolean) {
     val s = LocalSettings.current
+    val tf = LocalTimeFormat.current
     val dirs = Texts.compass.map { stringResource(it) }
     val wUnit = stringResource(Texts.windUnit(s.windUnit))
     val pUnit = stringResource(Texts.precipUnit(s.precipitationUnit))
-    val humidity = stringResource(R.string.humidity)
-    val forecastWord = stringResource(R.string.forecast)
-    val measuredWord = stringResource(R.string.measured_word)
-    val sunWord = stringResource(R.string.sunshine_short)
-    val first = buildString {
-        append(Units.temp(h.temperature, s.temperatureUnit)).append(" · ").append(stringResource(Texts.condition(h.condition, h.isDay)))
-        when {
-            h.forecastOnly -> append(" · ").append(forecastWord)
-            h.measured -> append(" · ").append(measuredWord)
-            h.forecastTemperature != null -> append(" · ").append(forecastWord).append(' ').append(Units.temp(h.forecastTemperature, s.temperatureUnit))
-            h.apparentTemperature != null -> append(" · ").append(stringResource(R.string.feels_like_short, Units.temp(h.apparentTemperature, s.temperatureUnit)))
-        }
+    fun t(v: Double?) = v?.let { Units.temp(it, s.temperatureUnit) } ?: NO_VALUE
+    fun p(v: Double?) = v?.let { Units.precipitationNumber(it, s.precipitationUnit) + NBSP + pUnit } ?: NO_VALUE
+    fun w(v: Double?, dir: Double? = null) =
+        v?.let { Units.windNumber(it, s.windUnit) + NBSP + wUnit + (dir?.let { d -> NBSP + dirs[Units.compassIndex(d)] } ?: "") } ?: NO_VALUE
+    fun sun(v: Double?) = v?.let { "${it.roundToInt()}" + NBSP + "min" } ?: NO_VALUE
+    fun pct(v: Double?, amount: Double?) = v?.let { (Insights.chanceText(it, amount) ?: "0") + NBSP + "%" } ?: NO_VALUE
+    val condition = stringResource(Texts.condition(h.condition, h.isDay)) + when {
+        h.forecastOnly -> " · " + stringResource(R.string.forecast)
+        h.measured -> " · " + stringResource(R.string.measured_word)
+        else -> ""
     }
-    val precip = buildString {
-        append(stringResource(R.string.precipitation)).append(' ')
-        append(Units.precipitationNumber(h.precipitation ?: 0.0, s.precipitationUnit)).append(NBSP).append(pUnit)
-        h.precipitationChance?.let { append(" · ").append(Insights.chanceText(it, h.precipitation)).append(NBSP).append('%') }
-        h.forecastPrecipitation?.let {
-            append(" · ").append(forecastWord).append(' ').append(Units.precipitationNumber(it, s.precipitationUnit)).append(NBSP).append(pUnit)
-        }
-        h.sunshine?.takeIf { h.isDay || it >= 1.0 }?.let { append(" · ").append(sunWord).append(NBSP).append(it.roundToInt()).append(NBSP).append("min") }
-    }
-    val wind = buildString {
-        append(stringResource(R.string.wind)).append(' ').append(Units.windNumber(h.windSpeed, s.windUnit)).append(NBSP).append(wUnit)
-        h.windDirection?.let { append(' ').append(stringResource(R.string.from_direction, dirs[Units.compassIndex(it)])) }
-        h.windGust?.let { append(" · ").append(stringResource(R.string.gusts)).append(' ').append(Units.windNumber(it, s.windUnit)) }
-        h.humidity?.let { append(" · ").append(humidity).append(' ').append(it.roundToInt()).append(NBSP).append('%') }
-    }
-    return listOf(first, precip, wind)
-}
-
-/**
- * Values at the cursor position. The longest line of every kind is laid out invisibly
- * underneath, so the card keeps its height while the cursor moves (no jumping list).
- */
-@Composable
-private fun Readout(h: MeteoPoint, all: List<MeteoPoint>, highlighted: Boolean) {
-    val tf = LocalTimeFormat.current
-    val lines = readoutLines(h)
-    val longest = all.map { readoutLines(it) }.let { ls -> (0..2).map { k -> ls.maxBy { it[k].length }[k] } }
-    val sizes = listOf(14.sp, 13.sp, 13.sp)
-    val colors = listOf(Color.White, NimbusColors.Secondary, NimbusColors.Secondary)
-    Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+    val lTemp = stringResource(R.string.readout_temperature)
+    val lPrecip = stringResource(R.string.precipitation)
+    val lChance = stringResource(R.string.readout_chance)
+    val lWind = stringResource(R.string.wind)
+    val lGust = stringResource(R.string.gusts)
+    val lSun = stringResource(R.string.sunshine_short)
+    Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
         Column(Modifier.width(if (tf.use24h) 62.dp else 80.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 tf.time(h.time), fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
@@ -508,9 +500,40 @@ private fun Readout(h: MeteoPoint, all: List<MeteoPoint>, highlighted: Boolean) 
             WeatherIcon(h.condition, h.isDay, size = 26.dp)
         }
         Spacer(Modifier.width(8.dp))
-        Box(Modifier.weight(1f)) {
-            Column(Modifier.alpha(0f)) { longest.forEachIndexed { k, t -> Text(t, fontSize = sizes[k]) } }
-            Column { lines.forEachIndexed { k, t -> Text(t, fontSize = sizes[k], color = colors[k]) } }
+        Column(Modifier.weight(1f)) {
+            Text(condition, fontSize = 14.sp, color = Color.White, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Spacer(Modifier.height(4.dp))
+            if (compare) {
+                // Look-back: an hour still to come has the forecast only
+                val c = h.compare ?: HourCompare(
+                    null, h.temperature, null, h.precipitation, h.precipitationChance,
+                    null, null, h.windSpeed, null, h.windGust, null, h.sunshine,
+                )
+                ReadoutTable(
+                    listOf(stringResource(R.string.history_legend_measured), stringResource(R.string.forecast)),
+                    listOf(
+                        lTemp to listOf(t(c.tempM), t(c.tempF)),
+                        lPrecip to listOf(p(c.precipM), p(c.precipF)),
+                        lChance to listOf(NO_VALUE, pct(c.chanceF, c.precipF)),
+                        lWind to listOf(w(c.windM, c.windDirM), w(c.windF)),
+                        lGust to listOf(w(c.gustM), w(c.gustF)),
+                        lSun to listOf(sun(c.sunM), sun(c.sunF)),
+                    ),
+                )
+            } else {
+                ReadoutPairs(
+                    listOf(
+                        lTemp to t(h.temperature),
+                        stringResource(R.string.readout_feels) to t(h.apparentTemperature),
+                        lPrecip to p(h.precipitation ?: 0.0),
+                        lChance to pct(h.precipitationChance, h.precipitation),
+                        lWind to w(h.windSpeed, h.windDirection),
+                        lGust to w(h.windGust),
+                        lSun to sun(h.sunshine?.takeIf { h.isDay || it >= 1.0 } ?: if (h.sunshine != null) 0.0 else null),
+                        stringResource(R.string.humidity) to (h.humidity?.let { "${it.roundToInt()}" + NBSP + "%" } ?: NO_VALUE),
+                    ),
+                )
+            }
         }
     }
 }

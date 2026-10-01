@@ -168,6 +168,11 @@ class GaugeSource(
          * the east of Hannover, ~11 km from the Leine gauge Herrenhausen.
          */
         const val FALLBACK_RADIUS_KM = 20
+        /**
+         * Free places (up to [MAX_GAUGES]) are filled with further waters up to this distance – e.g.
+         * in Braunschweig the Oker (Groß Schwülper, 11.6 km) next to the Schunter (Harxbüttel, 8.3 km).
+         */
+        const val EXTRA_RADIUS_KM = 15
         const val MAX_GAUGES = 4
         private const val SOURCE_TIMEOUT_MS = 12_000L
         /** The first tide fit downloads ~3 MB. */
@@ -238,6 +243,7 @@ class GaugeSource(
          *    with values wins and takes over the LHP classification and link;
          * 2. only gauges within [radiusKm] count – if there is no tide gauge among them, the nearest
          *    one up to [TIDE_RADIUS_KM]; with none at all, the nearest gauge up to [fallbackKm];
+         *    free places are then filled with further waters up to [extraKm];
          * 3. per water body the nearest one (a gauge with values is preferred over a classification
          *    only one, if it is less than 3 km farther away);
          * 4. a tide gauge first, then by distance, at most [max].
@@ -245,6 +251,7 @@ class GaugeSource(
         fun select(
             all: List<GaugeInfo>, radiusKm: Double = RADIUS_KM.toDouble(), max: Int = MAX_GAUGES,
             fallbackKm: Double = FALLBACK_RADIUS_KM.toDouble(),
+            extraKm: Double = EXTRA_RADIUS_KM.toDouble(),
         ): List<GaugeInfo> {
             val sorted = all.sortedBy { PRIORITY.indexOf(it.provider) }
             val merged = ArrayList<GaugeInfo>()
@@ -266,10 +273,16 @@ class GaugeSource(
             val inRange = (near + listOfNotNull(farTide)).ifEmpty {
                 listOfNotNull(merged.filter { it.distanceKm <= fallbackKm }.minByOrNull { it.distanceKm + if (it.provider == GaugeProvider.LHP) 3.0 else 0.0 })
             }
-            val perWater = inRange.groupBy { waterKey(it.water).ifEmpty { it.uuid } }.values.map { group ->
+            fun key(g: GaugeInfo) = waterKey(g.water).ifEmpty { g.uuid }
+            fun nearestPerWater(list: List<GaugeInfo>) = list.groupBy { key(it) }.values.map { group ->
                 group.minBy { it.distanceKm + if (it.provider == GaugeProvider.LHP) 3.0 else 0.0 }
             }
-            return perWater.sortedWith(compareBy({ !it.tidal }, { it.distanceKm })).take(max)
+            val perWater = nearestPerWater(inRange)
+            // Second ring: other waters up to [extraKm] while places are free
+            val covered = perWater.map { key(it) }.toSet()
+            val extra = nearestPerWater(merged.filter { it.distanceKm <= extraKm && key(it) !in covered && !it.tidal })
+                .sortedBy { it.distanceKm }.take((max - perWater.size).coerceAtLeast(0))
+            return (perWater.sortedWith(compareBy({ !it.tidal }, { it.distanceKm })) + extra).take(max)
         }
 
         private fun mergeLhp(detailed: GaugeInfo, candidate: GaugeInfo) = detailed.copy(

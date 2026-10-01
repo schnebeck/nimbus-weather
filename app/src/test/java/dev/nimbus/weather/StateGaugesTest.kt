@@ -116,8 +116,18 @@ class StateGaugesTest {
         assertEquals(listOf("HERRENHAUSEN"), GaugeSource.select(listOf(g("HERRENHAUSEN", "Leine", 11.4), g("OTHER", "Fuhse", 17.0))).map { it.uuid })
         // nothing within 20 km: no card
         assertTrue(GaugeSource.select(listOf(g("FAR", "Weser", 21.0))).isEmpty())
-        // a gauge within 10 km: no stand-in from farther away
-        assertEquals(listOf("NEAR"), GaugeSource.select(listOf(g("NEAR", "Ihme", 6.0), g("HERRENHAUSEN", "Leine", 11.4))).map { it.uuid })
+        // a gauge within 10 km: another water up to 15 km fills a free place, beyond that nothing
+        assertEquals(listOf("NEAR", "HERRENHAUSEN"), GaugeSource.select(listOf(g("NEAR", "Ihme", 6.0), g("HERRENHAUSEN", "Leine", 11.4))).map { it.uuid })
+        assertEquals(listOf("NEAR"), GaugeSource.select(listOf(g("NEAR", "Ihme", 6.0), g("FAR", "Fuhse", 16.0))).map { it.uuid })
+    }
+
+    @Test fun braunschweigShowsSchunterAndOker() {
+        fun g(id: String, water: String, d: Double) = GaugeInfo(id, id, water, d, false, level = 100.0, provider = GaugeProvider.NLWKN)
+        // NLWKN gauges around the city centre (1 October 2026)
+        val chosen = GaugeSource.select(
+            listOf(g("Harxbüttel", "Schunter", 8.3), g("Groß Schwülper", "Oker", 11.6), g("Ohrum", "Oker", 16.2), g("Glentorf", "Schunter", 20.5)),
+        )
+        assertEquals(listOf("Harxbüttel", "Groß Schwülper"), chosen.map { it.uuid })
     }
 
     @Test fun measuredGaugePreferredOverClassificationOnly() {

@@ -79,7 +79,7 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
 - **Umwelt**: Luftqualität, Pollenflug (DWD-Index und Zusammensetzung, Arten wählbar – z. B. nur
   Bäume), Bürger-Messnetz, Vergleich von acht Wettermodellen.
 - **Gezeiten und Pegel**: Die Pegel im Umkreis von 10 km, je Gewässer einer (z. B. Weser, Fulda
-  und Werra in Hann. Münden). An der Küste und an Tideflüssen zuerst die nächsten Hoch- und
+  und Werra in Hann. Münden), freie Plätze mit weiteren Gewässern bis 15 km. An der Küste und an Tideflüssen zuerst die nächsten Hoch- und
   Niedrigwasser mit Tidekurve – selbst berechnet aus vier Wochen Pegelmessungen, etwa ±30 Minuten
   genau, nicht für Navigation oder Wattwanderungen. Messwerte von den Bundeswasserstraßen und aus
   Niedersachsen, NRW, Sachsen und Hessen, sonst die Hochwasser-Einstufung des Länderportals mit

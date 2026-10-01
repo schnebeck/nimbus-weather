@@ -1,0 +1,2 @@
+• Kompaktere Startseite wie bei Apple Wetter: die Kurzvorhersage steht oben in der Stundenkarte
+• Eine Niederschlagskarte statt zwei: die 15-Minuten-Vorhersage erscheint darin nur, wenn in den nächsten 3 Stunden Niederschlag kommt

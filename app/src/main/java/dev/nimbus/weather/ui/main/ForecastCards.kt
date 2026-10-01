@@ -37,8 +37,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material.icons.outlined.Umbrella
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -128,7 +126,19 @@ fun HourlyCard(data: WeatherData, now: Long) {
         }
         list.sortedBy { if (it is HourItem.Hour && it.isNow) start - 1 else it.time }
     }
-    GlassCard(title = stringResource(R.string.hourly_forecast), icon = Icons.Outlined.Schedule, info = Term.HOURLY) {
+    val summary = outlookText(data, now)
+    // The short forecast replaces the title, as in Apple Weather: one card instead of two.
+    GlassCard(title = null) {
+        Row(verticalAlignment = Alignment.Top) {
+            Text(
+                summary, Modifier.weight(1f).padding(top = 8.dp), fontSize = 15.sp, lineHeight = 21.sp, color = Color.White,
+                style = androidx.compose.ui.text.TextStyle(hyphens = androidx.compose.ui.text.style.Hyphens.Auto),
+            )
+            InfoButton(Term.HOURLY, Modifier.offset(x = 8.dp))
+        }
+        Spacer(Modifier.height(6.dp))
+        HairlineDivider()
+        Spacer(Modifier.height(8.dp))
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -299,8 +309,9 @@ fun TemperatureRangeBar(low: Double, high: Double, min: Double, max: Double, cur
 // ---------------------------------------------------------------------------------------
 // Nowcast (next 3 hours, 15-minute resolution)
 
+/** Top part of the precipitation card while precipitation is due within 3 hours. */
 @Composable
-fun NowcastCard(points: List<MinutelyPoint>, now: Long, rainingNow: Boolean = false) {
+fun NowcastSection(points: List<MinutelyPoint>, now: Long, rainingNow: Boolean = false) {
     val tf = LocalTimeFormat.current
     val summary = when (val n = Insights.nowcast(points, now, rainingNow)) {
         Insights.Nowcast.Dry -> stringResource(R.string.summary_no_rain)
@@ -308,10 +319,10 @@ fun NowcastCard(points: List<MinutelyPoint>, now: Long, rainingNow: Boolean = fa
         is Insights.Nowcast.StartsIn -> stringResource(R.string.summary_rain_starting, n.minutes)
         is Insights.Nowcast.StopsIn -> stringResource(R.string.summary_rain_now, n.minutes)
     }
-    GlassCard(title = stringResource(R.string.next_hours_precip), icon = Icons.Outlined.Umbrella, info = Term.NOWCAST) {
+    Column {
         Text(summary, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Color.White)
-        Spacer(Modifier.height(10.dp))
-        Canvas(Modifier.fillMaxWidth().height(70.dp)) {
+        Spacer(Modifier.height(8.dp))
+        Canvas(Modifier.fillMaxWidth().height(56.dp)) {
             val n = points.size.coerceAtLeast(1)
             val bw = size.width / n
             val maxP = maxOf(1.0, points.maxOfOrNull { it.precipitation } ?: 0.0)

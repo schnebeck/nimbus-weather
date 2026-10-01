@@ -65,7 +65,6 @@ enum class Term(@StringRes val title: Int, @StringRes val body: Int) {
     POLLEN(R.string.term_pollen_title, R.string.term_pollen_body),
     TIDES(R.string.term_tides_title, R.string.term_tides_body),
     GAUGE(R.string.term_gauge_title, R.string.term_gauge_body),
-    NOWCAST(R.string.term_nowcast_title, R.string.term_nowcast_body),
     RADAR(R.string.term_radar_title, R.string.term_radar_body),
     MODELS(R.string.term_models_title, R.string.term_models_body),
     COMMUNITY(R.string.term_community_title, R.string.term_community_body),
@@ -75,7 +74,6 @@ enum class Term(@StringRes val title: Int, @StringRes val body: Int) {
     SUN(R.string.term_sun_title, R.string.term_sun_body),
     HOURLY(R.string.term_hourly_title, R.string.term_hourly_body),
     DAILY(R.string.term_daily_title, R.string.term_daily_body),
-    OUTLOOK(R.string.term_outlook_title, R.string.term_outlook_body),
     HISTORY(R.string.term_history_title, R.string.term_history_body),
 }
 

@@ -65,7 +65,6 @@
     <string name="pollen">Pollen</string>
     <string name="precipitation_map">Precipitation Map</string>
     <string name="open_radar">Open radar</string>
-    <string name="next_hours_precip">Precipitation Next 3 Hours</string>
     <string name="model_comparison">Model Comparison</string>
     <string name="model_comparison_hint">Temperature forecast of different weather models for the next 72 hours</string>
     <string name="community_sensors">Community Sensors</string>
@@ -257,14 +256,14 @@
     <string name="settings_preload_radar">Preload radar</string>
     <string name="settings_preload_radar_desc">Keep the radar loop of the current place up to date on Wi-Fi (about every 15 minutes, also in the background), so it opens instantly</string>
 
-    <string name="precip_24h">Precipitation, Next 24 Hours</string>
+    <string name="precip_title">Precipitation</string>
     <string name="precip_today_amount">%1$s today</string>
     <string name="precip_next_amount">%1$s in the next 24 h</string>
     <string name="precip_max_chance">Highest chance: %1$d%% around %2$s</string>
     <string name="precip_no_chance">Precipitation unlikely in the next 24 hours</string>
     <string name="precip_chart_hint">Bar height: chance · colour: expected amount</string>
     <string name="term_hourly_title">Hourly Forecast</string>
-    <string name="term_hourly_body">The next 24 hours at a glance. The symbol shows the most likely weather for the hour, the number below it the temperature.\n\n• Now: the current weather – where available measured at the nearest DWD station, therefore it can differ slightly from the forecast for this hour\n• Percentages: chance of precipitation – blue from 10 %, below that dimmed – see the precipitation card for details\n• Sun symbols with a time: sunrise and sunset\n\nThe sentence above summarises the next change in weather and strong gusts. Swipe sideways for more hours.</string>
+    <string name="term_hourly_body">The next 24 hours at a glance. The symbol shows the most likely weather for the hour, the number below it the temperature.\n\n• Now: the current weather – where available measured at the nearest DWD station, therefore it can differ slightly from the forecast for this hour\n• Percentages: chance of precipitation – blue from 10 %, below that dimmed – details in the “Precipitation” card further down\n• Sun symbols with a time: sunrise and sunset\n\nSwipe sideways for more hours.\n\nThe text above the hours is a short forecast for the next 12 hours, generated automatically from the hourly forecast of the selected weather model (default: DWD ICON). It is not written by a meteorologist.\n\nIt names the next change in weather, how the temperature develops, whether and when precipitation is likely (from 60 %) or possible (from 30 %), strong gusts from 50 km/h and – in the afternoon and evening – a short outlook for tomorrow.\n\nIf it is raining now, the end of the precipitation comes from the 15-minute forecast.</string>
     <string name="term_daily_title">10-Day Forecast</string>
     <string name="term_daily_body">One row per day: symbol, lowest and highest temperature.\n\n• The bar shows the day\'s temperature range on a scale common to all ten days – so warmer and colder days are easy to compare\n• Its colours go from blue (cold) via green and yellow to red (hot)\n• The dot on today\'s bar is the current temperature\n• Blue percentages: chance of precipitation on that day\n\nTap a day to see its temperature curve and hourly precipitation. Days 9 and 10 have larger uncertainty.</string>
 
@@ -294,8 +293,6 @@
     <string name="pollen_source_dwd">Levels: DWD pollen forecast, region %1$s</string>
     <string name="pollen_source_cams">Levels derived from Copernicus CAMS concentrations</string>
     <string name="src_dwd_pollen">Pollen: DWD pollen forecast</string>
-
-    <string name="outlook_title">Next Hours</string>
     <string name="outlook_change">%1$s at first, %2$s from around %3$s.</string>
     <string name="outlook_steady">%1$s for the next few hours.</string>
     <string name="outlook_temp_rise">Temperatures rise to %1$s by %2$s.</string>
@@ -324,8 +321,6 @@
     <string name="ph_heavy_snow">heavy snow</string>
     <string name="ph_showers">showers</string>
     <string name="ph_thunderstorm">thunderstorms</string>
-    <string name="term_outlook_title">Next Hours</string>
-    <string name="term_outlook_body">A short text forecast for the next 12 hours, generated automatically from the hourly forecast of the selected weather model (default: DWD ICON). It is not written by a meteorologist.\n\nIt names the next change in weather, how the temperature develops, whether and when precipitation is likely (from 60 %) or possible (from 30 %), strong gusts from 50 km/h and – in the afternoon and evening – a short outlook for tomorrow.\n\nIf it is raining now, the end of the precipitation comes from the 15-minute forecast.</string>
 
     <string name="history_today">Today So Far</string>
     <string name="history_yesterday">Yesterday</string>
@@ -362,8 +357,8 @@
 
     <!-- Glossary -->
     <string name="info_about">About %1$s</string>
-    <string name="term_precip_prob_title">Chance of Precipitation</string>
-    <string name="term_precip_prob_body">The percentage shows how likely it is that at least a small, measurable amount of precipitation (about 0.1 mm) falls at your location within that hour or day.\n\n30% does not mean that it rains 30% of the time or over 30% of the area. It means: in 3 out of 10 comparable weather situations it rains at this place. The value is derived from ensemble forecasts – many slightly varied model runs – and counts how many of them produce rain.\n\nThe symbol still shows the most likely weather – so a cloud with 40 % means: probably dry, but a real chance of a shower. Values below 10 % are shown dimmed.</string>
+    <string name="term_precip_prob_title">Precipitation</string>
+    <string name="term_precip_prob_body">The percentage shows how likely it is that at least a small, measurable amount of precipitation (about 0.1 mm) falls at your location within that hour or day.\n\n30% does not mean that it rains 30% of the time or over 30% of the area. It means: in 3 out of 10 comparable weather situations it rains at this place. The value is derived from ensemble forecasts – many slightly varied model runs – and counts how many of them produce rain.\n\nThe symbol still shows the most likely weather – so a cloud with 40 % means: probably dry, but a real chance of a shower. Values below 10 % are shown dimmed.\n\nIf precipitation is expected within the next 3 hours, the card also shows the short-range forecast at the top in 15-minute steps. In Germany it comes from the DWD\'s high-resolution ICON-D2 model (2.2 km grid), which is updated every three hours.\n\nThe bars show the amount per 15 minutes. For the current rain radar, including the DWD radar nowcast for the next two hours, open the precipitation map.</string>
     <string name="term_feels_like_title">Feels Like</string>
     <string name="term_feels_like_body">The feels-like (apparent) temperature describes how warm or cold it feels to the human body, not what a thermometer measures in the shade.\n\nWind removes body heat faster, so it feels colder than the air temperature (wind chill). High humidity hinders sweat from evaporating, so warm air feels even warmer. Strong sunshine can also make it feel warmer.\n\nWhen the current temperature is measured at a DWD station, the feels-like value is shifted by the same difference.</string>
     <string name="term_dew_point_title">Humidity and Dew Point</string>
@@ -380,8 +375,6 @@
     <string name="term_aqi_body">The European Air Quality Index (EAQI) of the European Environment Agency combines fine dust (PM2.5, PM10), nitrogen dioxide, ozone and sulphur dioxide into one number. The worst pollutant determines the index.\n\n• 0–⁠20 good • 20–⁠40 fair • 40–⁠60 moderate • 60–⁠80 poor • 80–⁠100 very poor • above 100 extremely poor\n\nPM2.5 and PM10 are particles smaller than 2.5 and 10 micrometres; the smaller ones reach deep into the lungs. The values come from the Copernicus CAMS model for Europe.</string>
     <string name="term_pollen_title">Pollen</string>
     <string name="term_pollen_body">The pollen forecast shows how strongly allergy-relevant pollen types are in the air.\n\nLevels (scale of the German Weather Service): none, low, moderate and high, with intermediate steps. Each bar has three segments – half-filled segments are the intermediate steps.\n\n• Germany: official DWD pollen forecast for 8 types (hazel, alder, ash, birch, grasses, rye, mugwort, ragweed) and 27 regions, issued daily around 11:00 for today, tomorrow and the day after\n• Rest of Europe: levels derived from the Copernicus CAMS model (6 types)\n\nComposition and course come from CAMS in grains per cubic metre of air. They show which pollen dominates – useful if you react to only some types. Sensitive people can react even at low levels.\n\nWhen pollen is in the air and it is dry, the animated background shows it as fine floating particles.</string>
-    <string name="term_nowcast_title">Precipitation in the Next Hours</string>
-    <string name="term_nowcast_body">This short-range forecast shows expected precipitation in 15-minute steps. In Germany it comes from the DWD\'s high-resolution ICON-D2 model (2.2 km grid), which is updated every three hours.\n\nThe bars show the amount per 15 minutes. For the current rain radar, including the DWD radar nowcast for the next two hours, open the precipitation map.</string>
     <string name="term_radar_title">Precipitation Radar</string>
     <string name="term_radar_body">Weather radar sends out microwave pulses and measures how strongly raindrops, snowflakes and hail reflect them (reflectivity in dBZ). Stronger echoes mean heavier precipitation.\n\nGermany: DWD radar composite in 5-minute steps plus a nowcast that extrapolates the movement of the precipitation for the next two hours. Rest of Europe: RainViewer (past two hours only).\n\nBoth sources are shown in one colour scale. Radar sees precipitation in the air: light drizzle or snow close to the ground may be missing, and near mountains or radar sites artefacts can occur.</string>
     <string name="term_models_title">Weather Models</string>

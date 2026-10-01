@@ -60,7 +60,6 @@
     <string name="pollen">Pollen</string>
     <string name="precipitation_map">Niederschlagskarte</string>
     <string name="open_radar">Radar öffnen</string>
-    <string name="next_hours_precip">Niederschlag nächste 3 Stunden</string>
     <string name="model_comparison">Modellvergleich</string>
     <string name="model_comparison_hint">Temperaturvorhersage verschiedener Wettermodelle für die nächsten 72 Stunden</string>
     <string name="community_sensors">Community-Messnetz</string>
@@ -247,14 +246,14 @@
     <string name="settings_preload_radar">Radar vorladen</string>
     <string name="settings_preload_radar_desc">Radarschleife für den aktuellen Ort im WLAN aktuell halten (etwa alle 15 Minuten, auch im Hintergrund), damit sie sofort erscheint</string>
 
-    <string name="precip_24h">Niederschlag, nächste 24 Std.</string>
+    <string name="precip_title">Niederschlag</string>
     <string name="precip_today_amount">%1$s heute</string>
     <string name="precip_next_amount">%1$s in den nächsten 24 Std.</string>
     <string name="precip_max_chance">Höchste Wahrscheinlichkeit: %1$d %% gegen %2$s</string>
     <string name="precip_no_chance">Niederschlag in den nächsten 24 Stunden unwahrscheinlich</string>
     <string name="precip_chart_hint">Balkenhöhe: Wahrscheinlichkeit · Farbe: erwartete Menge</string>
     <string name="term_hourly_title">Stündliche Vorhersage</string>
-    <string name="term_hourly_body">Die nächsten 24 Stunden auf einen Blick. Das Symbol zeigt das wahrscheinlichste Wetter der Stunde, die Zahl darunter die Temperatur.\n\n• Jetzt: das aktuelle Wetter – wo vorhanden an der nächsten DWD-Station gemessen, daher kann es leicht von der Vorhersage für diese Stunde abweichen\n• Prozentwerte: Niederschlagswahrscheinlichkeit – ab 10 % blau, darunter blass – Details in der Niederschlagskarte\n• Sonnensymbole mit Uhrzeit: Sonnenauf- und -untergang\n\nDer Satz darüber fasst den nächsten Wetterwechsel und starke Böen zusammen. Seitlich wischen für weitere Stunden.</string>
+    <string name="term_hourly_body">Die nächsten 24 Stunden auf einen Blick. Das Symbol zeigt das wahrscheinlichste Wetter der Stunde, die Zahl darunter die Temperatur.\n\n• Jetzt: das aktuelle Wetter – wo vorhanden an der nächsten DWD-Station gemessen, daher kann es leicht von der Vorhersage für diese Stunde abweichen\n• Prozentwerte: Niederschlagswahrscheinlichkeit – ab 10 % blau, darunter blass – Details in der Karte „Niederschlag“ weiter unten\n• Sonnensymbole mit Uhrzeit: Sonnenauf- und -untergang\n\nSeitlich wischen für weitere Stunden.\n\nDer Text über den Stunden ist eine kurze Vorhersage für die nächsten 12 Stunden, automatisch aus der stündlichen Vorhersage des gewählten Wettermodells erzeugt (Standard: DWD ICON). Sie stammt nicht von einer Meteorologin oder einem Meteorologen.\n\nSie nennt den nächsten Wetterwechsel, den Temperaturverlauf, ob und wann Niederschlag wahrscheinlich (ab 60 %) oder möglich (ab 30 %) ist, starke Böen ab 50 km/h und – nachmittags und abends – einen kurzen Ausblick auf morgen.\n\nRegnet es gerade, stammt das Ende des Niederschlags aus der 15-Minuten-Vorhersage.</string>
     <string name="term_daily_title">10-Tage-Vorhersage</string>
     <string name="term_daily_body">Eine Zeile pro Tag: Symbol, tiefste und höchste Temperatur.\n\n• Der Balken zeigt die Temperaturspanne des Tages auf einer gemeinsamen Skala für alle zehn Tage – so lassen sich wärmere und kältere Tage direkt vergleichen\n• Seine Farben reichen von Blau (kalt) über Grün und Gelb bis Rot (heiß)\n• Der Punkt im Balken von heute ist die aktuelle Temperatur\n• Blaue Prozentwerte: Niederschlagswahrscheinlichkeit an diesem Tag\n\nTippe auf einen Tag, um Temperaturverlauf und stündlichen Niederschlag zu sehen. Die Tage 9 und 10 sind deutlich unsicherer.</string>
 
@@ -284,8 +283,6 @@
     <string name="pollen_source_dwd">Stufen: DWD-Pollenflug-Gefahrenindex, Region %1$s</string>
     <string name="pollen_source_cams">Stufen abgeleitet aus Copernicus-CAMS-Konzentrationen</string>
     <string name="src_dwd_pollen">Pollen: DWD-Pollenflug-Gefahrenindex</string>
-
-    <string name="outlook_title">Nächste Stunden</string>
     <string name="outlook_change">Zunächst %1$s, ab etwa %3$s %2$s.</string>
     <string name="outlook_steady">%1$s in den nächsten Stunden.</string>
     <string name="outlook_temp_rise">Die Temperatur steigt bis %2$s auf %1$s.</string>
@@ -314,8 +311,6 @@
     <string name="ph_heavy_snow">starker Schneefall</string>
     <string name="ph_showers">ein Schauer</string>
     <string name="ph_thunderstorm">Gewitter</string>
-    <string name="term_outlook_title">Nächste Stunden</string>
-    <string name="term_outlook_body">Eine kurze Textvorhersage für die nächsten 12 Stunden, automatisch aus der stündlichen Vorhersage des gewählten Wettermodells erzeugt (Standard: DWD ICON). Sie stammt nicht von einer Meteorologin oder einem Meteorologen.\n\nSie nennt den nächsten Wetterwechsel, den Temperaturverlauf, ob und wann Niederschlag wahrscheinlich (ab 60 %) oder möglich (ab 30 %) ist, starke Böen ab 50 km/h und – nachmittags und abends – einen kurzen Ausblick auf morgen.\n\nRegnet es gerade, stammt das Ende des Niederschlags aus der 15-Minuten-Vorhersage.</string>
 
     <string name="history_today">Heute bisher</string>
     <string name="history_yesterday">Gestern</string>
@@ -352,8 +347,8 @@
 
     <!-- Glossary -->
     <string name="info_about">Über %1$s</string>
-    <string name="term_precip_prob_title">Niederschlagswahrscheinlichkeit</string>
-    <string name="term_precip_prob_body">Der Prozentwert gibt an, wie wahrscheinlich es ist, dass an deinem Ort in dieser Stunde bzw. an diesem Tag mindestens eine kleine, messbare Menge Niederschlag fällt (etwa 0,1 mm).\n\n30 % bedeutet nicht, dass es 30 % der Zeit oder auf 30 % der Fläche regnet. Es bedeutet: In 3 von 10 vergleichbaren Wetterlagen regnet es an diesem Ort. Der Wert stammt aus Ensemble-Vorhersagen – vielen leicht variierten Modellläufen – und zählt, wie viele davon Regen liefern.\n\nDas Symbol zeigt trotzdem das wahrscheinlichste Wetter – eine Wolke mit 40 % heißt also: wahrscheinlich trocken, aber ein Schauer ist gut möglich. Werte unter 10 % werden blass dargestellt.</string>
+    <string name="term_precip_prob_title">Niederschlag</string>
+    <string name="term_precip_prob_body">Der Prozentwert gibt an, wie wahrscheinlich es ist, dass an deinem Ort in dieser Stunde bzw. an diesem Tag mindestens eine kleine, messbare Menge Niederschlag fällt (etwa 0,1 mm).\n\n30 % bedeutet nicht, dass es 30 % der Zeit oder auf 30 % der Fläche regnet. Es bedeutet: In 3 von 10 vergleichbaren Wetterlagen regnet es an diesem Ort. Der Wert stammt aus Ensemble-Vorhersagen – vielen leicht variierten Modellläufen – und zählt, wie viele davon Regen liefern.\n\nDas Symbol zeigt trotzdem das wahrscheinlichste Wetter – eine Wolke mit 40 % heißt also: wahrscheinlich trocken, aber ein Schauer ist gut möglich. Werte unter 10 % werden blass dargestellt.\n\nWird in den nächsten 3 Stunden Niederschlag erwartet, zeigt die Karte oben zusätzlich die Kurzfristvorhersage in 15-Minuten-Schritten. In Deutschland stammt sie aus dem hochaufgelösten ICON-D2-Modell des DWD (2,2-km-Gitter), das alle drei Stunden neu gerechnet wird.\n\nDie Balken zeigen die Menge pro 15 Minuten. Für das aktuelle Regenradar inklusive DWD-Radarvorhersage der nächsten zwei Stunden öffne die Niederschlagskarte.</string>
     <string name="term_feels_like_title">Gefühlte Temperatur</string>
     <string name="term_feels_like_body">Die gefühlte Temperatur beschreibt, wie warm oder kalt es sich für den menschlichen Körper anfühlt – nicht, was ein Thermometer im Schatten misst.\n\nWind entzieht dem Körper schneller Wärme, dadurch fühlt es sich kälter an als die Lufttemperatur (Windchill). Hohe Luftfeuchtigkeit behindert das Verdunsten von Schweiß, warme Luft fühlt sich dann noch wärmer an. Auch kräftiger Sonnenschein lässt es wärmer wirken.\n\nWird die aktuelle Temperatur an einer DWD-Station gemessen, wird die gefühlte Temperatur um dieselbe Differenz angepasst.</string>
     <string name="term_dew_point_title">Luftfeuchtigkeit und Taupunkt</string>
@@ -370,8 +365,6 @@
     <string name="term_aqi_body">Der Europäische Luftqualitätsindex (EAQI) der Europäischen Umweltagentur fasst Feinstaub (PM2,5, PM10), Stickstoffdioxid, Ozon und Schwefeldioxid zu einer Zahl zusammen. Der schlechteste Schadstoff bestimmt den Index.\n\n• 0–⁠20 gut • 20–⁠40 akzeptabel • 40–⁠60 mäßig • 60–⁠80 schlecht • 80–⁠100 sehr schlecht • über 100 extrem schlecht\n\nPM2,5 und PM10 sind Partikel kleiner als 2,5 bzw. 10 Mikrometer; die kleineren gelangen tief in die Lunge. Die Werte stammen aus dem Copernicus-CAMS-Modell für Europa.</string>
     <string name="term_pollen_title">Pollen</string>
     <string name="term_pollen_body">Die Pollenflugvorhersage zeigt, wie stark allergierelevante Pollenarten in der Luft sind.\n\nStufen (Skala des Deutschen Wetterdienstes): keine, gering, mittel und hoch, mit Zwischenstufen. Jeder Balken hat drei Segmente – halb gefüllte Segmente sind die Zwischenstufen.\n\n• Deutschland: amtlicher Pollenflug-Gefahrenindex des DWD für 8 Arten (Hasel, Erle, Esche, Birke, Gräser, Roggen, Beifuß, Ambrosia) und 27 Regionen, täglich gegen 11 Uhr für heute, morgen und übermorgen\n• Übriges Europa: Stufen abgeleitet aus dem Copernicus-CAMS-Modell (6 Arten)\n\nZusammensetzung und Verlauf stammen aus CAMS in Pollenkörnern pro Kubikmeter Luft. Sie zeigen, welche Pollen dominieren – hilfreich, wenn man nur auf bestimmte Arten reagiert. Empfindliche Menschen können schon bei geringer Belastung reagieren.\n\nSind Pollen in der Luft und ist es trocken, zeigt der animierte Hintergrund sie als feine schwebende Partikel.</string>
-    <string name="term_nowcast_title">Niederschlag in den nächsten Stunden</string>
-    <string name="term_nowcast_body">Diese Kurzfristvorhersage zeigt den erwarteten Niederschlag in 15-Minuten-Schritten. In Deutschland stammt sie aus dem hochaufgelösten ICON-D2-Modell des DWD (2,2-km-Gitter), das alle drei Stunden neu gerechnet wird.\n\nDie Balken zeigen die Menge pro 15 Minuten. Für das aktuelle Regenradar inklusive DWD-Radarvorhersage der nächsten zwei Stunden öffne die Niederschlagskarte.</string>
     <string name="term_radar_title">Niederschlagsradar</string>
     <string name="term_radar_body">Ein Wetterradar sendet Mikrowellenimpulse aus und misst, wie stark Regentropfen, Schneeflocken und Hagel sie zurückwerfen (Reflektivität in dBZ). Stärkere Echos bedeuten stärkeren Niederschlag.\n\nDeutschland: DWD-Radarkomposit im 5-Minuten-Takt plus Nowcast, der die Zugbahn des Niederschlags für die nächsten zwei Stunden fortschreibt. Übriges Europa: RainViewer (nur die vergangenen zwei Stunden).\n\nBeide Quellen werden in einer gemeinsamen Farbskala dargestellt. Das Radar sieht Niederschlag in der Luft: Leichter Niesel oder Schnee in Bodennähe kann fehlen, an Bergen oder Radarstandorten können Artefakte auftreten.</string>
     <string name="term_models_title">Wettermodelle</string>

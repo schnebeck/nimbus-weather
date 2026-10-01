@@ -41,6 +41,7 @@ import androidx.compose.material.icons.outlined.WbTwilight
 import androidx.compose.material.icons.outlined.Masks
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.foundation.layout.size
+import dev.nimbus.weather.ui.components.HairlineDivider
 import dev.nimbus.weather.ui.components.drawMoonPhase
 import dev.nimbus.weather.util.Moon
 import dev.nimbus.weather.util.SunPhases
@@ -237,7 +238,7 @@ private fun WindTile(data: WeatherData, modifier: Modifier) {
 
 /** Chance and amount of precipitation hour by hour for the next 24 hours. */
 @Composable
-fun PrecipitationCard(data: WeatherData, now: Long) {
+fun PrecipitationCard(data: WeatherData, now: Long, nowcast: List<dev.nimbus.weather.data.model.MinutelyPoint>? = null, raining: Boolean = false) {
     val s = LocalSettings.current
     val tf = LocalTimeFormat.current
     val hours = remember(data, now) { Insights.upcomingHours(data, now).drop(1).take(24) }
@@ -247,7 +248,14 @@ fun PrecipitationCard(data: WeatherData, now: Long) {
     val next = hours.sumOf { it.precipitation ?: 0.0 }
     val peak = hours.maxByOrNull { it.precipitationProbability ?: 0.0 }
     val peakChance = peak?.precipitationProbability ?: 0.0
-    GlassCard(title = stringResource(R.string.precip_24h), icon = Icons.Outlined.WaterDrop, info = Term.PRECIP_PROBABILITY) {
+    // One card for all precipitation, like Apple Weather: the 15-minute nowcast on top only when it matters.
+    GlassCard(title = stringResource(R.string.precip_title), icon = Icons.Outlined.WaterDrop, info = Term.PRECIP_PROBABILITY) {
+        if (nowcast != null) {
+            NowcastSection(nowcast, now, raining)
+            Spacer(Modifier.height(10.dp))
+            HairlineDivider()
+            Spacer(Modifier.height(10.dp))
+        }
         Row(verticalAlignment = Alignment.Bottom) {
             Text(
                 stringResource(R.string.precip_today_amount, Units.precipitationNumber(today?.precipitationSum ?: 0.0, s.precipitationUnit) + NBSP + unit),

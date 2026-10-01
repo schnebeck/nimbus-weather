@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.sp
 
 /**
  * Short text forecast for the next hours, derived from the hourly model data. Kept free of
- * Android types; [OutlookCard] turns it into localised sentences.
+ * Android types; [outlookText] turns it into localised sentences.
  */
 data class Outlook(
     val now: Condition,
@@ -122,8 +122,9 @@ data class Outlook(
 
 // ---------------------------------------------------------------------------------------
 
+/** The short text forecast shown at the top of the hourly card (like Apple Weather). */
 @androidx.compose.runtime.Composable
-fun OutlookCard(data: WeatherData, now: Long) {
+fun outlookText(data: WeatherData, now: Long): String {
     val s = LocalSettings.current
     val tf = LocalTimeFormat.current
     val afternoon = tf.zoned(now).hour >= 15
@@ -172,17 +173,7 @@ fun OutlookCard(data: WeatherData, now: Long) {
         }
     }.map { sentence -> sentence.replaceFirstChar { it.uppercase() } }
 
-    dev.nimbus.weather.ui.components.GlassCard(
-        title = androidx.compose.ui.res.stringResource(dev.nimbus.weather.R.string.outlook_title),
-        icon = androidx.compose.material.icons.Icons.Outlined.Schedule,
-        info = dev.nimbus.weather.ui.components.Term.OUTLOOK,
-    ) {
-        androidx.compose.material3.Text(
-            sentences.joinToString(" "),
-            fontSize = 16.sp, lineHeight = 22.sp, color = androidx.compose.ui.graphics.Color.White,
-            style = androidx.compose.ui.text.TextStyle(hyphens = androidx.compose.ui.text.style.Hyphens.Auto),
-        )
-    }
+    return sentences.joinToString(" ")
 }
 
 /** Condition as used inside a sentence ("cloudy", "mostly sunny", "rain"). */

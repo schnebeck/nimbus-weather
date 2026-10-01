@@ -1,0 +1,2 @@
+• Radar of the day: plays without pauses – the loading window slides along, coarser tiles load twice as fast; jumping back plays at once from the cache
+• Water levels: a long press shows time and level in the chart

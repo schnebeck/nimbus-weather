@@ -17,6 +17,11 @@
 
 package dev.nimbus.weather.ui.main
 
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.Canvas
 import dev.nimbus.weather.ui.components.HairlineDivider
 import androidx.compose.runtime.mutableStateOf
@@ -363,12 +368,41 @@ private fun LevelChart(
     val shown = lineLabels.filter { it.second in (dataLo - 3 * pad)..(dataHi + 3 * pad) }
     val lo = minOf(dataLo, shown.minOfOrNull { it.second } ?: dataLo) - pad
     val hi = maxOf(dataHi, shown.maxOfOrNull { it.second } ?: dataHi) + pad
-    Canvas(Modifier.fillMaxWidth().height(140.dp)) {
+    // Long-press cursor as in the meteogram: measured and predicted points, nearest by time
+    val points = remember(history, prediction) {
+        (history.map { it to false } + prediction.map { it to true }).filter { it.first.time in start..end }.sortedBy { it.first.time }
+    }
+    var selected by remember(points) { mutableStateOf(points.indexOfLast { it.first.time <= now }.coerceAtLeast(0)) }
+    var cursorOn by remember { mutableStateOf(false) }
+    var touched by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    androidx.compose.runtime.LaunchedEffect(touched, cursorOn) {
+        if (cursorOn) { kotlinx.coroutines.delay(10_000L); cursorOn = false }
+    }
+    val cursorAlpha by androidx.compose.animation.core.animateFloatAsState(
+        if (cursorOn) 1f else 0f, androidx.compose.animation.core.tween(if (cursorOn) 150 else 700), label = "cursor",
+    )
+    var plotL by remember { mutableStateOf(0f) }
+    var plotR by remember { mutableStateOf(1f) }
+    fun indexAt(xPx: Float): Int {
+        val t = start + ((xPx - plotL) / (plotR - plotL)).coerceIn(0f, 1f) * (end - start)
+        return points.indices.minByOrNull { kotlin.math.abs(points[it].first.time - t) } ?: 0
+    }
+    Column {
+    Canvas(
+        Modifier.fillMaxWidth().height(140.dp)
+            .pointerInput(points) {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = { cursorOn = true; selected = indexAt(it.x); touched++ },
+                ) { change, _ -> change.consume(); selected = indexAt(change.position.x); touched++ }
+            }
+            .pointerInput(points) { detectTapGestures(onTap = { if (cursorOn) { selected = indexAt(it.x); touched++ } }) },
+    ) {
         val labelH = measurer.measure("0", labelStyle).size.height
         val top = labelH + 4.dp.toPx()
         val bottom = size.height - labelH - 4.dp.toPx()
         val axisW = measurer.measure("${hi.roundToInt()}", labelStyle).size.width + 4.dp.toPx()
         val l = axisW; val r = size.width
+        plotL = l; plotR = r
         val span = (end - start).toFloat()
         fun x(t: Long) = l + (r - l) * ((t - start) / span)
         fun y(v: Double) = (bottom - (v - lo) / (hi - lo) * (bottom - top)).toFloat()
@@ -415,5 +449,26 @@ private fun LevelChart(
             val ty = if (e.high) c.y - t.size.height - 3.dp.toPx() else c.y + 3.dp.toPx()
             drawText(t, topLeft = Offset((c.x - t.size.width / 2f).coerceIn(l, size.width - t.size.width), ty.coerceIn(0f, bottom - t.size.height)))
         }
+        // Cursor (long press)
+        if (cursorAlpha > 0f && points.isNotEmpty()) {
+            val (p, _) = points[selected.coerceIn(0, points.lastIndex)]
+            val xc = x(p.time)
+            drawLine(Color.White.copy(alpha = 0.85f * cursorAlpha), Offset(xc, top), Offset(xc, bottom), 1.5.dp.toPx())
+            drawCircle(Color(0xFF1A2A40).copy(alpha = cursorAlpha), 5.dp.toPx(), Offset(xc, y(p.value)))
+            drawCircle(Color.White.copy(alpha = cursorAlpha), 3.dp.toPx(), Offset(xc, y(p.value)))
+        }
+    }
+    // Hint, or the value under the cursor – same place, so the card keeps its height
+    Box(Modifier.fillMaxWidth().padding(top = 2.dp)) {
+        Text(stringResource(R.string.gauge_chart_hint), fontSize = 11.sp, color = NimbusColors.Tertiary, modifier = Modifier.alpha(1f - cursorAlpha))
+        if (points.isNotEmpty()) {
+            val (p, predicted) = points[selected.coerceIn(0, points.lastIndex)]
+            Text(
+                (if (tf.isSameDay(p.time, now)) tf.time(p.time) else tf.weekdayShort(p.time) + NBSP + tf.time(p.time)) +
+                    " · " + p.value.roundToInt() + NBSP + "cm" + (if (predicted) " · " + stringResource(R.string.gauge_chart_predicted) else ""),
+                fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White, modifier = Modifier.alpha(cursorAlpha),
+            )
+        }
+    }
     }
 }

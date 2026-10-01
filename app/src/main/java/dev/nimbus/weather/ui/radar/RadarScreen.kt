@@ -283,7 +283,9 @@ private class RadarMapController {
         }
         f.dwdTime?.let { t ->
             val ts = TileSet("2.2.0", RadarSources.dwdTileUrl(RadarSources.DWD_LAYER, t)).apply {
-                maxZoom = 10f
+                // An archived day plays through hundreds of frames: coarser tiles (about 1.2 km per
+                // pixel, the radar's own resolution) halve the requests per frame
+                maxZoom = if (timeline.day != null) 6f else 10f
                 minZoom = 3f
                 setBounds(1.4f, 45.6f, 18.8f, 56.3f)
             }
@@ -317,10 +319,10 @@ private class RadarMapController {
         val s = style ?: return
         if (index == shown && !force) return
         if (windowed && index in frames.indices) {
-            // Move the window only when the frame gets close to its edge (or jumps out of it)
-            val lo = resident.minOrNull() ?: index
+            // The window slides along with every step, so there is always the same stretch loading
+            // ahead – moving it only near its edge left the loader idle until it was too late
             val hi = resident.maxOrNull() ?: index
-            if (index !in resident || hi - index < WINDOW_AHEAD * playStride / 2 && hi < frames.lastIndex || index - lo < 2 && lo > 0) {
+            if (index !in resident || hi < frames.lastIndex && hi - index < WINDOW_AHEAD * playStride) {
                 if (shown !in resident) shown = -1
                 ensureWindow(s, index)
             }

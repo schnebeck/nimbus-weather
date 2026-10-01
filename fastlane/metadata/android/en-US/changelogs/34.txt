@@ -1,0 +1,3 @@
+• Sorting: hold the handle ≡, then drag – scrolling over the handles no longer moves anything
+• Undo after sorting, showing/hiding and default order (cards and places)
+• Radar: loads new images automatically while the map is open

@@ -17,7 +17,7 @@
 
 package dev.nimbus.weather.ui.components
 
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -85,8 +85,8 @@ object Reorder {
 }
 
 /**
- * Rows of [items], sorted by dragging the modifier handed to [row] as `handle` (a drag handle
- * icon). The dragged row follows the finger in absolute terms – its offset is computed from its
+ * Rows of [items], sorted by holding and then dragging the modifier handed to [row] as
+ * `handle` (a drag handle icon). The dragged row follows the finger in absolute terms – its offset is computed from its
  * actual place in the layout, so it never jumps when the rows around it change places. Rows may
  * differ in height (an expanded group moves as a whole). The new order goes to [onMove] when the
  * row is dropped; [moveUp]/[moveDown] label the TalkBack actions on the handle.
@@ -131,7 +131,9 @@ fun <T> ReorderableColumn(
                 val dragging = dragKey == k
                 val handle = Modifier
                     .pointerInput(k) {
-                        detectDragGestures(
+                        // Hold the handle first: a swipe that merely starts on a handle scrolls
+                        // the page instead of moving a row by accident
+                        detectDragGesturesAfterLongPress(
                             onDragStart = {
                                 dragKey = k
                                 dragTop = bounds[k]?.top ?: 0f
@@ -142,7 +144,7 @@ fun <T> ReorderableColumn(
                                 // The movement always counts; only the decision waits for the layout
                                 // to catch up with the last move (otherwise fast drags lagged behind)
                                 dragTop += amount.y
-                                val rows = rows() ?: return@detectDragGestures
+                                val rows = rows() ?: return@detectDragGesturesAfterLongPress
                                 val i = order.indexOfFirst { key(it) == k }
                                 dragTop = Reorder.clampTop(rows, i, dragTop)
                                 val to = Reorder.target(rows, i, dragTop)

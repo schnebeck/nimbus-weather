@@ -17,6 +17,9 @@
 
 package dev.nimbus.weather.ui.settings
 
+import dev.nimbus.weather.ui.components.NimbusSnackbarHost
+import androidx.compose.runtime.remember
+import kotlinx.coroutines.launch
 import dev.nimbus.weather.ui.components.ReorderableColumn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.heightIn
@@ -85,6 +88,9 @@ import dev.nimbus.weather.ui.theme.NimbusColors
 @Composable
 fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Unit, onOpenLicenses: () -> Unit, onBack: () -> Unit) {
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val snackbar = remember { androidx.compose.material3.SnackbarHostState() }
+    val cardsChange = undoableCardsChange(settings, onChange, snackbar)
+    Box(Modifier.fillMaxSize()) {
     Column(
         Modifier.fillMaxSize()
             .background(Brush.verticalGradient(listOf(Color(0xFF0B1424), Color(0xFF111D33))))
@@ -158,7 +164,7 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                 }
             }
             item {
-                Section(stringResource(R.string.settings_cards)) { CardsAccordion(settings, onChange) }
+                Section(stringResource(R.string.settings_cards)) { CardsAccordion(settings, cardsChange) }
             }
             item {
                 Section(stringResource(R.string.bathing_title)) {
@@ -201,9 +207,49 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
             }
         }
     }
+    NimbusSnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = navBottom + 12.dp))
+    }
 }
 
 private val BathingRadii = listOf(10, 25, 50, 100)
+
+/**
+ * Wraps the changes of the cards list: each one shows a snackbar with what changed and "Undo",
+ * which restores the cards as they were before (order, tiles order, hidden and opted-in cards).
+ * A drop on the same place changes nothing and shows nothing.
+ */
+@Composable
+private fun undoableCardsChange(
+    settings: Settings, onChange: ((Settings) -> Settings) -> Unit, snackbar: androidx.compose.material3.SnackbarHostState,
+): ((Settings) -> Settings) -> Unit {
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val labels = WeatherCard.entries.associateWith { stringResource(cardLabel(it)) }
+    val undo = stringResource(R.string.undo)
+    val msgOrder = stringResource(R.string.cards_undo_order)
+    val msgReset = stringResource(R.string.cards_undo_reset)
+    val msgShown = stringResource(R.string.cards_undo_shown)
+    val msgHidden = stringResource(R.string.cards_undo_hidden)
+    val current by androidx.compose.runtime.rememberUpdatedState(settings)
+    return { transform ->
+        val before = current
+        val after = transform(before)
+        val toggled = WeatherCard.entries.firstOrNull { before.shows(it) != after.shows(it) }
+        val message = when {
+            toggled != null -> (if (after.shows(toggled)) msgShown else msgHidden).format(labels.getValue(toggled))
+            before.orderedCards() == after.orderedCards() && before.orderedTiles() == after.orderedTiles() -> null
+            after.cardOrder.isEmpty() && after.tileOrder.isEmpty() -> msgReset
+            else -> msgOrder
+        }
+        onChange(transform)
+        if (message != null) scope.launch {
+            snackbar.currentSnackbarData?.dismiss()
+            val r = snackbar.showSnackbar(message, actionLabel = undo, duration = androidx.compose.material3.SnackbarDuration.Long)
+            if (r == androidx.compose.material3.SnackbarResult.ActionPerformed) onChange {
+                it.copy(cardOrder = before.cardOrder, tileOrder = before.tileOrder, hiddenCards = before.hiddenCards, enabledCards = before.enabledCards)
+            }
+        }
+    }
+}
 
 /** Card symbols as on the weather page. */
 private fun cardIcon(c: WeatherCard): androidx.compose.ui.graphics.vector.ImageVector = when (c) {

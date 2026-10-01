@@ -483,9 +483,9 @@
     <string name="src_lhp_alerts">Flood alerts: LHP</string>
     <string name="outlook_precip_chance">Chance of precipitation %1$d %%.</string>
     <string name="settings_cards">Cards</string>
-    <string name="settings_cards_desc">Drag ≡ to sort, the switch hides a card. The small tiles are one block on the page – expand it to sort them among themselves.</string>
+    <string name="settings_cards_desc">Hold ≡ and drag to sort, the switch hides a card. The small tiles are one block on the page – expand it to sort them among themselves.</string>
     <string name="places_edit_done">Done</string>
-    <string name="places_edit_hint">Drag ≡ to sort, ⊖ to delete</string>
+    <string name="places_edit_hint">Hold and drag ≡ to sort, ⊖ to delete</string>
     <string name="places_long_press_hint">Long press a place to sort or delete</string>
     <string name="places_drag">Move</string>
     <string name="precip_chart_readout">%1$s–%2$s · %3$s · chance %4$s %%</string>
@@ -554,4 +554,10 @@
     <string name="pressure_chart_steady">steady, %1$s hPa in 3 h</string>
     <string name="pressure_chart_hint">Dashed: forecast · long press for the values of each hour</string>
     <string name="pressure_chart_hint_fall">Orange: fast fall (3 hPa or more in 3 h) · long press for values</string>
+    <string name="undo">Undo</string>
+    <string name="cards_undo_order">Order changed</string>
+    <string name="cards_undo_reset">Default order restored</string>
+    <string name="cards_undo_shown">"%1$s" shown</string>
+    <string name="cards_undo_hidden">"%1$s" hidden</string>
+    <string name="places_undo_order">Order of places changed</string>
 </resources>

@@ -84,6 +84,7 @@ import dev.nimbus.weather.util.Texts
 import dev.nimbus.weather.util.TimeFormat
 import dev.nimbus.weather.util.Units
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -118,6 +119,23 @@ fun PlacesScreen(
     if (saved.isEmpty()) editing = false
     androidx.activity.compose.BackHandler(enabled = editing) { editing = false }
 
+    // Undo after sorting the places (a row moved by accident while scrolling)
+    val snackbar = remember { androidx.compose.material3.SnackbarHostState() }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val undoLabel = stringResource(R.string.undo)
+    val undoMessage = stringResource(R.string.places_undo_order)
+    val reorder: (List<String>) -> Unit = { ids ->
+        val before = state.savedPlaces.filter { it.id != state.currentPlace?.id }.map { it.id }
+        if (ids != before) {
+            onReorder(ids)
+            scope.launch {
+                snackbar.currentSnackbarData?.dismiss()
+                val r = snackbar.showSnackbar(undoMessage, actionLabel = undoLabel, duration = androidx.compose.material3.SnackbarDuration.Long)
+                if (r == androidx.compose.material3.SnackbarResult.ActionPerformed) onReorder(before)
+            }
+        }
+    }
+    Box(Modifier.fillMaxSize()) {
     Column(
         Modifier.fillMaxSize()
             .background(Brush.verticalGradient(listOf(Color(0xFF0B1424), Color(0xFF111D33))))
@@ -140,7 +158,7 @@ fun PlacesScreen(
                 stringResource(R.string.places_edit_hint), Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
                 fontSize = 13.sp, color = NimbusColors.Secondary,
             )
-            EditList(saved, state, onReorder, onRemove, Modifier.padding(top = 8.dp), navBottom)
+            EditList(saved, state, reorder, onRemove, Modifier.padding(top = 8.dp), navBottom)
             return@Column
         }
         TextField(
@@ -219,6 +237,8 @@ fun PlacesScreen(
                 )
             }
         }
+    }
+    dev.nimbus.weather.ui.components.NimbusSnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = navBottom + 12.dp))
     }
 }
 

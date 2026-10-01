@@ -117,6 +117,8 @@ private const val LOAD_POLL_MS = 250L
 private const val BATCH_TIMEOUT_MS = 8000L
 private const val STYLE_TIMEOUT_MS = 15_000L
 private const val OFFLINE_BATCH_TIMEOUT_MS = 1500L
+/** How often the open live radar asks whether a newer DWD analysis is out. */
+private const val RADAR_REFRESH_CHECK_MS = 60_000L
 /** Up to this many frames get a map layer each; longer time lines use a moving window. */
 private const val MAX_RESIDENT = 40
 private const val WINDOW_AHEAD = 30
@@ -532,6 +534,29 @@ fun RadarScreen(
     }
     LaunchedEffect(frame, timeline) {
         timeline?.let { tl -> overlays.update(tl.frames[frame.coerceIn(0, tl.frames.lastIndex)].time) }
+    }
+    // Live radar left open: once a minute (while the screen is visible) ask the DWD for its newest
+    // analysis; when it starts a new step of the loop (10 minutes in the 2-hour range), the time
+    // line is rebuilt – playback goes on, the frames already loaded come from the cache.
+    LaunchedEffect(range, styleReady, archive) {
+        if (archive || !styleReady) return@LaunchedEffect
+        while (true) {
+            delay(RADAR_REFRESH_CHECK_MS)
+            if (!lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) continue
+            val tl = timeline ?: continue
+            val latest = RadarSources.checkLatest(container.http) ?: continue
+            val shown = tl.frames[tl.nowIndex].time
+            if (latest / range.stepMs > shown / range.stepMs) {
+                if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "new analysis ${RadarSources.isoTime(latest)}, refreshing")
+                val atNow = frame == tl.nowIndex
+                val fresh = runCatching { RadarSources.timeline(container.http, range, force = true) }.getOrNull() ?: continue
+                timeline = fresh
+                controller.replaceFrames(fresh)
+                // Stay on "now" if the user was there; otherwise keep the same moment in time
+                frame = if (atNow) fresh.nowIndex
+                else fresh.frames.indexOfFirst { it.time >= tl.frames[frame.coerceIn(0, tl.frames.lastIndex)].time }.takeIf { it >= 0 } ?: fresh.nowIndex
+            }
+        }
     }
     // After panning or zooming: a grid that matches the zoom and covers the view. Finer grids are
     // only fetched while an overlay is shown (each costs 99 API calls); otherwise the coarse one.

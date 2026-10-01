@@ -1,0 +1,3 @@
+• Sortieren: den Griff ≡ kurz halten, dann ziehen – Scrollen über die Griffe verschiebt nichts mehr
+• Rückgängig nach Sortieren, Ein-/Ausblenden und Standardreihenfolge (Kacheln und Orte)
+• Radar: lädt bei geöffneter Karte neue Bilder automatisch nach

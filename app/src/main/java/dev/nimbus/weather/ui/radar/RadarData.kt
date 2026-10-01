@@ -176,6 +176,11 @@ object RadarSources {
         return RadarTimeline(frames, 0, "", day = dayStart)
     }
 
+    /** Time of the newest DWD analysis now (a small capabilities request), null on errors. */
+    suspend fun checkLatest(http: OkHttpClient): Long? =
+        withTimeoutOrNull(DISCOVERY_TIMEOUT_MS) { runCatching { latestDwdAnalysis(http) }.getOrNull() }
+            ?.also { latestAnalysis = it; withContext(Dispatchers.IO) { storeAnalysis(it) } }
+
     private suspend fun latestDwdAnalysis(http: OkHttpClient): Long? {
         val url = "https://maps.dwd.de/geoserver/dwd/$DWD_ANALYSIS_LAYER/ows?service=WMS&version=1.3.0&request=GetCapabilities"
         val req = Request.Builder().url(url).header("User-Agent", USER_AGENT).build()

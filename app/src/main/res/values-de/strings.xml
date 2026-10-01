@@ -472,9 +472,9 @@
     <string name="src_lhp_alerts">Hochwasserwarnungen: LHP</string>
     <string name="outlook_precip_chance">Niederschlagswahrscheinlichkeit %1$d %%.</string>
     <string name="settings_cards">Kacheln</string>
-    <string name="settings_cards_desc">≡ ziehen zum Sortieren, der Schalter blendet eine Kachel aus. Die kleinen Kacheln stehen als Block auf der Seite – aufklappen, um sie untereinander zu sortieren.</string>
+    <string name="settings_cards_desc">≡ kurz halten und ziehen zum Sortieren, der Schalter blendet eine Kachel aus. Die kleinen Kacheln stehen als Block auf der Seite – aufklappen, um sie untereinander zu sortieren.</string>
     <string name="places_edit_done">Fertig</string>
-    <string name="places_edit_hint">≡ ziehen zum Sortieren, ⊖ zum Löschen</string>
+    <string name="places_edit_hint">≡ halten und ziehen zum Sortieren, ⊖ zum Löschen</string>
     <string name="places_long_press_hint">Lange drücken, um Orte zu sortieren oder zu löschen</string>
     <string name="places_drag">Verschieben</string>
     <string name="precip_chart_readout">%1$s–%2$s · %3$s · Wahrscheinlichkeit %4$s %%</string>
@@ -543,4 +543,10 @@
     <string name="pressure_chart_steady">gleichbleibend, %1$s hPa in 3 Std.</string>
     <string name="pressure_chart_hint">Gestrichelt: Vorhersage · lange drücken für Stundenwerte</string>
     <string name="pressure_chart_hint_fall">Orange: starker Druckfall (ab 3 hPa in 3 Std.) · lange drücken für Werte</string>
+    <string name="undo">Rückgängig</string>
+    <string name="cards_undo_order">Reihenfolge geändert</string>
+    <string name="cards_undo_reset">Standardreihenfolge wiederhergestellt</string>
+    <string name="cards_undo_shown">„%1$s“ eingeblendet</string>
+    <string name="cards_undo_hidden">„%1$s“ ausgeblendet</string>
+    <string name="places_undo_order">Reihenfolge der Orte geändert</string>
 </resources>

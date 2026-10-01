@@ -53,8 +53,11 @@ No ads, no account, no Google services. The app speaks English and German.
 - Current values from the nearest DWD station, DWD weather alerts, precipitation nowcast, hourly and
   10-day forecast with chance of precipitation, detail tiles, air quality, pollen, citizen sensors and
   a comparison of eight weather models.
-- Day meteogram, look back at the past days (measured versus forecast), sun and moon card with light
-  phases.
+- Day meteogram, look back at the past days (measured versus forecast) with the rain radar of the
+  whole day in 5-minute steps, sun and moon card with light phases.
+- Bathing waters: all official EU bathing sites within an adjustable radius plus favourites, with
+  EU classification, sea temperature at coasts and the latest samples (water temperature, blue-green
+  algae) where states publish them openly – see [docs/BATHING.md](docs/BATHING.md).
 - Rain radar: DWD for Germany, RainViewer for Europe, one colour scale for rain and snow, temperature
   and wind layers, satellite and warning map.
 - An ⓘ on every card explains the terms. Units follow the country on first start; the cards to show

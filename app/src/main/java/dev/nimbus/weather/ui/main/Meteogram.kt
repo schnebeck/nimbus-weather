@@ -459,7 +459,7 @@ private fun readoutLines(h: MeteoPoint): List<String> {
     val precip = buildString {
         append(stringResource(R.string.precipitation)).append(' ')
         append(Units.precipitationNumber(h.precipitation ?: 0.0, s.precipitationUnit)).append(NBSP).append(pUnit)
-        h.precipitationChance?.let { append(" · ").append(Insights.chanceLabel(it)).append(NBSP).append('%') }
+        h.precipitationChance?.let { append(" · ").append(Insights.chanceText(it, h.precipitation)).append(NBSP).append('%') }
         h.forecastPrecipitation?.let {
             append(" · ").append(forecastWord).append(' ').append(Units.precipitationNumber(it, s.precipitationUnit)).append(NBSP).append(pUnit)
         }

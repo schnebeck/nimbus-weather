@@ -6,7 +6,8 @@
 <li>Kurzvorhersage als Text für die nächsten Stunden und Niederschlag in 15-Minuten-Schritten</li>
 <li>Stunden- und 10-Tage-Vorhersage mit Niederschlagswahrscheinlichkeit</li>
 <li>Meteogramm für jeden Tag: Temperatur, Niederschlag, Sonnenschein und Wind pro Stunde, mit Schieber für die genauen Werte</li>
-<li>Rückblick: nach rechts wischen und für heute, gestern und vorgestern vergleichen, was gemessen und was vorhergesagt wurde</li>
+<li>Rückblick: nach rechts wischen und für heute, gestern und vorgestern vergleichen, was gemessen und was vorhergesagt wurde – mit dem Regenradar des ganzen Tages</li>
+<li>Badegewässer im Umkreis und Favoriten: EU-Einstufung, Meerestemperatur, in Berlin und Schleswig-Holstein Wassertemperatur und Blaualgen-Hinweise</li>
 <li>Gefühlte Temperatur, UV, Wind, Luftfeuchte und Taupunkt, Sichtweite, Luftdruck</li>
 <li>Sonnenlauf mit Morgen-/Abendrot und Blauer Stunde, Mondphase und Mondzeiten</li>
 <li>Luftqualität, Pollenflug (DWD-Index und Zusammensetzung, Arten wählbar), Bürger-Messnetz, Vergleich von acht Wettermodellen</li>

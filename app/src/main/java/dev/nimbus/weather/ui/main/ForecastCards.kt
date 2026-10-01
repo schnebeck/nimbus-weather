@@ -84,11 +84,11 @@ private val PrecipBlue = Color(0xFF8FD3FF)
 
 /** Chance of precipitation under a weather symbol: always shown, dimmed below 10 %. */
 @Composable
-private fun ChanceText(probability: Double?) {
+private fun ChanceText(probability: Double?, amount: Double?) {
     val v = Insights.chanceLabel(probability) ?: return
     val relevant = v >= Insights.CHANCE_RELEVANT
     Text(
-        "$v${NBSP}%", fontSize = 11.sp,
+        Insights.chanceText(probability, amount) + NBSP + "%", fontSize = 11.sp,
         fontWeight = if (relevant) FontWeight.Bold else FontWeight.Medium,
         color = if (relevant) PrecipBlue else Color(0x99FFFFFF),
         style = ChanceStyle,
@@ -152,6 +152,7 @@ fun HourlyCard(data: WeatherData, now: Long) {
                         condition = if (item.isNow) data.current.condition else item.point.condition,
                         isDay = if (item.isNow) data.current.isDay else item.point.isDay,
                         precipProb = item.point.precipitationProbability,
+                        precipAmount = item.point.precipitation,
                         value = Units.temp(if (item.isNow) data.current.temperature else item.point.temperature, settings.temperatureUnit),
                         bold = item.isNow,
                     )
@@ -163,14 +164,14 @@ fun HourlyCard(data: WeatherData, now: Long) {
 }
 
 @Composable
-private fun HourCell(label: String, condition: Condition, isDay: Boolean, precipProb: Double?, value: String, bold: Boolean) {
+private fun HourCell(label: String, condition: Condition, isDay: Boolean, precipProb: Double?, precipAmount: Double?, value: String, bold: Boolean) {
     Column(Modifier.width(52.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, fontSize = 14.sp, fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Medium, color = Color.White, maxLines = 1)
         Box(Modifier.height(46.dp), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 WeatherIcon(condition, isDay, size = 26.dp)
                 // Shown regardless of the symbol: fog or clouds can still come with a 40 % rain risk.
-                ChanceText(precipProb)
+                ChanceText(precipProb, precipAmount)
             }
         }
         Text(value, fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White)
@@ -258,7 +259,7 @@ private fun DayRow(
             Text(label, Modifier.width(62.dp), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1)
             Column(Modifier.width(44.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 WeatherIcon(day.condition, true, size = 26.dp)
-                ChanceText(day.precipitationProbability)
+                ChanceText(day.precipitationProbability, day.precipitationSum)
             }
             Text(
                 Units.temp(day.tempMin, settings.temperatureUnit), Modifier.width(44.dp), fontSize = 18.sp,
@@ -364,16 +365,12 @@ fun PrecipNoticeText(n: Insights.PrecipNotice, now: Long) {
             }
         },
     )
-    @Composable
-    fun inMinutes(m: Int): String = when {
-        m < 60 -> stringResource(R.string.pn_minutes, m)
-        m % 60 == 0 -> stringResource(R.string.pn_hours, m / 60)
-        else -> stringResource(R.string.pn_hours_minutes, m / 60, m % 60)
-    }
-    val text = when (val st = n.state) {
-        is Insights.Nowcast.StartsIn -> stringResource(R.string.pn_starts, what, inMinutes(st.minutes))
-        is Insights.Nowcast.StopsIn -> stringResource(R.string.pn_until, what, tf.time(n.until ?: (now + st.minutes * 60_000L)))
-        else -> stringResource(R.string.pn_continues, what)
+    // Clock times throughout ("from about 11:15", "until about 11:45", "until at least 13:00")
+    val time = tf.time(n.at ?: now)
+    val text = when (n.state) {
+        is Insights.Nowcast.StartsIn -> stringResource(R.string.pn_starts, what, time)
+        is Insights.Nowcast.StopsIn -> stringResource(R.string.pn_until, what, time)
+        else -> stringResource(R.string.pn_continues, what, time)
     }
     // An umbrella – the line only ever announces unpleasant weather: open while it is wet,
     // closed while the precipitation is still to come.

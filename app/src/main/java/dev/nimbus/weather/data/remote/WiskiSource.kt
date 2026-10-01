@@ -150,6 +150,8 @@ class WiskiSource(
             return Series(m, forecast?.let { points(it) }.orEmpty().filter { it.time > last }.sortedBy { it.time })
         }
 
+        private val STAGE = Regex("""(?:Meldestufe|Informationswert|Alarmstufe)\D*(\d)""")
+
         /** "Meldestufe1", "W.Informationswert_2", "Alarmstufe 3" -> alert level; "W.MW" etc. -> mean values. */
         fun parseAlarm(root: JsonElement): Alarm {
             val levels = HashMap<Int, Double>()
@@ -157,7 +159,7 @@ class WiskiSource(
             (root as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }.forEach { o ->
                 val name = o.s("ts_name") ?: return@forEach
                 val value = points(o).lastOrNull()?.value ?: return@forEach
-                val stage = Regex("""(?:Meldestufe|Informationswert|Alarmstufe)\D*(\d)""").find(name)?.groupValues?.get(1)?.toInt()
+                val stage = STAGE.find(name)?.groupValues?.get(1)?.toInt()
                 if (stage != null) levels[stage] = value
                 else when (name.substringAfterLast('.')) {
                     "MNW", "MW", "MHW", "HHW" -> marks[name.substringAfterLast('.')] = value

@@ -68,7 +68,8 @@ class HistorySource(
     private val openMeteoUrl: String = "https://api.open-meteo.com",
     private val brightSkyUrl: String = "https://api.brightsky.dev",
 ) {
-    suspend fun load(lat: Double, lon: Double, model: String, inGermany: Boolean, now: Long = System.currentTimeMillis()): History = coroutineScope {
+    suspend fun load(lat: Double, lon: Double, model: String, inGermany: Boolean, now: Long = System.currentTimeMillis()): History =
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { coroutineScope {
         val modelJob = async { http.getJson(modelUrl(lat, lon, model)) }
         val obsJob = async {
             if (!inGermany) null else runCatching {
@@ -88,7 +89,7 @@ class HistorySource(
         val modelRoot = modelJob.await()
         val obsRoot = obsJob.await()
         combine(modelRoot, obsRoot, model, now)
-    }
+    } }
 
     private fun modelUrl(lat: Double, lon: Double, model: String) = "$openMeteoUrl/v1/forecast".toHttpUrl().newBuilder()
         .addQueryParameter("latitude", OpenMeteoSource.fmt(lat))

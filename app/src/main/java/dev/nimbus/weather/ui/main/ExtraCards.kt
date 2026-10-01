@@ -17,6 +17,9 @@
 
 package dev.nimbus.weather.ui.main
 
+import androidx.compose.runtime.SideEffect
+import kotlinx.coroutines.cancel
+import dev.nimbus.weather.ui.radar.RadarPreview
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -225,6 +228,7 @@ fun ModelComparisonCard(models: List<ModelSeries>?, now: Long, onRequest: () -> 
 fun RadarPreviewCard(data: WeatherData, onOpen: () -> Unit) {
     val context = LocalContext.current
     val http = remember { (context.applicationContext as NimbusApp).container.http }
+    val mapHttp = remember { (context.applicationContext as NimbusApp).container.mapHttp }
     val density = LocalDensity.current
     val tf = LocalTimeFormat.current
     var radarTime by remember { mutableStateOf<Long?>(null) }
@@ -233,28 +237,61 @@ fun RadarPreviewCard(data: WeatherData, onOpen: () -> Unit) {
         BoxWithConstraints(Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(bottomStart = 18.dp, bottomEnd = 18.dp))) {
             val wDp = maxWidth.value.toInt()
             val hDp = maxHeight.value.toInt()
-            DisposableEffect(data.place.id, wDp, hDp) {
+            val lat = data.place.latitude
+            val lon = data.place.longitude
+            val lang = context.resources.configuration.locales[0].language
+            val inDwd = dev.nimbus.weather.data.repo.WeatherRepository.isInDwdArea(lat, lon)
+            val key = RadarPreview.key(lat, lon, wDp, hDp)
+            SideEffect { RadarPreview.cardSize = wDp to hDp }
+            var base by remember(key) { mutableStateOf<android.graphics.Bitmap?>(null) }
+            var overlay by remember(key) { mutableStateOf<android.graphics.Bitmap?>(null) }
+            DisposableEffect(key, inDwd) {
                 var snapshotter: MapSnapshotter? = null
                 var cancelled = false
-                val job = kotlinx.coroutines.MainScope().launch {
-                    // Temperature grid first, so the preview shows rain vs. snow like the radar screen.
-                    dev.nimbus.weather.ui.radar.WeatherGridStore.ensure(http, data.place.latitude, data.place.longitude)
+                val scope = kotlinx.coroutines.MainScope()
+                val t0 = System.currentTimeMillis()
+                fun lap(what: String) { if (dev.nimbus.weather.BuildConfig.DEBUG) android.util.Log.d("NimbusPreview", "${data.place.name}: $what after ${System.currentTimeMillis() - t0} ms") }
+                if (inDwd) {
+                    // 1. at once: the stored base map and the last radar picture of this place
+                    scope.launch {
+                        RadarPreview.storedOverlay(key)?.let { o -> if (overlay == null) { overlay = o.bitmap; radarTime = o.time }; lap("stored radar") }
+                        RadarPreview.storedBase(key, lang)?.let { base = it; lap("stored base") }
+                            ?: run {
+                                // first time for this place and size: render the base map once
+                                RadarPreview.renderBase(context, mapHttp, lat, lon, wDp, hDp, density.density, lang)?.let { base = it; lap("rendered base") }
+                            }
+                    }
+                    // 2. meanwhile: the latest radar picture (one small request)
+                    scope.launch {
+                        dev.nimbus.weather.ui.radar.RadarPrefetcher.previewStarted()
+                        // rain/snow colours need the temperature grid – but never wait long for it
+                        kotlinx.coroutines.withTimeoutOrNull(3_000L) { dev.nimbus.weather.ui.radar.WeatherGridStore.ensure(http, lat, lon) }
+                        val timeline = runCatching { RadarSources.timeline(http) }.getOrNull()
+                        val frame = timeline?.frames?.getOrNull(timeline.nowIndex)
+                        lap("timeline")
+                        if (frame != null) RadarPreview.fetchOverlay(mapHttp, frame, lat, lon, wDp, hDp)?.let { o ->
+                            overlay = o.bitmap; radarTime = o.time; lap("radar")
+                        }
+                        dev.nimbus.weather.ui.radar.RadarPrefetcher.previewRendered()
+                    }
+                } else scope.launch {
+                    // Outside the DWD area (RainViewer tiles): the full snapshot as before
+                    dev.nimbus.weather.ui.radar.WeatherGridStore.ensure(http, lat, lon)
                     val timeline = runCatching { RadarSources.timeline(http) }.getOrNull()
                     val frame = timeline?.frames?.getOrNull(timeline.nowIndex)
                     radarTime = frame?.time
-                    val key = "${data.place.id}|${frame?.time}|$wDp|${context.resources.configuration.locales[0].language}"
-                    PreviewCache.get(key)?.let { image = it; dev.nimbus.weather.ui.radar.RadarPrefetcher.previewRendered(); return@launch }
+                    val cacheKey = "${data.place.id}|${frame?.time}|$wDp|$lang"
+                    PreviewCache.get(cacheKey)?.let { image = it; dev.nimbus.weather.ui.radar.RadarPrefetcher.previewRendered(); return@launch }
                     dev.nimbus.weather.ui.radar.RadarPrefetcher.previewStarted()
                     if (cancelled) return@launch
                     val style = dev.nimbus.weather.ui.radar.MapStyle.builder(
-                        (context.applicationContext as NimbusApp).container.mapHttp,
-                        context.resources.configuration.locales[0].language,
+                        mapHttp, lang,
                         if (timeline != null && frame != null) RadarSnapshot.rasters(timeline, listOf(0 to frame), 0.85f) else emptyList(),
                     )
                     if (cancelled) return@launch
-                    snapshotter = RadarSnapshot.create(context, style, data.place.latitude, data.place.longitude, wDp, hDp, density.density).also { snap ->
+                    snapshotter = RadarSnapshot.create(context, style, lat, lon, wDp, hDp, density.density).also { snap ->
                         snap.start({ snapshot ->
-                            PreviewCache.put(key, snapshot.bitmap)
+                            PreviewCache.put(cacheKey, snapshot.bitmap)
                             image = snapshot.bitmap
                             dev.nimbus.weather.ui.radar.RadarPrefetcher.previewRendered()
                         }, { _ -> dev.nimbus.weather.ui.radar.RadarPrefetcher.previewRendered() })
@@ -262,16 +299,23 @@ fun RadarPreviewCard(data: WeatherData, onOpen: () -> Unit) {
                 }
                 onDispose {
                     cancelled = true
-                    job.cancel()
+                    scope.cancel()
                     snapshotter?.cancel()
                 }
             }
-            val bmp = image
+            val bmp = if (inDwd) base else image
+            val radar = if (inDwd) overlay else null
             Canvas(Modifier.fillMaxSize().background(Color(0xFF55657A))) {
+                val dst = IntSize(size.width.roundToInt(), size.height.roundToInt())
                 if (bmp != null) {
+                    drawImage(bmp.asImageBitmap(), srcOffset = IntOffset.Zero, srcSize = IntSize(bmp.width, bmp.height), dstOffset = IntOffset.Zero, dstSize = dst)
+                }
+                // Radar on top, as in the radar screen (85 % opacity); 1 px per dp, smoothly scaled
+                if (radar != null) {
                     drawImage(
-                        bmp.asImageBitmap(), srcOffset = IntOffset.Zero, srcSize = IntSize(bmp.width, bmp.height),
-                        dstOffset = IntOffset.Zero, dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
+                        radar.asImageBitmap(), srcOffset = IntOffset.Zero, srcSize = IntSize(radar.width, radar.height),
+                        dstOffset = IntOffset.Zero, dstSize = dst, alpha = 0.85f,
+                        filterQuality = androidx.compose.ui.graphics.FilterQuality.Low,
                     )
                 }
                 val c = Offset(size.width / 2, size.height / 2)
@@ -341,6 +385,7 @@ fun SourcesFooter(data: WeatherData) {
                     src.detail.orEmpty().split(",").mapNotNull { n -> runCatching { providerName(dev.nimbus.weather.data.model.GaugeProvider.valueOf(n)) }.getOrNull() }.joinToString(", "),
                 )
                 SourceKind.LHP_ALERTS -> stringResource(R.string.src_lhp_alerts)
+                SourceKind.BATHING -> stringResource(R.string.src_bathing, src.detail?.takeIf { it.isNotBlank() }?.let { ", " + it.replace(",", ", ") } ?: "")
             }
         } + stringResource(R.string.src_moon)
         Text(

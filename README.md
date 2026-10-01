@@ -72,7 +72,8 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   Nachtschattierung, Legende mit Tagessummen. Langes Drücken blendet einen Cursor mit allen Werten
   der Stunde ein.
 - **Rückblick** per Wischen nach rechts: heute bisher, gestern, vorgestern – DWD-Messwerte im
-  Vergleich zur Vorhersage des gewählten Modells, mit mittlerer Abweichung.
+  Vergleich zur Vorhersage des gewählten Modells, mit mittlerer Abweichung; dazu das Regenradar
+  des ganzen Tages in 5-Minuten-Schritten zum Abspielen, Verschieben und Zoomen (Deutschland).
 - **Sonne und Mond**: Sonnenbogen mit fester Skala je Ort (die Bogenhöhe zeigt die Jahreszeit),
   Lichtphasen Tag, Morgen-/Abendrot, Blaue Stunde und Nacht, Tageslänge; Mondphase, Auf- und Untergang.
 - **Umwelt**: Luftqualität, Pollenflug (DWD-Index und Zusammensetzung, Arten wählbar – z. B. nur
@@ -84,6 +85,10 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   Niedersachsen, NRW, Sachsen und Hessen, sonst die Hochwasser-Einstufung des Länderportals mit
   Link; dazu die Hochwasserwarnungen der Länder. Welche Quelle je Bundesland genutzt wird und
   warum: [docs/GAUGES.md](docs/GAUGES.md).
+- **Badegewässer**: alle amtlichen EU-Badestellen im einstellbaren Umkreis (10–100 km) – Seen,
+  Flüsse, Küsten –, Favoriten in jeder Entfernung; EU-Einstufung, Meerestemperatur an der Küste,
+  in Berlin und Schleswig-Holstein die letzten Proben mit Wassertemperatur und Blaualgen-Hinweisen.
+  Quellen je Bundesland: [docs/BATHING.md](docs/BATHING.md).
 - **Regenradar**: DWD-Radar mit 2-h-Vorhersage für Deutschland, RainViewer für Europa, einheitliche
   Farbskala für Regen (weiß → blau) und Schnee (rosa → violett, pro Pixel nach der Temperatur),
   Temperatur- und Windebene, Satellit, Warnkarte, Rückblick bis 24 h. Im WLAN hält die App die
@@ -110,6 +115,7 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
 | Bürger-Messnetz | [Sensor.Community](https://sensor.community) |
 | Modellvergleich, Temperatur-/Windgitter | Open-Meteo |
 | Pegel, Gezeiten, Hochwasser | PEGELONLINE (WSV), NLWKN, LANUK NRW, LfULG Sachsen, HLNUG, Länderübergreifendes Hochwasserportal – Details in [docs/GAUGES.md](docs/GAUGES.md) |
+| Badegewässer | Europäische Umweltagentur, LAGeSo Berlin, Schleswig-Holstein, Meerestemperatur Open-Meteo – Details in [docs/BATHING.md](docs/BATHING.md) |
 | Ortsname des Standorts | System-Geocoder, sonst [Nominatim](https://nominatim.org) (OpenStreetMap) |
 | Sonne und Mond | auf dem Gerät berechnet (nach SunCalc und J. Meeus) |
 | Karte | [OpenFreeMap](https://openfreemap.org) · © OpenMapTiles · © OpenStreetMap-Mitwirkende |

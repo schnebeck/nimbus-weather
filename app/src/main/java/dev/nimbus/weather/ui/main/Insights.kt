@@ -44,8 +44,8 @@ object Insights {
     /** "Light rain in about 40 min" – what, how strong and when (start, end or still going). */
     data class PrecipNotice(
         val kind: PrecipKind, val intensity: Intensity, val state: Nowcast,
-        /** End of the precipitation (start of the first dry 15-minute interval), on 5 minutes; with [Nowcast.StopsIn]. */
-        val until: Long? = null,
+        /** Clock time for the line, on 5 minutes: start ([Nowcast.StartsIn]), end ([Nowcast.StopsIn]) or the end of the horizon ([Nowcast.Continues]). */
+        val at: Long? = null,
     ) {
         /** Falling now (open umbrella) rather than still to come (closed one). */
         val now: Boolean get() = state !is Nowcast.StartsIn
@@ -86,11 +86,16 @@ object Insights {
             rate < 10.0 -> Intensity.MODERATE
             else -> Intensity.HEAVY
         }
-        val until = if (state is Nowcast.StopsIn) {
-            val stop = points.indices.firstOrNull { i -> i > 0 && points[i].precipitation < RAIN_THRESHOLD_MM_15 }
-            (stop?.let { points[it].time } ?: (now + state.minutes * 60_000L)).let { (it + 150_000L) / 300_000L * 300_000L }
-        } else null
-        return PrecipNotice(kind, intensity, state, until)
+        fun round5(t: Long) = (t + 150_000L) / 300_000L * 300_000L
+        val at = when (state) {
+            is Nowcast.StartsIn -> round5(points[first].time.coerceAtLeast(now))
+            is Nowcast.StopsIn -> {
+                val stop = points.indices.firstOrNull { i -> i > 0 && points[i].precipitation < RAIN_THRESHOLD_MM_15 }
+                round5(stop?.let { points[it].time } ?: (now + state.minutes * 60_000L))
+            }
+            else -> (now + NOTICE_HORIZON_MS) / 300_000L * 300_000L
+        }
+        return PrecipNotice(kind, intensity, state, at)
     }
 
     /** 15-minute points covering the next three hours, starting with the current interval. */
@@ -148,6 +153,19 @@ object Insights {
     fun chanceLabel(probability: Double?): Int? {
         val p = probability ?: return null
         return (Math.round(p / 10.0) * 10).toInt().coerceIn(0, 100)
+    }
+
+    /** Smallest amount counted as precipitation by the models (mm per hour). */
+    const val MEASURABLE_MM = 0.1
+
+    /**
+     * The chance as shown (without "%"): rounded to 10, but "<10" instead of "0" when the model still
+     * delivers a measurable [amount] – the amount comes from one deterministic run, the chance from
+     * the ensemble, and fewer than one in ten members (often none) brings precipitation then.
+     */
+    fun chanceText(probability: Double?, amount: Double?): String? {
+        val v = chanceLabel(probability) ?: return null
+        return if (v == 0 && (amount ?: 0.0) >= MEASURABLE_MM) "<10" else "$v"
     }
 
     /** Below this the value is shown dimmed: technically possible, practically dry. */

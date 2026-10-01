@@ -81,6 +81,7 @@ fun MainScreen(
     onSelect: (String) -> Unit,
     onRefresh: (String) -> Unit,
     onOpenRadar: (String?) -> Unit,
+    onOpenRadarDay: (String, Long) -> Unit,
     onOpenPlaces: () -> Unit,
     onRequestModels: (String) -> Unit,
     onRequestHistory: (String) -> Unit,
@@ -126,6 +127,7 @@ fun MainScreen(
                     dayIndex = page,
                     isActive = pagerState.currentPage == page,
                     onRetry = { onRequestHistory(place.id) },
+                    onOpenRadarDay = { day -> onOpenRadarDay(place.id, day) },
                 )
             }
         }

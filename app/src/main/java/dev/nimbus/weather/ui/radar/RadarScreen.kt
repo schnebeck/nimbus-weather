@@ -117,6 +117,12 @@ private const val LOAD_POLL_MS = 250L
 private const val BATCH_TIMEOUT_MS = 8000L
 private const val STYLE_TIMEOUT_MS = 15_000L
 private const val OFFLINE_BATCH_TIMEOUT_MS = 1500L
+/** Up to this many frames get a map layer each; longer time lines use a moving window. */
+private const val MAX_RESIDENT = 40
+private const val WINDOW_AHEAD = 30
+private const val WINDOW_BEHIND = 6
+/** Frame interval when playing an archived day (288 frames). */
+private const val ARCHIVE_FRAME_MS = 250L
 /**
  * MapLibre loads the tiles of every layer whose visibility is "visible" – even at opacity 0.
  * Layers that must not load yet are therefore switched to visibility "none".
@@ -141,8 +147,19 @@ private class RadarMapController {
     /** Load order: from "now" outwards (now, −10 min, +10 min, −20 min …). */
     private var order: List<Int> = emptyList()
     private var nowIndex = 0
+    /**
+     * Long time lines (a whole archived day: 288 frames) keep only a window of frames as map
+     * layers – one source per frame for every frame would cost far too much memory. The window
+     * follows the shown frame, mostly ahead of it (playback runs forward).
+     */
+    var windowed = false
+        private set
+    /** Frames that currently have a source and a layer on the map. */
+    private val resident = HashSet<Int>()
+    private var timelineRef: RadarTimeline? = null
     val allWarm: Boolean get() = frames.isNotEmpty() && warm.size >= frames.size
     val allLoaded: Boolean get() = frames.isNotEmpty() && loaded.size >= frames.size
+    fun isLoaded(i: Int) = i in loaded
     val loadedCount: Int get() = loaded.size
     /** Set by MapLibre's render callback: every tile of every visible layer is loaded. */
     @Volatile var fullyRendered = false
@@ -183,17 +200,20 @@ private class RadarMapController {
     /** Replaces the animation frames, e.g. when the history range changes. */
     fun replaceFrames(timeline: RadarTimeline) {
         val style = style ?: return
-        frames.indices.forEach { i ->
-            listOf("dwd$i", "rv$i").forEach { id ->
-                style.getLayer(id)?.let { style.removeLayer(it) }
-                style.getSource(id)?.let { style.removeSource(it) }
-            }
-        }
+        frames.indices.forEach { i -> removeFrame(style, i) }
         frames = timeline.frames
+        timelineRef = timeline
         shown = -1
         warm.clear()
         loaded.clear()
+        resident.clear()
         nowIndex = timeline.nowIndex
+        windowed = frames.size > MAX_RESIDENT
+        if (windowed) {
+            ensureWindow(style, nowIndex)
+            show(timeline.nowIndex)
+            return
+        }
         order = buildList {
             add(nowIndex)
             for (d in 1..frames.size) {
@@ -201,39 +221,62 @@ private class RadarMapController {
                 if (nowIndex + d <= frames.lastIndex) add(nowIndex + d)
             }
         }
-        fun add(layer: RasterLayer) = style.addLayerBelow(layer, "warn")
-
-        timeline.frames.forEachIndexed { i, f ->
-            f.rainViewerPath?.let { path ->
-                val ts = TileSet("2.2.0", RadarSources.rainViewerTileUrl(timeline.rainViewerHost, path)).apply { maxZoom = 7f }
-                // No low-zoom placeholder tiles (default: 4 levels lower): with ~50 radar sources
-                // they would multiply the requests and delay the frames that are actually shown.
-                style.addSource(RasterSource("rv$i", ts, 512).apply { prefetchZoomDelta = 0 })
-                add(
-                    RasterLayer("rv$i", "rv$i").withProperties(
-                        PropertyFactory.rasterOpacity(0f), PropertyFactory.rasterFadeDuration(0f),
-                        PropertyFactory.visibility(Property.NONE),
-                        PropertyFactory.rasterResampling("linear"),
-                    ),
-                )
-            }
-            f.dwdTime?.let { t ->
-                val ts = TileSet("2.2.0", RadarSources.dwdTileUrl(RadarSources.DWD_LAYER, t)).apply {
-                    maxZoom = 10f
-                    minZoom = 3f
-                    setBounds(1.4f, 45.6f, 18.8f, 56.3f)
-                }
-                style.addSource(RasterSource("dwd$i", ts, 512).apply { prefetchZoomDelta = 0 })
-                add(
-                    RasterLayer("dwd$i", "dwd$i").withProperties(
-                        PropertyFactory.rasterOpacity(0f), PropertyFactory.rasterFadeDuration(0f),
-                        PropertyFactory.visibility(Property.NONE),
-                        PropertyFactory.rasterResampling("linear"),
-                    ),
-                )
-            }
-        }
+        timeline.frames.indices.forEach { i -> addFrame(style, timeline, i) }
         show(timeline.nowIndex)
+    }
+
+    private fun removeFrame(style: Style, i: Int) {
+        listOf("dwd$i", "rv$i").forEach { id ->
+            style.getLayer(id)?.let { style.removeLayer(it) }
+            style.getSource(id)?.let { style.removeSource(it) }
+        }
+        resident -= i
+        warm -= i
+        loaded -= i
+    }
+
+    /** Keeps frames [index − WINDOW_BEHIND, index + WINDOW_AHEAD] on the map, drops the others. */
+    private fun ensureWindow(style: Style, index: Int) {
+        val tl = timelineRef ?: return
+        val want = (index - WINDOW_BEHIND).coerceAtLeast(0)..(index + WINDOW_AHEAD).coerceAtMost(frames.lastIndex)
+        resident.filter { it !in want }.forEach { removeFrame(style, it) }
+        want.filter { it !in resident }.forEach { addFrame(style, tl, it) }
+        // Load order: the shown frame, then ahead of it, then behind
+        order = (index..want.last).toList() + (index - 1 downTo want.first).toList()
+    }
+
+    private fun addFrame(style: Style, timeline: RadarTimeline, i: Int) {
+        val f = timeline.frames[i]
+        resident += i
+        fun add(layer: RasterLayer) = style.addLayerBelow(layer, "warn")
+        f.rainViewerPath?.let { path ->
+            val ts = TileSet("2.2.0", RadarSources.rainViewerTileUrl(timeline.rainViewerHost, path)).apply { maxZoom = 7f }
+            // No low-zoom placeholder tiles (default: 4 levels lower): with ~50 radar sources
+            // they would multiply the requests and delay the frames that are actually shown.
+            style.addSource(RasterSource("rv$i", ts, 512).apply { prefetchZoomDelta = 0 })
+            add(
+                RasterLayer("rv$i", "rv$i").withProperties(
+                    PropertyFactory.rasterOpacity(0f), PropertyFactory.rasterFadeDuration(0f),
+                    PropertyFactory.visibility(Property.NONE),
+                    PropertyFactory.rasterResampling("linear"),
+                ),
+            )
+        }
+        f.dwdTime?.let { t ->
+            val ts = TileSet("2.2.0", RadarSources.dwdTileUrl(RadarSources.DWD_LAYER, t)).apply {
+                maxZoom = 10f
+                minZoom = 3f
+                setBounds(1.4f, 45.6f, 18.8f, 56.3f)
+            }
+            style.addSource(RasterSource("dwd$i", ts, 512).apply { prefetchZoomDelta = 0 })
+            add(
+                RasterLayer("dwd$i", "dwd$i").withProperties(
+                    PropertyFactory.rasterOpacity(0f), PropertyFactory.rasterFadeDuration(0f),
+                    PropertyFactory.visibility(Property.NONE),
+                    PropertyFactory.rasterResampling("linear"),
+                ),
+            )
+        }
     }
 
     fun addLocation(style: Style, place: Place) {
@@ -254,6 +297,15 @@ private class RadarMapController {
     fun show(index: Int, force: Boolean = false) {
         val s = style ?: return
         if (index == shown && !force) return
+        if (windowed && index in frames.indices) {
+            // Move the window only when the frame gets close to its edge (or jumps out of it)
+            val lo = resident.minOrNull() ?: index
+            val hi = resident.maxOrNull() ?: index
+            if (index !in lo..hi || hi - index < WINDOW_AHEAD / 2 && hi < frames.lastIndex || index - lo < 2 && lo > 0) {
+                if (shown !in resident) shown = -1
+                ensureWindow(s, index)
+            }
+        }
         // Warm frames are "visible" at opacity 0, so their tiles are loaded ahead and the loop
         // plays without flicker; all others stay "none" and cost no requests yet. Only the two
         // layers that change are touched: restyling all ~50 layers per frame made the loop
@@ -293,7 +345,13 @@ private class RadarMapController {
 }
 
 @Composable
-fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.TemperatureUnit, onBack: () -> Unit) {
+fun RadarScreen(
+    place: Place?, temperatureUnit: dev.nimbus.weather.data.model.TemperatureUnit,
+    /** Start (local midnight) of a past day to show in full, from the look-back; null = live radar. */
+    archiveDay: Long? = null,
+    onBack: () -> Unit,
+) {
+    val archive = archiveDay != null
     val context = LocalContext.current
     val container = remember { (context.applicationContext as NimbusApp).container }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -396,7 +454,8 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
         // Offline, tiles that are not stored never arrive: don't wait long for them.
         val cm = context.getSystemService(android.net.ConnectivityManager::class.java)
         val batchTimeout = if (cm?.activeNetwork == null) OFFLINE_BATCH_TIMEOUT_MS else BATCH_TIMEOUT_MS
-        while (!controller.allLoaded) {
+        // A windowed time line (archived day) keeps loading as the window moves along.
+        while (controller.windowed || !controller.allLoaded) {
             delay(LOAD_POLL_MS)
             if (controller.frames.isEmpty()) continue
             waited += LOAD_POLL_MS
@@ -407,7 +466,10 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
                 waited = 0
             }
             loadedFrames = controller.loadedCount
-            if (!ready && (controller.playableRange().count() >= MIN_FRAMES_TO_PLAY || controller.allLoaded)) {
+            val canPlay = if (controller.windowed) {
+                (frame until (frame + MIN_FRAMES_TO_PLAY).coerceAtMost(controller.frames.size)).all { controller.isLoaded(it) }
+            } else controller.playableRange().count() >= MIN_FRAMES_TO_PLAY || controller.allLoaded
+            if (!ready && canPlay) {
                 ready = true
                 playing = true
                 if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "loop starts after ${System.currentTimeMillis() - openedAt} ms")
@@ -425,8 +487,11 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
         val lon = place?.longitude ?: 10.4
         RadarNetStatus.reset()
         // Grid and time line in parallel; neither may hold up the other.
-        val gridJob = async { WeatherGridStore.ensure(container.http, lat, lon) }
-        val tl = runCatching { RadarSources.timeline(container.http, range, force = reloadKey > 0) }.getOrNull()
+        val gridJob = async { WeatherGridStore.ensure(container.http, lat, lon, from = archiveDay) }
+        val tl = runCatching {
+            if (archiveDay != null) RadarSources.dayTimeline(container.http, archiveDay)
+            else RadarSources.timeline(container.http, range, force = reloadKey > 0)
+        }.getOrNull()
         if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "timeline after ${System.currentTimeMillis() - openedAt} ms")
         val grid = gridJob.await()
         if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "grid after ${System.currentTimeMillis() - openedAt} ms")
@@ -450,7 +515,7 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
         val cam = controller.map?.cameraPosition ?: return@LaunchedEffect
         val c = cam.target ?: return@LaunchedEffect
         val step = if (showTemp || showWind) WeatherGrid.stepForZoom(cam.zoom) else WeatherGrid.STEP
-        WeatherGridStore.ensure(container.http, c.latitude, c.longitude, step)?.let {
+        WeatherGridStore.ensure(container.http, c.latitude, c.longitude, step, from = archiveDay)?.let {
             overlays.setGrid(it)
             timeline?.let { tl -> overlays.update(tl.frames[frame.coerceIn(0, tl.frames.lastIndex)].time) }
         }
@@ -466,8 +531,8 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
     }
     LaunchedEffect(showTemp, showWind, styleReady) {
         if (!styleReady) return@LaunchedEffect
-        overlays.setVisible(showTemp, showWind)
-        controller.frameOpacity = if (showTemp) 1f else 0.85f
+        overlays.setVisible(showTemp && !archive, showWind && !archive)
+        controller.frameOpacity = if (showTemp && !archive) 1f else 0.85f
         controller.show(frame, force = true)
     }
     // The visible map has priority over background preloading.
@@ -481,6 +546,15 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
     LaunchedEffect(satellite, warnings) { controller.setOverlays(satellite, warnings) }
     LaunchedEffect(playing, timeline) {
         timeline ?: return@LaunchedEffect
+        while (playing && timeline?.day != null) {
+            // Archived day: forward through the day, waiting (buffering) while the next frame loads
+            delay(ARCHIVE_FRAME_MS)
+            val next = frame + 1
+            when {
+                next > timeline!!.frames.lastIndex -> playing = false
+                controller.isLoaded(next) -> frame = next
+            }
+        }
         while (playing) {
             // Play only the loaded part of the loop; it grows while the remaining frames load.
             val range = controller.playableRange().takeIf { !it.isEmpty() } ?: (frame..frame)
@@ -503,7 +577,8 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
         ) {
             Column(Modifier.weight(1f).padding(start = 8.dp)) {
                 Text(stringResource(R.string.radar_title), fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                place?.let { Text(it.name, fontSize = 13.sp, color = NimbusColors.Secondary) }
+                val dayLabel = archiveDay?.let { tf.dayMonth(it) }
+                place?.let { Text(listOfNotNull(it.name, dayLabel).joinToString(" · "), fontSize = 13.sp, color = NimbusColors.Secondary) }
             }
             IconButton(onClick = {
                 place?.let { p -> controller.map?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(p.latitude, p.longitude), 7.5)) }
@@ -523,7 +598,8 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
             }
         }
         val total = timeline?.frames?.size ?: 0
-        val stillLoading = timeline != null && styleReady && loadedFrames < total
+        val stillLoading = timeline != null && styleReady &&
+            if (archive) loadedFrames >= 0 && !controller.isLoaded(frame) else loadedFrames < total
         val trouble = netStatus.failed > 0 || netStatus.fromCache > 0
         if (error || stillLoading || trouble) {
             Column(
@@ -535,7 +611,10 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.radar_loading_frames, loadedFrames, total), color = Color.White, fontSize = 13.sp)
+                        Text(
+                            if (archive) stringResource(R.string.radar_loading) else stringResource(R.string.radar_loading_frames, loadedFrames, total),
+                            color = Color.White, fontSize = 13.sp,
+                        )
                     }
                 }
                 val msg = when {
@@ -570,7 +649,7 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
             if (tl != null) {
                 val f = tl.frames[frame.coerceIn(0, tl.frames.lastIndex)]
                 val outsideGermany = place != null && !WeatherRepository.isInDwdArea(place.latitude, place.longitude)
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                if (!archive) Row(verticalAlignment = Alignment.CenterVertically) {
                     HistoryRange.entries.forEach { r ->
                         ToggleChip(stringResource(R.string.radar_range_hours, r.hours), range == r) {
                             if (range != r) { playing = false; ready = false; range = r }
@@ -581,7 +660,7 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
                         Text(stringResource(R.string.radar_history_germany_only), fontSize = 11.sp, color = Color(0xFFFFD27A), lineHeight = 13.sp)
                     }
                 }
-                Spacer(Modifier.height(8.dp))
+                if (!archive) Spacer(Modifier.height(8.dp))
                 if (f.isForecast && outsideGermany) {
                     Text(
                         stringResource(R.string.radar_forecast_germany_only),
@@ -592,7 +671,10 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(
-                        onClick = { playing = !playing },
+                        onClick = {
+                            if (!playing && archive && frame >= tl.frames.lastIndex) frame = 0
+                            playing = !playing
+                        },
                         modifier = Modifier.clip(CircleShape).background(Color(0x33FFFFFF)).size(44.dp),
                     ) {
                         Icon(
@@ -604,7 +686,7 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
                     Column(Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.Bottom) {
                             // Frames of another day (24 h history) get the weekday in front.
-                            val timeLabel = if (tf.isSameDay(f.time, System.currentTimeMillis())) tf.time(f.time)
+                            val timeLabel = if (archive || tf.isSameDay(f.time, System.currentTimeMillis())) tf.time(f.time)
                             else tf.weekdayShort(f.time) + "\u00A0" + tf.time(f.time)
                             Text(timeLabel, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                             Spacer(Modifier.width(8.dp))
@@ -615,7 +697,7 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
                                 delta < 0 -> stringResource(R.string.radar_minutes_ago, -delta)
                                 else -> stringResource(R.string.radar_minutes_ahead, delta)
                             }
-                            Text(label, fontSize = 13.sp, color = NimbusColors.Secondary, modifier = Modifier.padding(bottom = 2.dp))
+                            if (!archive) Text(label, fontSize = 13.sp, color = NimbusColors.Secondary, modifier = Modifier.padding(bottom = 2.dp))
                             if (f.isForecast) {
                                 Spacer(Modifier.width(8.dp))
                                 Text(
@@ -629,9 +711,10 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
                     }
                 }
                 Spacer(Modifier.height(4.dp))
-                Legend(showTemp, snowLegend, temperatureUnit)
+                Legend(showTemp && !archive, snowLegend, temperatureUnit)
                 Spacer(Modifier.height(8.dp))
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
+                // Temperature, wind, satellite and warnings are live layers – not offered for a past day.
+                if (!archive) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
                     ToggleChip(stringResource(R.string.overlay_temperature), showTemp) { showTemp = !showTemp }
                     Spacer(Modifier.width(6.dp))
                     ToggleChip(stringResource(R.string.overlay_wind), showWind) { showWind = !showWind }
@@ -664,8 +747,20 @@ private fun TimelineSlider(tl: RadarTimeline, frame: Int, onChange: (Int) -> Uni
             Canvas(Modifier.fillMaxWidth().height(18.dp)) {
                 val y = size.height / 2
                 val h = 4.dp.toPx()
-                val nowX = size.width * tl.nowIndex / n
                 val pos = size.width * (state.value / n)
+                if (tl.day != null) {
+                    // Archived day: one track, a tick every 3 hours (longer every 6 hours)
+                    drawLine(Color(0x40FFFFFF), Offset(0f, y), Offset(size.width, y), h, StrokeCap.Round)
+                    drawLine(Color(0xCCFFFFFF), Offset(0f, y), Offset(pos, y), h, StrokeCap.Round)
+                    val perHour = (3_600_000L / RadarSources.ARCHIVE_STEP_MS).toInt()
+                    for (i in 0..n step 3 * perHour) {
+                        val x = size.width * i / n
+                        val long = i % (6 * perHour) == 0
+                        drawLine(Color(0x80FFFFFF), Offset(x, y + 6.dp.toPx()), Offset(x, y + (if (long) 11 else 9).dp.toPx()), 1.dp.toPx())
+                    }
+                    return@Canvas
+                }
+                val nowX = size.width * tl.nowIndex / n
                 // past = white-ish, forecast = amber
                 drawLine(Color(0x40FFFFFF), Offset(0f, y), Offset(nowX, y), h, StrokeCap.Round)
                 drawLine(Color(0x66FFD27A), Offset(nowX, y), Offset(size.width, y), h, StrokeCap.Round)

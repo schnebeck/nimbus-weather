@@ -60,7 +60,8 @@ sealed interface Screen {
     data object Places : Screen
     data object Settings : Screen
     data object Licenses : Screen
-    data class Radar(val placeId: String?) : Screen
+    /** [day]: start (local midnight) of a past day from the look-back, null for the live radar. */
+    data class Radar(val placeId: String?, val day: Long? = null) : Screen
 }
 
 data class Demo(
@@ -100,6 +101,21 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private var lastSettings: Settings? = null
 
     init {
+        // Once the preview card has its size: prepare the radar previews of all places, so that
+        // switching places shows a picture at once (base maps only on Wi-Fi, see RadarPreview).
+        viewModelScope.launch {
+            dev.nimbus.weather.ui.radar.RadarPreview.cardSizeFlow.first { it != null }
+            kotlinx.coroutines.delay(5_000L)            // the visible place first
+            val app = getApplication<Application>()
+            _state.value.pages.forEach { p ->
+                runCatching {
+                    dev.nimbus.weather.ui.radar.RadarPreview.prefetch(
+                        app, container.http, container.mapHttp, p.latitude, p.longitude,
+                        app.resources.displayMetrics.density, app.resources.configuration.locales[0].language,
+                    )
+                }
+            }
+        }
         viewModelScope.launch {
             // Restore last known current location from cache for an instant start.
             val cachedCurrent = store.cachedWeather(LocationProvider.CURRENT_LOCATION_ID)
@@ -239,6 +255,17 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 updatePlace(place.id) { it.copy(data = d, loading = false, error = false, models = null) }
                 runCatching { store.cacheWeather(d) }
                 maybePrefetchRadar(place, settings)
+                // Radar preview of this place, so switching to it shows a picture at once
+                // (own job: must not keep the load job of the place active)
+                viewModelScope.launch {
+                    val app = getApplication<Application>()
+                    runCatching {
+                        dev.nimbus.weather.ui.radar.RadarPreview.prefetch(
+                            app, container.http, container.mapHttp, place.latitude, place.longitude,
+                            app.resources.displayMetrics.density, app.resources.configuration.locales[0].language,
+                        )
+                    }
+                }
             }.onFailure {
                 updatePlace(place.id) { it.copy(loading = false, error = true) }
             }

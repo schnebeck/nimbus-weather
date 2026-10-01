@@ -44,9 +44,12 @@ class WeatherRepository(
     private val pollen: PollenSource,
     private val gauges: dev.nimbus.weather.data.remote.GaugeSource? = null,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val bathing: dev.nimbus.weather.data.remote.BathingSource? = null,
 ) {
 
-    suspend fun load(place: Place, settings: Settings, german: Boolean): WeatherData = coroutineScope {
+    // Off the main thread: besides the requests, the parsing and selection (e.g. ~1,600 LHP gauges)
+    // take noticeable CPU time – on the main thread they froze the UI.
+    suspend fun load(place: Place, settings: Settings, german: Boolean): WeatherData = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { coroutineScope {
         val lat = place.latitude
         val lon = place.longitude
         val primaryModel = settings.model.openMeteoId
@@ -79,6 +82,15 @@ class WeatherRepository(
             else kotlinx.coroutines.withTimeoutOrNull(GAUGE_TIMEOUT_MS) {
                 runCatching { gauges.nearby(lat, lon) }
                     .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it; android.util.Log.w("Nimbus", "gauges unavailable: $it") }
+                    .getOrDefault(emptyList())
+            }.orEmpty()
+        }
+        // Bathing waters (EEA, Europe-wide) – only when the card is shown; optional like the gauges
+        val bathingJob = async {
+            if (bathing == null || !settings.shows(dev.nimbus.weather.data.model.WeatherCard.BATHING)) emptyList()
+            else kotlinx.coroutines.withTimeoutOrNull(BATHING_TIMEOUT_MS) {
+                runCatching { bathing.nearby(lat, lon, settings.bathingRadiusKm, settings.bathingFavorites) }
+                    .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it; android.util.Log.w("Nimbus", "bathing waters unavailable: $it") }
                     .getOrDefault(emptyList())
             }.orEmpty()
         }
@@ -125,6 +137,8 @@ class WeatherRepository(
         val pollenForecast = pollenJob.await()
         if (pollenForecast?.source == dev.nimbus.weather.data.model.PollenSourceKind.DWD) sources += Source(SourceKind.DWD_POLLEN)
         val gaugeList = gaugeJob.await()
+        val bathingList = bathingJob.await()
+        if (bathingList.isNotEmpty()) sources += Source(SourceKind.BATHING, bathingList.mapNotNull { it.provider }.distinct().joinToString(","))
         if (gaugeList.isNotEmpty()) sources += Source(SourceKind.GAUGES, gaugeList.map { it.provider }.distinct().joinToString(",") { it.name })
         val floodAlerts = floodJob.await()
         if (floodAlerts.isNotEmpty()) sources += Source(SourceKind.LHP_ALERTS)
@@ -144,10 +158,11 @@ class WeatherRepository(
             community = communityObs,
             pollen = pollenForecast,
             gauges = gaugeList,
+            bathing = bathingList,
             sources = sources,
             fetchedAt = clock(),
         )
-    }
+    } }
 
     suspend fun modelComparison(place: Place): List<ModelSeries> =
         openMeteo.modelComparison(place.latitude, place.longitude, ComparisonModels)
@@ -157,6 +172,7 @@ class WeatherRepository(
     companion object {
         /** The first tide fit downloads ~3 MB; later loads take a fraction of a second. */
         private const val GAUGE_TIMEOUT_MS = 40_000L
+        private const val BATHING_TIMEOUT_MS = 30_000L
 
         /** Rough bounding box of the DWD station network / warning area. */
         fun isInDwdArea(lat: Double, lon: Double) = lat in 47.2..55.1 && lon in 5.8..15.1

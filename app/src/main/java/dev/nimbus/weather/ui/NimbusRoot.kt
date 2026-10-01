@@ -74,6 +74,7 @@ fun NimbusRoot(viewModel: MainViewModel) {
                     onSelect = viewModel::select,
                     onRefresh = viewModel::refresh,
                     onOpenRadar = { viewModel.navigate(Screen.Radar(it)) },
+                    onOpenRadarDay = { id, day -> viewModel.navigate(Screen.Radar(id, day)) },
                     onOpenPlaces = { viewModel.navigate(Screen.Places) },
                     onRequestModels = viewModel::loadModels,
                     onRequestHistory = { viewModel.loadHistory(it) },
@@ -99,7 +100,7 @@ fun NimbusRoot(viewModel: MainViewModel) {
                 Screen.Licenses -> dev.nimbus.weather.ui.settings.LicensesScreen(onBack = { viewModel.back() })
                 is Screen.Radar -> {
                     val place = state.pages.firstOrNull { it.id == screen.placeId } ?: state.pages.firstOrNull()
-                    RadarScreen(place = place, temperatureUnit = state.settings.temperatureUnit, onBack = { viewModel.back() })
+                    RadarScreen(place = place, temperatureUnit = state.settings.temperatureUnit, archiveDay = screen.day, onBack = { viewModel.back() })
                 }
             }
         }

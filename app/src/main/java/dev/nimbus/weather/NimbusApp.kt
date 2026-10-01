@@ -46,6 +46,7 @@ class NimbusApp : Application() {
         container = AppContainer(this)
         dev.nimbus.weather.ui.radar.WeatherGridStore.cacheDir = java.io.File(cacheDir, "grid")
         dev.nimbus.weather.ui.radar.RadarSources.stateDir = java.io.File(cacheDir, "radar")
+        dev.nimbus.weather.ui.radar.RadarPreview.dir = java.io.File(cacheDir, "previews")
         MapLibre.getInstance(this)
         // MapLibre stops requesting tiles while Android reports no connection and waits for it to
         // come back. Our HTTP client answers from its cache when offline (StaleFallbackInterceptor),
@@ -92,5 +93,8 @@ class AppContainer(app: Application) {
     val repository = WeatherRepository(
         openMeteo, BrightSkySource(http), CommunitySource(http), PollenSource(http),
         dev.nimbus.weather.data.remote.GaugeSource(http, File(app.cacheDir, "tides")),
+        bathing = dev.nimbus.weather.data.remote.BathingSource(http, File(app.cacheDir, "bathing")) {
+            dev.nimbus.weather.ui.radar.RadarPrefetcher.isUnmetered(app)
+        },
     )
 }

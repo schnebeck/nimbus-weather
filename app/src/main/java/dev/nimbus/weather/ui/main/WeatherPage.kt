@@ -250,6 +250,7 @@ private fun WeatherContent(
             if (data.airQuality?.europeanAqi != null && cards.shows(WeatherCard.AIR_QUALITY)) item(key = "aqi") { AirQualityCard(data) }
             if (cards.shows(WeatherCard.POLLEN)) data.pollen?.let { p -> item(key = "pollen") { PollenForecastCard(p, now) } }
             if (data.gauges.isNotEmpty() && cards.shows(WeatherCard.GAUGES)) item(key = "gauge") { GaugeCard(data.gauges, now) }
+            if (data.bathing.isNotEmpty() && cards.shows(WeatherCard.BATHING)) item(key = "bathing") { BathingCard(data.bathing, now) }
             if (data.community != null && cards.shows(WeatherCard.COMMUNITY)) item(key = "community") { CommunityCard(data) }
             if (cards.shows(WeatherCard.MODELS)) item(key = "models") { ModelComparisonCard(state.models, now, onRequestModels) }
             item(key = "sources") { SourcesFooter(data) }

@@ -152,13 +152,55 @@ data class WeatherData(
     val pollen: PollenForecast? = null,
     /** Nearby water level gauges, one per water body (tide gauge first), only in Germany. */
     val gauges: List<GaugeInfo> = emptyList(),
+    /** Official EU bathing waters in the chosen radius plus favourites (nearest first). */
+    val bathing: List<BathingSite> = emptyList(),
     val sources: List<Source>,
     val fetchedAt: Long,
 )
 
+@Serializable
+enum class BathingCategory { LAKE, RIVER, COAST, TRANSITIONAL }
+
+/** EU classification of the last four seasons (bathing water directive). */
+@Serializable
+enum class BathingQuality { EXCELLENT, GOOD, SUFFICIENT, POOR, NOT_CLASSIFIED }
+
+/** Current assessment by the state, where it publishes one (Berlin: traffic light). */
+@Serializable
+enum class BathingStatus { OK, WARNING, CLOSED }
+
+/** An official EU bathing water (EEA) with the latest values the state publishes openly. */
+@Serializable
+data class BathingSite(
+    /** EU identifier, e.g. "DEBE_PR_0019". */
+    val id: String,
+    val name: String,
+    val category: BathingCategory,
+    val lat: Double,
+    val lon: Double,
+    val distanceKm: Double,
+    val quality: BathingQuality? = null,
+    /** Bathing water profile of the state (PDF or web page). */
+    val profileLink: String? = null,
+    /** Water temperature (°C): a sample of the health office, or the sea model at coasts. */
+    val waterTemp: Double? = null,
+    val waterTempTime: Long? = null,
+    val waterTempFromModel: Boolean = false,
+    /** Date of the last sample and what it found. */
+    val sampleTime: Long? = null,
+    val visibilityM: Double? = null,
+    val status: BathingStatus? = null,
+    /** Blue-green algae (cyanobacteria) reported at the last check. */
+    val algae: Boolean = false,
+    /** Notice of the health office (algae, cercariae, closures …), as published. */
+    val notice: String? = null,
+    /** Who provided the current values (e.g. "LAGeSo Berlin"). */
+    val provider: String? = null,
+)
+
 /** A data source that contributed to a forecast; rendered localized in the UI. */
 @Serializable
-enum class SourceKind { MODEL_DWD_ICON, MODEL_ECMWF, MODEL_METEO_FRANCE, MODEL_BEST_MATCH, GAP_FILL, DWD_STATION, DWD_WARNINGS, CAMS, COMMUNITY, DWD_POLLEN, PEGELONLINE, NLWKN, GAUGES, LHP_ALERTS }
+enum class SourceKind { MODEL_DWD_ICON, MODEL_ECMWF, MODEL_METEO_FRANCE, MODEL_BEST_MATCH, GAP_FILL, DWD_STATION, DWD_WARNINGS, CAMS, COMMUNITY, DWD_POLLEN, PEGELONLINE, NLWKN, GAUGES, LHP_ALERTS, BATHING }
 
 @Serializable
 data class Source(val kind: SourceKind, val detail: String? = null)

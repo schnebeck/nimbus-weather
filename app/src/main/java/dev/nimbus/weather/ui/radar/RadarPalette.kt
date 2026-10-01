@@ -232,7 +232,7 @@ object RadarPalette {
         val px = IntArray(w * h)
         bitmap.getPixels(px, 0, w, 0, 0, w, h)
         // Tiles at low zoom are wider than the grid: look it up by overlap, not by the tile centre.
-        val grid = if (geo != null && timeMs != null) WeatherGridStore.gridOverlapping(geo) else null
+        val grid = if (geo != null && timeMs != null) WeatherGridStore.gridOverlapping(geo, timeMs) else null
         val field = if (grid != null && timeMs != null) grid.temp[grid.hourIndex(timeMs)] else null
         // Latitude depends only on the row and longitude only on the column (Mercator tiles).
         val rowLat = if (field != null && geo != null) DoubleArray(h) { geo.latAt((it + 0.5) / h) } else null

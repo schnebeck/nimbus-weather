@@ -166,6 +166,8 @@ object WeatherGridStore {
     @Volatile private var grids: List<Pair<Long, WeatherGrid>> = emptyList()
     private const val MAX_AGE_MS = 60 * 60_000L
     private const val STALE_MAX_AGE_MS = 24 * 3600_000L
+    private const val PAST_HOURS = 25
+    private val PAST_STEPS = listOf(25, 49, 73, 97)
     /** Grids are also kept on disk for an hour, so app restarts cost no API calls. */
     @Volatile var cacheDir: java.io.File? = null
 
@@ -185,17 +187,28 @@ object WeatherGridStore {
      * Grid for colouring a radar tile: the finest one that covers the whole tile, else the
      * coarsest overlapping one (largest area; edges are continued by [WeatherGrid.sampleNear]).
      */
-    fun gridOverlapping(tile: TileGeo): WeatherGrid? {
-        val all = grids.map { it.second }
+    fun gridOverlapping(tile: TileGeo, timeMs: Long? = null): WeatherGrid? {
+        // Grids that reach back to the tile's time first (an archived day needs a longer grid)
+        val all = grids.map { it.second }.let { g ->
+            timeMs?.let { t -> g.filter { (it.times.firstOrNull() ?: Long.MAX_VALUE) <= t + 1_800_000L }.ifEmpty { null } } ?: g
+        }
         return all.filter { it.contains(tile.south, tile.west) && it.contains(tile.north, tile.east) }.minByOrNull { it.step }
             ?: all.filter { it.overlaps(tile.south, tile.north, tile.west, tile.east) }.maxByOrNull { it.step }
     }
 
     /** Makes sure a fresh grid covers [lat]/[lon] with some margin; returns it (or null on error). */
-    suspend fun ensure(http: OkHttpClient, lat: Double, lon: Double, step: Double = WeatherGrid.STEP): WeatherGrid? = mutex.withLock {
+    suspend fun ensure(
+        http: OkHttpClient, lat: Double, lon: Double, step: Double = WeatherGrid.STEP,
+        /** Earliest time needed (archived radar day); the grid then reaches back up to 4 days. */
+        from: Long? = null,
+    ): WeatherGrid? = mutex.withLock {
         val now = System.currentTimeMillis()
-        grids.firstOrNull { now - it.first < MAX_AGE_MS && it.second.step == step && it.second.contains(lat, lon, margin = 2 * step) }
-            ?.let { return it.second }
+        // In whole days (25, 49, 73, 97 h), so the cached file is reused through the day
+        val pastHours = from?.let { f -> val need = ((now - f) / 3_600_000L).toInt() + 2; PAST_STEPS.firstOrNull { it >= need } ?: PAST_STEPS.last() } ?: PAST_HOURS
+        grids.firstOrNull {
+            now - it.first < MAX_AGE_MS && it.second.step == step && it.second.contains(lat, lon, margin = 2 * step) &&
+                (from == null || (it.second.times.firstOrNull() ?: Long.MAX_VALUE) <= from)
+        }?.let { return it.second }
         val (lat0, lon0) = WeatherGrid.origin(lat, lon, step)
         val rows = 2 * WeatherGrid.HALF_ROWS + 1
         val cols = 2 * WeatherGrid.HALF_COLS + 1
@@ -207,9 +220,11 @@ object WeatherGridStore {
             lons.append(OpenMeteoSource.fmt(lon0 + c * step))
         }
         val url = "https://api.open-meteo.com/v1/forecast?latitude=$lats&longitude=$lons" +
-            "&hourly=temperature_2m,wind_speed_10m,wind_direction_10m&past_hours=25&forecast_hours=4" +
+            "&hourly=temperature_2m,wind_speed_10m,wind_direction_10m&past_hours=$pastHours&forecast_hours=4" +
             "&timeformat=unixtime&wind_speed_unit=kmh&cell_selection=nearest"
-        val file = cacheDir?.let { java.io.File(it, "grid_${step}_${OpenMeteoSource.fmt(lat0)}_${OpenMeteoSource.fmt(lon0)}.json") }
+        val file = cacheDir?.let {
+            java.io.File(it, "grid_${step}_${OpenMeteoSource.fmt(lat0)}_${OpenMeteoSource.fmt(lon0)}" + (if (pastHours > PAST_HOURS) "_p$pastHours" else "") + ".json")
+        }
         suspend fun readFile(maxAge: Long) = file?.takeIf { it.exists() && now - it.lastModified() < maxAge }?.let {
             withContext(Dispatchers.IO) { JsonCodec.parseToJsonElement(it.readText()) }
         }

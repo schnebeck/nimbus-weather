@@ -110,7 +110,8 @@ class NlwknSource(
             }
 
         /** "/Date(1790778600000)/" -> 1790778600000 */
-        fun parseDate(s: String?): Long? = s?.let { Regex("""/Date\((-?\d+)""").find(it)?.groupValues?.get(1)?.toLongOrNull() }
+        private val DATE = Regex("""/Date\((-?\d+)""")
+        fun parseDate(s: String?): Long? = s?.let { DATE.find(it)?.groupValues?.get(1)?.toLongOrNull() }
 
         /** Station data and the water level series of the "datenspuren" answer. */
         fun parseSeries(root: JsonElement, distanceKm: Double): GaugeInfo? {

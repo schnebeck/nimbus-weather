@@ -17,6 +17,9 @@
 
 package dev.nimbus.weather.ui.main
 
+import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import dev.nimbus.weather.data.repo.WeatherRepository
 import android.text.format.DateFormat
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
@@ -112,7 +115,10 @@ fun modelName(m: ForecastModel) = when (m) {
  * Measured DWD station values are compared with what the model had predicted for the same hours.
  */
 @Composable
-fun HistoryPage(place: Place, state: PlaceState?, settings: Settings, dayIndex: Int, isActive: Boolean, onRetry: () -> Unit) {
+fun HistoryPage(
+    place: Place, state: PlaceState?, settings: Settings, dayIndex: Int, isActive: Boolean, onRetry: () -> Unit,
+    onOpenRadarDay: (Long) -> Unit = {},
+) {
     val context = LocalContext.current
     val history = state?.history
     val day = history?.days?.getOrNull(dayIndex)
@@ -168,6 +174,11 @@ fun HistoryPage(place: Place, state: PlaceState?, settings: Settings, dayIndex: 
                         item(key = "summary") { SummaryCard(summary, history, settings, tf) }
                         // Right after midnight there is only one hour – nothing to draw yet.
                         if (day.hours.size >= 2) item(key = "course") { DayCourseCard(day, summary, settings, tf) }
+                        // The DWD keeps about 3½ days of radar: the whole day, in 5-minute steps (Germany)
+                        if (WeatherRepository.isInDwdArea(place.latitude, place.longitude)) item(key = "radar") {
+                            val start = day.date.atStartOfDay(history.zone).toInstant().toEpochMilli()
+                            RadarDayCard(start, tf) { onOpenRadarDay(start) }
+                        }
                     }
                 }
             }
@@ -332,6 +343,22 @@ private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, 
                 ),
                 fontSize = 13.sp, color = Color.White, modifier = Modifier.padding(top = 6.dp),
             )
+        }
+    }
+}
+
+/** Entry to the radar of the shown day (look-back). */
+@Composable
+private fun RadarDayCard(dayStart: Long, tf: TimeFormat, onOpen: () -> Unit) {
+    dev.nimbus.weather.ui.components.GlassCard(
+        title = stringResource(R.string.history_radar_title), icon = Icons.Outlined.Map, onClick = onOpen,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.history_radar_text, tf.weekdayLong(dayStart)), fontSize = 15.sp, color = Color.White, lineHeight = 20.sp)
+                Text(stringResource(R.string.history_radar_hint), fontSize = 12.sp, color = NimbusColors.Secondary, lineHeight = 16.sp)
+            }
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = NimbusColors.Secondary)
         }
     }
 }

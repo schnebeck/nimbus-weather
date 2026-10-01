@@ -1,0 +1,6 @@
+• Badegewässer: EU-Badestellen im Umkreis (einstellbar) und Favoriten, mit Meerestemperatur, Blaualgen und Wassertemperatur (Berlin, SH)
+• Rückblick: Regenradar des ganzen Tages in 5-Minuten-Schritten
+• Radar-Vorschau sofort beim Ortswechsel
+• „<10 %“ statt „0 %“, wenn das Modell trotzdem etwas Regen rechnet
+• Behoben: kurzes Einfrieren beim Laden der Pegel
+• Niederschlagszeile durchgehend mit Uhrzeiten

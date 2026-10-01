@@ -133,6 +133,15 @@ class LogicTest {
     }
 
     @Test
+    fun `chance shown as below 10 when the main run still delivers an amount`() {
+        assertEquals("<10", Insights.chanceText(0.0, 0.5))      // Groß Düngen, Saturday 22:00: 0.5 mm at 0 %
+        assertEquals("0", Insights.chanceText(0.0, 0.0))
+        assertEquals("0", Insights.chanceText(3.0, 0.05))      // below the measurable amount
+        assertEquals("20", Insights.chanceText(20.0, 0.5))
+        assertEquals(null, Insights.chanceText(null, 0.5))
+    }
+
+    @Test
     fun `precipitation notice - kind, strength and two-hour horizon`() {
         val showers = listOf(hour(1, Condition.RAIN), hour(2, Condition.RAIN), hour(3, Condition.RAIN))
         // light rain (0.4 mm/15 min = 1.6 mm/h) starting in 30 min
@@ -157,7 +166,9 @@ class LogicTest {
         // "until about 10:59" -> 11:00: the end is the start of the first dry interval, on 5 minutes
         val at1049 = now + 4 * 60_000L + 30_000L                     // points at :45, :00, :15; now = :49:30
         val ends = Insights.precipNotice(mins(0.3, 0.0, 0.0), showers, Condition.RAIN, at1049, true)!!
-        assertEquals(now + 900_000L, ends.until)
+        assertEquals(now + 900_000L, ends.at)
+        assertEquals(now + 1_800_000L, light.at)                       // starts at :30
+        assertEquals(now + 2 * 3_600_000L, Insights.precipNotice(mins(0.5, 0.5, 0.5), showers, Condition.RAIN, now, true)!!.at)
         // rain only after 2 h 15 min: no notice
         val late = DoubleArray(9) { 0.0 } + doubleArrayOf(1.0, 1.0)
         assertEquals(null, Insights.precipNotice(mins(*late), showers, Condition.CLOUDY, now, false))

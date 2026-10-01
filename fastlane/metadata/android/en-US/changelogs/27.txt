@@ -1,0 +1,6 @@
+• Bathing waters: EU sites nearby (adjustable) and favourites, with sea temperature, blue-green algae and water temperature (Berlin, SH)
+• Look back: rain radar of the whole day in 5-minute steps
+• Radar preview at once when switching places
+• "<10 %" instead of "0 %" when the model still delivers some rain
+• Fixed: short freeze while loading the gauges
+• Precipitation line with clock times throughout

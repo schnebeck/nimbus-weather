@@ -160,6 +160,15 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                 }
             }
             item {
+                Section(stringResource(R.string.bathing_title)) {
+                    Text(stringResource(R.string.settings_bathing_desc), fontSize = 13.sp, color = NimbusColors.Secondary, lineHeight = 18.sp)
+                    Spacer(Modifier.size(10.dp))
+                    Segmented(BathingRadii.map { "$it km" }, BathingRadii.indexOf(settings.bathingRadiusKm).coerceAtLeast(0)) { i ->
+                        onChange { it.copy(bathingRadiusKm = BathingRadii[i]) }
+                    }
+                }
+            }
+            item {
                 Section(stringResource(R.string.pollen_forecast)) {
                     Text(stringResource(R.string.settings_pollen_desc), fontSize = 13.sp, color = NimbusColors.Secondary, lineHeight = 18.sp)
                     Spacer(Modifier.size(10.dp))
@@ -193,6 +202,8 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
     }
 }
 
+private val BathingRadii = listOf(10, 25, 50, 100)
+
 /** Card titles as shown on the weather page. */
 private fun cardLabel(c: WeatherCard): Int = when (c) {
     WeatherCard.ALERTS -> R.string.alerts
@@ -211,6 +222,7 @@ private fun cardLabel(c: WeatherCard): Int = when (c) {
     WeatherCard.AIR_QUALITY -> R.string.air_quality
     WeatherCard.POLLEN -> R.string.pollen_forecast
     WeatherCard.GAUGES -> R.string.gauge_title_level
+    WeatherCard.BATHING -> R.string.bathing_title
     WeatherCard.COMMUNITY -> R.string.community_sensors
     WeatherCard.MODELS -> R.string.model_comparison
 }

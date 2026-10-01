@@ -56,7 +56,11 @@ data class RadarFrame(
     val rainViewerPath: String?,
 )
 
-data class RadarTimeline(val frames: List<RadarFrame>, val nowIndex: Int, val rainViewerHost: String, val range: HistoryRange = HistoryRange.H2)
+data class RadarTimeline(
+    val frames: List<RadarFrame>, val nowIndex: Int, val rainViewerHost: String, val range: HistoryRange = HistoryRange.H2,
+    /** Start (local midnight) of a past day shown in full (look-back archive), else null. */
+    val day: Long? = null,
+)
 
 /**
  * How far the radar loop looks back. DWD keeps three days of radar, RainViewer (Europe) only two
@@ -151,6 +155,25 @@ object RadarSources {
             cached[range] = System.currentTimeMillis() to tl
             tl
         }
+    }
+
+    /** Resolution of the day archive: every DWD analysis (5 minutes). */
+    const val ARCHIVE_STEP_MS = 5 * 60_000L
+
+    /**
+     * A whole day of DWD radar analyses for the look-back (the DWD keeps about 3½ days): from
+     * [dayStart] to the end of the day, today up to the latest analysis. Germany only.
+     */
+    suspend fun dayTimeline(http: OkHttpClient, dayStart: Long, now: Long = System.currentTimeMillis()): RadarTimeline {
+        val latest = withTimeoutOrNull(DISCOVERY_TIMEOUT_MS) { runCatching { latestDwdAnalysis(http) }.getOrNull() }
+            ?.also { latestAnalysis = it }
+            ?: latestAnalysis ?: ((now - 10 * 60_000L) / ARCHIVE_STEP_MS * ARCHIVE_STEP_MS)
+        val end = minOf(dayStart + 24 * 3_600_000L, latest)
+        val frames = (0..((end - dayStart) / ARCHIVE_STEP_MS).toInt()).map { k ->
+            val t = dayStart + k * ARCHIVE_STEP_MS
+            RadarFrame(t, false, isoTime(t), null)
+        }
+        return RadarTimeline(frames, 0, "", day = dayStart)
     }
 
     private suspend fun latestDwdAnalysis(http: OkHttpClient): Long? {

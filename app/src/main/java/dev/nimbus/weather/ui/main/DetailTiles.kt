@@ -440,7 +440,7 @@ private fun PrecipChart(hours: List<dev.nimbus.weather.data.model.HourlyPoint>, 
                     R.string.precip_chart_readout,
                     tf.time(h.time - 3_600_000L), tf.time(h.time),
                     Units.precipitationNumber(h.precipitation ?: 0.0, s.precipitationUnit) + NBSP + pUnit,
-                    (h.precipitationProbability ?: 0.0).roundToInt(),
+                    Insights.chanceText(h.precipitationProbability ?: 0.0, h.precipitation) ?: "0",
                 ),
                 fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White, modifier = Modifier.alpha(cursorAlpha),
             )

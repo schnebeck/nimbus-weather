@@ -113,7 +113,8 @@ class LhpSource(
             }
 
         /** The LHP escapes some characters as HTML entities ("&#60; 2-jährliches Hochwasser"). */
-        fun decodeEntities(s: String): String = Regex("&#(\\d+);").replace(s) { it.groupValues[1].toInt().toChar().toString() }
+        private val ENTITY = Regex("&#(\\d+);")
+        fun decodeEntities(s: String): String = ENTITY.replace(s) { it.groupValues[1].toInt().toChar().toString() }
             .replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
     }
 }

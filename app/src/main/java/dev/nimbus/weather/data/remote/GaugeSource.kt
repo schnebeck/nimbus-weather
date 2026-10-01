@@ -224,7 +224,8 @@ class GaugeSource(
             select(parseStations(root, lat, lon), radiusKm).firstOrNull()
 
         /** "Weser", "WESER", "Weser (Tideweser)" -> "weser" */
-        fun waterKey(w: String): String = w.lowercase().replace(Regex("\\(.*?\\)"), "").replace("ß", "ss").trim()
+        private val BRACKETS = Regex("\\(.*?\\)")
+        fun waterKey(w: String): String = w.lowercase().replace(BRACKETS, "").replace("ß", "ss").trim()
 
         private val PRIORITY = listOf(GaugeProvider.PEGELONLINE, GaugeProvider.NLWKN, GaugeProvider.LANUK_NRW, GaugeProvider.HLNUG_HESSEN, GaugeProvider.LFULG_SACHSEN, GaugeProvider.LHP)
 

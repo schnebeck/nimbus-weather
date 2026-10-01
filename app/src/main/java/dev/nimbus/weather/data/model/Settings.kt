@@ -40,7 +40,7 @@ enum class PrecipitationUnit { MM, INCH }
 @Serializable
 enum class WeatherCard {
     ALERTS, HOURLY, DAILY, PRECIPITATION, RADAR, FEELS_LIKE, UV_INDEX, WIND, HUMIDITY, VISIBILITY, PRESSURE,
-    SUN, MOON, AIR_QUALITY, POLLEN, GAUGES, COMMUNITY, MODELS,
+    SUN, MOON, AIR_QUALITY, POLLEN, GAUGES, BATHING, COMMUNITY, MODELS,
 }
 
 @Serializable
@@ -57,6 +57,10 @@ data class Settings(
     val pollenTypes: Set<PollenType> = PollenType.entries.toSet(),
     /** Cards the user switched off. */
     val hiddenCards: Set<WeatherCard> = emptySet(),
+    /** Radius of the bathing water card in km. */
+    val bathingRadiusKm: Int = 50,
+    /** Favourite bathing waters (EU ids), shown at any distance. */
+    val bathingFavorites: Set<String> = emptySet(),
 ) {
     fun shows(card: WeatherCard) = card !in hiddenCards
 

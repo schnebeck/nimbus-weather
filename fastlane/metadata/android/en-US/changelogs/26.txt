@@ -1,0 +1,2 @@
+• Precipitation line: end time rounded to 5 minutes ("until about 11:00" instead of "10:59")
+• Open umbrella while it is wet, closed one while the precipitation is still to come

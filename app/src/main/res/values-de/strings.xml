@@ -487,9 +487,9 @@
     <string name="pn_snow_heavy">Starker Schneefall</string>
     <string name="pn_sleet">Schneeregen</string>
     <string name="pn_thunderstorm">Gewitter</string>
-    <string name="pn_starts">%1$s in etwa %2$s.</string>
-    <string name="pn_until">%1$s bis etwa %2$s.</string>
-    <string name="pn_continues">%1$s noch mindestens 2 Std.</string>
+    <string name="pn_starts">%1$s in etwa %2$s</string>
+    <string name="pn_until">%1$s bis etwa %2$s</string>
+    <string name="pn_continues">%1$s noch über 2 Std.</string>
     <string name="pn_minutes">%1$d Min.</string>
     <string name="pn_hours">%1$d Std.</string>
     <string name="pn_hours_minutes">%1$d Std. %2$d Min.</string>

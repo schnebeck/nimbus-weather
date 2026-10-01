@@ -498,9 +498,9 @@
     <string name="pn_snow_heavy">Heavy snow</string>
     <string name="pn_sleet">Sleet</string>
     <string name="pn_thunderstorm">Thunderstorms</string>
-    <string name="pn_starts">%1$s in about %2$s.</string>
-    <string name="pn_until">%1$s until about %2$s.</string>
-    <string name="pn_continues">%1$s for at least 2 more hours.</string>
+    <string name="pn_starts">%1$s in about %2$s</string>
+    <string name="pn_until">%1$s until about %2$s</string>
+    <string name="pn_continues">%1$s for more than 2 hours</string>
     <string name="pn_minutes">%1$d min</string>
     <string name="pn_hours">%1$d h</string>
     <string name="pn_hours_minutes">%1$d h %2$d min</string>

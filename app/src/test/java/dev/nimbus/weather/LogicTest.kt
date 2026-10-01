@@ -152,6 +152,12 @@ class LogicTest {
         val snow = Insights.precipNotice(mins(0.2, 0.2, 0.0), showers, Condition.SNOW, now, true)!!
         assertEquals(Insights.PrecipKind.SNOW, snow.kind)
         assertEquals(Insights.Nowcast.StopsIn(30), snow.state)
+        assertTrue(snow.now)
+        assertTrue(!light.now)
+        // "until about 10:59" -> 11:00: the end is the start of the first dry interval, on 5 minutes
+        val at1049 = now + 4 * 60_000L + 30_000L                     // points at :45, :00, :15; now = :49:30
+        val ends = Insights.precipNotice(mins(0.3, 0.0, 0.0), showers, Condition.RAIN, at1049, true)!!
+        assertEquals(now + 900_000L, ends.until)
         // rain only after 2 h 15 min: no notice
         val late = DoubleArray(9) { 0.0 } + doubleArrayOf(1.0, 1.0)
         assertEquals(null, Insights.precipNotice(mins(*late), showers, Condition.CLOUDY, now, false))

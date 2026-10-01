@@ -42,7 +42,14 @@ object Insights {
     enum class Intensity { LIGHT, MODERATE, HEAVY }
 
     /** "Light rain in about 40 min" – what, how strong and when (start, end or still going). */
-    data class PrecipNotice(val kind: PrecipKind, val intensity: Intensity, val state: Nowcast)
+    data class PrecipNotice(
+        val kind: PrecipKind, val intensity: Intensity, val state: Nowcast,
+        /** End of the precipitation (start of the first dry 15-minute interval), on 5 minutes; with [Nowcast.StopsIn]. */
+        val until: Long? = null,
+    ) {
+        /** Falling now (open umbrella) rather than still to come (closed one). */
+        val now: Boolean get() = state !is Nowcast.StartsIn
+    }
 
     /**
      * Notice for precipitation that falls now or starts within [NOTICE_HORIZON_MS], from the
@@ -79,7 +86,11 @@ object Insights {
             rate < 10.0 -> Intensity.MODERATE
             else -> Intensity.HEAVY
         }
-        return PrecipNotice(kind, intensity, state)
+        val until = if (state is Nowcast.StopsIn) {
+            val stop = points.indices.firstOrNull { i -> i > 0 && points[i].precipitation < RAIN_THRESHOLD_MM_15 }
+            (stop?.let { points[it].time } ?: (now + state.minutes * 60_000L)).let { (it + 150_000L) / 300_000L * 300_000L }
+        } else null
+        return PrecipNotice(kind, intensity, state, until)
     }
 
     /** 15-minute points covering the next three hours, starting with the current interval. */

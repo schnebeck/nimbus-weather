@@ -36,7 +36,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Umbrella
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.Icon
@@ -312,6 +311,37 @@ fun TemperatureRangeBar(low: Double, high: Double, min: Double, max: Double, cur
 // ---------------------------------------------------------------------------------------
 // Nowcast (next 3 hours, 15-minute resolution)
 
+/**
+ * Umbrellas for the precipitation line, drawn in one style (24 × 24): same tip, shaft and hooked
+ * handle; the canopy is either spread (scalloped dome) or furled (slim, pointed, with a strap).
+ */
+private fun umbrella(name: String, canopy: String, shaftTop: Float): androidx.compose.ui.graphics.vector.ImageVector {
+    fun nodes(d: String) = androidx.compose.ui.graphics.vector.PathParser().parsePathString(d).toNodes()
+    val ink = androidx.compose.ui.graphics.SolidColor(Color.Black)
+    return androidx.compose.ui.graphics.vector.ImageVector.Builder(name, 24.dp, 24.dp, 24f, 24f)
+        .addPath(nodes(canopy), fill = ink, pathFillType = androidx.compose.ui.graphics.PathFillType.EvenOdd)
+        .addPath(
+            nodes("M12,1.6 L12,3.2 M12,$shaftTop L12,19.2 A2.1,2.1 0 0 1 7.8,19.2"),
+            stroke = ink, strokeLineWidth = 1.7f,
+            strokeLineCap = androidx.compose.ui.graphics.StrokeCap.Round,
+            strokeLineJoin = androidx.compose.ui.graphics.StrokeJoin.Round,
+        )
+        .build()
+}
+
+private val OpenUmbrella by lazy {
+    umbrella("OpenUmbrella", "M2,12.5 A10,9.5 0 0 1 22,12.5 A3.333,2.2 0 0 0 15.333,12.5 A3.333,2.2 0 0 0 8.667,12.5 A3.333,2.2 0 0 0 2,12.5 Z", 12f)
+}
+
+private val ClosedUmbrella by lazy {
+    // furled canopy with a cut-out strap across its middle
+    umbrella(
+        "ClosedUmbrella",
+        "M12,2.6 C15.6,6.2 15.3,11.2 12.8,14.6 L11.2,14.6 C8.7,11.2 8.4,6.2 12,2.6 Z M9.3,8.7 L14.7,8.7 L14.6,9.9 L9.4,9.9 Z",
+        14.4f,
+    )
+}
+
 /** One line on top of the precipitation card: "Light rain in about 40 min", "Thunderstorms until about 11:30". */
 @Composable
 fun PrecipNoticeText(n: Insights.PrecipNotice, now: Long) {
@@ -342,12 +372,13 @@ fun PrecipNoticeText(n: Insights.PrecipNotice, now: Long) {
     }
     val text = when (val st = n.state) {
         is Insights.Nowcast.StartsIn -> stringResource(R.string.pn_starts, what, inMinutes(st.minutes))
-        is Insights.Nowcast.StopsIn -> stringResource(R.string.pn_until, what, tf.time(now + st.minutes * 60_000L))
+        is Insights.Nowcast.StopsIn -> stringResource(R.string.pn_until, what, tf.time(n.until ?: (now + st.minutes * 60_000L)))
         else -> stringResource(R.string.pn_continues, what)
     }
-    // An umbrella: the line only ever announces unpleasant weather
+    // An umbrella – the line only ever announces unpleasant weather: open while it is wet,
+    // closed while the precipitation is still to come.
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Rounded.Umbrella, null, tint = PrecipBlue, modifier = Modifier.size(24.dp))
+        Icon(if (n.now) OpenUmbrella else ClosedUmbrella, null, tint = PrecipBlue, modifier = Modifier.size(26.dp))
         Spacer(Modifier.width(10.dp))
         Text(text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
     }

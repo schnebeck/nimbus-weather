@@ -17,6 +17,15 @@
 
 package dev.nimbus.weather.ui.main
 
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.input.pointer.pointerInput
 import dev.nimbus.weather.data.model.WeatherCard
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
@@ -98,15 +107,21 @@ fun DetailTiles(data: WeatherData, now: Long) {
         if (c.pressure != null && cards.shows(WeatherCard.PRESSURE)) add { m -> PressureTile(data, hours, m) }
     }
     if (tiles.isEmpty() && !cards.shows(WeatherCard.SUN)) return
+    androidx.compose.foundation.layout.BoxWithConstraints {
+    val side = (maxWidth - 12.dp) / 2
+    val full = maxWidth
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Tiles are square, but a row grows (both tiles alike) when large text or display size
+        // needs more room – nothing is cut off.
         tiles.chunked(2).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.height(androidx.compose.foundation.layout.IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 // A single tile in the last row spans the full width instead of leaving a gap.
-                if (row.size == 1) row[0](Modifier.fillMaxWidth().aspectRatio(2f))
-                else row.forEach { tile -> tile(Modifier.weight(1f).aspectRatio(1f)) }
+                if (row.size == 1) row[0](Modifier.fillMaxWidth().heightIn(min = full / 2).fillMaxHeight())
+                else row.forEach { tile -> tile(Modifier.weight(1f).heightIn(min = side).fillMaxHeight()) }
             }
         }
         if (cards.shows(WeatherCard.SUN)) SunCard(data, now)
+    }
     }
 }
 
@@ -188,7 +203,8 @@ private fun WindTile(data: WeatherData, modifier: Modifier) {
     val dirLabels = Texts.compass.map { stringResource(it) }
     val measurer = rememberTextMeasurer()
     Tile(stringResource(R.string.wind), Icons.Outlined.Air, modifier, Term.WIND) {
-        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+        // Minimum height: with large text the row grows instead of squeezing the compass
+        Box(Modifier.fillMaxWidth().weight(1f).heightIn(min = 84.dp), contentAlignment = Alignment.Center) {
             Canvas(Modifier.fillMaxSize()) {
                 val r = size.minDimension / 2 * 0.95f
                 val center = Offset(size.width / 2, size.height / 2)
@@ -273,78 +289,160 @@ fun PrecipitationCard(data: WeatherData, now: Long, nowcast: List<dev.nimbus.wea
             fontSize = 14.sp, color = Color.White,
         )
         Spacer(Modifier.height(10.dp))
-        PrecipChanceChart(hours, nightsFromDaily(data.daily, hours.first().time - 3_600_000L, hours.last().time), Modifier.fillMaxWidth().bleed(CARD_BLEED))
-        Spacer(Modifier.height(4.dp))
-        Text(stringResource(R.string.precip_chart_hint), fontSize = 11.sp, color = NimbusColors.Tertiary)
+        PrecipChart(hours, nightsFromDaily(data.daily, hours.first().time - 3_600_000L, hours.last().time), Modifier.fillMaxWidth().bleed(CARD_BLEED))
     }
 }
 
 /**
- * Chance of precipitation per hour for the next 24 h, in the style of the meteogram: "%" in
- * the top corner, numbers-only axis, 3-hourly time grid, night shading. Each bar covers the
- * hour before its time stamp (like the model values), so the axis runs from now to now + 24 h.
+ * Next 24 h in the style of the meteogram: amount per hour as bars (right axis, mm or in), chance
+ * of precipitation as a line (left axis, %), night shading. Each bar covers the hour before its
+ * time stamp (like the model values). A long press shows a cursor with the values of the hour –
+ * dragging moves it, it fades out after 10 s, as in the 10-day forecast.
  */
 @Composable
-private fun PrecipChanceChart(hours: List<dev.nimbus.weather.data.model.HourlyPoint>, nights: List<LongRange>, modifier: Modifier) {
+private fun PrecipChart(hours: List<dev.nimbus.weather.data.model.HourlyPoint>, nights: List<LongRange>, modifier: Modifier) {
+    val s = LocalSettings.current
     val tf = LocalTimeFormat.current
     val measurer = rememberTextMeasurer()
     val labelStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Tertiary)
     val unitStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Secondary, fontWeight = FontWeight.SemiBold)
     val nowLabel = stringResource(R.string.now)
+    val pUnit = stringResource(Texts.precipUnit(s.precipitationUnit))
+    val inch = s.precipitationUnit == dev.nimbus.weather.data.model.PrecipitationUnit.INCH
     val start = hours.first().time - 3_600_000L
     val end = hours.last().time
     val span = (end - start).toFloat()
-    Canvas(modifier.height(118.dp)) {
-        val gap = 3.dp.toPx()
-        val axisL = listOf("100", "50", "0").maxOf { measurer.measure(it, labelStyle).size.width } + gap
-        val unit = measurer.measure("%", unitStyle)
-        val top = unit.size.height + measurer.measure("0", labelStyle).size.height / 2f + 4.dp.toPx()
-        val labelH = measurer.measure("00", labelStyle).size.height
-        val bottom = size.height - labelH - 4.dp.toPx()
-        val l = axisL
-        val r = size.width - measurer.measure(tf.hour(end), labelStyle).size.width / 2f
-        fun x(t: Long) = l + (r - l) * ((t - start) / span)
-        drawRect(DayTint, Offset(l, top), Size(r - l, bottom - top))
-        nights.forEach { n ->
-            val a = maxOf(n.first, start); val b = minOf(n.last + 1, end)
-            if (b > a) drawRect(NightShade, Offset(x(a), top), Size(x(b) - x(a), bottom - top))
-        }
-        drawText(unit, topLeft = Offset(0f, 0f))
-        for (k in 0..2) {
-            val y = top + (bottom - top) * k / 2
-            drawLine(Color(0x1FFFFFFF), Offset(l, y), Offset(r, y), 1f)
-            val t = measurer.measure("${100 - 50 * k}", labelStyle)
-            drawText(t, topLeft = Offset(l - t.size.width - gap, y - t.size.height / 2f))
-        }
-        // Time axis: "now" at the left edge, then every 3 h, and the end time at the right edge.
-        val nowL = measurer.measure(nowLabel, labelStyle)
-        drawText(nowL, topLeft = Offset(l, bottom + 4.dp.toPx()))
-        val endL = measurer.measure(tf.hourEnd(end), labelStyle)
-        val endX = r - endL.size.width / 2f
-        drawText(endL, topLeft = Offset(endX, bottom + 4.dp.toPx()))
-        var mark = (start / 3_600_000L + 1) * 3_600_000L
-        while (mark < end) {
-            if (tf.zoned(mark).hour % 3 == 0) {
-                val xm = x(mark)
-                drawLine(Color(0x1FFFFFFF), Offset(xm, top), Offset(xm, bottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
-                val lt = measurer.measure(tf.hour(mark), labelStyle)
-                val lx = xm - lt.size.width / 2f
-                if (lx > l + nowL.size.width + gap && lx + lt.size.width < endX - gap) drawText(lt, topLeft = Offset(lx, bottom + 4.dp.toPx()))
+    val amounts = hours.map { Units.precipitationValue(it.precipitation ?: 0.0, s.precipitationUnit) }
+    val amountMax = maxOf(if (inch) 0.04 else 1.0, amounts.max()).let { if (inch) kotlin.math.ceil(it * 20) / 20 else kotlin.math.ceil(it) }
+    fun amountLabel(k: Int): String = when {
+        k == 0 -> "0"
+        inch -> String.format(java.util.Locale.getDefault(), "%.2f", amountMax * k / 2)
+        else -> Units.oneDecimal(amountMax * k / 2)
+    }
+
+    var selected by remember(hours) { mutableStateOf(0) }
+    var cursorOn by remember { mutableStateOf(false) }
+    var touched by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    androidx.compose.runtime.LaunchedEffect(touched, cursorOn) {
+        if (cursorOn) { kotlinx.coroutines.delay(10_000L); cursorOn = false }
+    }
+    val cursorAlpha by androidx.compose.animation.core.animateFloatAsState(
+        if (cursorOn) 1f else 0f, androidx.compose.animation.core.tween(if (cursorOn) 150 else 700), label = "cursor",
+    )
+    // Plot edges, shared by drawing and touch handling
+    var plotL by remember { mutableStateOf(0f) }
+    var plotR by remember { mutableStateOf(1f) }
+    fun indexAt(xPx: Float): Int {
+        val t = start + ((xPx - plotL) / (plotR - plotL)).coerceIn(0f, 1f) * span
+        // the bar of an hour spans [time - 1 h, time]
+        return hours.indices.minBy { kotlin.math.abs(hours[it].time - 1_800_000L - t) }
+    }
+
+    Column(modifier) {
+        Canvas(
+            Modifier.fillMaxWidth().height(124.dp)
+                .pointerInput(hours) {
+                    detectDragGesturesAfterLongPress(
+                        onDragStart = { cursorOn = true; selected = indexAt(it.x); touched++ },
+                    ) { change, _ ->
+                        change.consume()
+                        selected = indexAt(change.position.x)
+                        touched++
+                    }
+                }
+                .pointerInput(hours) {
+                    detectTapGestures(onTap = { if (cursorOn) { selected = indexAt(it.x); touched++ } })
+                },
+        ) {
+            val gap = 3.dp.toPx()
+            val axisL = listOf("100", "50", "0").maxOf { measurer.measure(it, labelStyle).size.width } + gap
+            val axisR = maxOf((0..2).maxOf { measurer.measure(amountLabel(it), labelStyle).size.width }, measurer.measure(pUnit, unitStyle).size.width) + gap
+            val unitP = measurer.measure("%", unitStyle)
+            val unitA = measurer.measure(pUnit, unitStyle)
+            val top = unitP.size.height + measurer.measure("0", labelStyle).size.height / 2f + 4.dp.toPx()
+            val labelH = measurer.measure("00", labelStyle).size.height
+            val bottom = size.height - labelH - 4.dp.toPx()
+            val l = axisL
+            val r = size.width - axisR
+            plotL = l; plotR = r
+            fun x(t: Long) = l + (r - l) * ((t - start) / span)
+            fun yP(chance: Double) = (bottom - (chance / 100.0).coerceIn(0.0, 1.0) * (bottom - top)).toFloat()
+            fun yA(v: Double) = (bottom - (v / amountMax).coerceIn(0.0, 1.0) * (bottom - top)).toFloat()
+            drawRect(DayTint, Offset(l, top), Size(r - l, bottom - top))
+            nights.forEach { n ->
+                val a = maxOf(n.first, start); val b = minOf(n.last + 1, end)
+                if (b > a) drawRect(NightShade, Offset(x(a), top), Size(x(b) - x(a), bottom - top))
             }
-            mark += 3_600_000L
+            drawText(unitP, topLeft = Offset(0f, 0f))
+            drawText(unitA, topLeft = Offset(size.width - unitA.size.width, 0f))
+            for (k in 0..2) {
+                val y = top + (bottom - top) * k / 2
+                drawLine(Color(0x1FFFFFFF), Offset(l, y), Offset(r, y), 1f)
+                val t = measurer.measure("${100 - 50 * k}", labelStyle)
+                drawText(t, topLeft = Offset(l - t.size.width - gap, y - t.size.height / 2f))
+                val ta = measurer.measure(amountLabel(2 - k), labelStyle)
+                drawText(ta, topLeft = Offset(r + gap, y - ta.size.height / 2f))
+            }
+            // Time axis: "now" at the left edge, then every 3 h, and the end time at the right edge.
+            val nowL = measurer.measure(nowLabel, labelStyle)
+            drawText(nowL, topLeft = Offset(l, bottom + 4.dp.toPx()))
+            val endL = measurer.measure(tf.hourEnd(end), labelStyle)
+            val endX = (r - endL.size.width / 2f).coerceAtMost(size.width - endL.size.width)
+            drawText(endL, topLeft = Offset(endX, bottom + 4.dp.toPx()))
+            var mark = (start / 3_600_000L + 1) * 3_600_000L
+            while (mark < end) {
+                if (tf.zoned(mark).hour % 3 == 0) {
+                    val xm = x(mark)
+                    drawLine(Color(0x1FFFFFFF), Offset(xm, top), Offset(xm, bottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
+                    val lt = measurer.measure(tf.hour(mark), labelStyle)
+                    val lx = xm - lt.size.width / 2f
+                    if (lx > l + nowL.size.width + gap && lx + lt.size.width < endX - gap) drawText(lt, topLeft = Offset(lx, bottom + 4.dp.toPx()))
+                }
+                mark += 3_600_000L
+            }
+            val bw = (r - l) / (span / 3_600_000f)
+            fun centre(i: Int) = x(hours[i].time) - bw / 2
+            // Amount: bars
+            amounts.forEachIndexed { i, v ->
+                val bh = bottom - yA(v)
+                if (bh > 0.5f) drawRoundRect(AmountBar, Offset(centre(i) - bw * 0.36f, bottom - bh), Size(bw * 0.72f, bh), CornerRadius(2.dp.toPx()))
+            }
+            // Chance: line with small points
+            val line = androidx.compose.ui.graphics.Path()
+            hours.forEachIndexed { i, h ->
+                val y = yP(h.precipitationProbability ?: 0.0)
+                if (i == 0) line.moveTo(centre(i), y) else line.lineTo(centre(i), y)
+            }
+            drawPath(line, ChanceLine, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+            // Cursor
+            if (cursorAlpha > 0f) {
+                val i = selected.coerceIn(0, hours.lastIndex)
+                val xc = centre(i)
+                drawLine(Color.White.copy(alpha = 0.85f * cursorAlpha), Offset(xc, top - 2.dp.toPx()), Offset(xc, bottom), 1.5.dp.toPx())
+                val yc = yP(hours[i].precipitationProbability ?: 0.0)
+                drawCircle(Color(0xFF1A2A40).copy(alpha = cursorAlpha), 5.dp.toPx(), Offset(xc, yc))
+                drawCircle(ChanceLine.copy(alpha = cursorAlpha), 3.dp.toPx(), Offset(xc, yc))
+            }
         }
-        val bw = (r - l) / (span / 3_600_000f)
-        hours.forEach { h ->
-            val p = ((h.precipitationProbability ?: 0.0) / 100.0).toFloat().coerceIn(0f, 1f)
-            val amount = (h.precipitation ?: 0.0).toFloat()
-            // light blue for a mere chance, saturated blue for substantial amounts
-            val strength = (amount / 2f).coerceIn(0f, 1f)
-            val color = androidx.compose.ui.graphics.lerp(Color(0x6690C8FF), Color(0xFF3D8BFF), strength)
-            val bh = (bottom - top) * p
-            if (bh > 0.5f) drawRoundRect(color, Offset(x(h.time) - bw + bw * 0.14f, bottom - bh), Size(bw * 0.72f, bh), CornerRadius(2.dp.toPx()))
+        // Legend, or the values of the hour under the cursor – same place, so the card keeps its height
+        Box(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+            Text(stringResource(R.string.precip_chart_hint), fontSize = 11.sp, color = NimbusColors.Tertiary, modifier = Modifier.alpha(1f - cursorAlpha))
+            val h = hours[selected.coerceIn(0, hours.lastIndex)]
+            Text(
+                stringResource(
+                    R.string.precip_chart_readout,
+                    tf.time(h.time - 3_600_000L), tf.time(h.time),
+                    Units.precipitationNumber(h.precipitation ?: 0.0, s.precipitationUnit) + NBSP + pUnit,
+                    (h.precipitationProbability ?: 0.0).roundToInt(),
+                ),
+                fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White, modifier = Modifier.alpha(cursorAlpha),
+            )
         }
     }
 }
+
+private val AmountBar = Color(0xD93D8BFF)
+private val ChanceLine = Color(0xFFBFE6FF)
 
 @Composable
 private fun HumidityTile(data: WeatherData, modifier: Modifier) {

@@ -95,8 +95,9 @@ fun CardHeader(title: String, icon: ImageVector?, modifier: Modifier = Modifier,
             modifier = Modifier.weight(1f),
             style = CardLabelStyle.copy(color = NimbusColors.Tertiary),
             maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(
-                minFontSize = 9.sp, maxFontSize = CardLabelStyle.fontSize, stepSize = 0.5.sp,
+                minFontSize = 7.sp, maxFontSize = CardLabelStyle.fontSize, stepSize = 0.5.sp,
             ),
         )
         if (info != null) InfoButton(info)

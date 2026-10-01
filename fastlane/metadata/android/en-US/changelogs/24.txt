@@ -1,0 +1,2 @@
+• Precipitation 24 h: amount as bars, chance as a line; a long press shows the values of each hour
+• Small tiles grow with large text instead of cutting it off

@@ -1,0 +1,2 @@
+• Niederschlag 24 Std.: Menge als Balken, Wahrscheinlichkeit als Linie; lange drücken zeigt die Werte jeder Stunde
+• Kleine Kacheln wachsen bei großer Schrift mit, statt Text abzuschneiden

@@ -1,0 +1,3 @@
+• Tablet-Layout: Kacheln in zwei Spalten, im Querformat Ortsleiste links; Smartphone unverändert
+• Niederschlag: heute 0–24 Uhr statt der nächsten 24 Std.; vergangene Stunden mit Messwerten der DWD-Station (dunkelblau) unter der halbtransparenten Vorhersage
+• Luftdruckverlauf: gemessene Werte durchgezogen, Vorhersage gestrichelt

@@ -167,9 +167,16 @@ fun WeatherPage(
     onRefresh: () -> Unit,
     onOpenRadar: () -> Unit,
     onRequestModels: () -> Unit,
+    onRequestHistory: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val now = rememberNow()
+    // Today's station readings for the day charts (measured next to forecast), Germany only
+    LaunchedEffect(place.id, isActive) {
+        if (isActive && dev.nimbus.weather.data.repo.WeatherRepository.isInDwdArea(place.latitude, place.longitude) &&
+            (settings.shows(WeatherCard.PRECIPITATION) || settings.shows(WeatherCard.PRESSURE_CHART))
+        ) onRequestHistory()
+    }
     val raw = state?.data
     val data = remember(raw, demo) { raw?.withDemo(demo) }
     val scene = remember(raw, demo, now / 300_000) {
@@ -206,17 +213,56 @@ private fun WeatherContent(
     val cards = LocalSettings.current
     val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    // Phone: one column. Tablet (from 600 dp): the cards flow in two columns, three from 1150 dp.
+    val columns = when {
+        LocalContentWidth.current >= 1150.dp -> 3
+        LocalContentWidth.current >= 600.dp -> 2
+        else -> 1
+    }
     val listState = rememberLazyListState()
+    val gridState = androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState()
     val expandedPx = with(density) { (ExpandedHeader + statusTop).toPx() }
     val collapsedPx = with(density) { (CollapsedHeader + statusTop).toPx() }
-    val scrolled by remember {
+    val scrolled by remember(columns) {
         derivedStateOf {
-            if (listState.firstVisibleItemIndex > 0) Float.MAX_VALUE else listState.firstVisibleItemScrollOffset.toFloat()
+            val (index, offset) = if (columns == 1) listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
+            else gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset
+            if (index > 0) Float.MAX_VALUE else offset.toFloat()
         }
     }
     val progress by remember { derivedStateOf { (scrolled / (expandedPx - collapsedPx)).coerceIn(0f, 1f) } }
     val raining = data.current.condition.isPrecipitation
+    val tfToday = LocalTimeFormat.current
+    val todayMeasured = remember(state.history, now / 600_000L) { TodayMeasured.of(state.history, tfToday.zoned(now).toLocalDate()) }
     val stale = state.error && now - data.fetchedAt > 30 * 60_000L
+
+    // The page as a list of cards; wide ones (header, alerts, hourly row, sources) span all columns
+    val items = buildList {
+        add(PageItem("header-space", true) { Spacer(Modifier.height(ExpandedHeader + statusTop - 12.dp)) })
+        if (stale) add(PageItem("offline", true) { OfflineBanner(data) })
+        if (data.alerts.isNotEmpty() && cards.shows(WeatherCard.ALERTS)) add(PageItem("alerts", true) { AlertsCard(data.alerts) })
+        // The cards in the order chosen in the settings (Settings → Cards)
+        cards.orderedCards().filter { cards.shows(it) }.forEach { card ->
+            when (card) {
+                WeatherCard.HOURLY -> add(PageItem("hourly", true) { HourlyCard(data, now) })
+                WeatherCard.DAILY -> add(PageItem("daily") { DailyCard(data, now) })
+                WeatherCard.PRECIPITATION -> add(PageItem("precip") { PrecipitationCard(data, now, raining, todayMeasured) })
+                WeatherCard.RADAR -> add(PageItem("radar") { RadarPreviewCard(data, onOpenRadar) })
+                WeatherCard.TILES -> if (cards.orderedTiles().any(cards::shows)) add(PageItem("tiles") { DetailTiles(data, now) })
+                WeatherCard.SUN -> add(PageItem("sun") { SunCard(data, now) })
+                WeatherCard.PRESSURE_CHART -> add(PageItem("pressure-chart") { PressureCard(data, now, todayMeasured) })
+                WeatherCard.MOON -> add(PageItem("moon") { MoonCard(data, now) })
+                WeatherCard.AIR_QUALITY -> if (data.airQuality?.europeanAqi != null) add(PageItem("aqi") { AirQualityCard(data) })
+                WeatherCard.POLLEN -> data.pollen?.let { p -> add(PageItem("pollen") { PollenForecastCard(p, now) }) }
+                WeatherCard.GAUGES -> if (data.gauges.isNotEmpty()) add(PageItem("gauge") { GaugeCard(data.gauges, now) })
+                WeatherCard.BATHING -> if (data.bathing.isNotEmpty()) add(PageItem("bathing") { BathingCard(data.bathing, now) })
+                WeatherCard.COMMUNITY -> if (data.community != null) add(PageItem("community") { CommunityCard(data) })
+                WeatherCard.MODELS -> add(PageItem("models") { ModelComparisonCard(state.models, now, onRequestModels) })
+                else -> Unit
+            }
+        }
+        add(PageItem("sources", true) { SourcesFooter(data) })
+    }
 
     // Only show the spinner for a refresh the user pulled, not for automatic background updates.
     var pulled by remember { mutableStateOf(false) }
@@ -226,42 +272,33 @@ private fun WeatherContent(
         onRefresh = { pulled = true; onRefresh() },
         modifier = Modifier.fillMaxSize(),
     ) {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .fillMaxSize()
-                .drawWithContent {
-                    // Cards slide *under* the header instead of over it.
-                    val clipTop = (expandedPx - scrolled).coerceAtLeast(collapsedPx)
-                    clipRect(top = clipTop) { this@drawWithContent.drawContent() }
-                },
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = navBottom + 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            item(key = "header-space") { Spacer(Modifier.height(ExpandedHeader + statusTop - 12.dp)) }
-            if (stale) item(key = "offline") { OfflineBanner(data) }
-            if (data.alerts.isNotEmpty() && cards.shows(WeatherCard.ALERTS)) item(key = "alerts") { AlertsCard(data.alerts) }
-            // The cards in the order chosen in the settings (Settings → Cards)
-            cards.orderedCards().filter { cards.shows(it) }.forEach { card ->
-                when (card) {
-                    WeatherCard.HOURLY -> item(key = "hourly") { HourlyCard(data, now) }
-                    WeatherCard.DAILY -> item(key = "daily") { DailyCard(data, now) }
-                    WeatherCard.PRECIPITATION -> item(key = "precip") { PrecipitationCard(data, now, raining) }
-                    WeatherCard.RADAR -> item(key = "radar") { RadarPreviewCard(data, onOpenRadar) }
-                    WeatherCard.TILES -> if (cards.orderedTiles().any(cards::shows)) item(key = "tiles") { DetailTiles(data, now) }
-                    WeatherCard.SUN -> item(key = "sun") { SunCard(data, now) }
-                    WeatherCard.PRESSURE_CHART -> item(key = "pressure-chart") { PressureCard(data, now) }
-                    WeatherCard.MOON -> item(key = "moon") { MoonCard(data, now) }
-                    WeatherCard.AIR_QUALITY -> if (data.airQuality?.europeanAqi != null) item(key = "aqi") { AirQualityCard(data) }
-                    WeatherCard.POLLEN -> data.pollen?.let { p -> item(key = "pollen") { PollenForecastCard(p, now) } }
-                    WeatherCard.GAUGES -> if (data.gauges.isNotEmpty()) item(key = "gauge") { GaugeCard(data.gauges, now) }
-                    WeatherCard.BATHING -> if (data.bathing.isNotEmpty()) item(key = "bathing") { BathingCard(data.bathing, now) }
-                    WeatherCard.COMMUNITY -> if (data.community != null) item(key = "community") { CommunityCard(data) }
-                    WeatherCard.MODELS -> item(key = "models") { ModelComparisonCard(state.models, now, onRequestModels) }
-                    else -> Unit
-                }
+        // Cards slide *under* the header instead of over it.
+        val clip = Modifier.fillMaxSize().drawWithContent {
+            val clipTop = (expandedPx - scrolled).coerceAtLeast(collapsedPx)
+            clipRect(top = clipTop) { this@drawWithContent.drawContent() }
+        }
+        val side = if (columns == 1) 16.dp else 24.dp
+        if (columns == 1) {
+            LazyColumn(
+                state = listState, modifier = clip,
+                contentPadding = PaddingValues(start = side, end = side, bottom = navBottom + 24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(items.size, key = { items[it].key }) { items[it].content() }
             }
-            item(key = "sources") { SourcesFooter(data) }
+        } else {
+            androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid(
+                columns = androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells.Fixed(columns),
+                state = gridState, modifier = clip,
+                contentPadding = PaddingValues(start = side, end = side, bottom = navBottom + 24.dp),
+                verticalItemSpacing = 14.dp,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                items(
+                    items.size, key = { items[it].key },
+                    span = { if (items[it].fullSpan) androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan.FullLine else androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan.SingleLane },
+                ) { items[it].content() }
+            }
         }
         Header(data, progress, statusTop)
     }
@@ -379,3 +416,11 @@ private fun LoadingOrError(place: Place, state: PlaceState?, onRetry: () -> Unit
     }
 }
 
+/** One card of the weather page; [fullSpan] cards span all columns on a tablet. */
+private class PageItem(val key: String, val fullSpan: Boolean = false, val content: @Composable () -> Unit)
+
+/**
+ * Width available to the weather page (the screen minus the places sidebar on a tablet in
+ * landscape); decides how many columns the cards use.
+ */
+val LocalContentWidth = androidx.compose.runtime.staticCompositionLocalOf { 400.dp }

@@ -99,7 +99,9 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
 - **Lexikon**: ⓘ an jeder Karte erklärt die Begriffe.
 - **Orte, Einstellungen**: Standort und gespeicherte Orte (lange drücken zum Sortieren und Löschen);
   Vorhersagemodell, Einheiten (beim ersten Start passend zum Land), Stationswerte, Animationen,
-  Reihenfolge und Sichtbarkeit der Kacheln. Unter „Open-Source-Lizenzen“ stehen die Lizenzen
+  Reihenfolge und Sichtbarkeit der Kacheln.
+- **Tablet**: ab 600 dp Breite die Kacheln in zwei Spalten, im Querformat großer Tablets links eine
+  Ortsleiste; Einstellungen, Orte, Rückblick und Radar-Bedienung mittig in lesbarer Breite. Unter „Open-Source-Lizenzen“ stehen die Lizenzen
   von Nimbus und aller verwendeten Bibliotheken. Stündliche Aktualisierung im Hintergrund,
   offline die zuletzt geladenen Daten.
 

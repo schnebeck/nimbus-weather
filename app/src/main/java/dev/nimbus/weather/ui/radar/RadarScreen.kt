@@ -17,6 +17,8 @@
 
 package dev.nimbus.weather.ui.radar
 
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import android.os.Bundle
 import android.text.format.DateFormat
 import androidx.compose.foundation.Canvas
@@ -704,7 +706,9 @@ fun RadarScreen(
             Modifier.align(Alignment.BottomCenter).fillMaxWidth()
                 .background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xCC05080D), Color(0xEE05080D))))
                 .windowInsetsPadding(WindowInsets.navigationBars)
-                .padding(start = 16.dp, end = 16.dp, top = 28.dp, bottom = 8.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 28.dp, bottom = 8.dp)
+                // Tablet: the controls stay a readable width in the middle
+                .wrapContentWidth().widthIn(max = 760.dp),
         ) {
             if (tl != null) {
                 val f = tl.frames[frame.coerceIn(0, tl.frames.lastIndex)]

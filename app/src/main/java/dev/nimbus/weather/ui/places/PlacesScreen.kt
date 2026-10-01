@@ -17,6 +17,8 @@
 
 package dev.nimbus.weather.ui.places
 
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -140,7 +142,9 @@ fun PlacesScreen(
         Modifier.fillMaxSize()
             .background(Brush.verticalGradient(listOf(Color(0xFF0B1424), Color(0xFF111D33))))
             .windowInsetsPadding(WindowInsets.statusBars)
-            .imePadding(),
+            .imePadding()
+            // Tablet: a readable column in the middle, the background still fills the screen
+            .wrapContentWidth().widthIn(max = 720.dp),
     ) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             if (state.pages.isNotEmpty()) {
@@ -298,7 +302,7 @@ private fun EditList(
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun PlaceCard(
+fun PlaceCard(
     place: Place, st: PlaceState?, settings: dev.nimbus.weather.data.model.Settings,
     onLongClick: (() -> Unit)? = null, onClick: () -> Unit,
 ) {

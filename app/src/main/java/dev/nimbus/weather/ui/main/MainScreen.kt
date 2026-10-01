@@ -17,6 +17,10 @@
 
 package dev.nimbus.weather.ui.main
 
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -105,7 +109,14 @@ fun MainScreen(
             .distinctUntilChanged().collect { back -> if (back) onRequestHistory(place.id) }
     }
 
-    Box(Modifier.fillMaxSize()) {
+    // Tablet in landscape: the places as a sidebar on the left, the weather on the right
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+    val sidebar = maxWidth >= 1000.dp && maxWidth > maxHeight
+    val contentWidth = if (sidebar) maxWidth - SidebarWidth else maxWidth
+    Row(Modifier.fillMaxSize()) {
+    if (sidebar) PlacesSidebar(state, place.id, onSelect, onOpenPlaces, Modifier.width(SidebarWidth).fillMaxHeight())
+    androidx.compose.runtime.CompositionLocalProvider(LocalContentWidth provides contentWidth) {
+    Box(Modifier.weight(1f).fillMaxHeight()) {
         HorizontalPager(pagerState, Modifier.fillMaxSize(), key = { it }, beyondViewportPageCount = 0) { page ->
             if (page == pageCount - 1) {
                 WeatherPage(
@@ -117,6 +128,7 @@ fun MainScreen(
                     onRefresh = { onRefresh(place.id) },
                     onOpenRadar = { onOpenRadar(place.id) },
                     onRequestModels = { onRequestModels(place.id) },
+                    onRequestHistory = { onRequestHistory(place.id) },
                 )
             } else {
                 // page 0 = two days ago, page HISTORY_DAYS - 1 = today so far
@@ -138,6 +150,43 @@ fun MainScreen(
             onMenu = onOpenPlaces,
             modifier = Modifier.align(Alignment.TopCenter),
         )
+    }
+    }
+    }
+    }
+}
+
+private val SidebarWidth = 340.dp
+
+/**
+ * Places as a sidebar (tablet in landscape), like Apple Weather on the iPad: every place as a
+ * small weather card, the shown one outlined; the button on top opens search, editing and settings.
+ */
+@Composable
+private fun PlacesSidebar(state: UiState, selectedId: String, onSelect: (String) -> Unit, onOpenPlaces: () -> Unit, modifier: Modifier) {
+    androidx.compose.foundation.lazy.LazyColumn(
+        modifier.background(Brush.verticalGradient(listOf(Color(0xFF0B1424), Color(0xFF111D33)))),
+        contentPadding = PaddingValues(
+            start = 14.dp, end = 14.dp,
+            top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 8.dp,
+            bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp,
+        ),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        item(key = "head") {
+            Row(Modifier.fillMaxWidth().padding(start = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.weather), Modifier.weight(1f), fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                IconButton(onClick = onOpenPlaces) { Icon(Icons.Rounded.Search, stringResource(R.string.places), tint = Color.White) }
+            }
+        }
+        items(state.pages.size, key = { state.pages[it].id }) { i ->
+            val p = state.pages[i]
+            val selected = p.id == selectedId
+            Box(
+                Modifier.clip(RoundedCornerShape(16.dp))
+                    .border(if (selected) 2.dp else 0.dp, if (selected) Color.White else Color.Transparent, RoundedCornerShape(16.dp)),
+            ) { dev.nimbus.weather.ui.places.PlaceCard(p, state.states[p.id], state.settings) { onSelect(p.id) } }
+        }
     }
 }
 

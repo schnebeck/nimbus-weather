@@ -93,7 +93,7 @@ fun fastFallHours(p: List<Double?>): Set<Int> = buildSet {
  * (1013 hPa) as a reference and fast falls in orange. A long press shows the value of the hour.
  */
 @Composable
-fun PressureCard(data: WeatherData, now: Long) {
+fun PressureCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) {
     val tf = LocalTimeFormat.current
     val start = remember(now / 3_600_000L) { tf.zoned(now).toLocalDate().atStartOfDay(tf.zone).toInstant().toEpochMilli() }
     val end = start + 24 * 3_600_000L
@@ -125,20 +125,26 @@ fun PressureCard(data: WeatherData, now: Long) {
             }
         }
         Spacer(Modifier.height(8.dp))
-        PressureChart(points, start, end, now, nightsFromDaily(data.daily, start, end))
+        PressureChart(points, start, end, now, nightsFromDaily(data.daily, start, end), measured?.pressure.orEmpty().filterKeys { it in start..now })
     }
 }
 
 @Composable
-private fun PressureChart(points: List<HourlyPoint>, start: Long, end: Long, now: Long, nights: List<LongRange>) {
+private fun PressureChart(
+    points: List<HourlyPoint>, start: Long, end: Long, now: Long, nights: List<LongRange>,
+    /** Station readings (hPa) of the hours so far; with them the model curve is shown dashed throughout. */
+    measured: Map<Long, Double>,
+) {
     val tf = LocalTimeFormat.current
     val measurer = rememberTextMeasurer()
     val labelStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Tertiary)
     val unitStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Secondary, fontWeight = FontWeight.SemiBold)
     val values = points.map { it.pressure!! }
+    val hasMeasured = measured.size >= 2
+    val allValues = values + measured.values
     // At least 6 hPa span around the data; the axis in whole hPa
-    val mid = (values.min() + values.max()) / 2
-    val half = maxOf(3.0, (values.max() - values.min()) / 2 + 1.0)
+    val mid = (allValues.min() + allValues.max()) / 2
+    val half = maxOf(3.0, (allValues.max() - allValues.min()) / 2 + 1.0)
     val lo = floor(mid - half)
     val hi = ceil(mid + half)
     val fast = remember(points) { fastFallHours(values) }
@@ -204,7 +210,16 @@ private fun PressureChart(points: List<HourlyPoint>, start: Long, end: Long, now
                 drawText(t, topLeft = Offset((xm - t.size.width / 2f).coerceIn(0f, size.width - t.size.width), bottom + 4.dp.toPx()))
                 mark += 3 * 3_600_000L
             }
-            // Curve: the day so far solid, the forecast dashed; fast falls in orange
+            // With station readings: measured solid white, the model dashed for the whole day
+            if (hasMeasured) {
+                val model = Path()
+                points.forEachIndexed { i, p -> val o = Offset(x(p.time), y(p.pressure!!)); if (i == 0) model.moveTo(o.x, o.y) else model.lineTo(o.x, o.y) }
+                drawPath(model, Color.White.copy(alpha = 0.55f), style = Stroke(1.8.dp.toPx(), cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))))
+                val m = Path()
+                measured.entries.sortedBy { it.key }.forEachIndexed { i, (t, v) -> val o = Offset(x(t), y(v)); if (i == 0) m.moveTo(o.x, o.y) else m.lineTo(o.x, o.y) }
+                drawPath(m, Color.White, style = Stroke(2.4.dp.toPx(), cap = StrokeCap.Round))
+            }
+            // Without: the day so far solid, the forecast dashed; fast falls in orange
             val past = Path(); val future = Path()
             var pastStarted = false; var futureStarted = false
             points.forEachIndexed { i, p ->
@@ -214,8 +229,10 @@ private fun PressureChart(points: List<HourlyPoint>, start: Long, end: Long, now
                     if (!futureStarted) { future.moveTo(o.x, o.y); futureStarted = true } else future.lineTo(o.x, o.y)
                 }
             }
-            drawPath(past, Color.White, style = Stroke(2.2.dp.toPx(), cap = StrokeCap.Round))
-            drawPath(future, Color.White.copy(alpha = 0.6f), style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))))
+            if (!hasMeasured) {
+                drawPath(past, Color.White, style = Stroke(2.2.dp.toPx(), cap = StrokeCap.Round))
+                drawPath(future, Color.White.copy(alpha = 0.6f), style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))))
+            }
             points.indices.filter { it in fast && it + 1 in fast && it + 1 <= points.lastIndex }.forEach { i ->
                 drawLine(FastFall, Offset(x(points[i].time), y(points[i].pressure!!)), Offset(x(points[i + 1].time), y(points[i + 1].pressure!!)), 3.dp.toPx(), StrokeCap.Round)
             }
@@ -229,17 +246,27 @@ private fun PressureChart(points: List<HourlyPoint>, start: Long, end: Long, now
                 val p = points[selected.coerceIn(0, points.lastIndex)]
                 val xc = x(p.time)
                 drawLine(Color.White.copy(alpha = 0.85f * cursorAlpha), Offset(xc, top - 2.dp.toPx()), Offset(xc, bottom), 1.5.dp.toPx())
-                drawCircle(Color(0xFF1A2A40).copy(alpha = cursorAlpha), 5.dp.toPx(), Offset(xc, y(p.pressure!!)))
-                drawCircle(Color.White.copy(alpha = cursorAlpha), 3.dp.toPx(), Offset(xc, y(p.pressure)))
+                val v = measured[p.time] ?: p.pressure!!
+                drawCircle(Color(0xFF1A2A40).copy(alpha = cursorAlpha), 5.dp.toPx(), Offset(xc, y(v)))
+                drawCircle(Color.White.copy(alpha = cursorAlpha), 3.dp.toPx(), Offset(xc, y(v)))
             }
         }
         // Hint, or the value under the cursor – same place, so the card keeps its height
         Box(Modifier.fillMaxWidth().padding(top = 4.dp)) {
-            val hint = if (fast.isNotEmpty()) stringResource(R.string.pressure_chart_hint_fall) else stringResource(R.string.pressure_chart_hint)
-            Text(hint, fontSize = 11.sp, color = NimbusColors.Tertiary, modifier = Modifier.alpha(1f - cursorAlpha))
+            val hint = when {
+                fast.isNotEmpty() -> stringResource(R.string.pressure_chart_hint_fall)
+                hasMeasured -> stringResource(R.string.pressure_chart_hint_measured)
+                else -> stringResource(R.string.pressure_chart_hint)
+            }
+            androidx.compose.foundation.text.BasicText(
+                hint, Modifier.fillMaxWidth().alpha(1f - cursorAlpha), style = TextStyle(fontSize = 11.sp, color = NimbusColors.Tertiary), maxLines = 1,
+                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = 11.sp, stepSize = 0.5.sp),
+            )
             val p = points[selected.coerceIn(0, points.lastIndex)]
+            val m = measured[p.time]
             Text(
-                tf.time(p.time) + " · " + p.pressure!!.roundToInt() + NBSP + "hPa" +
+                if (m != null) stringResource(R.string.pressure_chart_readout_measured, tf.time(p.time), m.roundToInt(), p.pressure!!.roundToInt())
+                else tf.time(p.time) + " · " + p.pressure!!.roundToInt() + NBSP + "hPa" +
                     (if (p.time > now) " · " + stringResource(R.string.forecast) else ""),
                 fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White, modifier = Modifier.alpha(cursorAlpha),
             )

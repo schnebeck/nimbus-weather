@@ -17,6 +17,8 @@
 
 package dev.nimbus.weather.ui.main
 
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import dev.nimbus.weather.data.repo.WeatherRepository
@@ -155,7 +157,8 @@ fun HistoryPage(
             val clipTop = with(androidx.compose.ui.platform.LocalDensity.current) { (statusTop + 52.dp).toPx() }
             LazyColumn(
                 // Content scrolls away below the top bar instead of running under menu and radar button.
-                Modifier.fillMaxSize().drawWithContent { clipRect(top = clipTop) { this@drawWithContent.drawContent() } },
+                Modifier.fillMaxSize().wrapContentWidth().widthIn(max = 760.dp)
+                    .drawWithContent { clipRect(top = clipTop) { this@drawWithContent.drawContent() } },
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = statusTop + HeaderTop, bottom = navBottom + 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {

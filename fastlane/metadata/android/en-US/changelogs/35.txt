@@ -1,0 +1,3 @@
+• Tablet layout: cards in two columns, a places sidebar in landscape; phones unchanged
+• Precipitation: today 0–24 h instead of the next 24 h; past hours with DWD station readings (dark blue) under the translucent forecast
+• Pressure trend: measured values solid, forecast dashed

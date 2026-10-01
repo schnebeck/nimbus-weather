@@ -38,6 +38,8 @@ data class HistoryHour(
     data class Measured(
         val temperature: Double?, val precipitation: Double?, val windSpeed: Double?, val windGust: Double?,
         val windDirection: Double?, val sunshineMinutes: Double?, val cloudCover: Double?, val condition: Condition?,
+        /** Air pressure reduced to sea level (hPa). */
+        val pressure: Double? = null,
     )
 
     data class Modelled(
@@ -141,6 +143,7 @@ class HistorySource(
                     temperature = w.d("temperature"), precipitation = w.d("precipitation"), windSpeed = w.d("wind_speed"),
                     windGust = w.d("wind_gust_speed"), windDirection = w.d("wind_direction"), sunshineMinutes = w.d("sunshine"),
                     cloudCover = w.d("cloud_cover"), condition = condition(w.s("condition"), w.s("icon"), w.d("precipitation")),
+                    pressure = w.d("pressure_msl"),
                 )
             }?.toMap().orEmpty()
             return Observations(map, main?.s("station_name"), main?.d("distance")?.div(1000.0))

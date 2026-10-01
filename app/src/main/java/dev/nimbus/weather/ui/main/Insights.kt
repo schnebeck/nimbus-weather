@@ -35,6 +35,53 @@ object Insights {
         data object Continues : Nowcast
     }
 
+    /** The precipitation notice looks this far ahead. */
+    const val NOTICE_HORIZON_MS = 2 * 3_600_000L
+
+    enum class PrecipKind { RAIN, DRIZZLE, SNOW, SLEET, THUNDERSTORM, HAIL }
+    enum class Intensity { LIGHT, MODERATE, HEAVY }
+
+    /** "Light rain in about 40 min" – what, how strong and when (start, end or still going). */
+    data class PrecipNotice(val kind: PrecipKind, val intensity: Intensity, val state: Nowcast)
+
+    /**
+     * Notice for precipitation that falls now or starts within [NOTICE_HORIZON_MS], from the
+     * 15-minute forecast; null when it stays dry that long. The kind comes from the hourly
+     * condition at the start (or the current one; hail from WMO 96/99), the intensity from the highest rate:
+     * rain light below 2.5 mm/h, moderate up to 10 mm/h, heavy above (DWD classes); snow (water
+     * equivalent) light below 1 mm/h, moderate up to 4 mm/h.
+     */
+    fun precipNotice(
+        minutely: List<MinutelyPoint>, hourly: List<HourlyPoint>, current: Condition, now: Long, rainingNow: Boolean,
+    ): PrecipNotice? {
+        val points = nowcastPoints(minutely, now).filter { it.time < now + NOTICE_HORIZON_MS }
+        val state = nowcast(points, now, rainingNow)
+        if (state == Nowcast.Dry) return null
+        val wet = points.map { it.precipitation >= RAIN_THRESHOLD_MM_15 }
+        val first = if (state is Nowcast.StartsIn) wet.indexOfFirst { it } else 0
+        val last = (first until points.size).firstOrNull { !wet[it] && it > first }?.let { it - 1 } ?: points.lastIndex
+        val rate = points.subList(first.coerceAtLeast(0), (last + 1).coerceAtLeast(first.coerceAtLeast(0))).maxOfOrNull { it.precipitation * 4 } ?: 0.0
+        val hour = hourly.firstOrNull { it.time > if (state is Nowcast.StartsIn) points[first].time else now }
+        val condition = if (state !is Nowcast.StartsIn && current.isPrecipitation) current else hour?.condition ?: current
+        val kind = if (hour?.hail == true) PrecipKind.HAIL else when (condition) {
+            Condition.THUNDERSTORM -> PrecipKind.THUNDERSTORM
+            Condition.SNOW, Condition.HEAVY_SNOW -> PrecipKind.SNOW
+            Condition.SLEET, Condition.FREEZING_RAIN -> PrecipKind.SLEET
+            Condition.DRIZZLE -> if (rate < 1.0) PrecipKind.DRIZZLE else PrecipKind.RAIN
+            else -> PrecipKind.RAIN
+        }
+        val intensity = if (kind == PrecipKind.SNOW) when {
+            rate < 1.0 -> Intensity.LIGHT
+            rate < 4.0 -> Intensity.MODERATE
+            else -> Intensity.HEAVY
+        } else when {
+            rate < 2.5 -> Intensity.LIGHT
+            rate < 10.0 -> Intensity.MODERATE
+            else -> Intensity.HEAVY
+        }
+        return PrecipNotice(kind, intensity, state)
+    }
+
     /** 15-minute points covering the next three hours, starting with the current interval. */
     fun nowcastPoints(minutely: List<MinutelyPoint>, now: Long): List<MinutelyPoint> {
         val start = minutely.indexOfLast { it.time <= now }.coerceAtLeast(0)

@@ -257,7 +257,7 @@ private fun WindTile(data: WeatherData, modifier: Modifier) {
 
 /** Chance and amount of precipitation hour by hour for the next 24 hours. */
 @Composable
-fun PrecipitationCard(data: WeatherData, now: Long, nowcast: List<dev.nimbus.weather.data.model.MinutelyPoint>? = null, raining: Boolean = false) {
+fun PrecipitationCard(data: WeatherData, now: Long, raining: Boolean = false) {
     val s = LocalSettings.current
     val tf = LocalTimeFormat.current
     val hours = remember(data, now) { Insights.upcomingHours(data, now).drop(1).take(24) }
@@ -267,10 +267,11 @@ fun PrecipitationCard(data: WeatherData, now: Long, nowcast: List<dev.nimbus.wea
     val next = hours.sumOf { it.precipitation ?: 0.0 }
     val peak = hours.maxByOrNull { it.precipitationProbability ?: 0.0 }
     val peakChance = peak?.precipitationProbability ?: 0.0
-    // One card for all precipitation, like Apple Weather: the 15-minute nowcast on top only when it matters.
+    val notice = remember(data, now, raining) { Insights.precipNotice(data.minutely, data.hourly, data.current.condition, now, raining) }
+    // One card for all precipitation: a one-line notice on top when it rains now or within 2 hours.
     GlassCard(title = stringResource(R.string.precip_title), icon = Icons.Outlined.WaterDrop, info = Term.PRECIP_PROBABILITY) {
-        if (nowcast != null) {
-            NowcastSection(nowcast, now, raining)
+        if (notice != null) {
+            PrecipNoticeText(notice, now)
             Spacer(Modifier.height(10.dp))
             HairlineDivider()
             Spacer(Modifier.height(10.dp))
@@ -396,7 +397,8 @@ private fun PrecipChart(hours: List<dev.nimbus.weather.data.model.HourlyPoint>, 
                     drawLine(Color(0x1FFFFFFF), Offset(xm, top), Offset(xm, bottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
                     val lt = measurer.measure(tf.hour(mark), labelStyle)
                     val lx = xm - lt.size.width / 2f
-                    if (lx > l + nowL.size.width + gap && lx + lt.size.width < endX - gap) drawText(lt, topLeft = Offset(lx, bottom + 4.dp.toPx()))
+                    // at least a label's width apart from "now" and the end time ("09 10" read as one)
+                    if (lx > l + nowL.size.width + lt.size.width / 2f && lx + lt.size.width * 1.5f < endX) drawText(lt, topLeft = Offset(lx, bottom + 4.dp.toPx()))
                 }
                 mark += 3_600_000L
             }
@@ -426,7 +428,12 @@ private fun PrecipChart(hours: List<dev.nimbus.weather.data.model.HourlyPoint>, 
         }
         // Legend, or the values of the hour under the cursor – same place, so the card keeps its height
         Box(Modifier.fillMaxWidth().padding(top = 4.dp)) {
-            Text(stringResource(R.string.precip_chart_hint), fontSize = 11.sp, color = NimbusColors.Tertiary, modifier = Modifier.alpha(1f - cursorAlpha))
+            // One line in every language and font size (shrinks instead of wrapping)
+            androidx.compose.foundation.text.BasicText(
+                stringResource(R.string.precip_chart_hint), Modifier.fillMaxWidth().alpha(1f - cursorAlpha),
+                style = TextStyle(fontSize = 11.sp, color = NimbusColors.Tertiary), maxLines = 1,
+                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = 11.sp, stepSize = 0.5.sp),
+            )
             val h = hours[selected.coerceIn(0, hours.lastIndex)]
             Text(
                 stringResource(

@@ -89,6 +89,8 @@ data class HourlyPoint(
     val cloudCover: Double? = null,
     /** Minutes of sunshine in the hour before [time]. */
     val sunshine: Double? = null,
+    /** Thunderstorm with hail (WMO 96/99) – [condition] is THUNDERSTORM then. */
+    val hail: Boolean = false,
 )
 
 @Serializable

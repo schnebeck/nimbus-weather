@@ -283,6 +283,7 @@ class OpenMeteoSource(
                         pressure = ps.at(i),
                         cloudCover = cc.at(i),
                         sunshine = sun.at(i)?.div(60.0),
+                        hail = WeatherCodes.isHail(wc.at(i)?.toInt()),
                     )
                 }
             } ?: emptyList()

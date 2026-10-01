@@ -215,9 +215,7 @@ private fun WeatherContent(
         }
     }
     val progress by remember { derivedStateOf { (scrolled / (expandedPx - collapsedPx)).coerceIn(0f, 1f) } }
-    val nowcastPoints = remember(data, now) { Insights.nowcastPoints(data.minutely, now) }
     val raining = data.current.condition.isPrecipitation
-    val showNowcast = raining || nowcastPoints.any { it.precipitation >= Insights.RAIN_THRESHOLD_MM_15 }
     val stale = state.error && now - data.fetchedAt > 30 * 60_000L
 
     // Only show the spinner for a refresh the user pulled, not for automatic background updates.
@@ -245,7 +243,7 @@ private fun WeatherContent(
             if (data.alerts.isNotEmpty() && cards.shows(WeatherCard.ALERTS)) item(key = "alerts") { AlertsCard(data.alerts) }
             if (cards.shows(WeatherCard.HOURLY)) item(key = "hourly") { HourlyCard(data, now) }
             if (cards.shows(WeatherCard.DAILY)) item(key = "daily") { DailyCard(data, now) }
-            if (cards.shows(WeatherCard.PRECIPITATION)) item(key = "precip") { PrecipitationCard(data, now, nowcastPoints.takeIf { showNowcast }, raining) }
+            if (cards.shows(WeatherCard.PRECIPITATION)) item(key = "precip") { PrecipitationCard(data, now, raining) }
             if (cards.shows(WeatherCard.RADAR)) item(key = "radar") { RadarPreviewCard(data, onOpenRadar) }
             if (TileCards.any(cards::shows)) item(key = "tiles") { DetailTiles(data, now) }
             if (cards.shows(WeatherCard.MOON)) item(key = "moon") { MoonCard(data, now) }

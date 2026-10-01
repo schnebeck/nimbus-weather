@@ -1,0 +1,2 @@
+• Niederschlag: statt Diagramm eine Zeile mit Schirm – Art (Regen, Niesel, Schnee, Schneeregen, Gewitter, Hagel), Stärke und Beginn bzw. Ende, nur wenn es in den nächsten 2 Stunden nass wird
+• 24-Std.-Diagramm: Zeitachse und Legende aufgeräumt

@@ -1,0 +1,2 @@
+• Precipitation: one line with an umbrella instead of a chart – kind (rain, drizzle, snow, sleet, thunderstorms, hail), strength and start or end, only when it gets wet within the next 2 hours
+• 24-hour chart: tidier time axis and legend

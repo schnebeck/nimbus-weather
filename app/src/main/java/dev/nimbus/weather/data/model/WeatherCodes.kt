@@ -40,6 +40,9 @@ object WeatherCodes {
         else -> Condition.CLOUDY
     }
 
+    /** WMO 96/99: thunderstorm with hail (forecast for Central Europe). */
+    fun isHail(code: Int?): Boolean = code == 96 || code == 99
+
     /**
      * Derives a condition from raw parameters, used for sources that deliver no
      * weather code (e.g. DWD station data).

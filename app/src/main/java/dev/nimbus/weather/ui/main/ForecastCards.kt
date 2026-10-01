@@ -36,6 +36,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Umbrella
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.Icon
@@ -311,40 +312,44 @@ fun TemperatureRangeBar(low: Double, high: Double, min: Double, max: Double, cur
 // ---------------------------------------------------------------------------------------
 // Nowcast (next 3 hours, 15-minute resolution)
 
-/** Top part of the precipitation card while precipitation is due within 3 hours. */
+/** One line on top of the precipitation card: "Light rain in about 40 min", "Thunderstorms until about 11:30". */
 @Composable
-fun NowcastSection(points: List<MinutelyPoint>, now: Long, rainingNow: Boolean = false) {
+fun PrecipNoticeText(n: Insights.PrecipNotice, now: Long) {
     val tf = LocalTimeFormat.current
-    val summary = when (val n = Insights.nowcast(points, now, rainingNow)) {
-        Insights.Nowcast.Dry -> stringResource(R.string.summary_no_rain)
-        Insights.Nowcast.Continues -> stringResource(R.string.summary_rain_continues)
-        is Insights.Nowcast.StartsIn -> stringResource(R.string.summary_rain_starting, n.minutes)
-        is Insights.Nowcast.StopsIn -> stringResource(R.string.summary_rain_now, n.minutes)
+    val what = stringResource(
+        when (n.kind) {
+            Insights.PrecipKind.THUNDERSTORM -> R.string.pn_thunderstorm
+            Insights.PrecipKind.HAIL -> R.string.pn_hail
+            Insights.PrecipKind.DRIZZLE -> R.string.pn_drizzle
+            Insights.PrecipKind.SLEET -> R.string.pn_sleet
+            Insights.PrecipKind.SNOW -> when (n.intensity) {
+                Insights.Intensity.LIGHT -> R.string.pn_snow_light
+                Insights.Intensity.MODERATE -> R.string.pn_snow_moderate
+                Insights.Intensity.HEAVY -> R.string.pn_snow_heavy
+            }
+            Insights.PrecipKind.RAIN -> when (n.intensity) {
+                Insights.Intensity.LIGHT -> R.string.pn_rain_light
+                Insights.Intensity.MODERATE -> R.string.pn_rain_moderate
+                Insights.Intensity.HEAVY -> R.string.pn_rain_heavy
+            }
+        },
+    )
+    @Composable
+    fun inMinutes(m: Int): String = when {
+        m < 60 -> stringResource(R.string.pn_minutes, m)
+        m % 60 == 0 -> stringResource(R.string.pn_hours, m / 60)
+        else -> stringResource(R.string.pn_hours_minutes, m / 60, m % 60)
     }
-    Column {
-        Text(summary, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Color.White)
-        Spacer(Modifier.height(8.dp))
-        Canvas(Modifier.fillMaxWidth().height(56.dp)) {
-            val n = points.size.coerceAtLeast(1)
-            val bw = size.width / n
-            val maxP = maxOf(1.0, points.maxOfOrNull { it.precipitation } ?: 0.0)
-            for (k in 1..3) {
-                val y = size.height * k / 4
-                drawLine(Color(0x22FFFFFF), Offset(0f, y), Offset(size.width, y), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
-            }
-            points.forEachIndexed { i, p ->
-                val bh = (p.precipitation / maxP * size.height).toFloat().coerceAtLeast(if (p.precipitation > 0) 3f else 0f)
-                if (bh > 0) drawRoundRect(
-                    PrecipBlue, Offset(i * bw + bw * 0.12f, size.height - bh), Size(bw * 0.76f, bh),
-                    CornerRadius(3.dp.toPx()),
-                )
-            }
-        }
-        Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(stringResource(R.string.now), fontSize = 11.sp, color = NimbusColors.Tertiary)
-            points.getOrNull(points.size / 2)?.let { Text(tf.time(it.time), fontSize = 11.sp, color = NimbusColors.Tertiary) }
-            points.lastOrNull()?.let { Text(tf.time(it.time), fontSize = 11.sp, color = NimbusColors.Tertiary) }
-        }
+    val text = when (val st = n.state) {
+        is Insights.Nowcast.StartsIn -> stringResource(R.string.pn_starts, what, inMinutes(st.minutes))
+        is Insights.Nowcast.StopsIn -> stringResource(R.string.pn_until, what, tf.time(now + st.minutes * 60_000L))
+        else -> stringResource(R.string.pn_continues, what)
+    }
+    // An umbrella: the line only ever announces unpleasant weather
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(Icons.Rounded.Umbrella, null, tint = PrecipBlue, modifier = Modifier.size(24.dp))
+        Spacer(Modifier.width(10.dp))
+        Text(text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
     }
 }
 

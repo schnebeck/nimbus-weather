@@ -132,6 +132,33 @@ class LogicTest {
         assertEquals(Insights.Nowcast.Continues, Insights.nowcast(mins(0.0, 0.4, 0.4), now, rainingNow = true))
     }
 
+    @Test
+    fun `precipitation notice - kind, strength and two-hour horizon`() {
+        val showers = listOf(hour(1, Condition.RAIN), hour(2, Condition.RAIN), hour(3, Condition.RAIN))
+        // light rain (0.4 mm/15 min = 1.6 mm/h) starting in 30 min
+        val light = Insights.precipNotice(mins(0.0, 0.0, 0.4, 0.4), showers, Condition.CLOUDY, now, false)!!
+        assertEquals(Insights.PrecipKind.RAIN, light.kind)
+        assertEquals(Insights.Intensity.LIGHT, light.intensity)
+        assertEquals(Insights.Nowcast.StartsIn(30), light.state)
+        // heavy (3 mm/15 min = 12 mm/h)
+        assertEquals(Insights.Intensity.HEAVY, Insights.precipNotice(mins(0.0, 3.0, 1.0), showers, Condition.CLOUDY, now, false)!!.intensity)
+        // thunderstorm hour at the start
+        val storm = listOf(hour(1, Condition.THUNDERSTORM))
+        assertEquals(Insights.PrecipKind.THUNDERSTORM, Insights.precipNotice(mins(0.0, 1.0), storm, Condition.CLOUDY, now, false)!!.kind)
+        val hail = listOf(hour(1, Condition.THUNDERSTORM).copy(hail = true))
+        assertTrue(dev.nimbus.weather.data.model.WeatherCodes.isHail(96) && dev.nimbus.weather.data.model.WeatherCodes.isHail(99) && !dev.nimbus.weather.data.model.WeatherCodes.isHail(95))
+        assertEquals(Insights.PrecipKind.HAIL, Insights.precipNotice(mins(0.0, 1.0), hail, Condition.CLOUDY, now, false)!!.kind)
+        // snow falling now, ends in 30 min
+        val snow = Insights.precipNotice(mins(0.2, 0.2, 0.0), showers, Condition.SNOW, now, true)!!
+        assertEquals(Insights.PrecipKind.SNOW, snow.kind)
+        assertEquals(Insights.Nowcast.StopsIn(30), snow.state)
+        // rain only after 2 h 15 min: no notice
+        val late = DoubleArray(9) { 0.0 } + doubleArrayOf(1.0, 1.0)
+        assertEquals(null, Insights.precipNotice(mins(*late), showers, Condition.CLOUDY, now, false))
+        // dry
+        assertEquals(null, Insights.precipNotice(mins(0.0, 0.0, 0.0), showers, Condition.CLOUDY, now, false))
+    }
+
     private fun hour(i: Int, c: Condition, gust: Double? = null, p: Double? = null) =
         HourlyPoint(now + i * 3_600_000L, 10.0, condition = c, isDay = true, windGust = gust, pressure = p)
 

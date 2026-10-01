@@ -73,6 +73,12 @@ object RadarPalette {
     /** Fraction of snow from the 2 m temperature: snow ≤ 0 °C, rain ≥ 1 °C, sleet in between. */
     fun snowFraction(tempC: Float): Float = (1f - (tempC + demoTempOffset)).coerceIn(0f, 1f)
 
+    /** The snow scale is only worth showing where it can get this cold (°C, with a margin). */
+    const val SNOW_LEGEND_MAX_C = 3f
+
+    /** Snow legend for the lowest temperature in view; unknown (no grid) keeps it. */
+    fun showSnowLegend(minTempC: Float?): Boolean = minTempC == null || minTempC + demoTempOffset <= SNOW_LEGEND_MAX_C
+
     private fun buildLut(stops: List<Pair<Int, Int>>): IntArray = IntArray(96) { dbz ->
         when {
             dbz < stops.first().first -> 0

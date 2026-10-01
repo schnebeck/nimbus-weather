@@ -64,6 +64,18 @@ class WeatherGridTest {
     }
 
     @Test
+    fun `snow legend only where it gets cold enough in view and time`() {
+        // South-west point: 0 °C in hour 1, 10 °C in hour 2; north-east point: 6 / 16 °C.
+        assertEquals(0f, grid.minTemperature(49.9, 51.1, 7.9, 9.1, 0L, 5_000_000L)!!, 0f)
+        assertEquals(10f, grid.minTemperature(49.9, 51.1, 7.9, 9.1, 4_000_000L, 9_000_000L)!!, 0f)   // 2nd hour only
+        assertEquals(6f, grid.minTemperature(52.0, 53.0, 10.0, 11.0, 0L, 1_000_000L)!!, 0f)        // view beyond the north-east point: it counts (one spacing margin), the others not
+        assertNull(grid.minTemperature(60.0, 61.0, 20.0, 21.0, 0L, 5_000_000L))     // far away
+        assertTrue(RadarPalette.showSnowLegend(3f))
+        assertTrue(!RadarPalette.showSnowLegend(3.1f))
+        assertTrue(RadarPalette.showSnowLegend(null))                                 // no grid: keep it
+    }
+
+    @Test
     fun `grid origin snaps to the spacing`() {
         val (a, b) = WeatherGrid.origin(52.52, 13.40)
         val (c, d) = WeatherGrid.origin(52.60, 13.35)

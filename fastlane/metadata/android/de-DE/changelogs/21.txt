@@ -1,0 +1,2 @@
+• Radar: Schnee-Legende nur noch, wenn es im Kartenausschnitt 3 °C oder kälter ist
+• Pegelkarte: Gewässer und Pegel stehen jetzt auch bei nur einem Pegel oben (z. B. „Leine · Herrenhausen“)

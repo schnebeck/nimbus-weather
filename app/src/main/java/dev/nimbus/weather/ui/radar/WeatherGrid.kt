@@ -97,6 +97,30 @@ class WeatherGrid(
     fun overlaps(south: Double, north: Double, west: Double, east: Double) =
         north >= lat0 && south <= lat1 && east >= lon0 && west <= lon1
 
+    /**
+     * Lowest temperature at the grid points within the area (plus one grid spacing, so a zoomed-in
+     * view between two points still counts) during [from]..[to], by the same nearest hours the
+     * radar colouring uses; null if no point qualifies.
+     */
+    fun minTemperature(south: Double, north: Double, west: Double, east: Double, from: Long, to: Long): Float? {
+        if (times.isEmpty()) return null
+        val hours = hourIndex(from)..hourIndex(to)
+        var min = Float.NaN
+        for (r in 0 until rows) {
+            val lat = lat0 + r * step
+            if (lat < south - step || lat > north + step) continue
+            for (c in 0 until cols) {
+                val lon = lon0 + c * step
+                if (lon < west - step || lon > east + step) continue
+                for (h in hours) {
+                    val t = temp[h][r * cols + c]
+                    if (!t.isNaN() && (min.isNaN() || t < min)) min = t
+                }
+            }
+        }
+        return min.takeUnless { it.isNaN() }
+    }
+
     companion object {
         // Open-Meteo counts every location as one API call (free tier: 5,000/hour, 10,000/day),
         // so every grid has 11 x 9 = 99 points (portrait, like the screen). The spacing follows
@@ -151,6 +175,11 @@ object WeatherGridStore {
 
     fun temperatureAt(lat: Double, lon: Double, timeMs: Long): Float? =
         gridFor(lat, lon)?.temperatureAt(lat, lon, timeMs)
+
+    /** Lowest temperature in the area over all grids that overlap it (see [WeatherGrid.minTemperature]). */
+    fun minTemperature(south: Double, north: Double, west: Double, east: Double, from: Long, to: Long): Float? =
+        grids.mapNotNull { it.second.takeIf { g -> g.overlaps(south, north, west, east) }?.minTemperature(south, north, west, east, from, to) }
+            .minOrNull()
 
     /**
      * Grid for colouring a radar tile: the finest one that covers the whole tile, else the

@@ -92,6 +92,7 @@ fun GaugeCard(gauges: List<GaugeInfo>, now: Long) {
         info = if (tide != null) Term.TIDES else Term.GAUGE,
     ) {
         if (tide != null) {
+            GaugeTitle(tide)
             TideContent(tide, now)
             Spacer(Modifier.height(8.dp))
             StationLine(tide)
@@ -109,12 +110,31 @@ fun GaugeCard(gauges: List<GaugeInfo>, now: Long) {
             }
             selected?.let { g ->
                 if (others.size > 1 || tide != null) { HairlineDivider(); Spacer(Modifier.height(10.dp)) }
+                else GaugeTitle(g)      // a single gauge has no list naming its river
                 LevelContent(g, now)
                 Spacer(Modifier.height(8.dp))
                 StationLine(g)
             }
         }
     }
+}
+
+/** "Leine · Herrenhausen · 4,3 km" – which water the card is about, above the values. */
+@Composable
+private fun GaugeTitle(g: GaugeInfo) {
+    val water = titleCase(g.water)
+    Row(verticalAlignment = Alignment.Bottom) {
+        if (water.isNotBlank()) {
+            Text(water, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1)
+            Spacer(Modifier.width(8.dp))
+        }
+        Text(
+            titleCase(g.name) + " · " + Units.oneDecimal(g.distanceKm) + NBSP + "km",
+            fontSize = 13.sp, color = NimbusColors.Secondary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            modifier = Modifier.padding(bottom = 1.dp),
+        )
+    }
+    Spacer(Modifier.height(6.dp))
 }
 
 /** "Pegel Heinde (Innerste), 0,8 km entfernt · Daten: NLWKN · Pegelnull …" */

@@ -316,6 +316,7 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
     var showWind by rememberSaveable { mutableStateOf(false) }
     val overlays = remember { WeatherOverlays(temperatureUnit) }
     var gridCheck by remember { mutableIntStateOf(0) }
+    var snowLegend by remember { mutableStateOf(true) }
     val tf = remember { TimeFormat(TimeZone.getDefault().id, DateFormat.is24HourFormat(context)) }
     val openedAt = remember { System.currentTimeMillis() }
 
@@ -453,6 +454,15 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
             overlays.setGrid(it)
             timeline?.let { tl -> overlays.update(tl.frames[frame.coerceIn(0, tl.frames.lastIndex)].time) }
         }
+    }
+    // Snow scale only where it can get cold enough (≤ 3 °C) in view during the shown time range.
+    LaunchedEffect(gridCheck, timeline, styleReady) {
+        if (!styleReady) return@LaunchedEffect
+        val tl = timeline ?: return@LaunchedEffect
+        val b = controller.map?.projection?.visibleRegion?.latLngBounds ?: return@LaunchedEffect
+        snowLegend = RadarPalette.showSnowLegend(
+            WeatherGridStore.minTemperature(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast, tl.frames.first().time, tl.frames.last().time),
+        )
     }
     LaunchedEffect(showTemp, showWind, styleReady) {
         if (!styleReady) return@LaunchedEffect
@@ -619,7 +629,7 @@ fun RadarScreen(place: Place?, temperatureUnit: dev.nimbus.weather.data.model.Te
                     }
                 }
                 Spacer(Modifier.height(4.dp))
-                Legend(showTemp, temperatureUnit)
+                Legend(showTemp, snowLegend, temperatureUnit)
                 Spacer(Modifier.height(8.dp))
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
                     ToggleChip(stringResource(R.string.overlay_temperature), showTemp) { showTemp = !showTemp }
@@ -672,9 +682,9 @@ private fun TimelineSlider(tl: RadarTimeline, frame: Int, onChange: (Int) -> Uni
     )
 }
 
-/** Rain (blue → red) and snow (pink → violet) scales, plus the temperature scale when shown. */
+/** Rain (blue → red) and, where it can snow, snow (pink → violet) scales, plus the temperature scale when shown. */
 @Composable
-private fun Legend(showTemp: Boolean, unit: dev.nimbus.weather.data.model.TemperatureUnit) {
+private fun Legend(showTemp: Boolean, showSnow: Boolean, unit: dev.nimbus.weather.data.model.TemperatureUnit) {
     @Composable
     fun Bar(label: String, colors: List<Color>, modifier: Modifier) {
         Column(modifier) {
@@ -686,8 +696,10 @@ private fun Legend(showTemp: Boolean, unit: dev.nimbus.weather.data.model.Temper
     }
     Row(verticalAlignment = Alignment.Bottom) {
         Bar(stringResource(R.string.legend_rain), RadarPalette.legendRain.map { Color(it) }, Modifier.weight(1.4f))
-        Spacer(Modifier.width(10.dp))
-        Bar(stringResource(R.string.legend_snow), RadarPalette.legendSnow.map { Color(it) }, Modifier.weight(1f))
+        if (showSnow) {
+            Spacer(Modifier.width(10.dp))
+            Bar(stringResource(R.string.legend_snow), RadarPalette.legendSnow.map { Color(it) }, Modifier.weight(1f))
+        }
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(stringResource(R.string.radar_light), fontSize = 10.sp, color = NimbusColors.Tertiary)

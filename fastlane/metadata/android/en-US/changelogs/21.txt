@@ -1,0 +1,2 @@
+• Radar: snow legend only when it is 3 °C or colder in the map view
+• Gauge card: the river and gauge are now named at the top also when there is only one gauge (e.g. "Leine · Herrenhausen")

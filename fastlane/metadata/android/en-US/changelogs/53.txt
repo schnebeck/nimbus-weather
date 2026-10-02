@@ -1,0 +1,1 @@
+• Radar of the day: no more jumping showers – motion is only computed between images at most 30 minutes apart; playback waits for the fine data

@@ -1,0 +1,1 @@
+• Radar des Tages: keine springenden Schauer mehr – die Bewegung wird nur zwischen Bildern berechnet, die höchstens 30 Minuten auseinanderliegen; das Abspielen wartet auf die feinen Daten

@@ -20,7 +20,9 @@ package dev.nimbus.weather
 import dev.nimbus.weather.ui.radar.Progressive
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ProgressiveTest {
@@ -31,22 +33,43 @@ class ProgressiveTest {
         assertArrayEquals(intArrayOf(2, 1), Progressive.strides(60))
     }
 
-    @Test fun aDayLoadsEveryTwoHoursFirstThenFiner() {
+    @Test fun aDayLoadsAnOverviewFirstThenInPlaybackOrder() {
         val o = Progressive.order(288, 0, Progressive.strides(5))
         assertEquals(288, o.size); assertEquals(288, o.toSet().size)
-        // first every 2 hours and the end of the day (13 steps)
-        assertEquals((0 until 288 step 24).toSet() + 287, o.take(13).toSet())
-        // then the other hours, the half hours, the quarters, finally the rest
-        assertEquals((12 until 288 step 24).toSet(), o.drop(13).take(12).toSet())
-        assertEquals((6 until 288 step 12).toSet(), o.drop(25).take(24).toSet())
-        assertEquals((3 until 288 step 6).toSet(), o.drop(49).take(48).toSet())
+        // the first half hour (00:00–00:30), then every 2 hours and the end of the day, then the other hours
+        assertEquals((0..6).toList(), o.take(7))
+        assertEquals((24 until 288 step 24).toSet() + 287, o.drop(7).take(12).toSet())
+        assertEquals((12 until 288 step 24).toSet(), o.drop(19).take(12).toSet())
+        // then everything else in playback order
+        val rest = o.drop(31)
+        assertEquals(rest.sorted(), rest)
     }
 
-    @Test fun withinALevelAheadOfThePositionFirst() {
+    @Test fun afterTheOverviewAheadOfThePositionFirst() {
         val o = Progressive.order(288, 120, Progressive.strides(5))
-        assertEquals(120, o[0]); assertEquals(144, o[1]); assertEquals(168, o[2])
-        // within a level the steps behind come after the ones close ahead
-        assertEquals(true, o.indexOf(96) > o.indexOf(168))
+        assertEquals((120..126).toList(), o.take(7))
+        val rest = o.drop(7 + 24)               // the overview without 120, which came first
+        // after the overview the steps right after the start come first, those behind it last
+        assertEquals(127, rest.first())
+        assertTrue(rest.indexOf(119) > rest.indexOf(287))
+    }
+
+    @Test fun rainMovesOnlyAcrossShortGaps() {
+        val min = 60_000L
+        assertEquals(true to 0.3f, Progressive.blend(30 * min, 0.3f))
+        // an hour apart: the earlier frame, a short blend in the middle, then the later one
+        assertEquals(false to 0f, Progressive.blend(60 * min, 0.3f))
+        assertEquals(false, Progressive.blend(60 * min, 0.5f).first)
+        assertEquals(0.5f, Progressive.blend(60 * min, 0.5f).second, 1e-4f)
+        assertEquals(false to 1f, Progressive.blend(60 * min, 0.7f))
+    }
+
+    @Test fun playsOnlyWhereTheFramesAreCloseEnough() {
+        val time = { i: Int -> i * 5 * 60_000L }
+        // steps every 30 min loaded: playable; only every hour: not (it would only blend)
+        assertTrue(Progressive.playable(3.5f, 288, { it % 6 == 0 }, time))
+        assertFalse(Progressive.playable(3.5f, 288, { it % 12 == 0 }, time))
+        assertTrue(Progressive.playable(12f, 288, { it % 12 == 0 }, time))      // right on a frame
     }
 
     @Test fun shownBetweenTheNearestStepsThereAre() {

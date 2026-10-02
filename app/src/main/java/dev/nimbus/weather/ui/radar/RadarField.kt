@@ -144,6 +144,9 @@ class Flow(val gw: Int, val gh: Int, private val x0: Float, private val y0: Floa
         out[1] = (v[i] * (1 - fx) + v[i + 1] * fx) * (1 - fy) + (v[i + gw] * (1 - fx) + v[i + gw + 1] * fx) * fy
     }
 
+    /** The same motion over [k] times the time (a velocity carried over a longer gap). */
+    fun scaled(k: Float) = Flow(gw, gh, x0, y0, step, FloatArray(u.size) { u[it] * k }, FloatArray(v.size) { v[it] * k })
+
     companion object {
         fun still() = Flow(1, 1, 0f, 0f, 1f, floatArrayOf(0f), floatArrayOf(0f))
     }
@@ -406,21 +409,47 @@ object Progressive {
     fun strides(stepMinutes: Int): IntArray =
         LEVEL_MINUTES.map { maxOf(1, it / maxOf(1, stepMinutes)) }.distinct().sortedDescending().toIntArray()
 
+    /** Coarse levels loaded over the whole time line first (an overview: every 2 hours, every hour). */
+    private const val OVERVIEW_MINUTES = 60
+    /** Loaded before the overview: the steps right after the position. */
+    private const val START_MINUTES = 30
+
     /**
-     * Load order of [n] steps: level by level (coarse first); within a level the steps ahead of
-     * [from] first, nearest first, then those behind. The last step belongs to the first level,
-     * so the end of the time line is there from the start.
+     * Load order of [n] steps: the first [START_MINUTES] from [from], then the overview levels (every [OVERVIEW_MINUTES] and coarser) over the
+     * whole time line, coarse first – the last step and [from] with the first –, then all others in
+     * playback order from [from] on (those behind last): playback needs them in that order, and
+     * they arrive faster than it plays.
      */
-    fun order(n: Int, from: Int, strides: IntArray): List<Int> {
+    fun order(n: Int, from: Int, strides: IntArray, stepMinutes: Int = 5): List<Int> {
         if (n <= 0) return emptyList()
         val seen = BooleanArray(n)
         val out = ArrayList<Int>(n)
-        fun rank(i: Int) = if (i >= from) i - from else (from - i) * 3
-        strides.forEachIndexed { level, s ->
+        fun rank(i: Int) = if (i >= from) i - from else n + (from - i)      // ahead first, then behind
+        // The first half hour from the position first: playback can start at once
+        (from..minOf(n - 1, from + START_MINUTES / maxOf(1, stepMinutes))).forEach { seen[it] = true; out += it }
+        strides.filter { it * stepMinutes >= OVERVIEW_MINUTES }.forEachIndexed { level, s ->
             val take = (0 until n).filter { !seen[it] && (it % s == 0 || level == 0 && (it == n - 1 || it == from)) }
             take.sortedBy { rank(it) }.forEach { seen[it] = true; out += it }
         }
+        (0 until n).filter { !seen[it] }.sortedBy { rank(it) }.forEach { out += it }
         return out
+    }
+
+    /** Frames further apart than this are not moved into each other (measured: beyond it the motion is guessed, not found). */
+    const val MAX_MOTION_MS = 30 * 60_000L
+
+    /**
+     * How to show [t] (0–1) between two frames [gapMs] apart: moving the rain (true, at [t]) – or,
+     * across a wider gap (finer steps still loading), without motion: the earlier frame, a short
+     * blend in the middle, then the later one (returned fraction).
+     */
+    fun blend(gapMs: Long, t: Float): Pair<Boolean, Float> =
+        if (gapMs <= MAX_MOTION_MS) true to t else false to ((t - 0.4f) / 0.2f).coerceIn(0f, 1f)
+
+    /** Can position [p] play: on a frame, or between two at most [MAX_MOTION_MS] apart ([timeOf] of an index). */
+    fun playable(p: Float, n: Int, has: (Int) -> Boolean, timeOf: (Int) -> Long): Boolean {
+        val (a, b) = bracket(p, n, has) ?: return false
+        return if (b == a) abs(p - a) < 1e-3f || a == n - 1 else timeOf(b) - timeOf(a) <= MAX_MOTION_MS
     }
 
     /**

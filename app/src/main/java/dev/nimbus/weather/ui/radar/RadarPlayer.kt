@@ -111,11 +111,13 @@ class RadarPlayer(private val scope: CoroutineScope, private val http: OkHttpCli
     /** Frame [i] is ready to show (not only approximated between others). */
     fun isLoaded(i: Int): Boolean = timeline?.let { tl -> i in tl.frames.indices && extracted(tl, i) } == true
 
-    /** Can position [p] be shown – a frame at or before it and one after it (or exactly on one)? */
+    /**
+     * Can position [p] play – on a frame, or between two at most half an hour apart (wider gaps,
+     * while the finer steps load, would only be blended, not moved)?
+     */
     fun canShow(p: Float): Boolean {
         val tl = timeline ?: return false
-        val (a, b) = Progressive.bracket(p, tl.frames.size) { extracted(tl, it) } ?: return false
-        return b > a || kotlin.math.abs(p - a) < 1e-3f
+        return Progressive.playable(p, tl.frames.size, { extracted(tl, it) }, { tl.frames[it].time })
     }
 
     /** From the first to the last frame ready: the part of the live loop that can play. */
@@ -162,7 +164,7 @@ class RadarPlayer(private val scope: CoroutineScope, private val http: OkHttpCli
             withContext(Dispatchers.IO) { tl.frames.forEach { f -> RadarStore.dwdKey(f).let { k -> if (RadarStore.has(k)) stored += k } } }
             countStored(tl)
             wake.trySend(Unit)
-            val order = Progressive.order(tl.frames.size, position.toInt().coerceIn(0, tl.frames.lastIndex), Progressive.strides(stepMinutes(tl)))
+            val order = Progressive.order(tl.frames.size, position.toInt().coerceIn(0, tl.frames.lastIndex), Progressive.strides(stepMinutes(tl)), stepMinutes(tl))
             // A fixed number of workers takes the steps strictly in this order (each download
             // on its own reordered them: the step needed next could end up far back in the queue)
             val queue = Channel<Int>(Channel.UNLIMITED)
@@ -215,7 +217,7 @@ class RadarPlayer(private val scope: CoroutineScope, private val http: OkHttpCli
                     frames.keys.filter { it !in keep }.forEach { frames.remove(it) }
                     flows.keys.filter { k -> k.substringBefore('>') !in keep || k.substringAfter('>') !in keep }.forEach { flows.remove(it) }
                 }
-                for (i in Progressive.order(tl.frames.size, p, strides)) {
+                for (i in Progressive.order(tl.frames.size, p, strides, stepMinutes(tl))) {
                     if (gen != generation) return@launch
                     if (i !in lo..hi) continue
                     val f = tl.frames[i]
@@ -301,14 +303,18 @@ class RadarPlayer(private val scope: CoroutineScope, private val http: OkHttpCli
         val g = geo ?: return
         val p = position.coerceIn(0f, tl.frames.lastIndex.toFloat())
         // The nearest frames at hand before and after the position – while a day still loads
-        // they may be hours apart; the motion between them fills the gap
+        // they may be hours apart
         val (ia, ib) = Progressive.bracket(p, tl.frames.size) { extracted(tl, it) } ?: return
         val fa = tl.frames[ia]
         val a = frames[RadarStore.dwdKey(fa)] ?: return
         val fb = if (ib != ia) tl.frames[ib] else null
         val b = fb?.let { frames[RadarStore.dwdKey(it)] }
-        val t = if (b != null) ((p - ia) / (ib - ia)).coerceIn(0f, 1f) else 0f
-        val flow = if (b != null && fb != null && t > 0.002f) {
+        val tSpan = if (b != null) ((p - ia) / (ib - ia)).coerceIn(0f, 1f) else 0f
+        // Moving the rain only across short gaps; wider ones (finer steps still loading) are
+        // blended in place – a motion guessed over an hour shifted showers to wrong places
+        val (move, t) = if (fb != null) Progressive.blend(fb.time - fa.time, tSpan) else (true to 0f)
+        val flow = if (b != null && fb != null && t > 0.002f && !move) Flow.still()
+        else if (b != null && fb != null && t > 0.002f) {
             val k = RadarStore.dwdKey(fa) + ">" + RadarStore.dwdKey(fb)
             flows.getOrPut(k) {
                 // fast showers move up to ~150 km/h

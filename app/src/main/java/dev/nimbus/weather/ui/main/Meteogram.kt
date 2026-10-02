@@ -344,37 +344,41 @@ fun Meteogram(
                         }
                     }
                 }
-                // Forecast (comparison mode): dashed
-                if (compare) {
-                    val fp = Path()
-                    var started = false
+                // Curves: one point per hour, in the column of its bar and cursor; clipped to the
+                // plot (the 00:00 point lies half an hour left of it)
+                clipRect(left = l, right = r) {
+                    // Forecast (comparison mode): dashed
+                    if (compare) {
+                        val fp = Path()
+                        var started = false
+                        pts.forEachIndexed { i, h ->
+                            val v = fTemps[i] ?: run { started = false; return@forEachIndexed }
+                            if (!started) { fp.moveTo(axis.point(h.time), yT(v)); started = true } else fp.lineTo(axis.point(h.time), yT(v))
+                        }
+                        drawPath(fp, ForecastLine, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 7f))))
+                    }
+                    // Temperature curve in the temperature colours (in comparison mode the measured one)
+                    val path = Path()
+                    val single = mutableListOf<Offset>()
+                    var run = 0
                     pts.forEachIndexed { i, h ->
-                        val v = fTemps[i] ?: run { started = false; return@forEachIndexed }
-                        if (!started) { fp.moveTo(x(h.time), yT(v)); started = true } else fp.lineTo(x(h.time), yT(v))
+                        // hours still to come (look-back of today) have no measured curve
+                        if (h.forecastOnly) {
+                            if (run == 1) single += Offset(axis.point(pts[i - 1].time), yT(temps[i - 1]))
+                            run = 0; return@forEachIndexed
+                        }
+                        if (run == 0) path.moveTo(axis.point(h.time), yT(temps[i])) else path.lineTo(axis.point(h.time), yT(temps[i]))
+                        run++
                     }
-                    drawPath(fp, ForecastLine, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 7f))))
+                    if (run == 1) single += Offset(axis.point(pts.last().time), yT(temps.last()))
+                    val brush = Brush.verticalGradient(
+                        listOf(Insights.temperatureColor(pts.maxOf { it.temperature }), Insights.temperatureColor(pts.minOf { it.temperature })),
+                        startY = top, endY = bottom,
+                    )
+                    drawPath(path, brush, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round))
+                    // A single reading (just after midnight: only 00:00 so far) makes no line – a dot
+                    single.forEach { drawCircle(brush, 3.5.dp.toPx(), it) }
                 }
-                // Temperature curve in the temperature colours (in comparison mode the measured one)
-                val path = Path()
-                val single = mutableListOf<Offset>()
-                var run = 0
-                pts.forEachIndexed { i, h ->
-                    // hours still to come (look-back of today) have no measured curve
-                    if (h.forecastOnly) {
-                        if (run == 1) single += Offset(x(pts[i - 1].time), yT(temps[i - 1]))
-                        run = 0; return@forEachIndexed
-                    }
-                    if (run == 0) path.moveTo(x(h.time), yT(temps[i])) else path.lineTo(x(h.time), yT(temps[i]))
-                    run++
-                }
-                if (run == 1) single += Offset(x(pts.last().time), yT(temps.last()))
-                val brush = Brush.verticalGradient(
-                    listOf(Insights.temperatureColor(pts.maxOf { it.temperature }), Insights.temperatureColor(pts.minOf { it.temperature })),
-                    startY = top, endY = bottom,
-                )
-                drawPath(path, brush, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round))
-                // A single reading (just after midnight: only 00:00 so far) makes no line – a dot
-                single.forEach { drawCircle(brush, 3.5.dp.toPx(), it) }
                 // Sunshine row label: sun glyph on the left (the day's total is in the legend)
                 if (sunTotalMin != null) {
                     val cy = bottom + sunGap.toPx() + (sunH - sunGap).toPx() / 2
@@ -413,7 +417,7 @@ fun Meteogram(
                     val i = selected.coerceIn(1, pts.lastIndex)
                     // in the middle of the hour's bar; the dot on the curve there
                     val xs = axis.cursor(pts[i].time)
-                    val yc = yT((temps[i - 1] + temps[i]) / 2)
+                    val yc = yT(temps[i])            // on the curve point of the hour
                     drawLine(Color.White.copy(alpha = 0.85f * cursorAlpha), Offset(xs, top - 2.dp.toPx()), Offset(xs, bottom + below), 1.5.dp.toPx())
                     drawCircle(Color(0xFF1A2A40).copy(alpha = cursorAlpha), 5.5.dp.toPx(), Offset(xs, yc))
                     drawCircle(Color.White.copy(alpha = cursorAlpha), 3.5.dp.toPx(), Offset(xs, yc))

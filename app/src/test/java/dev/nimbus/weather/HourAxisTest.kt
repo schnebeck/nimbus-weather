@@ -31,11 +31,11 @@ class HourAxisTest {
     private val times = (0..24).map { start + it * h }
     private val axis = HourAxis(start, end, 40f, 1000f)
 
-    @Test fun everyBarIsCentredUnderItsCursor() {
+    @Test fun barCurvePointAndCursorOfAnHourAreOneColumn() {
         for (t in times.drop(1)) {
-            val left = axis.barLeft(t)
-            val centre = left + axis.barWidth() / 2
+            val centre = axis.barLeft(t) + axis.barWidth() / 2
             assertEquals("bar of ${(t - start) / h}:00", axis.cursor(t), centre, 0.01f)
+            assertEquals("curve point of ${(t - start) / h}:00", axis.cursor(t), axis.point(t), 0.01f)
         }
     }
 
@@ -66,13 +66,20 @@ class HourAxisTest {
      */
     @Test fun chartsUseTheSharedGeometry() {
         val main = File("src/main/java/dev/nimbus/weather/ui/main")
-        for (name in listOf("Meteogram.kt", "DetailTiles.kt")) {
-            val src = File(main, name).readText()
+        // the hourly charts: the meteogram, and the precipitation chart in DetailTiles (the sun's
+        // path there is a continuous curve, not hourly)
+        for ((name, chart) in listOf("Meteogram.kt" to "fun Meteogram(", "DetailTiles.kt" to "fun PrecipChart(")) {
+            val file = File(main, name).readText()
+            val from = file.indexOf(chart)
+            assertTrue("$name: $chart not found", from >= 0)
+            val src = file.substring(from, file.indexOf("\n@Composable", from).takeIf { it > 0 } ?: file.length)
             assertTrue("$name: bars from HourAxis", src.contains("barLeft(") && src.contains("barWidth()"))
             assertTrue("$name: cursor from HourAxis", src.contains(".cursor("))
             assertTrue("$name: touch from HourAxis", src.contains(".indexAt("))
-            // no hand-made bar geometry
+            assertTrue("$name: curve points from HourAxis", src.contains("axis.point("))
+            // no hand-made bar geometry, no curve points on the bare time stamp
             assertTrue("$name: own bar offset", !Regex("""hour[Ww] \* 0\.3|bw \* 0\.3""").containsMatchIn(src))
+            assertTrue("$name: curve point on the time stamp", !Regex("""(moveTo|lineTo)\(x\(""").containsMatchIn(src))
         }
     }
 }

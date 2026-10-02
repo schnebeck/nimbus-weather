@@ -23,8 +23,9 @@ import kotlin.math.abs
  * The time axis of an hourly chart from [start] to [end], drawn from [left] to [right] (pixels or
  * dp – the same unit throughout). An hourly value covers the hour before its time stamp (as the
  * models and stations deliver it), so its bar stands on that hour – and the cursor of the hour
- * stands in the middle of the bar. Bars and cursor take their positions only from here; the
- * charts' drawing and touch handling must not compute their own (they drifted apart before).
+ * stands in the middle of the bar, and so do the curve points of the hour. Bars, curve points and
+ * cursor take their positions only from here; the charts' drawing and touch handling must not
+ * compute their own (they drifted apart before, more than once).
  */
 class HourAxis(private val start: Long, private val end: Long, val left: Float, val right: Float) {
     private val span = (end - start).toFloat()
@@ -44,6 +45,13 @@ class HourAxis(private val start: Long, private val end: Long, val left: Float, 
 
     /** The cursor of the hour before [t]. */
     fun cursor(t: Long): Float = centre(t)
+
+    /**
+     * A point of a curve for the value at [t] (temperature, chance …): in the middle of its hour
+     * as well, so curve points, bars and cursor are one column per hour. The 00:00 value lies half
+     * an hour left of the plot – the curve comes in from the edge.
+     */
+    fun point(t: Long): Float = centre(t)
 
     /** The hour ([times] index) whose bar is nearest to [pos]; only hours within the axis count. */
     fun indexAt(pos: Float, times: List<Long>): Int {

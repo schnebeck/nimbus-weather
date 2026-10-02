@@ -426,7 +426,7 @@ fun PrecipChart(
             }
             // Bars, line points and cursor from one geometry (see HourAxis)
             val axis = HourAxis(start, end, l, r)
-            fun centre(i: Int) = axis.centre(hours[i].time)
+            fun centre(i: Int) = axis.point(hours[i].time)
             // Amount: bars
             amounts.forEachIndexed { i, v ->
                 val bh = bottom - yA(v)

@@ -1,0 +1,2 @@
+• Radar of the day loads in levels: every 2 hours first, then hourly, half and quarter hours, finally every 5 minutes – it plays within seconds, the motion is computed in between
+• A whole day loads in under 2 minutes instead of several

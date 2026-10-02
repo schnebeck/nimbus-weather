@@ -1,0 +1,2 @@
+• Radar des Tages lädt in Stufen: erst alle 2 Stunden, dann jede Stunde, halbe, viertel Stunde, zuletzt alle 5 Minuten – es spielt nach wenigen Sekunden, dazwischen wird die Bewegung berechnet
+• Ein ganzer Tag ist in unter 2 Minuten geladen statt in mehreren Minuten

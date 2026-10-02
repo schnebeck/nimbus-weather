@@ -62,8 +62,14 @@ object RadarStore {
         }
     }
     private val inflight = ConcurrentHashMap<String, CompletableDeferred<ByteArray?>>()
-    /** DWD answers one big image at a time quickly; a few in parallel keep the line busy. */
-    private val downloads = Semaphore(4)
+    /** DWD answers one big image at a time quickly; several in parallel keep the line busy. */
+    private val downloads = Semaphore(6)
+    /**
+     * Decoding (PNG and colours of 1.9 million pixels) gets at most half the cores: cutting and
+     * drawing the frames shown must never wait behind a queue of downloads being decoded.
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val decoding = Dispatchers.Default.limitedParallelism(maxOf(1, Runtime.getRuntime().availableProcessors() / 2))
 
     /** Store name of a DWD step; nowcast steps carry the analysis they were computed from. */
     fun dwdKey(frame: RadarFrame, issue: Long? = RadarSources.latestAnalysis): String =
@@ -126,7 +132,7 @@ object RadarStore {
                 if (!r.isSuccessful || r.header("Content-Type")?.startsWith("image/png") != true) null else r.body.bytes()
             }
         } ?: return null
-        return withContext(Dispatchers.Default) {
+        return withContext(decoding) {
             val opts = BitmapFactory.Options().apply { inPremultiplied = false }
             val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts) ?: return@withContext null
             if (bmp.width != w || bmp.height != h) { bmp.recycle(); return@withContext null }

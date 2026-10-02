@@ -393,3 +393,50 @@ object RadarField {
             w01 * (sn[j01].toInt() and 0xFF) + w11 * (sn[j11].toInt() and 0xFF)) / (255f * ws)
     }
 }
+
+/**
+ * Loading a long time line coarse to fine: first one step every 2 hours, then every hour, every
+ * 30 minutes, every 15, finally all – the player shows the whole time line from the start and moves the rain
+ * between the steps it has; every finer level makes it more exact.
+ */
+object Progressive {
+    private val LEVEL_MINUTES = intArrayOf(120, 60, 30, 15, 1)
+
+    /** Strides (in steps) of the levels for steps of [stepMinutes]: 5 min → 24, 12, 6, 3, 1. */
+    fun strides(stepMinutes: Int): IntArray =
+        LEVEL_MINUTES.map { maxOf(1, it / maxOf(1, stepMinutes)) }.distinct().sortedDescending().toIntArray()
+
+    /**
+     * Load order of [n] steps: level by level (coarse first); within a level the steps ahead of
+     * [from] first, nearest first, then those behind. The last step belongs to the first level,
+     * so the end of the time line is there from the start.
+     */
+    fun order(n: Int, from: Int, strides: IntArray): List<Int> {
+        if (n <= 0) return emptyList()
+        val seen = BooleanArray(n)
+        val out = ArrayList<Int>(n)
+        fun rank(i: Int) = if (i >= from) i - from else (from - i) * 3
+        strides.forEachIndexed { level, s ->
+            val take = (0 until n).filter { !seen[it] && (it % s == 0 || level == 0 && (it == n - 1 || it == from)) }
+            take.sortedBy { rank(it) }.forEach { seen[it] = true; out += it }
+        }
+        return out
+    }
+
+    /**
+     * The steps to show at position [p]: the nearest one at or before it and the nearest after it
+     * among those [has]; (a, a) right on a step or past the last one there is; null if there is
+     * none at or before [p].
+     */
+    fun bracket(p: Float, n: Int, has: (Int) -> Boolean): Pair<Int, Int>? {
+        if (n <= 0) return null
+        val i = p.toInt().coerceIn(0, n - 1)
+        var a = i
+        while (a >= 0 && !has(a)) a--
+        if (a < 0) return null
+        if (p - i < 1e-4f && a == i) return a to a
+        var b = i + 1
+        while (b < n && !has(b)) b++
+        return if (b < n) a to b else a to a
+    }
+}

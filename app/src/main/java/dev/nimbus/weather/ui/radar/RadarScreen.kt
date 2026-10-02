@@ -303,11 +303,13 @@ fun RadarScreen(
         if (!styleReady || timeline == null) return@LaunchedEffect
         // the first picture area once the map has its size
         controller.map?.projection?.visibleRegion?.latLngBounds?.let { b -> player.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast) }
-        player.loaded.collect { n ->
-            loadedFrames = n
+        launch { player.loaded.collect { loadedFrames = it } }
+        player.ready.collect {
             val tl = timeline ?: return@collect
-            val canPlay = if (tl.day != null) (0 until BUFFER_START).all { k -> (frame + k).let { it > tl.frames.lastIndex || player.isLoaded(it) } }
-            else playable(tl, player).count() >= MIN_FRAMES_TO_PLAY || n >= tl.frames.size
+            // An archived day plays as soon as the first coarse steps bridge the start; the
+            // finer ones arrive while it plays
+            val canPlay = if (tl.day != null) player.canShow(minOf(frame + BUFFER_START, tl.frames.lastIndex).toFloat())
+            else playable(tl, player).count() >= MIN_FRAMES_TO_PLAY || player.loaded.value >= tl.frames.size
             if (!ready && canPlay) {
                 ready = true
                 playing = true
@@ -415,7 +417,7 @@ fun RadarScreen(
         var p = frame.toFloat()
         var last = withFrameNanos { it }
         var restAt = 0L
-        if (archived) buffering = !(1..BUFFER_START).all { k -> (frame + k).let { it > tl.frames.lastIndex || player.isLoaded(it) } }
+        if (archived) buffering = !player.canShow(minOf(frame + BUFFER_START, tl.frames.lastIndex).toFloat())
         while (playing) {
             val now = withFrameNanos { it }
             val dt = (now - last) / 1_000_000f
@@ -425,9 +427,9 @@ fun RadarScreen(
                 val next = p.toInt() + 1
                 if (next > tl.frames.lastIndex) { playing = false; break }
                 if (buffering) {
-                    if ((1..BUFFER_RESUME).all { k -> (p.toInt() + k).let { it > tl.frames.lastIndex || player.isLoaded(it) } }) buffering = false else continue
+                    if (player.canShow(minOf(p + BUFFER_RESUME, tl.frames.lastIndex.toFloat()))) buffering = false else continue
                 }
-                if (!player.isLoaded(next)) { buffering = true; continue }
+                if (!player.canShow(next.toFloat())) { buffering = true; continue }
                 p = minOf(p + dt / stepMs, next.toFloat())
             } else {
                 // Only the loaded part of the loop; it grows while the rest loads
@@ -480,7 +482,7 @@ fun RadarScreen(
         }
         val total = timeline?.frames?.size ?: 0
         val stillLoading = timeline != null && styleReady &&
-            if (archive) loadedFrames >= 0 && (buffering || !player.isLoaded(frame)) else loadedFrames < total
+            buffering || !player.canShow(frame.toFloat()) || loadedFrames < total
         val trouble = netStatus.failed > 0 || netStatus.fromCache > 0
         if (error || stillLoading || trouble) {
             Column(
@@ -493,7 +495,7 @@ fun RadarScreen(
                         CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            if (archive) stringResource(R.string.radar_loading) else stringResource(R.string.radar_loading_frames, loadedFrames, total),
+                            stringResource(R.string.radar_loading_frames, loadedFrames, total),
                             color = Color.White, fontSize = 13.sp,
                         )
                     }
@@ -617,15 +619,12 @@ fun RadarScreen(
     }
 }
 
-/** Contiguous loaded frames around "now" – the part of the live loop that can play. */
-private fun playable(tl: RadarTimeline, player: RadarPlayer): IntRange {
-    val now = tl.nowIndex
-    if (!player.isLoaded(now)) return IntRange.EMPTY
-    var lo = now; var hi = now
-    while (lo - 1 >= 0 && player.isLoaded(lo - 1)) lo--
-    while (hi + 1 <= tl.frames.lastIndex && player.isLoaded(hi + 1)) hi++
-    return lo..hi
-}
+/**
+ * The part of the live loop that can play: from the first to the last frame at hand, if "now"
+ * lies in it (gaps are bridged by the motion between the frames around them).
+ */
+private fun playable(tl: RadarTimeline, player: RadarPlayer): IntRange =
+    player.playableRange().takeIf { tl.nowIndex in it } ?: IntRange.EMPTY
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

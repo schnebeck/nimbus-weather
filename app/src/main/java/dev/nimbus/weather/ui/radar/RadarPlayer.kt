@@ -56,12 +56,21 @@ class RadarPlayer(private val scope: CoroutineScope, private val http: OkHttpCli
     private val flows = ConcurrentHashMap<String, Flow>()
     private var inDwd: BooleanArray? = null
     private var generation = 0
-    private var loader: Job? = null
-    private val extracting = Semaphore(2)
+    private var downloader: Job? = null
+    private var extractor: Job? = null
+    /** Wakes the extractor: a step arrived in the store, or the position moved on. */
+    private val wake = Channel<Unit>(Channel.CONFLATED)
+    /** Store keys of the steps on the device (no need to ask the disk for every frame). */
+    private val stored = ConcurrentHashMap.newKeySet<String>()
+    /** Steps the DWD did not deliver this time: done for the progress (the motion bridges them). */
+    private val failed = ConcurrentHashMap.newKeySet<String>()
 
     private val _loaded = MutableStateFlow(0)
-    /** Frames of the time line ready to show. */
+    /** Steps of the time line in the store (downloaded) – the loading progress. */
     val loaded: StateFlow<Int> = _loaded
+    private val _ready = MutableStateFlow(0)
+    /** Grows with every frame ready to show – the screen checks playback then. */
+    val ready: StateFlow<Int> = _ready
 
     /** Playback position: frame index plus the fraction to the next one. */
     @Volatile var position = 0f
@@ -69,7 +78,7 @@ class RadarPlayer(private val scope: CoroutineScope, private val http: OkHttpCli
             field = v
             requestRender()
             // A long time line (archived day) holds a window of frames: it follows the position
-            if (windowed && kotlin.math.abs(v - windowAnchor) > WINDOW_SLIDE) restartLoader()
+            if (windowed && kotlin.math.abs(v - windowAnchor) > WINDOW_SLIDE) wake.trySend(Unit)
         }
 
     /** Long time lines keep only [WINDOW_BEHIND] … [WINDOW_AHEAD] frames around the position. */
@@ -96,11 +105,30 @@ class RadarPlayer(private val scope: CoroutineScope, private val http: OkHttpCli
         scope.launch(Dispatchers.Default) { for (r in renders) renderNow() }
     }
 
-    fun isLoaded(i: Int): Boolean = timeline?.frames?.getOrNull(i)?.let { frames.containsKey(RadarStore.dwdKey(it)) } == true
+    private fun key(tl: RadarTimeline, i: Int) = RadarStore.dwdKey(tl.frames[i])
+    private fun extracted(tl: RadarTimeline, i: Int) = frames.containsKey(key(tl, i))
+
+    /** Frame [i] is ready to show (not only approximated between others). */
+    fun isLoaded(i: Int): Boolean = timeline?.let { tl -> i in tl.frames.indices && extracted(tl, i) } == true
+
+    /** Can position [p] be shown – a frame at or before it and one after it (or exactly on one)? */
+    fun canShow(p: Float): Boolean {
+        val tl = timeline ?: return false
+        val (a, b) = Progressive.bracket(p, tl.frames.size) { extracted(tl, it) } ?: return false
+        return b > a || kotlin.math.abs(p - a) < 1e-3f
+    }
+
+    /** From the first to the last frame ready: the part of the live loop that can play. */
+    fun playableRange(): IntRange {
+        val tl = timeline ?: return IntRange.EMPTY
+        val have = tl.frames.indices.filter { extracted(tl, it) }
+        return if (have.isEmpty()) IntRange.EMPTY else have.first()..have.last()
+    }
 
     fun setTimeline(tl: RadarTimeline) {
         timeline = tl
-        restartLoader()
+        restartDownloader()
+        restartExtractor()
     }
 
     /** The visible area changed (camera idle): a new picture area if the old one no longer serves. */
@@ -115,69 +143,101 @@ class RadarPlayer(private val scope: CoroutineScope, private val http: OkHttpCli
         inDwd = null
         frames.clear()
         flows.clear()
-        restartLoader()
+        restartExtractor()
+        if (downloader == null) restartDownloader()
     }
 
-    private fun restartLoader() {
+    private fun stepMinutes(tl: RadarTimeline) =
+        if (tl.frames.size < 2) 5 else ((tl.frames[1].time - tl.frames[0].time) / 60_000L).toInt()
+
+    /**
+     * Downloads the steps into the store, coarse to fine ([Progressive]): every 2 hours, every
+     * hour, … – over the whole time line, independent of what is shown, several at a time.
+     */
+    private fun restartDownloader() {
         val tl = timeline ?: return
-        val g = geo ?: return
-        loader?.cancel()
-        val gen = ++generation
-        countLoaded()
-        loader = scope.launch(Dispatchers.Default) {
-            if (inDwd == null) inDwd = coverage(g)
-            // From the shown frame outwards, ahead first (playback runs forward)
-            val p = position.toInt().coerceIn(0, tl.frames.lastIndex)
-            windowAnchor = p.toFloat()
-            val lo = if (windowed) maxOf(0, p - WINDOW_BEHIND) else 0
-            val hi = if (windowed) minOf(tl.frames.lastIndex, p + WINDOW_AHEAD) else tl.frames.lastIndex
-            if (windowed) {
-                val keep = (lo..hi).map { RadarStore.dwdKey(tl.frames[it]) }.toSet()
-                frames.keys.filter { it !in keep }.forEach { frames.remove(it) }
-                flows.keys.filter { k -> k.substringBefore('>') !in keep }.forEach { flows.remove(it) }
-                countLoaded()
-            }
-            val order = buildList {
-                add(p)
-                for (d in 1..tl.frames.size) {
-                    if (p + d <= hi) add(p + d)
-                    if (d <= 6 && p - d >= lo) add(p - d)
-                }
-                for (d in 7..tl.frames.size) if (p - d >= lo) add(p - d)
-            }
-            val jobs = order.map { i ->
-                launch {
-                    extracting.withPermit {
-                        if (gen != generation) return@withPermit
-                        loadFrame(tl, i, g, gen)
+        downloader?.cancel()
+        failed.clear()
+        downloader = scope.launch(Dispatchers.Default) {
+            withContext(Dispatchers.IO) { tl.frames.forEach { f -> RadarStore.dwdKey(f).let { k -> if (RadarStore.has(k)) stored += k } } }
+            countStored(tl)
+            wake.trySend(Unit)
+            val order = Progressive.order(tl.frames.size, position.toInt().coerceIn(0, tl.frames.lastIndex), Progressive.strides(stepMinutes(tl)))
+            // A fixed number of workers takes the steps strictly in this order (each download
+            // on its own reordered them: the step needed next could end up far back in the queue)
+            val queue = Channel<Int>(Channel.UNLIMITED)
+            order.forEach { queue.trySend(it) }
+            queue.close()
+            kotlinx.coroutines.coroutineScope {
+                repeat(DOWNLOAD_WORKERS) {
+                    launch {
+                        for (i in queue) {
+                            val f = tl.frames[i]
+                            val k = RadarStore.dwdKey(f)
+                            if (f.dwdTime == null || k in stored) continue
+                            if (geo?.let { overlapsDwd(it) } == false) continue
+                            if (RadarStore.dwd(http, f) != null) {
+                                stored += k
+                                wake.trySend(Unit)
+                            } else failed += k
+                            countStored(tl)
+                        }
                     }
                 }
             }
-            jobs.forEach { it.join() }
         }
     }
 
-    private suspend fun loadFrame(tl: RadarTimeline, i: Int, g: FieldGeo, gen: Int) {
-        val f = tl.frames[i]
-        val key = RadarStore.dwdKey(f)
-        if (frames.containsKey(key)) return
-        val dwd = if (overlapsDwd(g)) RadarStore.dwd(http, f) else null
-        val rv = f.rainViewerPath?.takeIf { needsRainViewer(g) }?.let { mosaic(tl, it, g) }
-        if (gen != generation) return
-        if (dwd == null && rv == null && f.dwdTime != null && overlapsDwd(g)) return       // not loadable now
-        val t0 = System.nanoTime()
-        val vf = withContext(Dispatchers.Default) { RadarField.extract(g, dwd, rv, inDwd) }
-        if (dev.nimbus.weather.BuildConfig.DEBUG) android.util.Log.d("NimbusPlayer", "frame $i ${g.w}x${g.h} extract ${(System.nanoTime() - t0) / 1_000_000} ms")
-        if (gen != generation) return
-        frames[key] = vf
-        countLoaded()
-        val p = position.toInt()
-        if (i == p || i == p + 1) requestRender()
+    private fun countStored(tl: RadarTimeline) {
+        _loaded.value = tl.frames.count { f -> f.dwdTime == null || RadarStore.dwdKey(f).let { it in stored || it in failed } }
     }
 
-    private fun countLoaded() {
+    /**
+     * Cuts the frames of the picture area from the store – whatever is there, coarse levels
+     * first, in the window around the position for long time lines; woken by every new step.
+     */
+    private fun restartExtractor() {
         val tl = timeline ?: return
-        _loaded.value = tl.frames.count { frames.containsKey(RadarStore.dwdKey(it)) }
+        val g = geo ?: return
+        extractor?.cancel()
+        val gen = ++generation
+        extractor = scope.launch(Dispatchers.Default) {
+            if (inDwd == null) inDwd = coverage(g)
+            wake.trySend(Unit)
+            val strides = Progressive.strides(stepMinutes(tl))
+            for (w in wake) {
+                val p = position.toInt().coerceIn(0, tl.frames.lastIndex)
+                windowAnchor = p.toFloat()
+                val lo = if (windowed) maxOf(0, p - WINDOW_BEHIND) else 0
+                val hi = if (windowed) minOf(tl.frames.lastIndex, p + WINDOW_AHEAD) else tl.frames.lastIndex
+                if (windowed) {
+                    val keep = (lo..hi).map { key(tl, it) }.toSet()
+                    frames.keys.filter { it !in keep }.forEach { frames.remove(it) }
+                    flows.keys.filter { k -> k.substringBefore('>') !in keep || k.substringAfter('>') !in keep }.forEach { flows.remove(it) }
+                }
+                for (i in Progressive.order(tl.frames.size, p, strides)) {
+                    if (gen != generation) return@launch
+                    if (i !in lo..hi) continue
+                    val f = tl.frames[i]
+                    val k = RadarStore.dwdKey(f)
+                    if (frames.containsKey(k)) continue
+                    val needDwd = f.dwdTime != null && overlapsDwd(g)
+                    val dwd = if (needDwd) withContext(Dispatchers.IO) { if (k in stored || RadarStore.has(k)) RadarStore.peek(k) else null } else null
+                    if (needDwd && dwd == null) continue                 // not downloaded yet: a later pass
+                    val rv = f.rainViewerPath?.takeIf { needsRainViewer(g) }?.let { mosaic(tl, it, g) }
+                    if (!needDwd && rv == null) continue
+                    val t0 = System.nanoTime()
+                    val vf = RadarField.extract(g, dwd, rv, inDwd)
+                    if (dev.nimbus.weather.BuildConfig.DEBUG) android.util.Log.d("NimbusPlayer", "frame $i ${g.w}x${g.h} extract ${(System.nanoTime() - t0) / 1_000_000} ms")
+                    if (gen != generation) return@launch
+                    frames[k] = vf
+                    _ready.value++
+                    requestRender()
+                    // moved on meanwhile: plan the window around the new position
+                    if (windowed && kotlin.math.abs(position - windowAnchor) > WINDOW_SLIDE) { wake.trySend(Unit); break }
+                }
+            }
+        }
     }
 
     private suspend fun mosaic(tl: RadarTimeline, path: String, g: FieldGeo): RvMosaic {
@@ -240,13 +300,15 @@ class RadarPlayer(private val scope: CoroutineScope, private val http: OkHttpCli
         val tl = timeline ?: return
         val g = geo ?: return
         val p = position.coerceIn(0f, tl.frames.lastIndex.toFloat())
-        val i = p.toInt()
-        val t = p - i
-        val fa = tl.frames[i]
-        val a = frames[RadarStore.dwdKey(fa)] ?: return          // keeps the last picture until the frame is there
-        val fb = tl.frames.getOrNull(i + 1)
-        val b = if (t > 0.01f) fb?.let { frames[RadarStore.dwdKey(it)] } else null
-        val flow = if (b != null && fb != null) {
+        // The nearest frames at hand before and after the position – while a day still loads
+        // they may be hours apart; the motion between them fills the gap
+        val (ia, ib) = Progressive.bracket(p, tl.frames.size) { extracted(tl, it) } ?: return
+        val fa = tl.frames[ia]
+        val a = frames[RadarStore.dwdKey(fa)] ?: return
+        val fb = if (ib != ia) tl.frames[ib] else null
+        val b = fb?.let { frames[RadarStore.dwdKey(it)] }
+        val t = if (b != null) ((p - ia) / (ib - ia)).coerceIn(0f, 1f) else 0f
+        val flow = if (b != null && fb != null && t > 0.002f) {
             val k = RadarStore.dwdKey(fa) + ">" + RadarStore.dwdKey(fb)
             flows.getOrPut(k) {
                 // fast showers move up to ~150 km/h
@@ -255,11 +317,11 @@ class RadarPlayer(private val scope: CoroutineScope, private val http: OkHttpCli
             }
         } else null
         // While the rain moves: half the resolution (four times as fast); standing still: all of it
-        val step = if (b != null) 2 else 1
+        val step = if (flow != null) 2 else 1
         val ow = (g.w + step - 1) / step; val oh = (g.h + step - 1) / step
         val out = IntArray(ow * oh)
         val t0 = System.nanoTime()
-        RadarField.render(a, b, flow, if (b != null) t else 0f, g.w, g.h, snowAt(g, fa.time), out, step)
+        RadarField.render(a, if (flow != null) b else null, flow, t, g.w, g.h, snowAt(g, fa.time), out, step)
         if (dev.nimbus.weather.BuildConfig.DEBUG && renderCount++ % 30 == 0) android.util.Log.d("NimbusPlayer", "render ${ow}x$oh ${(System.nanoTime() - t0) / 1_000_000} ms")
         val slot = flip * 2 + step - 1
         val bmp = bitmaps[slot]?.takeIf { it.width == ow && it.height == oh }
@@ -278,6 +340,8 @@ class RadarPlayer(private val scope: CoroutineScope, private val http: OkHttpCli
 
     companion object {
         const val SOURCE = "radar-picture"
+        /** Parallel downloads of time steps (one image of all of Germany each, ~200 kB). */
+        private const val DOWNLOAD_WORKERS = 6
         /** Up to this many frames are all kept (live loop); more (a day of 288) use a window. */
         private const val MAX_ALL = 60
         private const val WINDOW_BEHIND = 8

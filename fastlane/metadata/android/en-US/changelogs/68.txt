@@ -1,0 +1,1 @@
+• Look-back: the parts of the day as a table of 3 columns and 2 rows – larger text, no word broken inside or cut off (also with a large system font)

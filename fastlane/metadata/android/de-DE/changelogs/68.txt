@@ -1,0 +1,1 @@
+• Rückblick: Tagesabschnitte als Tabelle mit 3 Spalten und 2 Zeilen – größere Schrift, kein Wort wird mehr mitten im Wort umgebrochen oder abgeschnitten (auch bei großer Systemschrift)

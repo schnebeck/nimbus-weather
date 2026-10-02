@@ -245,33 +245,72 @@ private fun HistoryHeader(
 private const val PART_SHOW_MS = 5_000L
 
 /**
- * The day in parts: early, morning, forenoon, afternoon, evening, night – side by side, each with
- * its name, symbol and weather, for the parts that have begun; the part the sky shows now is lit,
- * the others dimmed.
+ * The day in parts as a table of three columns and two rows – early, morning, forenoon above,
+ * afternoon, evening, night below –, each with its name, symbol and weather, for the parts that
+ * have begun; the part the sky shows now is lit, the others dimmed. One font size for all cells,
+ * small enough (on narrow phones, with a large system font) that the longest single word
+ * ("Überwiegend", "Nachmittags") fits its column: lines break between words only, never inside one.
  */
 @Composable
-private fun DayPartsTable(parts: List<dev.nimbus.weather.data.remote.DayPartWeather>, shown: Int, halo: androidx.compose.ui.text.TextStyle) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-        parts.forEachIndexed { i, p ->
-            val lit by androidx.compose.animation.core.animateFloatAsState(if (i == shown) 1f else 0.55f, androidx.compose.animation.core.tween(600), label = "lit")
-            Column(
-                Modifier.weight(1f, fill = false).widthIn(max = 72.dp).alpha(lit).padding(horizontal = 2.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(stringResource(dayPartLabel(p.part)), fontSize = 12.sp, color = Color.White, style = halo, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Spacer(Modifier.height(2.dp))
-                WeatherIcon(p.condition, p.isDay, size = 30.dp)
-                Spacer(Modifier.height(2.dp))
-                // two lines for every weather, so the row does not change height with the part shown
-                Text(
-                    stringResource(Texts.condition(p.condition, p.isDay)), fontSize = 11.sp, lineHeight = 13.sp, color = Color.White, style = halo,
-                    fontWeight = if (i == shown) FontWeight.Medium else FontWeight.Normal,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center, minLines = 2, maxLines = 2, overflow = TextOverflow.Ellipsis,
-                )
+internal fun DayPartsTable(parts: List<dev.nimbus.weather.data.remote.DayPartWeather>, shown: Int, halo: androidx.compose.ui.text.TextStyle) {
+    val labels = parts.map { stringResource(dayPartLabel(it.part)) }
+    val weathers = parts.map { stringResource(Texts.condition(it.condition, it.isDay)) }
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val column = minOf(maxWidth / PART_COLUMNS, 120.dp) - 4.dp
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val columnPx = with(density) { column.toPx() }
+        // the largest size (up to [max]) at which the widest of [words] fits the column: scaled,
+        // then measured again and stepped down – small sizes do not scale exactly (glyphs snap to pixels)
+        fun fit(words: List<String>, max: androidx.compose.ui.unit.TextUnit, weight: FontWeight): androidx.compose.ui.unit.TextUnit {
+            // with the density of now (the measurer keeps the one it was made with)
+            fun widest(size: Float) = words.maxOfOrNull { w ->
+                measurer.measure(w, halo.copy(fontSize = size.sp, fontWeight = weight), softWrap = false, density = density).size.width
+            } ?: 0
+            var size = max.value
+            val first = widest(size)
+            if (first <= columnPx) return max
+            size *= columnPx / first
+            while (size > 6f && widest(size) > columnPx) size -= 0.25f
+            return size.sp
+        }
+        // keyed by the density too: a larger system font needs a smaller size
+        val labelSize = remember(labels, columnPx, density) { fit(labels, 13.sp, FontWeight.Normal) }
+        val weatherSize = remember(weathers, columnPx, density) { fit(weathers.flatMap { it.split(' ') }, 13.sp, FontWeight.Medium) }
+        // a fixed grid: a row not full yet (the afternoon alone at 13:00) starts in the first column
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            parts.indices.chunked(PART_COLUMNS).forEach { row ->
+                Row(Modifier.width((column + 4.dp) * PART_COLUMNS)) {
+                    row.forEach { i -> DayPartCell(parts[i], labels[i], weathers[i], i == shown, column, labelSize, weatherSize, halo) }
+                }
             }
         }
     }
 }
+
+/** One part of the day: name, symbol, weather (always two lines, so the rows keep their height). */
+@Composable
+private fun DayPartCell(
+    p: dev.nimbus.weather.data.remote.DayPartWeather, label: String, weather: String, lit: Boolean,
+    column: androidx.compose.ui.unit.Dp, labelSize: androidx.compose.ui.unit.TextUnit, weatherSize: androidx.compose.ui.unit.TextUnit,
+    halo: androidx.compose.ui.text.TextStyle,
+) {
+    val alpha by androidx.compose.animation.core.animateFloatAsState(if (lit) 1f else 0.55f, androidx.compose.animation.core.tween(600), label = "lit")
+    Column(Modifier.width(column + 4.dp).alpha(alpha).padding(horizontal = 2.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, fontSize = labelSize, color = Color.White, style = halo, maxLines = 1, softWrap = false)
+        Spacer(Modifier.height(2.dp))
+        WeatherIcon(p.condition, p.isDay, size = 34.dp)
+        Spacer(Modifier.height(2.dp))
+        Text(
+            weather, fontSize = weatherSize, lineHeight = weatherSize * 1.2f, color = Color.White, style = halo,
+            fontWeight = if (lit) FontWeight.Medium else FontWeight.Normal,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center, minLines = 2, maxLines = 2,
+        )
+    }
+}
+
+/** Columns of the day-parts table: two rows of three. */
+private const val PART_COLUMNS = 3
 
 private fun dayPartLabel(p: dev.nimbus.weather.data.remote.DayPart) = when (p) {
     dev.nimbus.weather.data.remote.DayPart.EARLY -> R.string.day_part_early

@@ -563,4 +563,7 @@
     <string name="history_precip_title">Niederschlag</string>
     <string name="radar_step_back">5 Minuten zurück</string>
     <string name="radar_step_forward">5 Minuten vor</string>
+    <string name="legend_precip_measured">Gemessen %1$s</string>
+    <string name="legend_precip_forecast">Vorhersage %1$s</string>
+    <string name="legend_chance">Wahrscheinlichkeit</string>
 </resources>

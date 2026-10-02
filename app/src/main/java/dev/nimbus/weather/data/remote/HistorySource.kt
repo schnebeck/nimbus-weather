@@ -60,6 +60,17 @@ data class History(
     val modelId: String,
     val zone: ZoneId,
     val fetchedAt: Long,
+    /** Station temperature every 10 minutes (SYNOP; about the last 1½ days), by time. */
+    val fineMeasured: Map<Long, Double> = emptyMap(),
+    /** The model's temperature every 15 minutes, by time. */
+    val fineModel: Map<Long, Double> = emptyMap(),
+)
+
+/** A 10-minute station report (SYNOP). Sums refer to the period before [time]. */
+data class SynopReport(
+    val time: Long, val temperature: Double?, val precipitation10: Double?, val precipitation60: Double?,
+    val windSpeed: Double?, val windGust: Double?, val windDirection: Double?, val sunshine60: Double?,
+    val pressure: Double?, val cloudCover: Double?, val condition: String?, val icon: String?,
 )
 
 /**
@@ -93,7 +104,20 @@ class HistorySource(
         }
         val modelRoot = modelJob.await()
         val obsRoot = obsJob.await()
-        combine(modelRoot, obsRoot, model, now)
+        // 10-minute reports of the station that reports now (the hourly values lag 1–2 hours behind)
+        val synop = obsRoot?.let { root -> synopStation(root) }?.let { station ->
+            runCatching {
+                val from = Instant.ofEpochMilli(now).atZone(ZoneId.of("Europe/Berlin")).toLocalDate().minusDays(1)
+                    .atStartOfDay(ZoneId.of("Europe/Berlin")).toInstant()
+                val url = "$brightSkyUrl/synop".toHttpUrl().newBuilder()
+                    .addQueryParameter("dwd_station_id", station)
+                    .addQueryParameter("date", from.toString())
+                    .addQueryParameter("last_date", Instant.ofEpochMilli(now + 3_600_000L).toString())
+                    .build()
+                parseSynop(http.getJson(url.toString()))
+            }.getOrNull()
+        }.orEmpty()
+        combine(modelRoot, obsRoot, model, now, synop)
     } }
 
     private fun modelUrl(lat: Double, lon: Double, model: String) = "$openMeteoUrl/v1/forecast".toHttpUrl().newBuilder()
@@ -106,6 +130,7 @@ class HistorySource(
         .addQueryParameter("timeformat", "unixtime")
         .addQueryParameter("wind_speed_unit", "kmh")
         .addQueryParameter("hourly", "temperature_2m,precipitation,precipitation_probability,weather_code,is_day,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover,sunshine_duration")
+        .addQueryParameter("minutely_15", "temperature_2m")
         .build().toString()
 
     companion object {
@@ -129,6 +154,44 @@ class HistorySource(
                 )
             }.toMap()
             return zone to map
+        }
+
+        /** The model's 15-minute temperatures (empty if not delivered). */
+        fun parseModelFine(root: JsonElement): Map<Long, Double> {
+            val m = root.obj()?.o("minutely_15") ?: return emptyMap()
+            val t = m.longs("time"); val temp = m.doubles("temperature_2m")
+            return t.indices.mapNotNull { i -> val time = t[i] ?: return@mapNotNull null; temp.at(i)?.let { time * 1000 to it } }.toMap()
+        }
+
+        /** DWD id of the station reporting now (the "current" source of the hourly answer). */
+        fun synopStation(root: JsonElement): String? = root.obj()?.a("sources")?.mapNotNull { it as? JsonObject }
+            ?.filter { it.s("observation_type") == "current" }?.minByOrNull { it.d("distance") ?: Double.MAX_VALUE }?.s("dwd_station_id")
+
+        fun parseSynop(root: JsonElement): List<SynopReport> = root.obj()?.a("weather")?.mapNotNull { e ->
+            val w = e as? JsonObject ?: return@mapNotNull null
+            val time = runCatching { java.time.OffsetDateTime.parse(w.s("timestamp")).toInstant().toEpochMilli() }.getOrNull() ?: return@mapNotNull null
+            SynopReport(
+                time, w.d("temperature"), w.d("precipitation_10"), w.d("precipitation_60"),
+                w.d("wind_speed_10") ?: w.d("wind_speed_30"), w.d("wind_gust_speed_10") ?: w.d("wind_gust_speed_30"),
+                w.d("wind_direction_10") ?: w.d("wind_direction_30"), w.d("sunshine_60"),
+                w.d("pressure_msl"), w.d("cloud_cover"), w.s("condition"), w.s("icon"),
+            )
+        }?.sortedBy { it.time }.orEmpty()
+
+        /**
+         * An hour (ending at [end]) from the 10-minute reports, when the hourly values have none yet:
+         * temperature, wind and pressure at the full hour; precipitation as the hour's sum (the
+         * 60-minute value, else six 10-minute values – an incomplete hour stays without).
+         */
+        fun hourFromSynop(reports: Map<Long, SynopReport>, end: Long): HistoryHour.Measured? {
+            val at = reports[end] ?: return null
+            val tens = (0 until 6).map { reports[end - it * 600_000L]?.precipitation10 }
+            val precip = at.precipitation60 ?: if (tens.all { it != null }) tens.sumOf { it!! } else null
+            return HistoryHour.Measured(
+                temperature = at.temperature, precipitation = precip, windSpeed = at.windSpeed, windGust = at.windGust,
+                windDirection = at.windDirection, sunshineMinutes = at.sunshine60, cloudCover = at.cloudCover,
+                condition = condition(at.condition, at.icon, precip), pressure = at.pressure,
+            )
         }
 
         /** Hourly observations; entries from forecast sources (MOSMIX) are dropped. */
@@ -169,9 +232,14 @@ class HistorySource(
             }
         }
 
-        fun combine(modelRoot: JsonElement, obsRoot: JsonElement?, model: String, now: Long): History {
+        fun combine(modelRoot: JsonElement, obsRoot: JsonElement?, model: String, now: Long, synop: List<SynopReport> = emptyList()): History {
             val (zone, modelled) = parseModel(modelRoot)
-            val obs = obsRoot?.let { parseObservations(it) } ?: Observations(emptyMap(), null, null)
+            val hourly = obsRoot?.let { parseObservations(it) } ?: Observations(emptyMap(), null, null)
+            // Hours the hourly values do not have yet, from the 10-minute reports
+            val reports = synop.associateBy { it.time }
+            val filled = reports.keys.filter { it % 3_600_000L == 0L && it !in hourly.byTime && it <= now }
+                .mapNotNull { t -> hourFromSynop(reports, t)?.let { t to it } }
+            val obs = hourly.copy(byTime = hourly.byTime + filled)
             val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
             // Past hours, and for today the forecast up to midnight (drawn dashed, not counted in the summary)
             val times = (modelled.keys + obs.byTime.keys).filter { t ->
@@ -183,7 +251,11 @@ class HistorySource(
                     .map { t -> HistoryHour(t, obs.byTime[t], modelled[t]) }
                 HistoryDay(date, hours)
             }
-            return History(days, obs.station, obs.distanceKm, model, zone, now)
+            return History(
+                days, obs.station, obs.distanceKm, model, zone, now,
+                fineMeasured = synop.mapNotNull { r -> r.temperature?.let { r.time to it } }.toMap(),
+                fineModel = parseModelFine(modelRoot),
+            )
         }
     }
 }

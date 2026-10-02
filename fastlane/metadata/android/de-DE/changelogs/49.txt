@@ -1,0 +1,3 @@
+• Temperaturkurven feiner: Vorhersage alle 15 Minuten, Messwerte der DWD-Station alle 10 Minuten – heute nahtlos von der Messung in die Vorhersage
+• Rückblick: die Vorhersagekurve ohne Lücke; die Messung reicht bis etwa eine halbe Stunde vor jetzt
+• Niederschlag: Messung dunkelblau, Vorhersage hellblau, im Rückblick in beiden Karten gleich, mit gleicher Legende

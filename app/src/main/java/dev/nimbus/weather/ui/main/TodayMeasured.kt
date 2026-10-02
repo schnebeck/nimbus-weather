@@ -31,6 +31,8 @@ data class TodayMeasured(
     val pressure: Map<Long, Double>,
     val station: String?,
     val hours: Map<Long, HistoryHour.Measured> = emptyMap(),
+    /** Station temperature every 10 minutes today (SYNOP), by time. */
+    val fine: Map<Long, Double> = emptyMap(),
 ) {
     /**
      * The 0–24 h charts show what was measured for the hours already over, the forecast only for
@@ -63,7 +65,33 @@ data class TodayMeasured(
             val pressure = day.hours.mapNotNull { h -> h.measured?.pressure?.let { h.time to it } }.toMap()
             val hours = day.hours.mapNotNull { h -> h.measured?.let { h.time to it } }.toMap()
             if (hours.isEmpty()) return null
-            return TodayMeasured(precip, pressure, history.stationName, hours)
+            val start = today.atStartOfDay(history.zone).toInstant().toEpochMilli()
+            val fine = history.fineMeasured.filterKeys { it in start - 3_600_000L..start + 24 * 3_600_000L }
+            return TodayMeasured(precip, pressure, history.stationName, hours, fine)
         }
     }
+}
+
+/**
+ * The temperature curve of a day in the forecast: the model every 15 minutes where it has such
+ * steps, hourly elsewhere; today the station's readings (every 10 minutes, else hourly) up to the
+ * last one, the forecast after it – no gap between them.
+ */
+fun dayCurve(
+    hours: List<dev.nimbus.weather.data.model.HourlyPoint>, minutely: List<dev.nimbus.weather.data.model.MinutelyPoint>,
+    start: Long, end: Long, measured: TodayMeasured?,
+): List<CurvePoint> {
+    val from = start - 3_600_000L
+    val forecast = Curve.merge(
+        minutely.filter { it.time in from..end && it.temperature != null }.map { CurvePoint(it.time, it.temperature!!, 15 * 60_000L) },
+        hours.filter { it.time in from..end }.map { CurvePoint(it.time, it.temperature) },
+    )
+    if (measured == null) return forecast
+    val readings = Curve.merge(
+        measured.fine.map { (t, v) -> CurvePoint(t, v, 10 * 60_000L) },
+        measured.hours.mapNotNull { (t, m) -> m.temperature?.let { CurvePoint(t, it) } },
+    ).filter { it.time in from..end }
+    if (readings.isEmpty()) return forecast
+    val last = readings.maxOf { it.time }
+    return readings + forecast.filter { it.time > last }
 }

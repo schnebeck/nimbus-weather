@@ -436,11 +436,13 @@ fun PrecipChart(
                 val over = hours[i].time <= now
                 when {
                     compare -> {
-                        // Look-back: the forecast pale behind, the measurement in front – a pale
-                        // overhang means less fell than forecast
-                        if (bh > 0.5f) drawRoundRect(PaleForecast, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()))
+                        // Look-back: the forecast light blue, 40 % transparent – behind the measured
+                        // bar, in front of it when it is the smaller one
                         val mh = m?.let { bottom - yA(it) } ?: 0f
+                        val front = PrecipStyle.forecastInFront(amounts[i], m)
+                        if (!front && bh > 0.5f) drawRoundRect(PrecipStyle.ForecastOverlay, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()))
                         if (mh > 0.5f) drawRoundRect(MeasuredBar, Offset(left, bottom - mh), Size(w, mh), CornerRadius(2.dp.toPx()))
+                        if (front && bh > 0.5f) drawRoundRect(PrecipStyle.ForecastOverlay, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()))
                     }
                     // Today: an hour over shows what was measured, the forecast for it is gone
                     m != null -> {
@@ -478,10 +480,11 @@ fun PrecipChart(
             }
         }
         // Legend, or the values of the hour under the cursor – same place, so the card keeps its height
+        // (look-back: values always shown, the legend below as in the course of the day)
         // The plot reaches into the card's padding (callers use bleed); the text keeps it
         Box(Modifier.fillMaxWidth().padding(top = 4.dp, start = CARD_BLEED, end = CARD_BLEED)) {
             // One line in every language and font size (shrinks instead of wrapping)
-            androidx.compose.foundation.text.BasicText(
+            if (!compare) androidx.compose.foundation.text.BasicText(
                 stringResource(if (hasMeasured) R.string.precip_chart_hint_measured else R.string.precip_chart_hint), Modifier.fillMaxWidth().alpha(1f - cursorAlpha),
                 style = TextStyle(fontSize = 11.sp, color = NimbusColors.Tertiary), maxLines = 1,
                 autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = 11.sp, stepSize = 0.5.sp),
@@ -504,8 +507,18 @@ fun PrecipChart(
                     (if (m != null) stringResource(R.string.history_legend_measured) else stringResource(R.string.forecast)) to amount(m ?: h.forecast ?: 0.0),
                     stringResource(R.string.readout_chance) to chance,
                 ),
-                Modifier.alpha(cursorAlpha),
+                Modifier.alpha(if (compare) 1f else cursorAlpha),
             )
+        }
+        if (compare) Column(Modifier.padding(horizontal = CARD_BLEED)) {
+            // Legend in the style of the course of the day: bars with the day's totals, the line
+            fun total(v: Double) = Units.precipitationNumber(v, s.precipitationUnit) + NBSP + pUnit
+            LegendRow {
+                LegendItem(MeasuredBar, stringResource(R.string.legend_precip_measured, total(hours.sumOf { it.measured ?: 0.0 })))
+                LegendItem(PrecipStyle.ForecastOverlay, stringResource(R.string.legend_precip_forecast, total(hours.sumOf { it.forecast ?: 0.0 })))
+                LegendItem(ChanceLine, stringResource(R.string.legend_chance), line = true)
+            }
+            Text(stringResource(R.string.meteogram_hint), fontSize = 11.sp, lineHeight = 15.sp, color = NimbusColors.Tertiary, modifier = Modifier.padding(top = 4.dp))
         }
     }
 }
@@ -513,12 +526,9 @@ fun PrecipChart(
 /** One hour of a precipitation chart: forecast amount and chance, the measured amount (null: none). */
 data class PrecipHour(val time: Long, val forecast: Double?, val chance: Double?, val measured: Double?)
 
-/** The forecast behind a measured bar (look-back): pale light blue. */
-private val PaleForecast = Color(0x598CC8FF)
-/** Forecast amount: light blue. */
-private val AmountBar = Color(0xE08CC8FF)
-/** Measured amount (DWD station): dark blue. */
-private val MeasuredBar = Color(0xFF2563EB)
+/** Forecast amount: light blue; measured (DWD station): dark blue – as in all day charts. */
+private val AmountBar = PrecipStyle.Forecast
+private val MeasuredBar = PrecipStyle.Measured
 /** Chance of precipitation: white line, like the other curves (the bars are blue). */
 private val ChanceLine = Color(0xF2FFFFFF)
 

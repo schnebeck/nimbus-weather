@@ -574,4 +574,7 @@
     <string name="history_precip_title">Precipitation</string>
     <string name="radar_step_back">5 minutes back</string>
     <string name="radar_step_forward">5 minutes forward</string>
+    <string name="legend_precip_measured">Measured %1$s</string>
+    <string name="legend_precip_forecast">Forecast %1$s</string>
+    <string name="legend_chance">Chance of precipitation</string>
 </resources>

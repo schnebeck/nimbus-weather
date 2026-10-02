@@ -108,8 +108,9 @@ data class DailyPoint(
     val windDirection: Double? = null,
 )
 
+/** A 15-minute step: precipitation of the quarter hour before [time], temperature at [time]. */
 @Serializable
-data class MinutelyPoint(val time: Long, val precipitation: Double)
+data class MinutelyPoint(val time: Long, val precipitation: Double, val temperature: Double? = null)
 
 @Serializable
 enum class AlertSeverity { MINOR, MODERATE, SEVERE, EXTREME }

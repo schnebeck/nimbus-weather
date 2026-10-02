@@ -1,0 +1,3 @@
+• Finer temperature curves: forecast every 15 minutes, DWD station readings every 10 minutes – today running seamlessly from readings into the forecast
+• Look-back: the forecast curve without gaps; readings reach to about half an hour ago
+• Precipitation: measured dark blue, forecast light blue, the same in both look-back cards, with the same legend

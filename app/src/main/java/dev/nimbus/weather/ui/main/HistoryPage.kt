@@ -178,7 +178,7 @@ fun HistoryPage(
                     else -> {
                         item(key = "summary") { SummaryCard(summary, history, settings, tf) }
                         // Right after midnight there is only one hour – nothing to draw yet.
-                        if (day.hours.size >= 2) item(key = "course") { DayCourseCard(day, summary, settings, tf) }
+                        if (day.hours.size >= 2) item(key = "course") { DayCourseCard(day, summary, settings, tf, history) }
                         if (day.hours.count { it.model != null || it.measured?.precipitation != null } >= 2) item(key = "precip") { PrecipDayCard(day, tf) }
                         // The DWD keeps about 3½ days of radar: the whole day, in 5-minute steps (Germany)
                         if (WeatherRepository.isInDwdArea(place.latitude, place.longitude)) item(key = "radar") {
@@ -312,17 +312,16 @@ private fun Legend(model: Boolean, settings: Settings, measuredAsBars: Boolean =
 
 /** The day as meteogram: measurement (temperature colours) against forecast (white, dashed), plus precipitation and wind. */
 @Composable
-private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, tf: TimeFormat) {
+private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, tf: TimeFormat, history: dev.nimbus.weather.data.remote.History) {
     val start = day.date.atStartOfDay(tf.zone).toInstant().toEpochMilli()
-    val asOf = remember(day) { System.currentTimeMillis() }
     val points = remember(day) {
         // With precipitation readings the bars show what fell; the forecast stays pale behind them
         val measuredRain = day.hours.any { it.measured?.precipitation != null }
         day.hours.mapNotNull { h ->
             val m = h.measured
             val f = h.model
-            // Rest of today: the forecast only, dashed
-            if (h.time > asOf && m == null) {
+            // No reading (yet): the forecast only, dashed – never the forecast drawn as measured
+            if (m?.temperature == null) {
                 val ft = f?.temperature ?: return@mapNotNull null
                 return@mapNotNull MeteoPoint(
                     time = h.time, temperature = ft, condition = f.condition, isDay = f.isDay,
@@ -344,7 +343,7 @@ private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, 
                 windSpeed = m?.windSpeed ?: f?.windSpeed,
                 windDirection = m?.windDirection ?: f?.windDirection,
                 windGust = m?.windGust ?: f?.windGust,
-                forecastTemperature = if (m?.temperature != null) f?.temperature else null,
+                forecastTemperature = f?.temperature,
                 forecastPrecipitation = if (measuredRain) f?.precipitation else null,
                 sunshine = m?.sunshineMinutes ?: f?.sunshineMinutes,
                 // the readout table shows both apart, an empty cell where one is missing
@@ -356,10 +355,26 @@ private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, 
         }
     }
     val hasMeasured = day.hours.any { it.measured?.temperature != null }
+    // The curves in the finest resolution there is: station reports every 10 minutes (SYNOP, about
+    // the last 1½ days), the model every 15 minutes; hourly values where there are no finer ones
+    val curves = remember(day, history) {
+        val from = start - 3_600_000L; val to = start + 24 * 3_600_000L
+        fun fine(m: Map<Long, Double>, step: Long) = m.filterKeys { it in from..to }.map { (t, v) -> CurvePoint(t, v, step) }
+        val measured = Curve.merge(
+            fine(history.fineMeasured, 10 * 60_000L),
+            day.hours.mapNotNull { h -> h.measured?.temperature?.let { CurvePoint(h.time, it) } },
+        )
+        val model = Curve.merge(
+            fine(history.fineModel, 15 * 60_000L),
+            day.hours.mapNotNull { h -> h.model?.temperature?.let { CurvePoint(h.time, it) } },
+        )
+        measured to model
+    }
     GlassCard(title = stringResource(R.string.history_course), icon = Icons.Outlined.Thermostat) {
         Meteogram(
             points, start, start + 24 * 3_600_000L, nightsFromFlags(points), System.currentTimeMillis(),
             Modifier.fillMaxWidth().bleed(CARD_BLEED),
+            curve = curves.first, forecastCurve = curves.second,
         )
         Legend(model = hasMeasured, settings = settings)
         sum.tempError?.let {

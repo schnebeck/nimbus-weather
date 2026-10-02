@@ -68,7 +68,8 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   Stunden, DWD-Warnungen, Niederschlag der nächsten 3 Stunden, Stunden- und 10-Tage-Vorhersage mit
   Niederschlagswahrscheinlichkeit, Kacheln für Gefühlt, UV, Wind, Luftfeuchte, Sichtweite und Luftdruck.
   Aktuelle Werte stammen, wo möglich, von der nächsten DWD-Station.
-- **Meteogramm** je Tag (00–24 Uhr): Temperatur, Niederschlag, Sonnenscheindauer und Wind pro Stunde,
+- **Meteogramm** je Tag (00–24 Uhr): Temperatur (Vorhersage alle 15 Minuten, Messwerte der
+  DWD-Station alle 10 Minuten), Niederschlag, Sonnenscheindauer und Wind pro Stunde,
   Nachtschattierung, Legende mit Tagessummen. Langes Drücken blendet einen Cursor mit allen Werten
   der Stunde ein. Heute zeigen Meteogramm, Niederschlag und Luftdruck für die vergangenen Stunden
   die Messwerte der DWD-Station, danach die Vorhersage.

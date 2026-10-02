@@ -95,10 +95,14 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
 - **Regenradar**: DWD-Radar mit 2-h-Vorhersage für Deutschland, RainViewer für Europa, einheitliche
   Farbskala für Regen (grün → gelb → rot → magenta) und Schnee (türkis → weiß → violett, pro Pixel
   nach der Temperatur), wahlweise ruhiger in Blau bzw. Rosa–Violett; die Radarzellen in jeder
-  Zoomstufe geglättet statt als Blöcke; deckende Farben, Straßen, Grenzen und Namen über dem Radar;
-  Temperatur- (mit Isothermen) und Windebene, Satellit, Warnkarte, Rückblick bis 24 h. Im WLAN hält
-  die App die 2-Stunden-Schleife des aktuellen Orts etwa alle 15 Minuten aktuell, auch im
-  Hintergrund. Ohne Verbindung zeigt das Radar die gespeicherten Bilder; nichts wartet endlos.
+  Zoomstufe geglättet statt als Blöcke; flüssiges Abspielen: zwischen zwei Radarbildern wird die
+  Bewegung der Regengebiete berechnet; eigener Radarspeicher – jedes Bild (ganz Deutschland in
+  einem) wird einmal geladen, zu Reflektivität aufbereitet und bis zum Verfall lokal gehalten
+  (Analysen ~3½ Tage), Verschieben und Zoomen brauchen kein Netz; deckende Farben, Straßen, Grenzen
+  und Namen über dem Radar; Temperatur- (mit Isothermen) und Windebene, Satellit, Warnkarte,
+  Rückblick bis 24 h. Im WLAN hält die App die 2-Stunden-Schleife des aktuellen Orts etwa alle 15
+  Minuten aktuell, auch im Hintergrund. Ohne Verbindung zeigt das Radar die gespeicherten Bilder;
+  nichts wartet endlos.
 - **Akku**: Der animierte Himmel läuft mit 30 Bildern/s (Regen, Schnee: 60), nach einer Minute ohne
   Berührung mit 15; im Energiesparmodus des Systems steht er still.
 - **Lexikon**: ⓘ an jeder Karte erklärt die Begriffe.

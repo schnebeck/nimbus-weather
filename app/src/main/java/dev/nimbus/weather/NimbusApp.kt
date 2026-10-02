@@ -48,6 +48,9 @@ class NimbusApp : Application() {
         dev.nimbus.weather.ui.radar.RadarSources.stateDir = java.io.File(cacheDir, "radar")
         dev.nimbus.weather.ui.radar.RadarPreview.dir = java.io.File(cacheDir, "previews")
         dev.nimbus.weather.ui.radar.DwdCoverage.dir = java.io.File(cacheDir, "radar")
+        // Decoded radar steps; expired ones are removed in the background
+        dev.nimbus.weather.ui.radar.RadarStore.dir = java.io.File(cacheDir, "radarstore")
+        Thread { runCatching { dev.nimbus.weather.ui.radar.RadarStore.prune() } }.start()
         MapLibre.getInstance(this)
         // MapLibre stops requesting tiles while Android reports no connection and waits for it to
         // come back. Our HTTP client answers from its cache when offline (StaleFallbackInterceptor),

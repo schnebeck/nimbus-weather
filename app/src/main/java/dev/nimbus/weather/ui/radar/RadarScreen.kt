@@ -65,6 +65,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -113,24 +114,18 @@ import java.util.TimeZone
 
 const val STYLE_URL = "https://tiles.openfreemap.org/styles/dark"
 const val RADAR_ZOOM = 6.6
-private const val FRAME_MS = 450L
+/** Time per step while playing: the live loop, and an archived day (5-minute steps, a day in ~55 s). */
+private const val FRAME_MS = 450f
+private const val ARCHIVE_STEP_MS = 180f
+/** The live loop rests this long on its last frame before starting over. */
+private const val LOOP_PAUSE_MS = 1400L
 private const val MIN_FRAMES_TO_PLAY = 5
-private const val LOAD_POLL_MS = 250L
-private const val BATCH_TIMEOUT_MS = 8000L
 private const val STYLE_TIMEOUT_MS = 15_000L
-private const val OFFLINE_BATCH_TIMEOUT_MS = 1500L
 /** How often the open live radar asks whether a newer DWD analysis is out. */
 private const val RADAR_REFRESH_CHECK_MS = 60_000L
-/** Up to this many frames get a map layer each; longer time lines use a moving window. */
-private const val MAX_RESIDENT = 40
-private const val WINDOW_AHEAD = 30
-private const val WINDOW_BEHIND = 6
-/** Frame interval and step when playing an archived day: 15-minute steps, a day in ~48 s (about the download rate of the DWD tiles). */
-private const val ARCHIVE_FRAME_MS = 500L
-private const val ARCHIVE_PLAY_STRIDE = 3
-/** Buffering: playback starts with this many steps loaded ahead and resumes with this many. */
+/** Buffering of an archived day: playback starts and resumes with this many steps ready ahead. */
 private const val BUFFER_START = 6
-private const val BUFFER_RESUME = 10
+private const val BUFFER_RESUME = 12
 /**
  * MapLibre loads the tiles of every layer whose visibility is "visible" – even at opacity 0.
  * Layers that must not load yet are therefore switched to visibility "none".
@@ -140,61 +135,22 @@ private fun RasterLayer.state(visible: Boolean, opacity: Float) = setProperties(
     PropertyFactory.rasterOpacity(opacity),
 )
 
-/** Holds the MapLibre objects and switches the visible radar frame by layer opacity. */
+/**
+ * Holds the MapLibre objects: satellite and warning layers and the location. The radar itself is
+ * one picture between them, drawn by the [RadarPlayer].
+ */
 private class RadarMapController {
     var map: MapLibreMap? = null
     var style: Style? = null
-    var frames: List<RadarFrame> = emptyList()
-    var shown = -1
     var satellite = false
     var warnings = false
-    /** Frames whose tiles are being loaded ("warm"); grows in small batches, see [warmNextBatch]. */
-    private val warm = HashSet<Int>()
-    /** Frames whose tiles are complete: everything that was warm when the map last became idle. */
-    private val loaded = HashSet<Int>()
-    /** Load order: from "now" outwards (now, −10 min, +10 min, −20 min …). */
-    private var order: List<Int> = emptyList()
-    private var nowIndex = 0
-    /**
-     * Long time lines (a whole archived day: 288 frames) keep only a window of frames as map
-     * layers – one source per frame for every frame would cost far too much memory. The window
-     * follows the shown frame, mostly ahead of it (playback runs forward).
-     */
-    var windowed = false
-        private set
-    /** Frames that currently have a source and a layer on the map. */
-    private val resident = HashSet<Int>()
-    private var timelineRef: RadarTimeline? = null
-    val allWarm: Boolean get() = frames.isNotEmpty() && warm.size >= frames.size
-    val allLoaded: Boolean get() = frames.isNotEmpty() && loaded.size >= frames.size
-    fun isLoaded(i: Int) = i in loaded
-    val loadedCount: Int get() = loaded.size
-    /** Set by MapLibre's render callback: every tile of every visible layer is loaded. */
-    @Volatile var fullyRendered = false
-
-    /** The map is idle: all warm frames have their tiles. */
-    fun markIdle() { loaded += warm }
-
-    /** Contiguous range of loaded frames around "now" – the part of the loop that can play. */
-    fun playableRange(): IntRange {
-        if (nowIndex !in loaded) return IntRange.EMPTY
-        var lo = nowIndex
-        var hi = nowIndex
-        while (lo - 1 in loaded) lo--
-        while (hi + 1 in loaded) hi++
-        return lo..hi
-    }
-    /** Radar frames are opaque: the colours on the map match the legend exactly. */
-    var frameOpacity = 1f
     /** First layer drawn above the radar (lines and names); overlays such as isolines go below it. */
     var anchor: String? = null
 
-    /** Satellite and warning layers; the radar frames are inserted between them. */
+    /** Satellite and warning layers; the radar picture is inserted between them. */
     fun installBase(style: Style) {
         this.style = style
-        // No animated property changes: by default MapLibre fades every opacity change over
-        // 300 ms and keeps rendering at full frame rate meanwhile – with a frame change every
-        // 450 ms the map rendered almost continuously. Frame changes are hard cuts anyway.
+        // No animated property changes (MapLibre fades every change over 300 ms by default)
         style.transition = org.maplibre.android.style.layers.TransitionOptions(0, 0, false)
         // Satellite, radar and warnings between the areas and the lines: rivers, roads, borders
         // and names stay visible on top of the (opaque) radar colours
@@ -208,105 +164,6 @@ private class RadarMapController {
             setBounds(5.5f, 47.0f, 15.5f, 55.2f)
         }, 512).apply { prefetchZoomDelta = 0 })
         add(RasterLayer("warn", "warn").withProperties(PropertyFactory.rasterOpacity(0f), PropertyFactory.rasterFadeDuration(0f), PropertyFactory.visibility(Property.NONE)))
-    }
-
-    /** Replaces the animation frames, e.g. when the history range changes. */
-    fun replaceFrames(timeline: RadarTimeline) {
-        val style = style ?: return
-        frames.indices.forEach { i -> removeFrame(style, i) }
-        frames = timeline.frames
-        timelineRef = timeline
-        shown = -1
-        warm.clear()
-        loaded.clear()
-        resident.clear()
-        nowIndex = timeline.nowIndex
-        windowed = frames.size > MAX_RESIDENT
-        if (windowed) {
-            ensureWindow(style, nowIndex)
-            show(timeline.nowIndex)
-            return
-        }
-        order = buildList {
-            add(nowIndex)
-            for (d in 1..frames.size) {
-                if (nowIndex - d >= 0) add(nowIndex - d)
-                if (nowIndex + d <= frames.lastIndex) add(nowIndex + d)
-            }
-        }
-        timeline.frames.indices.forEach { i -> addFrame(style, timeline, i) }
-        show(timeline.nowIndex)
-    }
-
-    private fun removeFrame(style: Style, i: Int) {
-        listOf("dwd$i", "rv$i").forEach { id ->
-            style.getLayer(id)?.let { style.removeLayer(it) }
-            style.getSource(id)?.let { style.removeSource(it) }
-        }
-        resident -= i
-        warm -= i
-        loaded -= i
-    }
-
-    /** Keeps frames [index − WINDOW_BEHIND, index + WINDOW_AHEAD] on the map, drops the others. */
-    /**
-     * Frames ahead are taken in steps of [playStride] while an archived day plays (15-minute
-     * steps load three times as fast as every 5-minute frame); paused it is 1, for scrubbing.
-     */
-    var playStride = 1
-        set(v) {
-            if (field == v) return
-            field = v
-            val s = style ?: return
-            if (windowed && shown in frames.indices) ensureWindow(s, shown)
-        }
-
-    /** Keeps the shown frame, a few behind it and [WINDOW_AHEAD] ahead (in [playStride] steps) on the map. */
-    private fun ensureWindow(style: Style, index: Int) {
-        val tl = timelineRef ?: return
-        val ahead = (0..WINDOW_AHEAD).map { index + it * playStride }.filter { it <= frames.lastIndex }
-        val behind = ((index - WINDOW_BEHIND).coerceAtLeast(0) until index).reversed().toList()
-        val want = (ahead + behind).toSet()
-        resident.filter { it !in want }.forEach { removeFrame(style, it) }
-        want.filter { it !in resident }.forEach { addFrame(style, tl, it) }
-        // Load order: the shown frame, then ahead of it, then behind
-        order = ahead + behind
-    }
-
-    private fun addFrame(style: Style, timeline: RadarTimeline, i: Int) {
-        val f = timeline.frames[i]
-        resident += i
-        fun add(layer: RasterLayer) = style.addLayerBelow(layer, "warn")
-        f.rainViewerPath?.let { path ->
-            val ts = TileSet("2.2.0", RadarSources.rainViewerTileUrl(timeline.rainViewerHost, path)).apply { maxZoom = 7f }
-            // No low-zoom placeholder tiles (default: 4 levels lower): with ~50 radar sources
-            // they would multiply the requests and delay the frames that are actually shown.
-            style.addSource(RasterSource("rv$i", ts, 512).apply { prefetchZoomDelta = 0 })
-            add(
-                RasterLayer("rv$i", "rv$i").withProperties(
-                    PropertyFactory.rasterOpacity(0f), PropertyFactory.rasterFadeDuration(0f),
-                    PropertyFactory.visibility(Property.NONE),
-                    PropertyFactory.rasterResampling("linear"),
-                ),
-            )
-        }
-        f.dwdTime?.let { t ->
-            val ts = TileSet("2.2.0", RadarSources.dwdTileUrl(RadarSources.DWD_LAYER, t)).apply {
-                // An archived day plays through hundreds of frames: coarser tiles (about 1.2 km per
-                // pixel, the radar's own resolution) halve the requests per frame
-                maxZoom = if (timeline.day != null) 6f else 10f
-                minZoom = 3f
-                setBounds(1.4f, 45.6f, 18.8f, 56.3f)
-            }
-            style.addSource(RasterSource("dwd$i", ts, 512).apply { prefetchZoomDelta = 0 })
-            add(
-                RasterLayer("dwd$i", "dwd$i").withProperties(
-                    PropertyFactory.rasterOpacity(0f), PropertyFactory.rasterFadeDuration(0f),
-                    PropertyFactory.visibility(Property.NONE),
-                    PropertyFactory.rasterResampling("linear"),
-                ),
-            )
-        }
     }
 
     fun addLocation(style: Style, place: Place) {
@@ -324,46 +181,6 @@ private class RadarMapController {
         )
     }
 
-    fun show(index: Int, force: Boolean = false) {
-        val s = style ?: return
-        if (index == shown && !force) return
-        if (windowed && index in frames.indices) {
-            // The window slides along with every step, so there is always the same stretch loading
-            // ahead – moving it only near its edge left the loader idle until it was too late
-            val hi = resident.maxOrNull() ?: index
-            if (index !in resident || hi < frames.lastIndex && hi - index < WINDOW_AHEAD * playStride) {
-                if (shown !in resident) shown = -1
-                ensureWindow(s, index)
-            }
-        }
-        // Warm frames are "visible" at opacity 0, so their tiles are loaded ahead and the loop
-        // plays without flicker; all others stay "none" and cost no requests yet. Only the two
-        // layers that change are touched: restyling all ~50 layers per frame made the loop
-        // cost more than a CPU core.
-        if (shown in frames.indices && shown != index) setState(s, shown, shown in warm, 0f)
-        setState(s, index, true, frameOpacity)
-        warm += index
-        shown = index
-    }
-
-    private fun setState(s: Style, i: Int, visible: Boolean, opacity: Float) {
-        (s.getLayer("dwd$i") as? RasterLayer)?.state(visible, opacity)
-        (s.getLayer("rv$i") as? RasterLayer)?.state(visible, opacity)
-    }
-
-    /**
-     * Starts loading the next few frames in playback order. Called whenever the map becomes idle,
-     * so the base map and the visible frame always load first and never starve behind ~300
-     * radar tiles in MapLibre's request queue.
-     */
-    fun warmNextBatch(size: Int = 8) {
-        val s = style ?: return
-        order.filter { it !in warm }.take(size).forEach { i ->
-            warm += i
-            setState(s, i, true, 0f)
-        }
-    }
-
     fun setOverlays(sat: Boolean, warn: Boolean) {
         val s = style ?: return
         satellite = sat
@@ -371,7 +188,6 @@ private class RadarMapController {
         (s.getLayer("sat") as? RasterLayer)?.state(sat, if (sat) 0.75f else 0f)
         (s.getLayer("warn") as? RasterLayer)?.state(warn, if (warn) 0.55f else 0f)
     }
-
 }
 
 @Composable
@@ -387,6 +203,7 @@ fun RadarScreen(
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val scope = rememberCoroutineScope()
     val controller = remember { RadarMapController() }
+    val player = remember { RadarPlayer(scope, container.http) }
     var timeline by remember { mutableStateOf<RadarTimeline?>(null) }
     var error by remember { mutableStateOf(false) }
     var ready by remember { mutableStateOf(false) }
@@ -463,53 +280,40 @@ fun RadarScreen(
                 controller.installBase(style)
                 overlays.install(style, fieldBelow = "sat", linesBelow = controller.anchor)
                 overlays.setVisible(showTemp, showWind)
-                // Panned far away: load the temperature/wind grid for the new area.
-                map.addOnCameraIdleListener { gridCheck++ }
+                // The radar picture: one image between satellite and warnings
+                player.install(style, below = "warn")
+                // Panned far away: load the temperature/wind grid for the new area; a new radar
+                // picture area once the view leaves the old one
+                map.addOnCameraIdleListener {
+                    gridCheck++
+                    map.projection.visibleRegion.latLngBounds.let { b -> player.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast) }
+                }
                 place?.let { controller.addLocation(style, it) }
                 controller.setOverlays(satellite, warnings)
                 // "fully" = every tile of every visible layer is loaded (MapLibre render flag).
-                mapView.addOnDidFinishRenderingFrameListener { fully, _, _ -> controller.fullyRendered = fully; RadarTileStats.frames.incrementAndGet() }
                 styleReady = true
                 if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "style ready after ${System.currentTimeMillis() - openedAt} ms")
             }
         }
     }
 
-    // Frames are loaded batch by batch, from "now" outwards: the next batch is requested only when
-    // the map reports all tiles of the previous one loaded (or after a timeout, so a tile that never
-    // answers cannot stall the rest). Restarted for every timeline, i.e. also after switching the
-    // history range – it used to run only once, so 6 h / 24 h never loaded after the 2 h loop.
+    // Progress and the start of playback: the player loads the steps from the store (one image
+    // per step, kept on disk) from the shown frame outwards.
     LaunchedEffect(timeline, styleReady) {
         if (!styleReady || timeline == null) return@LaunchedEffect
-        loadedFrames = 0
-        var waited = 0L
-        // Offline, tiles that are not stored never arrive: don't wait long for them.
-        val cm = context.getSystemService(android.net.ConnectivityManager::class.java)
-        val batchTimeout = if (cm?.activeNetwork == null) OFFLINE_BATCH_TIMEOUT_MS else BATCH_TIMEOUT_MS
-        // A windowed time line (archived day) keeps loading as the window moves along.
-        while (controller.windowed || !controller.allLoaded) {
-            delay(LOAD_POLL_MS)
-            if (controller.frames.isEmpty()) continue
-            waited += LOAD_POLL_MS
-            if ((controller.fullyRendered && waited > LOAD_POLL_MS) || waited >= batchTimeout) {
-                controller.markIdle()
-                controller.fullyRendered = false
-                controller.warmNextBatch(if (controller.windowed) 12 else 8)
-                waited = 0
-            }
-            loadedFrames = controller.loadedCount
-            val canPlay = if (controller.windowed) {
-                (0 until MIN_FRAMES_TO_PLAY).map { frame + it * controller.playStride }.filter { it < controller.frames.size }.all { controller.isLoaded(it) }
-            } else controller.playableRange().count() >= MIN_FRAMES_TO_PLAY || controller.allLoaded
+        // the first picture area once the map has its size
+        controller.map?.projection?.visibleRegion?.latLngBounds?.let { b -> player.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast) }
+        player.loaded.collect { n ->
+            loadedFrames = n
+            val tl = timeline ?: return@collect
+            val canPlay = if (tl.day != null) (0 until BUFFER_START).all { k -> (frame + k).let { it > tl.frames.lastIndex || player.isLoaded(it) } }
+            else playable(tl, player).count() >= MIN_FRAMES_TO_PLAY || n >= tl.frames.size
             if (!ready && canPlay) {
                 ready = true
                 playing = true
                 if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "loop starts after ${System.currentTimeMillis() - openedAt} ms")
             }
         }
-        loadedFrames = controller.loadedCount
-        if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "all frames after ${System.currentTimeMillis() - openedAt} ms, tile requests ${RadarTileStats.requests.get()}")
-
     }
 
     // (Re)load the frames for the selected history range.
@@ -536,9 +340,8 @@ fun RadarScreen(
         frame = tl.nowIndex
         if (styleReady) {
             grid?.let { overlays.setGrid(it) }
-            // An archived day starts playing at once: load its 15-minute steps first
-            controller.playStride = if (archiveDay != null) ARCHIVE_PLAY_STRIDE else 1
-            controller.replaceFrames(tl)
+            player.position = tl.nowIndex.toFloat()
+            player.setTimeline(tl)
             overlays.update(tl.frames[tl.nowIndex].time)
         }
     }
@@ -561,10 +364,11 @@ fun RadarScreen(
                 val atNow = frame == tl.nowIndex
                 val fresh = runCatching { RadarSources.timeline(container.http, range, force = true) }.getOrNull() ?: continue
                 timeline = fresh
-                controller.replaceFrames(fresh)
                 // Stay on "now" if the user was there; otherwise keep the same moment in time
                 frame = if (atNow) fresh.nowIndex
                 else fresh.frames.indexOfFirst { it.time >= tl.frames[frame.coerceIn(0, tl.frames.lastIndex)].time }.takeIf { it >= 0 } ?: fresh.nowIndex
+                player.position = frame.toFloat()
+                player.setTimeline(fresh)
             }
         }
     }
@@ -592,8 +396,6 @@ fun RadarScreen(
     LaunchedEffect(showTemp, showWind, styleReady) {
         if (!styleReady) return@LaunchedEffect
         overlays.setVisible(showTemp && !archive, showWind && !archive)
-        controller.frameOpacity = 1f
-        controller.show(frame, force = true)
     }
     // The visible map has priority over background preloading.
     DisposableEffect(Unit) {
@@ -602,35 +404,44 @@ fun RadarScreen(
         onDispose { RadarPrefetcher.paused = false }
     }
 
-    LaunchedEffect(frame) { controller.show(frame) }
     LaunchedEffect(satellite, warnings) { controller.setOverlays(satellite, warnings) }
+    // Playback runs continuously: the position moves on with every display frame and the player
+    // draws the rain moved between the steps – no jumping from step to step.
     LaunchedEffect(playing, timeline) {
-        timeline ?: return@LaunchedEffect
-        // Archived day: forward in 15-minute steps. Like a video player it buffers – when the next
-        // frames are not loaded yet it holds (with a hint) until a stretch ahead is ready, instead
-        // of stuttering frame by frame at the speed of the downloads.
-        if (playing && timeline?.day != null) {
-            val stride = ARCHIVE_PLAY_STRIDE
-            controller.playStride = stride
-            frame -= frame % stride
-            val last = timeline!!.frames.lastIndex
-            fun readyAhead(n: Int) = (1..n).all { k -> (frame + k * stride).let { it > last || controller.isLoaded(it) } }
-            buffering = !readyAhead(BUFFER_START)
-            while (playing) {
-                delay(ARCHIVE_FRAME_MS)
-                val next = frame + stride
-                if (next > last) { playing = false; break }
-                if (buffering) { if (readyAhead(BUFFER_RESUME)) buffering = false else continue }
-                if (controller.isLoaded(next)) frame = next else buffering = true
-            }
-        }
-        if (timeline?.day != null) { buffering = false; return@LaunchedEffect }
+        val tl = timeline ?: return@LaunchedEffect
+        if (!playing) { buffering = false; player.position = frame.toFloat(); return@LaunchedEffect }
+        val archived = tl.day != null
+        val stepMs = if (archived) ARCHIVE_STEP_MS else FRAME_MS
+        var p = frame.toFloat()
+        var last = withFrameNanos { it }
+        var restAt = 0L
+        if (archived) buffering = !(1..BUFFER_START).all { k -> (frame + k).let { it > tl.frames.lastIndex || player.isLoaded(it) } }
         while (playing) {
-            // Play only the loaded part of the loop; it grows while the remaining frames load.
-            val range = controller.playableRange().takeIf { !it.isEmpty() } ?: (frame..frame)
-            val last = frame >= range.last
-            delay(if (last) 1400L else FRAME_MS)
-            frame = if (last || frame !in range) range.first else frame + 1
+            val now = withFrameNanos { it }
+            val dt = (now - last) / 1_000_000f
+            last = now
+            if (archived) {
+                // Like a video player: hold until a stretch ahead is ready instead of stuttering
+                val next = p.toInt() + 1
+                if (next > tl.frames.lastIndex) { playing = false; break }
+                if (buffering) {
+                    if ((1..BUFFER_RESUME).all { k -> (p.toInt() + k).let { it > tl.frames.lastIndex || player.isLoaded(it) } }) buffering = false else continue
+                }
+                if (!player.isLoaded(next)) { buffering = true; continue }
+                p = minOf(p + dt / stepMs, next.toFloat())
+            } else {
+                // Only the loaded part of the loop; it grows while the rest loads
+                val range = playable(tl, player).takeIf { !it.isEmpty() } ?: continue
+                if (p >= range.last.toFloat()) {
+                    if (restAt == 0L) restAt = now
+                    if ((now - restAt) / 1_000_000L < LOOP_PAUSE_MS) continue
+                    restAt = 0L
+                    p = range.first.toFloat()
+                } else p = minOf(p + dt / stepMs, range.last.toFloat())
+                if (p < range.first.toFloat()) p = range.first.toFloat()
+            }
+            player.position = p
+            if (p.toInt() != frame) frame = p.toInt()
         }
     }
 
@@ -669,7 +480,7 @@ fun RadarScreen(
         }
         val total = timeline?.frames?.size ?: 0
         val stillLoading = timeline != null && styleReady &&
-            if (archive) loadedFrames >= 0 && (buffering || !controller.isLoaded(frame)) else loadedFrames < total
+            if (archive) loadedFrames >= 0 && (buffering || !player.isLoaded(frame)) else loadedFrames < total
         val trouble = netStatus.failed > 0 || netStatus.fromCache > 0
         if (error || stillLoading || trouble) {
             Column(
@@ -781,9 +592,8 @@ fun RadarScreen(
                         }
                         TimelineSlider(tl, frame) {
                             playing = false
-                            // Scrubbing an archived day: every 5-minute frame around the position
-                            if (archive) controller.playStride = 1
                             frame = it
+                            player.position = it.toFloat()
                         }
                     }
                 }
@@ -805,6 +615,16 @@ fun RadarScreen(
             Text(stringResource(R.string.radar_attribution), fontSize = 9.sp, color = NimbusColors.Tertiary, maxLines = 2)
         }
     }
+}
+
+/** Contiguous loaded frames around "now" – the part of the live loop that can play. */
+private fun playable(tl: RadarTimeline, player: RadarPlayer): IntRange {
+    val now = tl.nowIndex
+    if (!player.isLoaded(now)) return IntRange.EMPTY
+    var lo = now; var hi = now
+    while (lo - 1 >= 0 && player.isLoaded(lo - 1)) lo--
+    while (hi + 1 <= tl.frames.lastIndex && player.isLoaded(hi + 1)) hi++
+    return lo..hi
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

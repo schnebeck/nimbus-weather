@@ -264,7 +264,7 @@ object RadarPalette {
         return dist(a, b) + da * da
     }
 
-    private const val MIN_DBZ = 8f
+    internal const val MIN_DBZ = 8f
 
     /** Grid spacing of the radar composites (DWD: 1 km; RainViewer's European mosaic is similar). */
     private const val CELL_KM = 1.0
@@ -348,7 +348,7 @@ object RadarPalette {
      * Box filter of width 2[r]+1, horizontal then vertical, both running along the rows (the
      * vertical pass keeps one running sum per column in [col]) – fast on large tiles.
      */
-    private fun boxBlur(a: FloatArray, tmp: FloatArray, col: FloatArray, w: Int, h: Int, r: Int) {
+    internal fun boxBlur(a: FloatArray, tmp: FloatArray, col: FloatArray, w: Int, h: Int, r: Int) {
         val k = 1f / (2 * r + 1)
         for (y in 0 until h) {
             val o = y * w
@@ -376,7 +376,7 @@ object RadarPalette {
     }
 
     /** Wet share at which a smoothed pixel is drawn half transparent (the old cell edge). */
-    private fun edgeAlpha(wet: Float): Float = ((wet - 0.35f) / 0.3f).coerceIn(0f, 1f).let { it * it * (3 - 2 * it) }
+    internal fun edgeAlpha(wet: Float): Float = ((wet - 0.35f) / 0.3f).coerceIn(0f, 1f).let { it * it * (3 - 2 * it) }
 
     /**
      * Recoloured tile, or null if the tile contains no precipitation at all.

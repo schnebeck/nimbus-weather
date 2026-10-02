@@ -62,8 +62,10 @@ No ads, no account, no Google services. The app speaks English and German.
   algae) where states publish them openly – see [docs/BATHING.md](docs/BATHING.md).
 - Rain radar: DWD for Germany, RainViewer for Europe, one colour scale for rain (green → yellow →
   red → magenta) and snow (turquoise → white → violet), optionally calmer in blue and pink–violet;
-  radar cells smoothed at every zoom level instead of blocks; roads, borders and names above the
-  radar; temperature (with isotherms) and wind layers, satellite and warning map.
+  radar cells smoothed at every zoom level instead of blocks; smooth playback (the motion of the
+  rain is computed between two radar images); an own radar store keeps every image, loaded once and
+  processed, until it expires – panning and zooming need no network; roads, borders and names above
+  the radar; temperature (with isotherms) and wind layers, satellite and warning map.
 - An ⓘ on every card explains the terms. Units follow the country on first start; the order and visibility of
   the cards can be set in the settings, places are sorted or deleted after a long press.
 - Tablets: two columns of cards from 600 dp, a places sidebar in landscape on large tablets.

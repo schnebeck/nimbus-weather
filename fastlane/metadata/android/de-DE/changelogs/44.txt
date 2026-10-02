@@ -1,0 +1,3 @@
+• Radar spielt flüssig: zwischen den Radarbildern wird die Bewegung der Regengebiete berechnet – kein Ruckeln mehr
+• Eigener Radarspeicher: jedes Bild wird einmal geladen, aufbereitet und lokal gehalten; Verschieben und Zoomen brauchen kein Netz
+• Radar des Tages: spielt in echten 5-Minuten-Schritten aus dem Speicher

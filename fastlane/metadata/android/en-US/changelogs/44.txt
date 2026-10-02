@@ -1,0 +1,3 @@
+• Radar plays smoothly: the motion of the rain is computed between the radar images – no more jerking
+• Own radar store: every image is loaded once, processed and kept on the device; panning and zooming need no network
+• Radar of the day: plays in true 5-minute steps from the store

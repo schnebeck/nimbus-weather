@@ -21,6 +21,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import dev.nimbus.weather.data.model.Place
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -31,9 +32,9 @@ import org.maplibre.android.snapshotter.MapSnapshotter
 import kotlin.coroutines.resume
 
 /**
- * Loads the radar loop for a place in the background, so the radar screen opens instantly:
- * an invisible MapLibre snapshot of exactly the radar view (same size, camera and frames) makes
- * MapLibre fetch the base map and all radar tiles, which then sit in the HTTP / map caches.
+ * Loads the radar loop for a place in the background, so the radar screen opens instantly: the
+ * time steps go into the [RadarStore] (one image per step, decoded and kept on disk) and an
+ * invisible MapLibre snapshot of the radar view fetches the base map into the map cache.
  */
 object RadarPrefetcher {
     private val lastRun = HashMap<String, Long>()
@@ -84,11 +85,16 @@ object RadarPrefetcher {
         if (paused) return
         WeatherGridStore.ensure(http, place.latitude, place.longitude)
         val tl = runCatching { RadarSources.timeline(http, HistoryRange.H2) }.getOrNull() ?: return
-        // Opacity 0: MapLibre loads the tiles of visible layers without drawing them.
-        val style = MapStyle.builder(
-            http, context.resources.configuration.locales[0].language,
-            RadarSnapshot.rasters(tl, tl.frames.withIndex().map { it.index to it.value }, 0f),
-        )
+        // The radar steps: raw images through the plain client (the map client recolours them)
+        val raw = (context.applicationContext as dev.nimbus.weather.NimbusApp).container.http
+        kotlinx.coroutines.coroutineScope {
+            val steps = tl.frames.map { f -> this.async { RadarStore.dwd(raw, f) } }
+            steps.forEach { it.await() }
+        }
+        withContext(Dispatchers.IO) { RadarStore.prune() }
+        if (paused) return
+        // The base map of the radar view (no radar layers: the radar comes from the store)
+        val style = MapStyle.builder(http, context.resources.configuration.locales[0].language, emptyList())
         withContext(Dispatchers.Main) {
             val dm = context.resources.displayMetrics
             val options = MapSnapshotter.Options((dm.widthPixels / dm.density).toInt(), (dm.heightPixels / dm.density).toInt())

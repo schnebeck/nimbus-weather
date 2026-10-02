@@ -287,17 +287,20 @@ private fun DayRow(
                 color = Color.White, fontWeight = FontWeight.Medium,
             )
         }
-        // No clipping animation (like animateContentSize): the meteogram extends into the card padding.
+        // Unfolds downwards from its row and is clipped while it does (unclipped and growing from
+        // the bottom it was drawn over the rows above). The whole animation reaches into the
+        // card's padding (bleed), so the clip leaves the meteogram's axis labels there.
         androidx.compose.animation.AnimatedVisibility(
             visible = expanded && hours.size >= 2,
-            enter = androidx.compose.animation.expandVertically(clip = false) + androidx.compose.animation.fadeIn(),
-            exit = androidx.compose.animation.shrinkVertically(clip = false) + androidx.compose.animation.fadeOut(),
+            modifier = Modifier.fillMaxWidth().bleed(CARD_BLEED),
+            enter = androidx.compose.animation.expandVertically(expandFrom = Alignment.Top) + androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.shrinkVertically(shrinkTowards = Alignment.Top) + androidx.compose.animation.fadeOut(),
         ) {
             val end = day.date + 24 * 3_600_000L
             Meteogram(
                 hours.map { h -> h.toMeteo().let { measured?.apply(it, now) ?: it } }, day.date, end,
                 remember(day.date, place) { nights(day.date, HourAxis.dayAxisEnd(end), place.latitude, place.longitude) }, now,
-                Modifier.fillMaxWidth().bleed(CARD_BLEED).padding(bottom = 12.dp),
+                Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 showNow = currentTemp != null,   // today only
                 curve = remember(hours, minutely, measured) { dayCurve(hours, minutely, day.date, HourAxis.dayAxisEnd(end), measured) },
                 separatePrecip = settings.separatePrecipitation,

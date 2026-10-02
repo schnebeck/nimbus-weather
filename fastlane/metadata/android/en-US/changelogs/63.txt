@@ -1,0 +1,1 @@
+• 10-day forecast: a day's chart now unfolds and folds neatly below its row instead of briefly showing over the rows above

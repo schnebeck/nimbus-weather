@@ -35,6 +35,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithText
@@ -228,6 +229,61 @@ class LookTest {
         val y = (img.height * 0.8f).toInt()                                // well below the pin line
         val (r, g, b) = img.rgb((8 * px).toInt(), y)                     // 8 dp: inside the card, in the padding
         assertTrue("bleed cut off while pinned: ($r, $g, $b)", r > 150 && g < 80 && b < 80)
+    }
+
+    /** Three days of weather for the 10-day card: rain in the morning, warm afternoons. */
+    private fun cardData(): dev.nimbus.weather.data.model.WeatherData {
+        val hourly = (0..72).map { k ->
+            dev.nimbus.weather.data.model.HourlyPoint(
+                day + k * h, 12.0 + 6 * sin((k % 24 - 8) / 24.0 * 2 * Math.PI), condition = if (k % 24 < 9) Condition.RAIN else Condition.PARTLY_CLOUDY,
+                isDay = k % 24 in 7..18, precipitation = if (k % 24 < 9) 0.6 else 0.0, precipitationProbability = 60.0,
+                windSpeed = 12.0, windDirection = 250.0, sunshine = if (k % 24 in 10..16) 40.0 else 0.0,
+            )
+        }
+        val daily = (0..2).map { dev.nimbus.weather.data.model.DailyPoint(day + it * 24 * h, Condition.RAIN, 18.0, 8.0, precipitationSum = 5.4, precipitationProbability = 60.0) }
+        val cur = dev.nimbus.weather.data.model.CurrentWeather(day + 10 * h, 15.0, 14.0, Condition.CLOUDY, true, 60.0, 8.0, 1020.0, 10.0, 20.0, 240.0, 80.0, 30000.0, 2.0, 0.0)
+        return dev.nimbus.weather.data.model.WeatherData(
+            dev.nimbus.weather.data.model.Place("p", "Garbsen", latitude = 52.42, longitude = 9.60), "UTC", 0, cur, hourly, daily,
+            sources = emptyList(), fetchedAt = day + 10 * h,
+        )
+    }
+
+    /**
+     * Opening a day of the 10-day card: the chart unfolds below its row – nothing of it is drawn
+     * over the rows above, at no moment of the animation (it grew from the bottom, over them).
+     */
+    @Test fun dayChartUnfoldsBelowItsRow() {
+        compose.setContent { Card { dev.nimbus.weather.ui.main.DailyCard(cardData(), day + 10 * h) } }
+        compose.waitForIdle()
+        // today is open: close it, then open tomorrow
+        val today = ctx().getString(R.string.today)
+        // the label's node is the whole clickable day (row and open chart): click its row
+        compose.onNodeWithText(today).performTouchInput { click(Offset(width / 2f, 25.dp.toPx())) }
+        compose.waitForIdle()
+        val before = bitmap()
+        val tomorrow = TimeFormat("UTC", true).weekdayShort(day + 24 * h)
+        val row = compose.onNodeWithText(tomorrow).fetchSemanticsNode().boundsInRoot
+        // the rows above the clicked one (its own ripple may change)
+        val rowTop = row.top.toInt()
+        // opening, then closing again: every frame of both animations
+        fun toggleAndWatch(what: String) {
+            compose.mainClock.autoAdvance = false
+            compose.onNodeWithText(tomorrow).performTouchInput { click(Offset(width / 2f, 25.dp.toPx())) }
+            for (k in 1..12) {
+                compose.mainClock.advanceTimeBy(32)
+                val img = bitmap()
+                val changed = (0 until rowTop - 2).count { y ->
+                    (0 until img.width step 3).any { x -> img.getPixel(x, y) != before.getPixel(x, y) }
+                }
+                assertEquals("$what, frame ${k * 32} ms: rows above the day changed (chart drawn over them)", 0, changed)
+            }
+            compose.mainClock.autoAdvance = true
+            compose.waitForIdle()
+        }
+        toggleAndWatch("opening")
+        // the open chart keeps its axis labels in the card's padding (the clip does not cut them)
+        compose.onRoot().captureRoboImage("src/test/screenshots/daily_open.png")
+        toggleAndWatch("closing")
     }
 
     // ---- the readout while the finger slides --------------------------------------------------

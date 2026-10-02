@@ -1,0 +1,1 @@
+• 10-Tage-Vorhersage: Das Diagramm eines Tages klappt sauber unter seiner Zeile auf und zu, statt kurz über den Zeilen darüber zu erscheinen

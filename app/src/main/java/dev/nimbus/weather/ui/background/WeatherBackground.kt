@@ -142,19 +142,7 @@ private fun cloudSpecs(condition: Condition): List<CloudSpec> {
     }
 }
 
-private fun cloudColor(condition: Condition, night: Boolean): Color = if (!night) when (condition) {
-    Condition.MOSTLY_CLEAR, Condition.PARTLY_CLOUDY -> Color(0xFFFFFFFF)
-    Condition.CLOUDY, Condition.FOG -> Color(0xFFD5DCE4)
-    Condition.SNOW, Condition.HEAVY_SNOW -> Color(0xFFE2E8EF)
-    Condition.DRIZZLE, Condition.SHOWERS -> Color(0xFFA9B4C0)
-    Condition.THUNDERSTORM -> Color(0xFF5C6470)
-    else -> Color(0xFF8A96A3)
-} else when (condition) {
-    Condition.MOSTLY_CLEAR, Condition.PARTLY_CLOUDY -> Color(0xFF6A7690)
-    Condition.CLOUDY, Condition.FOG, Condition.SNOW, Condition.HEAVY_SNOW -> Color(0xFF4E5868)
-    Condition.THUNDERSTORM -> Color(0xFF2A2F38)
-    else -> Color(0xFF3B4452)
-}
+private fun cloudColor(condition: Condition, night: Boolean): Color = SkyScene.cloudColor(condition, night)
 
 private data class PrecipSpec(val count: Int, val lengthDp: Float, val speed: Float, val widthDp: Float, val alpha: Float)
 
@@ -254,7 +242,7 @@ fun WeatherBackground(scene: SkyScene, animate: Boolean, modifier: Modifier = Mo
     val moonPhase = scene.moonPhase
     val moonUp = scene.moonUp
     val southern = scene.southern
-    val sunVisible = condition in setOf(Condition.CLEAR, Condition.MOSTLY_CLEAR, Condition.PARTLY_CLOUDY)
+    val sunVisible = SkyScene.sunVisible(condition)
     val starAlpha = (1f - scene.cloudiness * 1.1f).coerceIn(0f, 1f)
     val wind = scene.wind
     val gustiness = scene.gustiness

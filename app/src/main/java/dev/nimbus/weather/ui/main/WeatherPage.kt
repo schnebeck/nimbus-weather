@@ -66,6 +66,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.drawBehind
+import dev.nimbus.weather.ui.components.drawHeaderShade
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.graphics.Color
@@ -196,7 +198,8 @@ fun WeatherPage(
         }
         CompositionLocalProvider(
             LocalSettings provides settings, LocalTimeFormat provides tf,
-            dev.nimbus.weather.ui.components.LocalCardShade provides scene.cardShade,
+            dev.nimbus.weather.ui.components.LocalCardFill provides scene.cardFill,
+            dev.nimbus.weather.ui.components.LocalHeaderShade provides scene.headerShade,
         ) {
             WeatherContent(data, state ?: PlaceState(data), now, onRefresh, onOpenRadar, onRequestModels)
         }
@@ -278,6 +281,15 @@ private fun WeatherContent(
         onRefresh = { pulled = true; onRefresh() },
         modifier = Modifier.fillMaxSize(),
     ) {
+        // Shade behind the header text: as dark as the brightest sky behind it requires (white
+        // clouds, the sun) – computed, see Legibility; nothing on dark skies
+        val headerShade = dev.nimbus.weather.ui.components.LocalHeaderShade.current
+        val fadePx = with(density) { 56.dp.toPx() }
+        androidx.compose.foundation.layout.Box(
+            Modifier.fillMaxSize().drawBehind {
+                drawHeaderShade(headerShade, (expandedPx - scrolled).coerceAtLeast(collapsedPx), fadePx)
+            },
+        )
         // Cards slide *under* the header instead of over it. The cards themselves keep their title
         // at this line and slide away below it (see GlassCard); the clip catches everything else.
         val listTop = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }

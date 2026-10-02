@@ -66,6 +66,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.drawBehind
+import dev.nimbus.weather.ui.components.drawHeaderShade
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -156,9 +158,15 @@ fun HistoryPage(
         WeatherBackground(scene, animate = isActive && settings.animationsEnabled)
         CompositionLocalProvider(
             LocalSettings provides settings, LocalTimeFormat provides tf,
-            dev.nimbus.weather.ui.components.LocalCardShade provides scene.cardShade,
+            dev.nimbus.weather.ui.components.LocalCardFill provides scene.cardFill,
+            dev.nimbus.weather.ui.components.LocalHeaderShade provides scene.headerShade,
         ) {
             val clipTop = with(androidx.compose.ui.platform.LocalDensity.current) { (statusTop + 52.dp).toPx() }
+            // Shade behind the top bar and the day's header text (see WeatherPage)
+            val headerShade = dev.nimbus.weather.ui.components.LocalHeaderShade.current
+            val shadeBottom = with(androidx.compose.ui.platform.LocalDensity.current) { (statusTop + HeaderTop + 96.dp).toPx() }
+            val shadeFade = with(androidx.compose.ui.platform.LocalDensity.current) { 56.dp.toPx() }
+            Box(Modifier.fillMaxSize().drawBehind { drawHeaderShade(headerShade, shadeBottom, shadeFade) })
             // Cards keep their title at the line below the top bar and slide away under it (GlassCard)
             val listTop = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
             CompositionLocalProvider(dev.nimbus.weather.ui.components.LocalPinLine provides { listTop.floatValue + clipTop }) {

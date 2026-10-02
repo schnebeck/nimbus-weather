@@ -73,7 +73,7 @@ fun GlassCard(
     modifier: Modifier = Modifier,
     title: String? = null,
     icon: ImageVector? = null,
-    tint: Color = cardFill(LocalCardShade.current),
+    tint: Color = LocalCardFill.current,
     onClick: (() -> Unit)? = null,
     contentPadding: Boolean = true,
     info: Term? = null,
@@ -140,13 +140,30 @@ fun GlassCard(
 }
 
 /**
- * 0..1 from the sky behind the cards ([dev.nimbus.weather.ui.background.SkyScene.cardShade]):
- * on bright skies (overcast day, fog, snow) the glass gets darker so white and blue text stays
- * readable – like the darker material of Apple Weather on bright backgrounds.
+ * The glass of the cards for the sky behind them ([dev.nimbus.weather.ui.background.SkyScene.cardFill]):
+ * as dark as the brightest thing back there (white clouds, the sun, fog) requires for the text to
+ * keep its contrast – like the darker material of Apple Weather on bright backgrounds.
  */
-val LocalCardShade = androidx.compose.runtime.compositionLocalOf { 0f }
+val LocalCardFill = androidx.compose.runtime.compositionLocalOf { NimbusColors.CardFill }
 
-fun cardFill(shade: Float): Color = androidx.compose.ui.graphics.lerp(NimbusColors.CardFill, NimbusColors.CardFillBrightSky, shade)
+/** Opacity of the dark shade behind the header text ([dev.nimbus.weather.ui.background.SkyScene.headerShade]). */
+val LocalHeaderShade = androidx.compose.runtime.compositionLocalOf { 0f }
+
+/**
+ * The shade behind a header on the sky: black at [alpha] down to [textBottom] (px), fading out
+ * over [fade] below it – as dark as the brightest sky behind requires, invisible on dark skies.
+ */
+fun androidx.compose.ui.graphics.drawscope.DrawScope.drawHeaderShade(alpha: Float, textBottom: Float, fade: Float) {
+    if (alpha <= 0f) return
+    val end = textBottom + fade
+    drawRect(
+        androidx.compose.ui.graphics.Brush.verticalGradient(
+            0f to Color.Black.copy(alpha = alpha), (textBottom / end) to Color.Black.copy(alpha = alpha), 1f to Color.Transparent,
+            startY = 0f, endY = end,
+        ),
+        size = androidx.compose.ui.geometry.Size(size.width, end),
+    )
+}
 
 @Composable
 fun CardHeader(title: String, icon: ImageVector?, modifier: Modifier = Modifier, info: Term? = null) {

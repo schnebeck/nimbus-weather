@@ -51,9 +51,6 @@ val NimbusTypography = Typography(
 
 object NimbusColors {
     val CardFill = Color(0x2E0A1A33)
-    val CardFillStrong = Color(0x4D0A1A33)
-    /** Card fill on the brightest skies (see LocalCardShade). */
-    val CardFillBrightSky = Color(0x850A1A33)
     val CardBorder = Color(0x26FFFFFF)
     val Secondary = Color(0xB3FFFFFF)
     val Tertiary = Color(0x80FFFFFF)

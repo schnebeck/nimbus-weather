@@ -82,9 +82,35 @@ data class SkyScene(
     val brightness: Float
         get() = skyColors[1].luminance() * 0.6f + (if (cloudiness > 0.6f && !isNight) 0.25f else 0f)
 
-    /** 0..1: how much the glass cards darken on a bright sky, so that their text keeps its contrast. */
-    val cardShade: Float
-        get() = ((brightness - 0.2f) / 0.25f).coerceIn(0f, 1f)
+    /**
+     * The brightest thing that can be behind the cards: the sky and the clouds (white on a fair
+     * day) or fog – the glass is made dark enough for it ([dev.nimbus.weather.ui.theme.Legibility]).
+     * The moon (small) and a lightning flash (a moment) are left out.
+     */
+    val brightestBehind: Color
+        get() {
+            val day = daylight.coerceIn(0f, 1f)
+            val candidates = buildList {
+                addAll(skyColors)
+                if (cloudiness > 0f) add(lerp(cloudColor(condition, true), cloudColor(condition, false), day))
+                if (condition == Condition.FOG) add(lerp(Color(0xFF6B7482), Color(0xFFE6EAEE), day))
+            }
+            return candidates.maxBy { dev.nimbus.weather.ui.theme.Contrast.luminance(it) }
+        }
+
+    /** The same for the header, which the sun can be behind as well (it stands in the upper sky). */
+    val brightestBehindHeader: Color
+        get() {
+            val day = daylight.coerceIn(0f, 1f)
+            val sun = if (sunVisible(condition) && day > 0.02f) lerp(skyColors[0], Color(0xFFFFF8E1), day) else null
+            return listOfNotNull(brightestBehind, sun).maxBy { dev.nimbus.weather.ui.theme.Contrast.luminance(it) }
+        }
+
+    /** Glass of the cards for this sky: as dark as the brightest thing behind it requires. */
+    val cardFill: Color get() = dev.nimbus.weather.ui.theme.Legibility.cardFill(brightestBehind)
+
+    /** Opacity of the shade behind the header for this sky. */
+    val headerShade: Float get() = dev.nimbus.weather.ui.theme.Legibility.headerShade(brightestBehindHeader)
 
     val skyColors: List<Color>
         get() {
@@ -98,6 +124,24 @@ data class SkyScene(
         }
 
     companion object {
+        /** Clouds as the background draws them. */
+        fun cloudColor(condition: Condition, night: Boolean): Color = if (!night) when (condition) {
+            Condition.MOSTLY_CLEAR, Condition.PARTLY_CLOUDY -> Color(0xFFFFFFFF)
+            Condition.CLOUDY, Condition.FOG -> Color(0xFFD5DCE4)
+            Condition.SNOW, Condition.HEAVY_SNOW -> Color(0xFFE2E8EF)
+            Condition.DRIZZLE, Condition.SHOWERS -> Color(0xFFA9B4C0)
+            Condition.THUNDERSTORM -> Color(0xFF5C6470)
+            else -> Color(0xFF8A96A3)
+        } else when (condition) {
+            Condition.MOSTLY_CLEAR, Condition.PARTLY_CLOUDY -> Color(0xFF6A7690)
+            Condition.CLOUDY, Condition.FOG, Condition.SNOW, Condition.HEAVY_SNOW -> Color(0xFF4E5868)
+            Condition.THUNDERSTORM -> Color(0xFF2A2F38)
+            else -> Color(0xFF3B4452)
+        }
+
+        /** The sun is drawn on clear to partly cloudy days. */
+        fun sunVisible(condition: Condition) = condition in setOf(Condition.CLEAR, Condition.MOSTLY_CLEAR, Condition.PARTLY_CLOUDY)
+
         fun dayPalette(c: Condition): List<Color> = when (c) {
             Condition.CLEAR, Condition.MOSTLY_CLEAR -> listOf(Color(0xFF1C5DC2), Color(0xFF3F8BDD), Color(0xFF86C1F0))
             Condition.PARTLY_CLOUDY -> listOf(Color(0xFF2E68B4), Color(0xFF5B92CF), Color(0xFF9DC3E6))

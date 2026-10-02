@@ -63,23 +63,36 @@ fun ReadoutTable(columns: List<String>, rows: List<Pair<String, List<String>>>, 
     }
 }
 
-/** Label/value pairs, two per row: "Temperature 15° | Feels like 14°". */
+/**
+ * Label/value pairs, two per row ("Temperature 15° | Feels like 14°") – or one per row when two
+ * do not fit (narrow phones, large font). The choice depends on the width, the labels and
+ * [reserve] (the widest values to expect, e.g. "88 km/h NW"), never on the values shown now:
+ * moving the cursor never switches the layout.
+ */
 @Composable
-fun ReadoutPairs(pairs: List<Pair<String, String>>, modifier: Modifier = Modifier) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        pairs.chunked(2).forEach { row ->
-            Row(Modifier.fillMaxWidth()) {
-                row.forEachIndexed { i, (label, value) ->
-                    if (i > 0) Spacer(Modifier.width(14.dp))
-                    // Each pair takes half the row: the label as wide as it needs, the value
-                    // right-aligned in the rest – values never move sideways
-                    Row(Modifier.weight(1f)) {
-                        Text(label, style = Label, maxLines = 1, softWrap = false)
-                        Spacer(Modifier.width(6.dp))
-                        Text(value, Modifier.weight(1f), style = Value, textAlign = TextAlign.End, maxLines = 1, softWrap = false)
+fun ReadoutPairs(pairs: List<Pair<String, String>>, reserve: List<String>, modifier: Modifier = Modifier) {
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth()) {
+        val labelW = pairs.maxOf { measurer.measure(it.first, Label).size.width }
+        val valueW = (reserve + pairs.map { it.second }).maxOf { measurer.measure(it, Value).size.width }
+        val pairW = with(density) { (labelW + valueW).toDp() } + 12.dp
+        val perRow = if (pairW * 2 + 14.dp <= maxWidth) 2 else 1
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            pairs.chunked(perRow).forEach { row ->
+                Row(Modifier.fillMaxWidth()) {
+                    row.forEachIndexed { i, (label, value) ->
+                        if (i > 0) Spacer(Modifier.width(14.dp))
+                        // Each pair takes its share of the row: the label as wide as it needs, the
+                        // value right-aligned in the rest – values never move sideways
+                        Row(Modifier.weight(1f)) {
+                            Text(label, style = Label, maxLines = 1, softWrap = false)
+                            Spacer(Modifier.width(6.dp))
+                            Text(value, Modifier.weight(1f), style = Value, textAlign = TextAlign.End, maxLines = 1, softWrap = false)
+                        }
                     }
+                    if (row.size < perRow) { Spacer(Modifier.width(14.dp)); Spacer(Modifier.weight(1f)) }
                 }
-                if (row.size == 1) { Spacer(Modifier.width(14.dp)); Spacer(Modifier.weight(1f)) }
             }
         }
     }

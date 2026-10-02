@@ -420,7 +420,7 @@ fun Meteogram(
             BarLegend(precipTotal, sunTotalMin)
             // Always laid out (only faded), so the card does not change height with the cursor
             Text(
-                stringResource(R.string.meteogram_hint), fontSize = 11.sp, color = NimbusColors.Tertiary,
+                stringResource(R.string.meteogram_hint), fontSize = 11.sp, lineHeight = 15.sp, color = NimbusColors.Tertiary,
                 modifier = Modifier.padding(top = 4.dp).alpha(1f - cursorAlpha),
             )
         }
@@ -462,10 +462,14 @@ fun hoursMinutes(minutes: Double): String {
 private fun BarLegend(precipTotal: Double?, sunMinutes: Double?) {
     val s = LocalSettings.current
     @Composable
-    fun item(color: Color, text: String) = Row(verticalAlignment = Alignment.CenterVertically) {
-        Canvas(Modifier.size(12.dp, 10.dp)) { drawRoundRect(color, cornerRadius = CornerRadius(2.dp.toPx())) }
+    // The swatch stays at the first line when the text wraps (large font)
+    fun item(color: Color, text: String) = Row(verticalAlignment = Alignment.Top) {
+        val lineH = 15.sp
+        Box(Modifier.height(with(LocalDensity.current) { lineH.toDp() }), contentAlignment = Alignment.Center) {
+            Canvas(Modifier.size(12.dp, 10.dp)) { drawRoundRect(color, cornerRadius = CornerRadius(2.dp.toPx())) }
+        }
         Spacer(Modifier.width(5.dp))
-        Text(text, fontSize = 11.sp, color = NimbusColors.Secondary)
+        Text(text, fontSize = 11.sp, lineHeight = lineH, color = NimbusColors.Secondary)
     }
     androidx.compose.foundation.layout.FlowRow(
         Modifier.padding(top = 8.dp),
@@ -508,18 +512,21 @@ private fun Readout(h: MeteoPoint, highlighted: Boolean, compare: Boolean) {
     val lWind = stringResource(R.string.wind)
     val lGust = stringResource(R.string.gusts)
     val lSun = stringResource(R.string.sunshine_short)
-    Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
-        Column(Modifier.width(if (tf.use24h) 62.dp else 80.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    // Time, symbol and weather in one line; the table below gets the full width
+    Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 tf.time(h.time), fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
                 color = if (highlighted) Color.White else NimbusColors.Secondary,
+                style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum"),
             )
-            WeatherIcon(h.condition, h.isDay, size = 26.dp)
+            Spacer(Modifier.width(8.dp))
+            WeatherIcon(h.condition, h.isDay, size = 24.dp)
+            Spacer(Modifier.width(8.dp))
+            Text(condition, Modifier.weight(1f), fontSize = 14.sp, color = Color.White, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         }
-        Spacer(Modifier.width(8.dp))
-        Column(Modifier.weight(1f)) {
-            Text(condition, fontSize = 14.sp, color = Color.White, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(4.dp))
+        Column(Modifier.fillMaxWidth()) {
             if (compare) {
                 // Look-back: an hour still to come has the forecast only
                 val c = h.compare ?: HourCompare(
@@ -549,6 +556,8 @@ private fun Readout(h: MeteoPoint, highlighted: Boolean, compare: Boolean) {
                         lSun to sun(h.sunshine?.takeIf { h.isDay || it >= 1.0 } ?: if (h.sunshine != null) 0.0 else null),
                         stringResource(R.string.humidity) to (h.humidity?.let { "${it.roundToInt()}" + NBSP + "%" } ?: NO_VALUE),
                     ),
+                    // the widest values to expect, in the units set
+                    reserve = listOf(t(-88.0), p(88.8), w(88.0, 292.5), "100" + NBSP + "%", sun(60.0)),
                 )
             }
         }

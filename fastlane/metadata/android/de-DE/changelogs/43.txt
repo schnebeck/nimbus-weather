@@ -1,0 +1,2 @@
+• Stundenwerte: Uhrzeit und Wetter in einer Kopfzeile, die Tabelle nutzt die volle Breite
+• Schmale Displays und große Schrift: die Werte stehen untereinander statt abgeschnitten

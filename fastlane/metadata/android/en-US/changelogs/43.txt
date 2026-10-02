@@ -1,0 +1,2 @@
+• Hourly values: time and weather in one line, the table uses the full width
+• Narrow displays and large font: the values stand one below the other instead of being cut off

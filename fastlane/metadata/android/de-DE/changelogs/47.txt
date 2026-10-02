@@ -1,0 +1,1 @@
+• Diagramme: der Cursor steht wieder mittig auf dem Balken seiner Stunde, die Anzeige nennt die Stunde (z. B. 05:00–06:00)

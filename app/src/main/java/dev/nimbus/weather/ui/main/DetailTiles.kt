@@ -367,11 +367,8 @@ fun PrecipChart(
     // Plot edges, shared by drawing and touch handling
     var plotL by remember { mutableStateOf(0f) }
     var plotR by remember { mutableStateOf(1f) }
-    fun indexAt(xPx: Float): Int {
-        val t = start + ((xPx - plotL) / (plotR - plotL)).coerceIn(0f, 1f) * span
-        // the bar of an hour spans [time - 1 h, time]
-        return hours.indices.minBy { kotlin.math.abs(hours[it].time - 1_800_000L - t) }
-    }
+    // Touch: the hour whose bar is nearest – the same geometry as the drawing
+    fun indexAt(xPx: Float): Int = HourAxis(start, end, plotL, plotR).indexAt(xPx, hours.map { it.time })
 
     Column(modifier) {
         Canvas(
@@ -427,14 +424,15 @@ fun PrecipChart(
                 drawText(lt, topLeft = Offset((xm - lt.size.width / 2f).coerceIn(0f, size.width - lt.size.width), bottom + 4.dp.toPx()))
                 mark += 3 * 3_600_000L
             }
-            val bw = (r - l) / (span / 3_600_000f)
-            fun centre(i: Int) = x(hours[i].time) - bw / 2
+            // Bars, line points and cursor from one geometry (see HourAxis)
+            val axis = HourAxis(start, end, l, r)
+            fun centre(i: Int) = axis.centre(hours[i].time)
             // Amount: bars
             amounts.forEachIndexed { i, v ->
                 val bh = bottom - yA(v)
                 val m = measuredAmounts[i]
-                val left = centre(i) - bw * 0.36f
-                val w = bw * 0.72f
+                val left = axis.barLeft(hours[i].time)
+                val w = axis.barWidth()
                 val over = hours[i].time <= now
                 when {
                     compare -> {
@@ -472,7 +470,7 @@ fun PrecipChart(
             // Cursor
             if (cursorAlpha > 0f) {
                 val i = selected.coerceIn(0, hours.lastIndex)
-                val xc = centre(i)
+                val xc = axis.cursor(hours[i].time)
                 drawLine(Color.White.copy(alpha = 0.85f * cursorAlpha), Offset(xc, top - 2.dp.toPx()), Offset(xc, bottom), 1.5.dp.toPx())
                 val yc = yP(hours[i].chance ?: 0.0)
                 drawCircle(Color(0xFF1A2A40).copy(alpha = cursorAlpha), 5.dp.toPx(), Offset(xc, yc))

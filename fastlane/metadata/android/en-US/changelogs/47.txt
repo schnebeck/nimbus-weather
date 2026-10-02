@@ -1,0 +1,1 @@
+• Charts: the cursor stands in the middle of its hour's bar again, the readout names the hour (e.g. 05:00–06:00)

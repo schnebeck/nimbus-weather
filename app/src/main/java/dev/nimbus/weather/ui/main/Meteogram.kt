@@ -185,8 +185,10 @@ fun Meteogram(
     if (pts.size < 2) return
     val compare = pts.any { it.forecastTemperature != null || it.compare != null }
     val span = (end - start).toFloat()
+    // The cursor stands on an hour (the value of the hour before its time stamp): today the hour
+    // running now, else midday
     var selected by remember(start) {
-        mutableStateOf(pts.indexOfLast { it.time <= now }.takeIf { now in start..end && it >= 0 } ?: pts.indexOfFirst { it.time >= start + 12 * 3_600_000L }.coerceAtLeast(0))
+        mutableStateOf(pts.indexOfFirst { it.time > now }.takeIf { now in start..end && it > 0 } ?: pts.indexOfFirst { it.time >= start + 12 * 3_600_000L }.coerceAtLeast(1))
     }
     var cursorOn by remember { mutableStateOf(false) }
     var touched by remember { mutableIntStateOf(0) }
@@ -257,11 +259,10 @@ fun Meteogram(
         BoxWithConstraints(Modifier.fillMaxWidth().height(labelsH + iconsH + plotH + windH + sunH)) {
             val plotW = maxWidth - axisL - axisR
             fun xDp(t: Long) = axisL + plotW * ((t - start) / span)
-            fun indexAt(xPx: Float): Int {
-                val x = with(density) { xPx.toDp() }
-                val t = start + ((x - axisL) / plotW).coerceIn(0f, 1f) * span
-                return pts.indices.minBy { kotlin.math.abs(pts[it].time - t) }
-            }
+            // Touch: the hour whose bar is nearest (same geometry as the drawing, in dp)
+            val touchAxis = HourAxis(start, end, axisL.value, (axisL + plotW).value)
+            val times = pts.map { it.time }
+            fun indexAt(xPx: Float): Int = touchAxis.indexAt(with(density) { xPx.toDp() }.value, times)
             Canvas(
                 Modifier.fillMaxSize()
                     .pointerInput(pts) {
@@ -315,8 +316,9 @@ fun Meteogram(
                 // Hourly bars stand on the hour they cover: the values are the sums of the hour before
                 // the time stamp, as delivered by the models and stations. 00:00 is the previous
                 // day's last hour – no bar (it showed as half a bar at the start).
-                val hourW = (r - l) / (span / 3_600_000f)
-                fun barX(t: Long) = x(t - 1_800_000L) - hourW * 0.36f
+                val axis = HourAxis(start, end, l, r)
+                val barW = axis.barWidth()
+                fun barX(t: Long) = axis.barLeft(t)
                 clipRect(left = l, right = r) {
                     // Sunshine row right below the plot: minutes per hour, full row height = 60 min
                     if (sunTotalMin != null) {
@@ -327,18 +329,18 @@ fun Meteogram(
                             val m = (h.sunshine ?: 0.0).coerceIn(0.0, 60.0)
                             if (m >= 1.0) {
                                 val hgt = (m / 60.0 * (rowBottom - rowTop)).toFloat()
-                                drawRoundRect(SunFill, Offset(barX(h.time), rowBottom - hgt), Size(hourW * 0.72f, hgt), CornerRadius(1.5.dp.toPx()))
+                                drawRoundRect(SunFill, Offset(barX(h.time), rowBottom - hgt), Size(barW, hgt), CornerRadius(1.5.dp.toPx()))
                             }
                         }
                     }
                     pts.filter { it.time > start }.forEach { h ->
                         // Look-back: the forecast amount pale behind the measured one
                         h.forecastPrecipitation?.let { Units.precipitationValue(it, s.precipitationUnit) }?.takeIf { it > 0.0 }?.let { fp ->
-                            drawRoundRect(PrecipBar.copy(alpha = PrecipBar.alpha * 0.35f), Offset(barX(h.time), yP(fp)), Size(hourW * 0.72f, bottom - yP(fp)), CornerRadius(2.dp.toPx()))
+                            drawRoundRect(PrecipBar.copy(alpha = PrecipBar.alpha * 0.35f), Offset(barX(h.time), yP(fp)), Size(barW, bottom - yP(fp)), CornerRadius(2.dp.toPx()))
                         }
                         val p = Units.precipitationValue(h.precipitation ?: 0.0, s.precipitationUnit)
                         if (p > 0.0) {
-                            drawRoundRect(if (h.forecastOnly) PrecipBar.copy(alpha = PrecipBar.alpha * 0.45f) else PrecipBar, Offset(barX(h.time), yP(p)), Size(hourW * 0.72f, bottom - yP(p)), CornerRadius(2.dp.toPx()))
+                            drawRoundRect(if (h.forecastOnly) PrecipBar.copy(alpha = PrecipBar.alpha * 0.45f) else PrecipBar, Offset(barX(h.time), yP(p)), Size(barW, bottom - yP(p)), CornerRadius(2.dp.toPx()))
                         }
                     }
                 }
@@ -408,11 +410,13 @@ fun Meteogram(
                 }
                 // Cursor (long press)
                 if (cursorAlpha > 0f) {
-                    val i = selected.coerceIn(0, pts.lastIndex)
-                    val xs = x(pts[i].time)
+                    val i = selected.coerceIn(1, pts.lastIndex)
+                    // in the middle of the hour's bar; the dot on the curve there
+                    val xs = axis.cursor(pts[i].time)
+                    val yc = yT((temps[i - 1] + temps[i]) / 2)
                     drawLine(Color.White.copy(alpha = 0.85f * cursorAlpha), Offset(xs, top - 2.dp.toPx()), Offset(xs, bottom + below), 1.5.dp.toPx())
-                    drawCircle(Color(0xFF1A2A40).copy(alpha = cursorAlpha), 5.5.dp.toPx(), Offset(xs, yT(temps[i])))
-                    drawCircle(Color.White.copy(alpha = cursorAlpha), 3.5.dp.toPx(), Offset(xs, yT(temps[i])))
+                    drawCircle(Color(0xFF1A2A40).copy(alpha = cursorAlpha), 5.5.dp.toPx(), Offset(xs, yc))
+                    drawCircle(Color.White.copy(alpha = cursorAlpha), 3.5.dp.toPx(), Offset(xs, yc))
                 }
             }
             // Weather symbols every 3 h
@@ -423,7 +427,7 @@ fun Meteogram(
         // The plot reaches into the card's padding (callers use bleed); the text keeps it, so it
         // does not run up to the card's edge
         Column(Modifier.padding(horizontal = CARD_BLEED)) {
-            Readout(pts[selected.coerceIn(0, pts.lastIndex)], highlighted = cursorOn, compare = compare)
+            Readout(pts[selected.coerceIn(1, pts.lastIndex)], highlighted = cursorOn, compare = compare)
             BarLegend(precipTotal, sunTotalMin)
             // Always laid out (only faded), so the card does not change height with the cursor
             Text(
@@ -522,8 +526,9 @@ private fun Readout(h: MeteoPoint, highlighted: Boolean, compare: Boolean) {
     // Time, symbol and weather in one line; the table below gets the full width
     Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            // the hour the values cover (and the cursor stands on)
             Text(
-                tf.time(h.time), fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
+                tf.time(h.time - 3_600_000L) + "–" + tf.time(h.time), fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
                 color = if (highlighted) Color.White else NimbusColors.Secondary,
                 style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum"),
             )

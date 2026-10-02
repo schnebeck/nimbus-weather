@@ -21,7 +21,9 @@ package dev.nimbus.weather
 import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -203,6 +205,29 @@ class LookTest {
         compose.setContent { Card { Meteogram(forecastDay(), day, day + 24 * h, emptyList(), day + 30 * h) } }
         compose.waitForIdle()
         assertTrue("a chance line in the combined chart", bitmap().whiteRows().isEmpty())
+    }
+
+    /**
+     * A card slid under the header is cut off at the top only: the charts reach into the card's
+     * side padding, their axis labels were cut off at the sides while pinned.
+     */
+    @Test fun pinnedCardKeepsWhatReachesIntoItsPadding() {
+        compose.setContent {
+            CompositionLocalProvider(dev.nimbus.weather.ui.components.LocalPinLine provides { 150f }) {
+                Box(Modifier.width(300.dp).background(Color.Black)) {
+                    dev.nimbus.weather.ui.components.GlassCard(title = "Pinned") {
+                        // like the charts: 10 dp into the 14 dp padding on the left
+                        Box(Modifier.offset(x = (-10).dp).size(40.dp, 400.dp).background(Color.Red))
+                    }
+                }
+            }
+        }
+        compose.waitForIdle()
+        val img = bitmap()
+        val px = img.width / 300f                                         // px per dp
+        val y = (img.height * 0.8f).toInt()                                // well below the pin line
+        val (r, g, b) = img.rgb((8 * px).toInt(), y)                     // 8 dp: inside the card, in the padding
+        assertTrue("bleed cut off while pinned: ($r, $g, $b)", r > 150 && g < 80 && b < 80)
     }
 
     // ---- the readout while the finger slides --------------------------------------------------

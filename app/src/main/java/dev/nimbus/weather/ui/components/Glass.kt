@@ -131,7 +131,11 @@ fun GlassCard(
                     if (o <= 0f) { drawContent(); return@drawWithContent }
                     // this column starts below the title block; the visible part starts at o + titleH
                     val padTop = if (contentPadding) 10.dp.toPx() else 0f
-                    clipRect(top = o - padTop) { this@drawWithContent.drawContent() }
+                    // only from above: the charts reach into the card's side padding (bleed), their
+                    // axis labels must not be cut off at the sides (the card's shape clips there)
+                    clipRect(left = -size.width, top = o - padTop, right = 2 * size.width, bottom = 2 * size.height) {
+                        this@drawWithContent.drawContent()
+                    }
                 },
         ) {
             content()

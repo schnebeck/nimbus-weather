@@ -66,6 +66,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
@@ -276,12 +278,18 @@ private fun WeatherContent(
         onRefresh = { pulled = true; onRefresh() },
         modifier = Modifier.fillMaxSize(),
     ) {
-        // Cards slide *under* the header instead of over it.
-        val clip = Modifier.fillMaxSize().drawWithContent {
-            val clipTop = (expandedPx - scrolled).coerceAtLeast(collapsedPx)
-            clipRect(top = clipTop) { this@drawWithContent.drawContent() }
-        }
+        // Cards slide *under* the header instead of over it. The cards themselves keep their title
+        // at this line and slide away below it (see GlassCard); the clip catches everything else.
+        val listTop = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+        val clip = Modifier.fillMaxSize()
+            .onGloballyPositioned { listTop.floatValue = it.positionInRoot().y }
+            .drawWithContent {
+                val clipTop = (expandedPx - scrolled).coerceAtLeast(collapsedPx)
+                clipRect(top = clipTop) { this@drawWithContent.drawContent() }
+            }
+        val pinLine: () -> Float = { listTop.floatValue + (expandedPx - scrolled).coerceAtLeast(collapsedPx) }
         val side = if (columns == 1) 16.dp else 24.dp
+        CompositionLocalProvider(dev.nimbus.weather.ui.components.LocalPinLine provides pinLine) {
         if (columns == 1) {
             LazyColumn(
                 state = listState, modifier = clip,
@@ -303,6 +311,7 @@ private fun WeatherContent(
                     span = { if (items[it].fullSpan) androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan.FullLine else androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan.SingleLane },
                 ) { items[it].content() }
             }
+        }
         }
         Header(data, progress, statusTop)
     }

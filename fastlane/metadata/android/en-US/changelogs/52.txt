@@ -1,0 +1,1 @@
+• Scrolling as in Apple Weather: a card's title stays below the header, the content slides away under it and the card gets shorter – nothing is cut mid-text any more

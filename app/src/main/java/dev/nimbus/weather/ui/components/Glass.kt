@@ -37,6 +37,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.background
@@ -46,6 +53,19 @@ import dev.nimbus.weather.ui.theme.CardLabelStyle
 import dev.nimbus.weather.ui.theme.NimbusColors
 
 val CardShape = RoundedCornerShape(18.dp)
+private val CardRadius = 18.dp
+
+/**
+ * Where the scrolling content of a page ends at the top (in root coordinates, px): the line
+ * below the collapsed header. Cards that scroll up to it behave like Apple Weather's – the title
+ * stays at the line, the content slides away under it and the card gets shorter, with its round
+ * top edge intact; nothing is cut through mid-text. Null: no such line (settings, places …).
+ */
+val LocalPinLine = androidx.compose.runtime.staticCompositionLocalOf<(() -> Float)?> { null }
+
+/** How far a card ([top], [height] in root px, title block [titleH]) has slid under the line [pin]: 0 … height − titleH. */
+fun cardOverlap(pin: Float, top: Float, height: Float, titleH: Float): Float =
+    (pin - top).coerceIn(0f, maxOf(0f, height - titleH))
 
 /** Frosted translucent card, the building block of all weather modules. */
 @Composable
@@ -59,18 +79,61 @@ fun GlassCard(
     info: Term? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val pin = LocalPinLine.current
+    // Read only while drawing: scrolling never recomposes the cards
+    val top = androidx.compose.runtime.remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    val titleH = androidx.compose.runtime.remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    fun overlap(height: Float) = if (pin == null) 0f else cardOverlap(pin(), top.floatValue, height, titleH.floatValue)
+    val cardH = androidx.compose.runtime.remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    fun shape(scope: androidx.compose.ui.graphics.drawscope.DrawScope) = with(scope) {
+        val r = androidx.compose.ui.geometry.CornerRadius(CardRadius.toPx())
+        androidx.compose.ui.graphics.Path().apply {
+            addRoundRect(androidx.compose.ui.geometry.RoundRect(0f, overlap(size.height), size.width, size.height, r))
+        }
+    }
     Column(
         modifier
-            .clip(CardShape)
-            .background(tint)
-            .border(0.6.dp, NimbusColors.CardBorder, CardShape)
+            .then(
+                if (pin == null) Modifier else Modifier.onGloballyPositioned { c ->
+                    top.floatValue = c.positionInRoot().y
+                    cardH.floatValue = c.size.height.toFloat()
+                },
+            )
+            // Everything – glass, content, ripple – inside the card's shape, which starts at the
+            // line once the card slides under it (shorter, still round on top)
+            .drawWithContent {
+                val path = shape(this)
+                clipPath(path) {
+                    drawPath(path, tint)
+                    this@drawWithContent.drawContent()
+                }
+                drawPath(path, NimbusColors.CardBorder, style = androidx.compose.ui.graphics.drawscope.Stroke(0.6.dp.toPx()))
+            }
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
     ) {
         if (title != null) {
-            CardHeader(title, icon, Modifier.padding(start = 14.dp, end = 6.dp, top = 4.dp, bottom = 0.dp), info)
-            if (contentPadding) HairlineDivider(Modifier.padding(horizontal = 14.dp))
+            // The title stays at the line while the card slides under it
+            Column(
+                Modifier
+                    .onGloballyPositioned { titleH.floatValue = it.size.height.toFloat() }
+                    .zIndex(1f)
+                    .graphicsLayer { translationY = overlap(cardH.floatValue) },
+            ) {
+                CardHeader(title, icon, Modifier.padding(start = 14.dp, end = 6.dp, top = 4.dp, bottom = 0.dp), info)
+                if (contentPadding) HairlineDivider(Modifier.padding(horizontal = 14.dp))
+            }
         }
-        Column(if (contentPadding) Modifier.padding(horizontal = 14.dp, vertical = 10.dp) else Modifier) {
+        Column(
+            (if (contentPadding) Modifier.padding(horizontal = 14.dp, vertical = 10.dp) else Modifier)
+                // the content disappears under the title (or the card's top edge) – never above it
+                .drawWithContent {
+                    val o = overlap(cardH.floatValue)
+                    if (o <= 0f) { drawContent(); return@drawWithContent }
+                    // this column starts below the title block; the visible part starts at o + titleH
+                    val padTop = if (contentPadding) 10.dp.toPx() else 0f
+                    clipRect(top = o - padTop) { this@drawWithContent.drawContent() }
+                },
+        ) {
             content()
         }
     }

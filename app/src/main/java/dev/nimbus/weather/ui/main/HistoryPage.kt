@@ -66,6 +66,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
@@ -157,9 +159,13 @@ fun HistoryPage(
             dev.nimbus.weather.ui.components.LocalCardShade provides scene.cardShade,
         ) {
             val clipTop = with(androidx.compose.ui.platform.LocalDensity.current) { (statusTop + 52.dp).toPx() }
+            // Cards keep their title at the line below the top bar and slide away under it (GlassCard)
+            val listTop = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+            CompositionLocalProvider(dev.nimbus.weather.ui.components.LocalPinLine provides { listTop.floatValue + clipTop }) {
             LazyColumn(
                 // Content scrolls away below the top bar instead of running under menu and radar button.
                 Modifier.fillMaxSize().wrapContentWidth().widthIn(max = 760.dp)
+                    .onGloballyPositioned { listTop.floatValue = it.positionInRoot().y }
                     .drawWithContent { clipRect(top = clipTop) { this@drawWithContent.drawContent() } },
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = statusTop + HeaderTop, bottom = navBottom + 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -187,6 +193,7 @@ fun HistoryPage(
                         }
                     }
                 }
+            }
             }
         }
     }

@@ -61,19 +61,29 @@ class HourAxis(private val start: Long, private val end: Long, val left: Float, 
      */
     fun label(hourStart: Long): Float = centre(hourStart + HOUR)
 
-    /** Starts of the labelled hours: every [every] hours from the axis start (00, 03 … 21). */
+    /**
+     * Starts of the labelled hours: every [every] hours from the axis start (00, 03 … 21; with the
+     * day's axis running into the next day's first hour, 24 as well – see [dayAxisEnd]).
+     */
     fun labelHours(every: Int = 3): List<Long> =
         generateSequence(start) { it + every * HOUR }.takeWhile { it < end }.toList()
 
     /** The hour ([times] index) whose bar is nearest to [pos]; only hours within the axis count. */
-    fun indexAt(pos: Float, times: List<Long>): Int {
-        val inside = times.indices.filter { times[it] > start && times[it] <= end }
+    fun indexAt(pos: Float, times: List<Long>, last: Long = end): Int {
+        val inside = times.indices.filter { times[it] > start && times[it] <= minOf(end, last) }
         if (inside.isEmpty()) return 0
         return inside.minBy { abs(centre(times[it]) - pos) }
     }
 
     companion object {
         const val HOUR = 3_600_000L
+
+        /**
+         * A day chart's axis ends an hour after midnight: the 24 gets a column of its own like the
+         * 00 – label in the middle, its bar where there is one, the curves running up to its
+         * middle. The day's totals stay 00–24.
+         */
+        fun dayAxisEnd(dayEnd: Long) = dayEnd + HOUR
         const val BAR_SHARE = 0.72f
     }
 }
@@ -137,8 +147,25 @@ object PrecipStyle {
     val Forecast = Color(0xFF6F89A0)
 
     /**
-     * Look-back: next to a measured bar the forecast is a short bar across its column at the
-     * forecast height (this thick, dp) – the measured bar stays one colour.
+     * Look-back: the forecast as an unfilled frame of the bar's size, a thin line drawn in front –
+     * the measured bar stays one colour, and the frame shows the forecast's height above, on or
+     * inside it. Warm amber: it stands out from the light blue-grey bar as from the dark glass.
      */
-    const val FORECAST_TICK_DP = 2.5f
+    val ForecastFrame = Color(0xFFFFB547)
+    const val FRAME_DP = 1f
+
+    /** Draws the forecast frame of a bar ([left], [top] … [bottom], [width] wide). */
+    fun androidx.compose.ui.graphics.drawscope.DrawScope.forecastFrame(left: Float, top: Float, width: Float, bottom: Float) {
+        val w = FRAME_DP * density
+        if (bottom - top < w) {
+            // (almost) nothing forecast: a thin line on the axis
+            drawLine(ForecastFrame, androidx.compose.ui.geometry.Offset(left, bottom - w / 2), androidx.compose.ui.geometry.Offset(left + width, bottom - w / 2), w)
+            return
+        }
+        drawRoundRect(
+            ForecastFrame, androidx.compose.ui.geometry.Offset(left + w / 2, top + w / 2),
+            androidx.compose.ui.geometry.Size(width - w, bottom - top - w), androidx.compose.ui.geometry.CornerRadius(2f * density),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(w),
+        )
+    }
 }

@@ -48,6 +48,12 @@ path = "CLAUDE.md"
 SPDX-FileCopyrightText = "(C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>"
 SPDX-License-Identifier = "GPL-3.0-or-later"
 
+# Reference images of the screenshot tests: the charts rendered from made-up test data
+[[annotations]]
+path = "app/src/test/screenshots/*.png"
+SPDX-FileCopyrightText = "(C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
 # Screenshots for the project page: the app with weather, radar and map data shown in it
 [[annotations]]
 path = "docs/screenshots/*.png"

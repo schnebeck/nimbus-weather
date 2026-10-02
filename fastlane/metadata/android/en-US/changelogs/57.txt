@@ -1,0 +1,3 @@
+• Charts: the 24 is back – a column of its own like the 00, with its bar and the curves up to its middle
+• Look-back precipitation: the forecast as a thin amber frame in front of the measured bar; the last bar 23–24 is no longer missing
+• New screenshot tests check the look of the charts

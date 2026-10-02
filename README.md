@@ -141,9 +141,14 @@ Voraussetzungen: JDK 21, Android SDK mit Plattform 37 und Build-Tools 36.
 
 ```bash
 echo "sdk.dir=$HOME/Android/Sdk" > local.properties
-./gradlew testDebugUnitTest      # Unit-Tests
+./gradlew testDebugUnitTest      # Unit-Tests, auch Screenshot-Vergleich der Diagramme
 ./gradlew assembleRelease        # APKs in app/build/outputs/apk/release/
 ```
+
+Die Diagramme werden in den Tests aus festen Daten gerendert (Robolectric, Roborazzi) und mit den
+Referenzbildern in `app/src/test/screenshots/` verglichen; zusätzlich prüft der Test im fertigen
+Bild, dass der Cursor mittig auf seinem Balken steht. Nach einer gewollten Änderung des Aussehens
+schreibt `./gradlew recordRoborazziDebug` neue Referenzbilder.
 
 Signiert wird mit `keystore/keystore.properties` (nicht im Repository); fehlt die Datei, bleibt die
 Release-APK unsigniert (`app-universal-release-unsigned.apk`), so wie F-Droid sie erwartet.

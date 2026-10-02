@@ -309,7 +309,9 @@ fun PrecipitationCard(data: WeatherData, now: Long, raining: Boolean = false, me
         )
         Spacer(Modifier.height(10.dp))
         PrecipChart(
-            hours.map { PrecipHour(it.time, it.precipitation, it.precipitationProbability, readings[it.time]) },
+            // with the next day's first hour: the 24 column
+            data.hourly.filter { it.time > dayStart && it.time <= dayStart + 25 * 3_600_000L }
+                .map { PrecipHour(it.time, it.precipitation, it.precipitationProbability, readings[it.time]) },
             nightsFromDaily(data.daily, dayStart, dayStart + 24 * 3_600_000L), now, compare = false,
             Modifier.fillMaxWidth().bleed(CARD_BLEED),
         )
@@ -330,9 +332,10 @@ fun PrecipitationCard(data: WeatherData, now: Long, raining: Boolean = false, me
 @Composable
 fun PrecipChart(
     hours: List<PrecipHour>, nights: List<LongRange>, now: Long, compare: Boolean, modifier: Modifier,
-    /** End of the time axis (24:00) when the last hours are missing. */
+    /** End of the day (24:00) when the last hours are missing. */
     endOfDay: Long? = null,
 ) {
+    // [hours] may hold the next day's first hour: the 24 column, like the 00 (HourAxis.dayAxisEnd)
     val s = LocalSettings.current
     val tf = LocalTimeFormat.current
     val measurer = rememberTextMeasurer()
@@ -341,7 +344,8 @@ fun PrecipChart(
     val pUnit = stringResource(Texts.precipUnit(s.precipitationUnit))
     val inch = s.precipitationUnit == dev.nimbus.weather.data.model.PrecipitationUnit.INCH
     val start = hours.first().time - 3_600_000L
-    val end = maxOf(hours.last().time, endOfDay ?: 0L)
+    // The day 00–24 (the first hour's value ends at 01:00) plus the 24 column
+    val end = HourAxis.dayAxisEnd(endOfDay ?: (start + 24 * 3_600_000L))
     val span = (end - start).toFloat()
     val amounts = hours.map { Units.precipitationValue(it.forecast ?: 0.0, s.precipitationUnit) }
     val measuredAmounts = hours.map { h -> h.measured?.takeIf { compare || h.time <= now }?.let { Units.precipitationValue(it, s.precipitationUnit) } }
@@ -421,7 +425,7 @@ fun PrecipChart(
             axis.labelHours().forEach { hs ->
                 val xm = axis.label(hs)
                 drawLine(Color(0x1FFFFFFF), Offset(xm, top), Offset(xm, bottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
-                val lt = measurer.measure(tf.hour(hs), labelStyle)
+                val lt = measurer.measure(if (hs >= end - 3_600_000L) tf.hourEnd(hs) else tf.hour(hs), labelStyle)
                 drawText(lt, topLeft = Offset((xm - lt.size.width / 2f).coerceIn(0f, size.width - lt.size.width), bottom + 4.dp.toPx()))
             }
             fun centre(i: Int) = axis.point(hours[i].time)
@@ -434,14 +438,10 @@ fun PrecipChart(
                 val over = hours[i].time <= now
                 when {
                     compare -> {
-                        // Look-back: the measured bar in one colour, the forecast as a short bar across
-                        // the column at its height
+                        // Look-back: the measured bar in one colour, the forecast as a thin unfilled frame in front
                         val mh = m?.let { bottom - yA(it) } ?: 0f
                         if (mh > 0.5f) drawRoundRect(PrecipStyle.Measured, Offset(left, bottom - mh), Size(w, mh), CornerRadius(2.dp.toPx()))
-                        if (bh > 0.5f) {
-                            val th = PrecipStyle.FORECAST_TICK_DP.dp.toPx()
-                            drawRoundRect(PrecipStyle.Forecast, Offset(left, bottom - bh - th / 2), Size(w, th), CornerRadius(th / 2))
-                        }
+                        if (bh > 0.5f) with(PrecipStyle) { forecastFrame(left, bottom - bh, w, bottom) }
                     }
                     // Today: an hour over shows what was measured, the forecast for it is gone
                     m != null -> {
@@ -515,8 +515,10 @@ fun PrecipChart(
             // Legend in the style of the course of the day: bars with the day's totals, the line
             fun total(v: Double) = Units.precipitationNumber(v, s.precipitationUnit) + NBSP + pUnit
             LegendRow {
-                LegendItem(PrecipStyle.Measured, stringResource(R.string.legend_precip_measured, total(hours.sumOf { it.measured ?: 0.0 })))
-                LegendItem(PrecipStyle.Forecast, stringResource(R.string.legend_precip_forecast, total(hours.sumOf { it.forecast ?: 0.0 })), line = true)
+                // the day's totals: 00–24, without the 24 column
+                val day = hours.filter { it.time <= start + 24 * 3_600_000L }
+                LegendItem(PrecipStyle.Measured, stringResource(R.string.legend_precip_measured, total(day.sumOf { it.measured ?: 0.0 })))
+                LegendItem(PrecipStyle.ForecastFrame, stringResource(R.string.legend_precip_forecast, total(day.sumOf { it.forecast ?: 0.0 })), frame = true)
                 LegendItem(ChanceLine, stringResource(R.string.legend_chance), line = true)
             }
             Text(stringResource(R.string.meteogram_hint), fontSize = 11.sp, lineHeight = 15.sp, color = NimbusColors.Tertiary, modifier = Modifier.padding(top = 4.dp))

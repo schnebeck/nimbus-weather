@@ -124,4 +124,14 @@ class HourAxisTest {
             assertTrue("$name: labels on the moment", Regex("""val xm = x\(mark\)""").containsMatchIn(src))
         }
     }
+
+    @Test fun theDayAxisHasA24ColumnLikeThe00() {
+        val day = HourAxis(start, HourAxis.dayAxisEnd(start + 24 * h), 0f, 2500f)     // 100 px per hour
+        assertEquals((0..24 step 3).map { start + it * h }, day.labelHours())
+        // 00 and 24 both stand in the middle of their column, half an hour from the edge
+        assertEquals(50f, day.label(start), 0.01f)
+        assertEquals(2450f, day.label(start + 24 * h), 0.01f)
+        // the 24 column's bar (value of 00–01 the next day) lies under its label
+        assertEquals(day.label(start + 24 * h), day.barLeft(start + 25 * h) + day.barWidth() / 2, 0.01f)
+    }
 }

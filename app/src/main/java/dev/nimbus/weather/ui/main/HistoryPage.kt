@@ -186,7 +186,7 @@ fun HistoryPage(
                         item(key = "summary") { SummaryCard(summary, history, settings, tf) }
                         // Right after midnight there is only one hour – nothing to draw yet.
                         if (day.hours.size >= 2) item(key = "course") { DayCourseCard(day, summary, settings, tf, history) }
-                        if (day.hours.count { it.model != null || it.measured?.precipitation != null } >= 2) item(key = "precip") { PrecipDayCard(day, tf) }
+                        if (day.hours.count { it.model != null || it.measured?.precipitation != null } >= 2) item(key = "precip") { PrecipDayCard(day, tf, history) }
                         // The DWD keeps about 3½ days of radar: the whole day, in 5-minute steps (Germany)
                         if (WeatherRepository.isInDwdArea(place.latitude, place.longitude)) item(key = "radar") {
                             val start = day.date.atStartOfDay(history.zone).toInstant().toEpochMilli()
@@ -327,10 +327,11 @@ private fun Legend(model: Boolean, settings: Settings, measuredAsBars: Boolean =
 @Composable
 private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, tf: TimeFormat, history: dev.nimbus.weather.data.remote.History) {
     val start = day.date.atStartOfDay(tf.zone).toInstant().toEpochMilli()
-    val points = remember(day) {
-        // With precipitation readings the bars show what fell; the forecast stays pale behind them
+    val points = remember(day, history) {
+        // With precipitation readings the bars show what fell; the forecast beside them
         val measuredRain = day.hours.any { it.measured?.precipitation != null }
-        day.hours.mapNotNull { h ->
+        // 00:00 … 24:00 and the 24 column (into tomorrow's first hour)
+        history.chartHours(start).mapNotNull { h ->
             val m = h.measured
             val f = h.model
             // No reading (yet): the forecast only, dashed – never the forecast drawn as measured
@@ -371,15 +372,15 @@ private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, 
     // The curves in the finest resolution there is: station reports every 10 minutes (SYNOP, about
     // the last 1½ days), the model every 15 minutes; hourly values where there are no finer ones
     val curves = remember(day, history) {
-        val from = start - 3_600_000L; val to = start + 24 * 3_600_000L
+        val from = start - 3_600_000L; val to = start + 25 * 3_600_000L
         fun fine(m: Map<Long, Double>, step: Long) = m.filterKeys { it in from..to }.map { (t, v) -> CurvePoint(t, v, step) }
         val measured = Curve.merge(
             fine(history.fineMeasured, 10 * 60_000L),
-            day.hours.mapNotNull { h -> h.measured?.temperature?.let { CurvePoint(h.time, it) } },
+            history.chartHours(start).mapNotNull { h -> h.measured?.temperature?.let { CurvePoint(h.time, it) } },
         )
         val model = Curve.merge(
             fine(history.fineModel, 15 * 60_000L),
-            day.hours.mapNotNull { h -> h.model?.temperature?.let { CurvePoint(h.time, it) } },
+            history.chartHours(start).mapNotNull { h -> h.model?.temperature?.let { CurvePoint(h.time, it) } },
         )
         measured to model
     }
@@ -407,17 +408,17 @@ private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, 
  * light blue), and the forecast chance as a line – hour by hour, with a cursor.
  */
 @Composable
-private fun PrecipDayCard(day: HistoryDay, tf: TimeFormat) {
+private fun PrecipDayCard(day: HistoryDay, tf: TimeFormat, history: dev.nimbus.weather.data.remote.History) {
     val start = day.date.atStartOfDay(tf.zone).toInstant().toEpochMilli()
     val asOf = remember(day) { System.currentTimeMillis() }
-    // Each value covers the hour before its time: 01:00 … 24:00 make the day
-    val hours = remember(day) {
-        day.hours.filter { it.time > start && it.time <= start + 24 * 3_600_000L }
+    // Each value covers the hour before its time: 01:00 … 24:00 make the day, 01:00 tomorrow the 24 column
+    val hours = remember(day, history) {
+        history.chartHours(start).filter { it.time > start }
             .map { h -> PrecipHour(h.time, h.model?.precipitation, h.model?.chance, h.measured?.precipitation) }
     }
     if (hours.size < 2) return
     val nights = remember(day) {
-        nightsFromFlags(day.hours.mapNotNull { h -> h.model?.let { MeteoPoint(h.time, 0.0, it.condition, it.isDay, null) } })
+        nightsFromFlags(history.chartHours(start).mapNotNull { h -> h.model?.let { MeteoPoint(h.time, 0.0, it.condition, it.isDay, null) } })
     }
     dev.nimbus.weather.ui.components.GlassCard(title = stringResource(R.string.history_precip_title), icon = Icons.Outlined.WaterDrop) {
         PrecipChart(hours, nights, asOf, compare = true, Modifier.fillMaxWidth().bleed(CARD_BLEED), endOfDay = start + 24 * 3_600_000L)

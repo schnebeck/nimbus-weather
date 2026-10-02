@@ -87,6 +87,10 @@ echo "sdk.dir=$HOME/Android/Sdk" > local.properties
 ./gradlew testDebugUnitTest assembleRelease
 ```
 
+The unit tests also render the charts from fixed data (Robolectric, Roborazzi) and compare them with
+the reference images in `app/src/test/screenshots/`; `./gradlew recordRoborazziDebug` writes new ones
+after an intended change of the look.
+
 ## License
 
 Nimbus is free software under the **GNU General Public License, version 3 or later**. Every file

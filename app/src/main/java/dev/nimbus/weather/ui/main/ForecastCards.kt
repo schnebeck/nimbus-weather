@@ -246,7 +246,8 @@ fun DailyCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) {
                 expanded = expanded == d.date,
                 onClick = { expanded = if (expanded == d.date) null else d.date },
                 // 00:00 of the next day closes the curve at 24 h
-                hours = data.hourly.filter { it.time in d.date..d.date + 24 * 3_600_000L },
+                // 00:00 of the day through 01:00 of the next: the 24 column
+                hours = data.hourly.filter { it.time in d.date..d.date + 25 * 3_600_000L },
                 minutely = data.minutely,
                 daily = data.daily,
                 now = now,
@@ -294,7 +295,7 @@ private fun DayRow(
                 hours.map { h -> h.toMeteo().let { measured?.apply(it, now) ?: it } }, day.date, end, nightsFromDaily(daily, day.date, end), now,
                 Modifier.fillMaxWidth().bleed(CARD_BLEED).padding(bottom = 12.dp),
                 showNow = currentTemp != null,   // today only
-                curve = remember(hours, minutely, measured) { dayCurve(hours, minutely, day.date, end, measured) },
+                curve = remember(hours, minutely, measured) { dayCurve(hours, minutely, day.date, HourAxis.dayAxisEnd(end), measured) },
             )
         }
     }

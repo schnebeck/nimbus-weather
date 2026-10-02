@@ -22,6 +22,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.aboutlibraries.android)
+    alias(libs.plugins.roborazzi)
 }
 
 val keystoreProps = Properties().apply {
@@ -37,8 +38,8 @@ android {
         applicationId = "dev.nimbus.weather"
         minSdk = 26
         targetSdk = 36
-        versionCode = 56
-        versionName = "1.21.4"
+        versionCode = 57
+        versionName = "1.21.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -88,6 +89,8 @@ android {
 
     testOptions {
         unitTests.isReturnDefaultValues = true
+        // Screenshot tests (Robolectric renders the Compose charts on the JVM)
+        unitTests.isIncludeAndroidResources = true
     }
 
     // No Google-encrypted dependency report in the APK signing block (F-Droid inclusion policy).
@@ -144,4 +147,18 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
+    // Screenshot tests of the charts: rendered on the JVM, compared with the reference images
+    testImplementation(composeBom)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
+    testImplementation(libs.roborazzi.junit.rule)
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+// Reference images of the screenshot tests live with the sources; every unit test run compares
+// against them ("recordRoborazziDebug" writes new ones after an intended change of the look)
+roborazzi {
+    outputDir.set(file("src/test/screenshots"))
 }

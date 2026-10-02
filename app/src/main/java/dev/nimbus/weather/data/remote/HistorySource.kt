@@ -64,7 +64,16 @@ data class History(
     val fineMeasured: Map<Long, Double> = emptyMap(),
     /** The model's temperature every 15 minutes, by time. */
     val fineModel: Map<Long, Double> = emptyMap(),
-)
+    /**
+     * Every hour in time order, across the days and into tomorrow's first hour: the day charts
+     * show 00–24 plus the 24 column (the value of 00–01 the next day), and a day's 23–24 value
+     * carries tomorrow's date (its time stamp is 00:00).
+     */
+    val allHours: List<HistoryHour> = days.flatMap { it.hours },
+) {
+    /** The hours of the day chart starting at [dayStart]: its 00:00 value through the 24 column. */
+    fun chartHours(dayStart: Long): List<HistoryHour> = allHours.filter { it.time in dayStart..dayStart + 25 * 3_600_000L }
+}
 
 /** A 10-minute station report (SYNOP). Sums refer to the period before [time]. */
 data class SynopReport(
@@ -125,7 +134,7 @@ class HistorySource(
         .addQueryParameter("longitude", OpenMeteoSource.fmt(lon))
         .addQueryParameter("models", model)
         .addQueryParameter("past_days", "2")
-        .addQueryParameter("forecast_days", "1")
+        .addQueryParameter("forecast_days", "2")
         .addQueryParameter("timezone", "auto")
         .addQueryParameter("timeformat", "unixtime")
         .addQueryParameter("wind_speed_unit", "kmh")
@@ -251,8 +260,13 @@ class HistorySource(
                     .map { t -> HistoryHour(t, obs.byTime[t], modelled[t]) }
                 HistoryDay(date, hours)
             }
+            // For the charts: today's forecast on into tomorrow's first hour (the 24 column)
+            val chartTimes = (modelled.keys + obs.byTime.keys).filter { t ->
+                t <= now || (t in modelled && Instant.ofEpochMilli(t - 3_600_001L).atZone(zone).toLocalDate() <= today)
+            }.distinct().sorted()
             return History(
                 days, obs.station, obs.distanceKm, model, zone, now,
+                allHours = chartTimes.map { t -> HistoryHour(t, obs.byTime[t], modelled[t]) },
                 fineMeasured = synop.mapNotNull { r -> r.temperature?.let { r.time to it } }.toMap(),
                 fineModel = parseModelFine(modelRoot),
             )

@@ -332,7 +332,6 @@
     <string name="history_temp_chart">Temperature</string>
     <string name="history_legend_measured">Measured</string>
     <string name="measured_word">measured</string>
-    <string name="history_legend_model">Forecast (%1$s)</string>
     <string name="history_error_mean">Mean deviation of the forecast: %1$s</string>
     <string name="history_precip_chart">Precipitation per Hour</string>
     <string name="history_wind_chart">Wind</string>

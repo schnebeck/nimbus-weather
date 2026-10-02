@@ -158,7 +158,8 @@ class HistorySource(
                 val time = (t[i] ?: return@mapNotNull null) * 1000
                 time to HistoryHour.Modelled(
                     temperature = temp.at(i), precipitation = pr.at(i), windSpeed = ws.at(i), windGust = wg.at(i),
-                    sunshineMinutes = sun.at(i)?.div(60.0), condition = WeatherCodes.fromWmo(wc.at(i)?.toInt(), pr.at(i)),
+                    sunshineMinutes = sun.at(i)?.div(60.0),
+                    condition = WeatherCodes.withSunshine(WeatherCodes.fromWmo(wc.at(i)?.toInt(), pr.at(i)), sun.at(i)?.div(60.0)),
                     isDay = (day.at(i) ?: 1.0) > 0.5, chance = pp.at(i), windDirection = wd.at(i),
                 )
             }.toMap()
@@ -199,7 +200,7 @@ class HistorySource(
             return HistoryHour.Measured(
                 temperature = at.temperature, precipitation = precip, windSpeed = at.windSpeed, windGust = at.windGust,
                 windDirection = at.windDirection, sunshineMinutes = at.sunshine60, cloudCover = at.cloudCover,
-                condition = condition(at.condition, at.icon, precip), pressure = at.pressure,
+                condition = condition(at.condition, at.icon, precip)?.let { WeatherCodes.withSunshine(it, at.sunshine60) }, pressure = at.pressure,
             )
         }
 
@@ -218,7 +219,9 @@ class HistorySource(
                 time to HistoryHour.Measured(
                     temperature = w.d("temperature"), precipitation = w.d("precipitation"), windSpeed = w.d("wind_speed"),
                     windGust = w.d("wind_gust_speed"), windDirection = w.d("wind_direction"), sunshineMinutes = w.d("sunshine"),
-                    cloudCover = w.d("cloud_cover"), condition = condition(w.s("condition"), w.s("icon"), w.d("precipitation")),
+                    cloudCover = w.d("cloud_cover"),
+                    // Bright Sky's icon follows the cloud cover only: the measured sunshine corrects it
+                    condition = condition(w.s("condition"), w.s("icon"), w.d("precipitation"))?.let { WeatherCodes.withSunshine(it, w.d("sunshine")) },
                     pressure = w.d("pressure_msl"),
                 )
             }?.toMap().orEmpty()

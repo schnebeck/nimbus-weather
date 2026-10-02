@@ -56,6 +56,29 @@ object WeatherCodes {
         else -> Condition.CLOUDY
     }
 
+    /** Sunshine (minutes in the hour) from which an hour counts as sunny … */
+    const val SUNNY_MINUTES = 45.0
+    /** … and as partly cloudy. */
+    const val PARTLY_SUNNY_MINUTES = 15.0
+
+    private val bySky = listOf(Condition.CLEAR, Condition.MOSTLY_CLEAR, Condition.PARTLY_CLOUDY, Condition.CLOUDY)
+
+    /**
+     * [c] (from the cloud cover) with the hour's [sunshineMinutes]: the cloud cover counts every
+     * cloud, thin high cirrus too – an hour of full sun under a veil read "cloudy". The sunshine
+     * makes the sky sunnier, never darker; precipitation, fog and thunder stay as they are.
+     */
+    fun withSunshine(c: Condition, sunshineMinutes: Double?): Condition {
+        val sun = sunshineMinutes ?: return c
+        if (c !in bySky) return c
+        val bySun = when {
+            sun >= SUNNY_MINUTES -> Condition.CLEAR
+            sun >= PARTLY_SUNNY_MINUTES -> Condition.PARTLY_CLOUDY
+            else -> return c
+        }
+        return if (bySky.indexOf(bySun) < bySky.indexOf(c)) bySun else c
+    }
+
     /** WMO 96/99: thunderstorm with hail (forecast for Central Europe). */
     fun isHail(code: Int?): Boolean = code == 96 || code == 99
 

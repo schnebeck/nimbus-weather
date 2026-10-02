@@ -1,0 +1,2 @@
+• An hour's weather symbol follows its sunshine: an hour of full sun under thin high clouds no longer reads "Cloudy" (measured and forecast)
+• Look-back: the duplicate old legend line "Measured / Forecast" is gone

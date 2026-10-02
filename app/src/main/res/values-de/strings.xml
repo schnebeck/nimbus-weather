@@ -321,7 +321,6 @@
     <string name="history_temp_chart">Temperaturverlauf</string>
     <string name="history_legend_measured">Messung</string>
     <string name="measured_word">gemessen</string>
-    <string name="history_legend_model">Vorhersage (%1$s)</string>
     <string name="history_error_mean">Mittlere Abweichung der Vorhersage: %1$s</string>
     <string name="history_precip_chart">Niederschlag pro Stunde</string>
     <string name="history_wind_chart">Wind</string>

@@ -199,8 +199,6 @@ fun Meteogram(
     forecastCurve: List<CurvePoint>? = null,
     /** Shown between the hour's values and the legend (e.g. the look-back's mean deviation). */
     summary: (@Composable () -> Unit)? = null,
-    /** Below the legend, before the press hint – the hint always ends the card. */
-    legendExtra: (@Composable () -> Unit)? = null,
     /**
      * Precipitation in a chart of its own under the temperature (setting): amount as bars, the
      * chance as a line, % on the left and mm on the right; the temperature chart then has no bars.
@@ -535,7 +533,6 @@ fun Meteogram(
                 tempColors = Insights.temperatureColor(pts.minOf { it.temperature }) to Insights.temperatureColor(pts.maxOf { it.temperature }),
                 tempForecast = compare && dashCurve.isNotEmpty(),
             )
-            legendExtra?.invoke()
             // Always laid out (only faded), so the card does not change height with the cursor
             Text(
                 stringResource(R.string.meteogram_hint), fontSize = 11.sp, lineHeight = 15.sp, color = NimbusColors.Tertiary,

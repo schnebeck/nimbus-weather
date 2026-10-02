@@ -23,7 +23,6 @@ import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import dev.nimbus.weather.data.repo.WeatherRepository
 import android.text.format.DateFormat
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,16 +54,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -93,10 +87,6 @@ import dev.nimbus.weather.util.Texts
 import dev.nimbus.weather.util.TimeFormat
 import dev.nimbus.weather.util.Units
 
-/** Legend swatch of a temperature curve: the colours of the temperature scale, cool to warm. */
-private val TempSwatch = Brush.horizontalGradient(listOf(Insights.temperatureColor(5.0), Insights.temperatureColor(15.0), Insights.temperatureColor(25.0)))
-private val ModelColor = Color(0xD9FFFFFF)
-private val PrecipColor = Color(0xFF8FD3FF)
 
 fun modelName(m: ForecastModel) = when (m) {
     ForecastModel.DWD_ICON -> "DWD ICON"
@@ -282,35 +272,6 @@ private fun SummaryRow(label: String, value: String, secondary: String?) {
     }
 }
 
-@Composable
-private fun Legend(model: Boolean, settings: Settings, measuredAsBars: Boolean = false) {
-    if (!model) {
-        // No station: the solid line / bars are forecast values.
-        Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Canvas(Modifier.size(16.dp, 8.dp)) { drawLine(TempSwatch, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.dp.toPx()) }
-            Spacer(Modifier.width(4.dp))
-            Text(stringResource(R.string.history_legend_model, modelName(settings.model)), fontSize = 11.sp, color = NimbusColors.Secondary)
-        }
-        return
-    }
-    Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-        Canvas(Modifier.size(16.dp, 8.dp)) {
-            if (measuredAsBars) drawRoundRect(PrecipColor, Offset(size.width * 0.25f, 0f), Size(size.width * 0.5f, size.height), CornerRadius(1.dp.toPx()))
-            else drawLine(TempSwatch, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.dp.toPx())
-        }
-        Spacer(Modifier.width(4.dp))
-        Text(stringResource(R.string.history_legend_measured), fontSize = 11.sp, color = NimbusColors.Secondary)
-        if (model) {
-            Spacer(Modifier.width(14.dp))
-            Canvas(Modifier.size(16.dp, 8.dp)) {
-                drawLine(ModelColor, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 4f)))
-            }
-            Spacer(Modifier.width(4.dp))
-            Text(stringResource(R.string.history_legend_model, modelName(settings.model)), fontSize = 11.sp, color = NimbusColors.Secondary)
-        }
-    }
-}
-
 /** The day as meteogram: measurement (temperature colours) against forecast (white, dashed), plus precipitation and wind. */
 @Composable
 private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, tf: TimeFormat, history: dev.nimbus.weather.data.remote.History, place: Place) {
@@ -356,7 +317,6 @@ private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, 
             )
         }
     }
-    val hasMeasured = day.hours.any { it.measured?.temperature != null }
     // The curves in the finest resolution there is: station reports every 10 minutes (SYNOP, about
     // the last 1½ days), the model every 15 minutes; hourly values where there are no finer ones
     val curves = remember(day, history) {
@@ -392,7 +352,6 @@ private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, 
                     )
                 }
             },
-            legendExtra = { Legend(model = hasMeasured, settings = settings) },
         )
     }
 }

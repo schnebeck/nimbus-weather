@@ -64,12 +64,18 @@ data class RadarTimeline(
 
 /**
  * How far the radar loop looks back. DWD keeps three days of radar, RainViewer (Europe) only two
- * hours, so the longer ranges show Germany only. Every range has ~25 frames incl. the 2 h nowcast.
+ * hours, so the longer ranges show Germany only. Every range has all 5-minute steps of the DWD
+ * (the slider steps through them), [playMinutes] is how much weather playback shows per beat –
+ * the longer ranges play faster, so every loop takes about the same time.
  */
-enum class HistoryRange(val hours: Int, val stepMinutes: Int) {
+enum class HistoryRange(val hours: Int, val playMinutes: Int) {
     H2(2, 10), H6(6, 20), H24(24, 60);
 
-    val stepMs: Long get() = stepMinutes * 60_000L
+    companion object {
+        /** Every DWD analysis and nowcast step. */
+        const val STEP_MINUTES = 5
+        const val STEP_MS = STEP_MINUTES * 60_000L
+    }
 }
 
 /** Tile URL templates and frame discovery for DWD and RainViewer radar. */
@@ -142,10 +148,10 @@ object RadarSources {
             val host = rv?.first ?: "https://tilecache.rainviewer.com"
             val rvFrames = rv?.second.orEmpty()
             rvFrames.forEach { (t, p) -> rainViewerTimes[p] = t }
-            val step = range.stepMs
+            val step = HistoryRange.STEP_MS
             val anchor = latest / step * step
-            val past = range.hours * 60 / range.stepMinutes
-            val future = 120 / range.stepMinutes
+            val past = range.hours * 60 / HistoryRange.STEP_MINUTES
+            val future = 120 / HistoryRange.STEP_MINUTES
             val frames = (-past..future).map { k ->
                 val t = anchor + k * step
                 val match = rvFrames.minByOrNull { kotlin.math.abs(it.first - t) }?.takeIf { kotlin.math.abs(it.first - t) <= 5 * 60_000L }

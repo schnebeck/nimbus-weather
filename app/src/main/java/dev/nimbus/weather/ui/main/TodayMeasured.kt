@@ -39,15 +39,15 @@ data class TodayMeasured(
      */
     fun apply(p: MeteoPoint, now: Long): MeteoPoint {
         if (p.time > now) return p
-        val m = hours[p.time] ?: return p
+        // An hour over without a precipitation reading shows none (its forecast is not what fell)
+        val m = hours[p.time] ?: return if (precipitation.isNotEmpty()) p.copy(precipitation = null) else p
         val t = m.temperature
         return p.copy(
             temperature = t ?: p.temperature,
             apparentTemperature = if (t != null) p.apparentTemperature?.plus(t - p.temperature) else p.apparentTemperature,
             condition = m.condition ?: p.condition,
-            precipitation = m.precipitation ?: p.precipitation,
-            // a chance for an hour already measured says nothing
-            precipitationChance = if (m.precipitation != null) null else p.precipitationChance,
+            precipitation = m.precipitation ?: if (precipitation.isNotEmpty()) null else p.precipitation,
+            // the chance stays as it was forecast
             windSpeed = m.windSpeed ?: p.windSpeed,
             windDirection = m.windDirection ?: p.windDirection,
             windGust = m.windGust ?: p.windGust,

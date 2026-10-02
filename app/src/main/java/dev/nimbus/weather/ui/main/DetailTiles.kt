@@ -434,33 +434,34 @@ fun PrecipChart(
                 val bh = bottom - yA(v)
                 val m = measuredAmounts[i]
                 val left = centre(i) - bw * 0.36f
-                if (m != null) {
-                    // Hour over, with a station reading: the measured amount instead of the forecast –
-                    // in the look-back with the forecast laid over it in translucent light blue and a
-                    // thin outline (a light overhang: less fell than forecast; dark above it: more)
-                    val w = bw * 0.72f
-                    val mh = bottom - yA(m)
-                    if (mh > 0.5f) drawRoundRect(MeasuredBar, Offset(left, bottom - mh), Size(w, mh), CornerRadius(2.dp.toPx()))
-                    if (compare && bh > 0.5f) {
-                        drawRoundRect(ForecastOverlay, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()))
-                        drawRoundRect(
-                            AmountBar, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()),
-                            style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()),
-                        )
+                val w = bw * 0.72f
+                val over = hours[i].time <= now
+                when {
+                    compare -> {
+                        // Look-back: the forecast pale behind, the measurement in front – a pale
+                        // overhang means less fell than forecast
+                        if (bh > 0.5f) drawRoundRect(PaleForecast, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()))
+                        val mh = m?.let { bottom - yA(it) } ?: 0f
+                        if (mh > 0.5f) drawRoundRect(MeasuredBar, Offset(left, bottom - mh), Size(w, mh), CornerRadius(2.dp.toPx()))
                     }
-                } else {
-                    // hours already over without a reading: paler (model values, not measurements)
-                    val c = if (hours[i].time <= now && !compare) AmountBar.copy(alpha = 0.4f) else AmountBar
-                    if (bh > 0.5f) drawRoundRect(c, Offset(left, bottom - bh), Size(bw * 0.72f, bh), CornerRadius(2.dp.toPx()))
+                    // Today: an hour over shows what was measured, the forecast for it is gone
+                    m != null -> {
+                        val mh = bottom - yA(m)
+                        if (mh > 0.5f) drawRoundRect(MeasuredBar, Offset(left, bottom - mh), Size(w, mh), CornerRadius(2.dp.toPx()))
+                    }
+                    // an hour over without a reading: nothing while the station measures, else the forecast pale
+                    over && hasMeasured -> Unit
+                    else -> {
+                        val c = if (over) AmountBar.copy(alpha = 0.4f) else AmountBar
+                        if (bh > 0.5f) drawRoundRect(c, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()))
+                    }
                 }
             }
-            // Chance: a line over the hours without a measurement (a chance makes no sense for those)
+            // Chance: a line over the whole day, as forecast
             val line = androidx.compose.ui.graphics.Path()
-            var lineStarted = false
             hours.forEachIndexed { i, h ->
-                if (measuredAmounts[i] != null && !compare) return@forEachIndexed
                 val y = yP(h.chance ?: 0.0)
-                if (!lineStarted) { line.moveTo(centre(i), y); lineStarted = true } else line.lineTo(centre(i), y)
+                if (i == 0) line.moveTo(centre(i), y) else line.lineTo(centre(i), y)
             }
             drawPath(line, ChanceLine, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
             // Current time
@@ -473,11 +474,9 @@ fun PrecipChart(
                 val i = selected.coerceIn(0, hours.lastIndex)
                 val xc = centre(i)
                 drawLine(Color.White.copy(alpha = 0.85f * cursorAlpha), Offset(xc, top - 2.dp.toPx()), Offset(xc, bottom), 1.5.dp.toPx())
-                if (measuredAmounts[i] == null || compare) {
-                    val yc = yP(hours[i].chance ?: 0.0)
-                    drawCircle(Color(0xFF1A2A40).copy(alpha = cursorAlpha), 5.dp.toPx(), Offset(xc, yc))
-                    drawCircle(ChanceLine.copy(alpha = cursorAlpha), 3.dp.toPx(), Offset(xc, yc))
-                }
+                val yc = yP(hours[i].chance ?: 0.0)
+                drawCircle(Color(0xFF1A2A40).copy(alpha = cursorAlpha), 5.dp.toPx(), Offset(xc, yc))
+                drawCircle(ChanceLine.copy(alpha = cursorAlpha), 3.dp.toPx(), Offset(xc, yc))
             }
         }
         // Legend, or the values of the hour under the cursor – same place, so the card keeps its height
@@ -505,7 +504,7 @@ fun PrecipChart(
                 ) else listOf(
                     time,
                     (if (m != null) stringResource(R.string.history_legend_measured) else stringResource(R.string.forecast)) to amount(m ?: h.forecast ?: 0.0),
-                    stringResource(R.string.readout_chance) to if (m != null) NO_VALUE else chance,
+                    stringResource(R.string.readout_chance) to chance,
                 ),
                 Modifier.alpha(cursorAlpha),
             )
@@ -516,8 +515,8 @@ fun PrecipChart(
 /** One hour of a precipitation chart: forecast amount and chance, the measured amount (null: none). */
 data class PrecipHour(val time: Long, val forecast: Double?, val chance: Double?, val measured: Double?)
 
-/** Forecast laid over a measured bar (look-back): translucent light blue. */
-private val ForecastOverlay = Color(0x668CC8FF)
+/** The forecast behind a measured bar (look-back): pale light blue. */
+private val PaleForecast = Color(0x598CC8FF)
 /** Forecast amount: light blue. */
 private val AmountBar = Color(0xE08CC8FF)
 /** Measured amount (DWD station): dark blue. */

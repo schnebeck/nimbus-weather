@@ -316,6 +316,8 @@ private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, 
     val start = day.date.atStartOfDay(tf.zone).toInstant().toEpochMilli()
     val asOf = remember(day) { System.currentTimeMillis() }
     val points = remember(day) {
+        // With precipitation readings the bars show what fell; the forecast stays pale behind them
+        val measuredRain = day.hours.any { it.measured?.precipitation != null }
         day.hours.mapNotNull { h ->
             val m = h.measured
             val f = h.model
@@ -324,7 +326,8 @@ private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, 
                 val ft = f?.temperature ?: return@mapNotNull null
                 return@mapNotNull MeteoPoint(
                     time = h.time, temperature = ft, condition = f.condition, isDay = f.isDay,
-                    precipitation = f.precipitation, windSpeed = f.windSpeed, windDirection = f.windDirection, windGust = f.windGust,
+                    precipitation = if (measuredRain) null else f.precipitation,
+                    forecastPrecipitation = if (measuredRain) f.precipitation else null, windSpeed = f.windSpeed, windDirection = f.windDirection, windGust = f.windGust,
                     forecastTemperature = ft, sunshine = f.sunshineMinutes, forecastOnly = true,
                     compare = HourCompare(
                         null, ft, null, f.precipitation, f.chance, null, null, f.windSpeed, null, f.windGust, null, f.sunshineMinutes,
@@ -337,12 +340,12 @@ private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, 
                 temperature = temp,
                 condition = m?.condition ?: f?.condition ?: Condition.CLOUDY,
                 isDay = f?.isDay ?: true,
-                precipitation = m?.precipitation ?: f?.precipitation,
+                precipitation = if (measuredRain) m?.precipitation else f?.precipitation,
                 windSpeed = m?.windSpeed ?: f?.windSpeed,
                 windDirection = m?.windDirection ?: f?.windDirection,
                 windGust = m?.windGust ?: f?.windGust,
                 forecastTemperature = if (m?.temperature != null) f?.temperature else null,
-                forecastPrecipitation = if (m?.precipitation != null) f?.precipitation else null,
+                forecastPrecipitation = if (measuredRain) f?.precipitation else null,
                 sunshine = m?.sunshineMinutes ?: f?.sunshineMinutes,
                 // the readout table shows both apart, an empty cell where one is missing
                 compare = HourCompare(

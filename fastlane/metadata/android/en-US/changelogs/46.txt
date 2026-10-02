@@ -1,0 +1,3 @@
+• Radar: all ranges in 5-minute steps, step through them with ‹ ›
+• Precipitation today: chance over the whole day, hours already over with measured bars only
+• Look-back: the forecast as pale bars behind the measured ones

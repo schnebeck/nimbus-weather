@@ -67,13 +67,13 @@ class TodayMeasuredTest {
         assertEquals(15.0, over.temperature, 1e-9)
         assertEquals(14.0, over.apparentTemperature!!, 1e-9)       // shifted with the temperature
         assertEquals(1.2, over.precipitation!!, 1e-9)
-        assertNull(over.precipitationChance)
+        assertEquals(20.0, over.precipitationChance!!, 1e-9)            // the forecast chance stays
         assertEquals(Condition.RAIN, over.condition)
         assertEquals(0.0, over.sunshine!!, 1e-9)
         assertEquals(true, over.measured)
-        // the hour still running and hours without a reading keep the forecast
+        // the hour still running and the hours to come keep the forecast
         assertEquals(forecast, m.apply(forecast, now = t - 1))
-        assertEquals(forecast.copy(time = t + 3_600_000L), m.apply(forecast.copy(time = t + 3_600_000L), now = t + 7_200_000L))
+        assertEquals(forecast.copy(time = t + 3_600_000L), m.apply(forecast.copy(time = t + 3_600_000L), now = t + 600_000L))
     }
 
     @Test fun nightLastsUntilTheEndOfTheLastHour() {
@@ -82,5 +82,14 @@ class TodayMeasuredTest {
         val nights = dev.nimbus.weather.ui.main.nightsFromFlags(pts)
         assertEquals(t0 + 24 * 3_600_000L - 1, nights.maxOf { it.last })
         assertEquals(t0 + 21 * 3_600_000L, nights.minOf { it.first })
+    }
+
+    @Test fun anHourOverWithoutAReadingShowsNoForecastAmount() {
+        val m = TodayMeasured.of(history(HistoryDay(today, listOf(hour(13, 1.2, 1021.0)))), today)!!
+        val t = t0 + 12 * 3_600_000L                 // no reading for 12:00
+        val forecast = MeteoPoint(t, 18.0, Condition.CLOUDY, true, 0.8, precipitationChance = 40.0)
+        val shown = m.apply(forecast, now = t + 3_600_000L)
+        assertNull(shown.precipitation)
+        assertEquals(40.0, shown.precipitationChance!!, 1e-9)
     }
 }

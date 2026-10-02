@@ -202,7 +202,10 @@ fun Meteogram(
     // Even range, so the middle grid line is a whole degree as well.
     val tHi = ceil(allT.max() + 1).toInt().let { if (it - tLo < 4) tLo + 4 else it }.let { if ((it - tLo) % 2 == 1) it + 1 else it }
     val inch = s.precipitationUnit == PrecipitationUnit.INCH
-    val precipMax = maxOf(if (inch) 0.04 else 1.0, pts.maxOf { Units.precipitationValue(it.precipitation ?: 0.0, s.precipitationUnit) })
+    val precipMax = maxOf(
+        if (inch) 0.04 else 1.0,
+        pts.maxOf { Units.precipitationValue(maxOf(it.precipitation ?: 0.0, it.forecastPrecipitation ?: 0.0), s.precipitationUnit) },
+    )
         .let { if (inch) ceil(it * 20) / 20 else ceil(it) }
     val labelStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Tertiary)
     val unitStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Secondary, fontWeight = FontWeight.SemiBold)
@@ -329,6 +332,10 @@ fun Meteogram(
                         }
                     }
                     pts.filter { it.time > start }.forEach { h ->
+                        // Look-back: the forecast amount pale behind the measured one
+                        h.forecastPrecipitation?.let { Units.precipitationValue(it, s.precipitationUnit) }?.takeIf { it > 0.0 }?.let { fp ->
+                            drawRoundRect(PrecipBar.copy(alpha = PrecipBar.alpha * 0.35f), Offset(barX(h.time), yP(fp)), Size(hourW * 0.72f, bottom - yP(fp)), CornerRadius(2.dp.toPx()))
+                        }
                         val p = Units.precipitationValue(h.precipitation ?: 0.0, s.precipitationUnit)
                         if (p > 0.0) {
                             drawRoundRect(if (h.forecastOnly) PrecipBar.copy(alpha = PrecipBar.alpha * 0.45f) else PrecipBar, Offset(barX(h.time), yP(p)), Size(hourW * 0.72f, bottom - yP(p)), CornerRadius(2.dp.toPx()))

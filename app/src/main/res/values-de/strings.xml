@@ -561,4 +561,6 @@
     <string name="readout_chance">Wahrsch.</string>
     <string name="readout_time">Zeit</string>
     <string name="history_precip_title">Niederschlag</string>
+    <string name="radar_step_back">5 Minuten zurück</string>
+    <string name="radar_step_forward">5 Minuten vor</string>
 </resources>

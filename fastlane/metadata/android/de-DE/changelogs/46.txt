@@ -1,0 +1,3 @@
+• Radar: alle Zeitbereiche in 5-Minuten-Schritten, mit ‹ › Schritt für Schritt durchblättern
+• Niederschlag heute: Wahrscheinlichkeit über den ganzen Tag, vergangene Stunden nur mit gemessenen Balken
+• Rückblick: Prognose als blasse Balken hinter den gemessenen

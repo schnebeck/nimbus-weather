@@ -42,6 +42,8 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.MyLocation
 import androidx.compose.material.icons.rounded.Pause
@@ -361,7 +363,7 @@ fun RadarScreen(
             val tl = timeline ?: continue
             val latest = RadarSources.checkLatest(container.http) ?: continue
             val shown = tl.frames[tl.nowIndex].time
-            if (latest / range.stepMs > shown / range.stepMs) {
+            if (latest / HistoryRange.STEP_MS > shown / HistoryRange.STEP_MS) {
                 if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "new analysis ${RadarSources.isoTime(latest)}, refreshing")
                 val atNow = frame == tl.nowIndex
                 val fresh = runCatching { RadarSources.timeline(container.http, range, force = true) }.getOrNull() ?: continue
@@ -413,7 +415,8 @@ fun RadarScreen(
         val tl = timeline ?: return@LaunchedEffect
         if (!playing) { buffering = false; player.position = frame.toFloat(); return@LaunchedEffect }
         val archived = tl.day != null
-        val stepMs = if (archived) ARCHIVE_STEP_MS else FRAME_MS
+        // time per 5-minute step: the live ranges show [HistoryRange.playMinutes] per beat
+        val stepMs = if (archived) ARCHIVE_STEP_MS else FRAME_MS * HistoryRange.STEP_MINUTES / tl.range.playMinutes
         var p = frame.toFloat()
         var last = withFrameNanos { it }
         var restAt = 0L
@@ -591,6 +594,13 @@ fun RadarScreen(
                                     fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD27A),
                                 )
                             }
+                            Spacer(Modifier.weight(1f))
+                            // Step by step: one 5-minute step back or forward (the slider is too
+                            // fine for that with hundreds of steps)
+                            fun stepTo(i: Int) { playing = false; frame = i.coerceIn(0, tl.frames.lastIndex); player.position = frame.toFloat() }
+                            StepButton(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, stringResource(R.string.radar_step_back), frame > 0) { stepTo(frame - 1) }
+                            Spacer(Modifier.width(6.dp))
+                            StepButton(Icons.AutoMirrored.Rounded.KeyboardArrowRight, stringResource(R.string.radar_step_forward), frame < tl.frames.lastIndex) { stepTo(frame + 1) }
                         }
                         TimelineSlider(tl, frame) {
                             playing = false
@@ -625,6 +635,16 @@ fun RadarScreen(
  */
 private fun playable(tl: RadarTimeline, player: RadarPlayer): IntRange =
     player.playableRange().takeIf { tl.nowIndex in it } ?: IntRange.EMPTY
+
+@Composable
+private fun StepButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, enabled: Boolean, onClick: () -> Unit) {
+    IconButton(
+        onClick = onClick, enabled = enabled,
+        modifier = Modifier.clip(CircleShape).background(Color(0x26FFFFFF)).size(32.dp),
+    ) {
+        Icon(icon, label, tint = if (enabled) Color.White else Color(0x55FFFFFF), modifier = Modifier.size(22.dp))
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -662,8 +682,12 @@ private fun TimelineSlider(tl: RadarTimeline, frame: Int, onChange: (Int) -> Uni
                 drawLine(Color(0x66FFD27A), Offset(nowX, y), Offset(size.width, y), h, StrokeCap.Round)
                 drawLine(Color(0xCCFFFFFF), Offset(0f, y), Offset(minOf(pos, nowX), y), h, StrokeCap.Round)
                 if (pos > nowX) drawLine(Color(0xFFFFD27A), Offset(nowX, y), Offset(pos, y), h, StrokeCap.Round)
-                // hour ticks and "now" marker
-                for (i in 0..n step 6) {
+                // ticks at full hours (24 h: every 3 hours) and the "now" marker
+                val tz = java.util.TimeZone.getDefault()
+                val every = if (tl.range.hours >= 24) 3 else 1
+                tl.frames.forEachIndexed { i, f ->
+                    val local = f.time + tz.getOffset(f.time)
+                    if (local % 3_600_000L != 0L || (local / 3_600_000L) % every != 0L) return@forEachIndexed
                     val x = size.width * i / n
                     drawLine(Color(0x80FFFFFF), Offset(x, y + 6.dp.toPx()), Offset(x, y + 9.dp.toPx()), 1.dp.toPx())
                 }

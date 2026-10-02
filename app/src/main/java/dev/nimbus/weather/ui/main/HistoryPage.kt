@@ -324,7 +324,7 @@ private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, 
                 val ft = f?.temperature ?: return@mapNotNull null
                 return@mapNotNull MeteoPoint(
                     time = h.time, temperature = ft, condition = f.condition, isDay = f.isDay,
-                    precipitation = f.precipitation, windSpeed = f.windSpeed, windGust = f.windGust,
+                    precipitation = f.precipitation, windSpeed = f.windSpeed, windDirection = f.windDirection, windGust = f.windGust,
                     forecastTemperature = ft, sunshine = f.sunshineMinutes, forecastOnly = true,
                     compare = HourCompare(
                         null, ft, null, f.precipitation, f.chance, null, null, f.windSpeed, null, f.windGust, null, f.sunshineMinutes,
@@ -339,7 +339,7 @@ private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, 
                 isDay = f?.isDay ?: true,
                 precipitation = m?.precipitation ?: f?.precipitation,
                 windSpeed = m?.windSpeed ?: f?.windSpeed,
-                windDirection = m?.windDirection,
+                windDirection = m?.windDirection ?: f?.windDirection,
                 windGust = m?.windGust ?: f?.windGust,
                 forecastTemperature = if (m?.temperature != null) f?.temperature else null,
                 forecastPrecipitation = if (m?.precipitation != null) f?.precipitation else null,

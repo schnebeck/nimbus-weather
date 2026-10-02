@@ -1,0 +1,2 @@
+• Meteogram: every bar stands on the hour it covers – no half bar at midnight any more
+• Look-back: night until midnight, wind arrows for the hours to come, the first reading after midnight as a dot

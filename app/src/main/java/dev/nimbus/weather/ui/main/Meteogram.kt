@@ -158,7 +158,10 @@ fun nightsFromDaily(daily: List<DailyPoint>, start: Long, end: Long): List<LongR
 
 /** Night intervals from the hourly day/night flag (when no sunrise/sunset is at hand). */
 fun nightsFromFlags(points: List<MeteoPoint>): List<LongRange> =
-    points.zipWithNext().filter { (a, b) -> !a.isDay && !b.isDay }.map { (a, b) -> a.time until b.time }
+    points.zipWithNext().filter { (a, b) -> !a.isDay && !b.isDay }.map { (a, b) -> a.time until b.time } +
+        // a night at the last point lasts its hour (the look-back ends at 23:00, not at 24:00 –
+        // the last hour was drawn as day)
+        listOfNotNull(points.lastOrNull()?.takeIf { !it.isDay }?.let { it.time until it.time + 3_600_000L })
 
 /**
  * Compact meteogram of [start]..[end] (one day 00–24 h): time labels and weather symbols every
@@ -306,27 +309,29 @@ fun Meteogram(
                     drawText(lt, topLeft = Offset((xm - lt.size.width / 2f).coerceIn(0f, size.width - lt.size.width), 0f))
                     mark += 3 * 3_600_000L
                 }
-                // Hourly bars are centred on their hour (like the cursor); the values are the sums of
-                // the hour before the time stamp, as delivered by the models and stations.
+                // Hourly bars stand on the hour they cover: the values are the sums of the hour before
+                // the time stamp, as delivered by the models and stations. 00:00 is the previous
+                // day's last hour – no bar (it showed as half a bar at the start).
                 val hourW = (r - l) / (span / 3_600_000f)
+                fun barX(t: Long) = x(t - 1_800_000L) - hourW * 0.36f
                 clipRect(left = l, right = r) {
                     // Sunshine row right below the plot: minutes per hour, full row height = 60 min
                     if (sunTotalMin != null) {
                         val rowTop = bottom + sunGap.toPx() + 2.dp.toPx()
                         val rowBottom = bottom + sunH.toPx() - 2.dp.toPx()
                         drawRect(SunTrack, Offset(l, rowTop), Size(r - l, rowBottom - rowTop))
-                        pts.forEach { h ->
+                        pts.filter { it.time > start }.forEach { h ->
                             val m = (h.sunshine ?: 0.0).coerceIn(0.0, 60.0)
                             if (m >= 1.0) {
                                 val hgt = (m / 60.0 * (rowBottom - rowTop)).toFloat()
-                                drawRoundRect(SunFill, Offset(x(h.time) - hourW * 0.36f, rowBottom - hgt), Size(hourW * 0.72f, hgt), CornerRadius(1.5.dp.toPx()))
+                                drawRoundRect(SunFill, Offset(barX(h.time), rowBottom - hgt), Size(hourW * 0.72f, hgt), CornerRadius(1.5.dp.toPx()))
                             }
                         }
                     }
-                    pts.forEach { h ->
+                    pts.filter { it.time > start }.forEach { h ->
                         val p = Units.precipitationValue(h.precipitation ?: 0.0, s.precipitationUnit)
                         if (p > 0.0) {
-                            drawRoundRect(if (h.forecastOnly) PrecipBar.copy(alpha = PrecipBar.alpha * 0.45f) else PrecipBar, Offset(x(h.time) - hourW * 0.36f, yP(p)), Size(hourW * 0.72f, bottom - yP(p)), CornerRadius(2.dp.toPx()))
+                            drawRoundRect(if (h.forecastOnly) PrecipBar.copy(alpha = PrecipBar.alpha * 0.45f) else PrecipBar, Offset(barX(h.time), yP(p)), Size(hourW * 0.72f, bottom - yP(p)), CornerRadius(2.dp.toPx()))
                         }
                     }
                 }
@@ -342,17 +347,25 @@ fun Meteogram(
                 }
                 // Temperature curve in the temperature colours (in comparison mode the measured one)
                 val path = Path()
-                var on = false
+                val single = mutableListOf<Offset>()
+                var run = 0
                 pts.forEachIndexed { i, h ->
                     // hours still to come (look-back of today) have no measured curve
-                    if (h.forecastOnly) { on = false; return@forEachIndexed }
-                    if (!on) { path.moveTo(x(h.time), yT(temps[i])); on = true } else path.lineTo(x(h.time), yT(temps[i]))
+                    if (h.forecastOnly) {
+                        if (run == 1) single += Offset(x(pts[i - 1].time), yT(temps[i - 1]))
+                        run = 0; return@forEachIndexed
+                    }
+                    if (run == 0) path.moveTo(x(h.time), yT(temps[i])) else path.lineTo(x(h.time), yT(temps[i]))
+                    run++
                 }
+                if (run == 1) single += Offset(x(pts.last().time), yT(temps.last()))
                 val brush = Brush.verticalGradient(
                     listOf(Insights.temperatureColor(pts.maxOf { it.temperature }), Insights.temperatureColor(pts.minOf { it.temperature })),
                     startY = top, endY = bottom,
                 )
                 drawPath(path, brush, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round))
+                // A single reading (just after midnight: only 00:00 so far) makes no line – a dot
+                single.forEach { drawCircle(brush, 3.5.dp.toPx(), it) }
                 // Sunshine row label: sun glyph on the left (the day's total is in the legend)
                 if (sunTotalMin != null) {
                     val cy = bottom + sunGap.toPx() + (sunH - sunGap).toPx() / 2

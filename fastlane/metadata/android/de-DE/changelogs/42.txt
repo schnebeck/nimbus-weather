@@ -1,0 +1,2 @@
+• Meteogramm: jeder Balken steht auf der Stunde, die er misst – kein halber Balken mehr um 0 Uhr
+• Rückblick: Nacht bis 24 Uhr, Windpfeile auch für die kommenden Stunden, der erste Messwert nach Mitternacht als Punkt

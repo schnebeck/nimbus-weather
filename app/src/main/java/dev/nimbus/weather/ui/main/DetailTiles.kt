@@ -481,7 +481,8 @@ fun PrecipChart(
             }
         }
         // Legend, or the values of the hour under the cursor – same place, so the card keeps its height
-        Box(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+        // The plot reaches into the card's padding (callers use bleed); the text keeps it
+        Box(Modifier.fillMaxWidth().padding(top = 4.dp, start = CARD_BLEED, end = CARD_BLEED)) {
             // One line in every language and font size (shrinks instead of wrapping)
             androidx.compose.foundation.text.BasicText(
                 stringResource(if (hasMeasured) R.string.precip_chart_hint_measured else R.string.precip_chart_hint), Modifier.fillMaxWidth().alpha(1f - cursorAlpha),

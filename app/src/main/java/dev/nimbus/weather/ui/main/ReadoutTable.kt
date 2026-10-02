@@ -71,10 +71,15 @@ fun ReadoutPairs(pairs: List<Pair<String, String>>, modifier: Modifier = Modifie
             Row(Modifier.fillMaxWidth()) {
                 row.forEachIndexed { i, (label, value) ->
                     if (i > 0) Spacer(Modifier.width(14.dp))
-                    Text(label, Modifier.weight(1.15f), style = Label, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(value, Modifier.weight(1f), style = Value, textAlign = TextAlign.End, maxLines = 1, softWrap = false)
+                    // Each pair takes half the row: the label as wide as it needs, the value
+                    // right-aligned in the rest – values never move sideways
+                    Row(Modifier.weight(1f)) {
+                        Text(label, style = Label, maxLines = 1, softWrap = false)
+                        Spacer(Modifier.width(6.dp))
+                        Text(value, Modifier.weight(1f), style = Value, textAlign = TextAlign.End, maxLines = 1, softWrap = false)
+                    }
                 }
-                if (row.size == 1) { Spacer(Modifier.width(14.dp)); Spacer(Modifier.weight(2.15f)) }
+                if (row.size == 1) { Spacer(Modifier.width(14.dp)); Spacer(Modifier.weight(1f)) }
             }
         }
     }

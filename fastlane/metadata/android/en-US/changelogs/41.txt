@@ -1,0 +1,1 @@
+• Meteogram and precipitation: values and legend keep their distance to the card edge again

@@ -400,13 +400,17 @@ fun Meteogram(
                 WeatherIcon(h.condition, h.isDay, size = 22.dp, modifier = Modifier.offset(x = xDp(centre) - 11.dp, y = labelsH + 4.dp))
             }
         }
-        Readout(pts[selected.coerceIn(0, pts.lastIndex)], highlighted = cursorOn, compare = compare)
-        BarLegend(precipTotal, sunTotalMin)
-        // Always laid out (only faded), so the card does not change height with the cursor
-        Text(
-            stringResource(R.string.meteogram_hint), fontSize = 11.sp, color = NimbusColors.Tertiary,
-            modifier = Modifier.padding(top = 4.dp).alpha(1f - cursorAlpha),
-        )
+        // The plot reaches into the card's padding (callers use bleed); the text keeps it, so it
+        // does not run up to the card's edge
+        Column(Modifier.padding(horizontal = CARD_BLEED)) {
+            Readout(pts[selected.coerceIn(0, pts.lastIndex)], highlighted = cursorOn, compare = compare)
+            BarLegend(precipTotal, sunTotalMin)
+            // Always laid out (only faded), so the card does not change height with the cursor
+            Text(
+                stringResource(R.string.meteogram_hint), fontSize = 11.sp, color = NimbusColors.Tertiary,
+                modifier = Modifier.padding(top = 4.dp).alpha(1f - cursorAlpha),
+            )
+        }
     }
 }
 

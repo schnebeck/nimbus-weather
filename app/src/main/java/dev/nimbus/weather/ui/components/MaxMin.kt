@@ -50,9 +50,11 @@ import dev.nimbus.weather.util.Units
 fun MaxMinStack(
     maxC: Double?, minC: Double?, unit: TemperatureUnit,
     modifier: Modifier = Modifier, fontSize: TextUnit = 18.sp, shadow: Shadow? = null,
+    /** On the open sky (header) the labels are white as well. */
+    labelColor: Color = NimbusColors.Secondary,
 ) {
     val lineH = with(LocalDensity.current) { (fontSize * 1.3f).toDp() }
-    val labelStyle = TextStyle(fontSize = fontSize * 0.62f, color = NimbusColors.Secondary, fontWeight = FontWeight.Medium, shadow = shadow)
+    val labelStyle = TextStyle(fontSize = fontSize * 0.62f, color = labelColor, fontWeight = FontWeight.Medium, shadow = shadow)
     val valueStyle = TextStyle(fontSize = fontSize, color = Color.White, fontWeight = FontWeight.Medium, shadow = shadow)
     val rows = listOf(stringResource(R.string.max_label) to maxC, stringResource(R.string.min_label) to minC)
     Row(modifier) {

@@ -109,8 +109,11 @@ data class SkyScene(
     /** Glass of the cards for this sky: as dark as the brightest thing behind it requires. */
     val cardFill: Color get() = dev.nimbus.weather.ui.theme.Legibility.cardFill(brightestBehind)
 
-    /** Opacity of the shade behind the header for this sky. */
-    val headerShade: Float get() = dev.nimbus.weather.ui.theme.Legibility.headerShade(brightestBehindHeader)
+    /** Opacity of the dark halo behind the header's letters for this sky. */
+    val headerHalo: Float get() = dev.nimbus.weather.ui.theme.Legibility.headerHalo(brightestBehindHeader)
+
+    /** The glass pill behind the header's small station line. */
+    val headerPill: Color get() = dev.nimbus.weather.ui.theme.Legibility.headerPill(brightestBehindHeader)
 
     val skyColors: List<Color>
         get() {

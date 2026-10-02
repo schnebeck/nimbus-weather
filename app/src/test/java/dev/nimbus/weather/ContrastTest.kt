@@ -48,8 +48,26 @@ class ContrastTest {
     }
 
     @Test fun headerTextReadableOnEverySky() {
-        val f = failures({ Contrast.over(Color.Black.copy(alpha = it.headerShade), it.brightestBehindHeader) }, Legibility.header)
+        // large white text on the part of its halo that reaches the sky next to the letters
+        val f = failures(
+            { Contrast.over(Color.Black.copy(alpha = it.headerHalo * Legibility.HALO_EFFECT), it.brightestBehindHeader) },
+            Legibility.headerLarge,
+        )
         assertTrue(f.joinToString("\n"), f.isEmpty())
+    }
+
+    @Test fun stationLineReadableOnItsPill() {
+        val f = failures({ Contrast.over(it.headerPill, it.brightestBehindHeader) }, Legibility.headerSmall)
+        assertTrue(f.joinToString("\n"), f.isEmpty())
+    }
+
+    /** The header is on the open sky: no half-transparent text colours there, they lose contrast first. */
+    @Test fun headerUsesWhiteText() {
+        val src = java.io.File("src/main/java/dev/nimbus/weather/ui/main/WeatherPage.kt").readText()
+        val from = src.indexOf("private fun Header(")
+        val header = src.substring(from, src.indexOf("\n@Composable", from))
+        for (c in listOf("NimbusColors.Secondary", "NimbusColors.Tertiary", "Color(0xE6FFFFFF)")) assertTrue("header uses $c", c !in header)
+        assertTrue("header without halo", "header.shadow" in header)
     }
 
     @Test fun whiteCloudsAreTheWorstCaseOfAFairDay() {
@@ -67,7 +85,7 @@ class ContrastTest {
         // at night nothing needs a darker card or a header shade
         val night = SkyScene(Condition.CLEAR, 0f, 0f, 0f)
         assertEquals(Legibility.CARD_MIN_ALPHA, night.cardFill.alpha, 0.011f)
-        assertEquals(0f, night.headerShade, 0.011f)
+        assertEquals(Legibility.HALO_MIN, night.headerHalo, 0.011f)
     }
 
     @Test fun contrastFormulaMatchesWcag() {

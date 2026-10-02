@@ -66,8 +66,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.draw.drawBehind
-import dev.nimbus.weather.ui.components.drawHeaderShade
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -159,14 +157,9 @@ fun HistoryPage(
         CompositionLocalProvider(
             LocalSettings provides settings, LocalTimeFormat provides tf,
             dev.nimbus.weather.ui.components.LocalCardFill provides scene.cardFill,
-            dev.nimbus.weather.ui.components.LocalHeaderShade provides scene.headerShade,
+            dev.nimbus.weather.ui.components.LocalHeaderStyle provides dev.nimbus.weather.ui.components.HeaderStyle(scene.headerHalo, scene.headerPill),
         ) {
             val clipTop = with(androidx.compose.ui.platform.LocalDensity.current) { (statusTop + 52.dp).toPx() }
-            // Shade behind the top bar and the day's header text (see WeatherPage)
-            val headerShade = dev.nimbus.weather.ui.components.LocalHeaderShade.current
-            val shadeBottom = with(androidx.compose.ui.platform.LocalDensity.current) { (statusTop + HeaderTop + 96.dp).toPx() }
-            val shadeFade = with(androidx.compose.ui.platform.LocalDensity.current) { 56.dp.toPx() }
-            Box(Modifier.fillMaxSize().drawBehind { drawHeaderShade(headerShade, shadeBottom, shadeFade) })
             // Cards keep their title at the line below the top bar and slide away under it (GlassCard)
             val listTop = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
             CompositionLocalProvider(dev.nimbus.weather.ui.components.LocalPinLine provides { listTop.floatValue + clipTop }) {
@@ -210,24 +203,29 @@ fun HistoryPage(
 @Composable
 private fun HistoryHeader(place: Place, title: String, day: HistoryDay?, summary: DaySummary?, tf: TimeFormat) {
     val s = LocalSettings.current
+    // On the open sky: white with a dark halo, as the weather page's header
+    val halo = androidx.compose.ui.text.TextStyle(shadow = dev.nimbus.weather.ui.components.LocalHeaderStyle.current.shadow)
     Column(Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (place.isCurrentLocation) Icon(Icons.Rounded.LocationOn, null, tint = Color.White, modifier = Modifier.size(20.dp))
-            Text(place.name, fontSize = 26.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(place.name, fontSize = 26.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis, style = halo)
         }
-        Text(title, fontSize = 40.sp, fontWeight = FontWeight.Light, color = Color.White, lineHeight = 46.sp)
+        Text(title, fontSize = 40.sp, fontWeight = FontWeight.Light, color = Color.White, lineHeight = 46.sp, style = halo)
         day?.let {
             val ms = it.date.atStartOfDay(tf.zone).toInstant().toEpochMilli() + 12 * 3600_000L
-            Text(tf.weekdayLong(ms) + ", " + tf.dayMonth(ms).substringAfter('\u00A0'), fontSize = 16.sp, color = NimbusColors.Secondary)
+            Text(tf.weekdayLong(ms) + ", " + tf.dayMonth(ms).substringAfter('\u00A0'), fontSize = 19.sp, color = Color.White, style = halo)
         }
         if (summary != null) {
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 WeatherIcon(summary.condition, true, size = 40.dp)
                 Spacer(Modifier.width(10.dp))
-                dev.nimbus.weather.ui.components.MaxMinStack(summary.tempMax, summary.tempMin, s.temperatureUnit, fontSize = 20.sp)
+                dev.nimbus.weather.ui.components.MaxMinStack(
+                    summary.tempMax, summary.tempMin, s.temperatureUnit, fontSize = 20.sp,
+                    shadow = halo.shadow, labelColor = Color.White,
+                )
             }
-            Text(stringResource(Texts.condition(summary.condition, true)), fontSize = 16.sp, color = NimbusColors.Secondary)
+            Text(stringResource(Texts.condition(summary.condition, true)), fontSize = 19.sp, color = Color.White, style = halo)
         }
     }
 }

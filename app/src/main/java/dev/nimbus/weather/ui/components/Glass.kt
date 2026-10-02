@@ -146,24 +146,14 @@ fun GlassCard(
  */
 val LocalCardFill = androidx.compose.runtime.compositionLocalOf { NimbusColors.CardFill }
 
-/** Opacity of the dark shade behind the header text ([dev.nimbus.weather.ui.background.SkyScene.headerShade]). */
-val LocalHeaderShade = androidx.compose.runtime.compositionLocalOf { 0f }
-
-/**
- * The shade behind a header on the sky: black at [alpha] down to [textBottom] (px), fading out
- * over [fade] below it – as dark as the brightest sky behind requires, invisible on dark skies.
- */
-fun androidx.compose.ui.graphics.drawscope.DrawScope.drawHeaderShade(alpha: Float, textBottom: Float, fade: Float) {
-    if (alpha <= 0f) return
-    val end = textBottom + fade
-    drawRect(
-        androidx.compose.ui.graphics.Brush.verticalGradient(
-            0f to Color.Black.copy(alpha = alpha), (textBottom / end) to Color.Black.copy(alpha = alpha), 1f to Color.Transparent,
-            startY = 0f, endY = end,
-        ),
-        size = androidx.compose.ui.geometry.Size(size.width, end),
-    )
+/** The header on the sky: the dark halo behind its letters and the pill behind its small line. */
+data class HeaderStyle(val halo: Float = dev.nimbus.weather.ui.theme.Legibility.HALO_MIN, val pill: Color = NimbusColors.CardFill) {
+    /** Text shadow without offset: a soft dark halo right behind the letters. */
+    val shadow: androidx.compose.ui.graphics.Shadow
+        get() = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = halo), androidx.compose.ui.geometry.Offset.Zero, 14f)
 }
+
+val LocalHeaderStyle = androidx.compose.runtime.compositionLocalOf { HeaderStyle() }
 
 @Composable
 fun CardHeader(title: String, icon: ImageVector?, modifier: Modifier = Modifier, info: Term? = null) {

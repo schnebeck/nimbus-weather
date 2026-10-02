@@ -66,8 +66,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.draw.drawBehind
-import dev.nimbus.weather.ui.components.drawHeaderShade
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.graphics.Color
@@ -199,7 +197,7 @@ fun WeatherPage(
         CompositionLocalProvider(
             LocalSettings provides settings, LocalTimeFormat provides tf,
             dev.nimbus.weather.ui.components.LocalCardFill provides scene.cardFill,
-            dev.nimbus.weather.ui.components.LocalHeaderShade provides scene.headerShade,
+            dev.nimbus.weather.ui.components.LocalHeaderStyle provides dev.nimbus.weather.ui.components.HeaderStyle(scene.headerHalo, scene.headerPill),
         ) {
             WeatherContent(data, state ?: PlaceState(data), now, onRefresh, onOpenRadar, onRequestModels)
         }
@@ -281,15 +279,6 @@ private fun WeatherContent(
         onRefresh = { pulled = true; onRefresh() },
         modifier = Modifier.fillMaxSize(),
     ) {
-        // Shade behind the header text: as dark as the brightest sky behind it requires (white
-        // clouds, the sun) – computed, see Legibility; nothing on dark skies
-        val headerShade = dev.nimbus.weather.ui.components.LocalHeaderShade.current
-        val fadePx = with(density) { 56.dp.toPx() }
-        androidx.compose.foundation.layout.Box(
-            Modifier.fillMaxSize().drawBehind {
-                drawHeaderShade(headerShade, (expandedPx - scrolled).coerceAtLeast(collapsedPx), fadePx)
-            },
-        )
         // Cards slide *under* the header instead of over it. The cards themselves keep their title
         // at this line and slide away below it (see GlassCard); the clip catches everything else.
         val listTop = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
@@ -335,6 +324,10 @@ private fun Header(data: WeatherData, progress: Float, statusTop: androidx.compo
     val c = data.current
     val today = data.daily.lastOrNull { it.date <= System.currentTimeMillis() } ?: data.daily.firstOrNull()
     val condition = stringResource(Texts.condition(c.condition, c.isDay))
+    // Straight on the sky: pure white, large, with a dark halo as strong as the brightest sky
+    // behind needs (Legibility) – the sky itself stays as it is
+    val header = dev.nimbus.weather.ui.components.LocalHeaderStyle.current
+    val TextShadow = header.shadow
     Column(
         Modifier.fillMaxWidth().padding(top = statusTop + HeaderTop, start = 24.dp, end = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -357,7 +350,8 @@ private fun Header(data: WeatherData, progress: Float, statusTop: androidx.compo
             Text(
                 "${Units.tempFull(c.temperature, s.temperatureUnit)} | $condition",
                 Modifier.graphicsLayer { alpha = ((progress - 0.65f) / 0.35f).coerceIn(0f, 1f) },
-                fontSize = 18.sp, fontWeight = FontWeight.Medium, color = NimbusColors.Secondary,
+                fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White,
+                style = androidx.compose.ui.text.TextStyle(shadow = TextShadow),
             )
             Column(
                 Modifier.graphicsLayer {
@@ -377,24 +371,24 @@ private fun Header(data: WeatherData, progress: Float, statusTop: androidx.compo
                     dev.nimbus.weather.ui.components.BigTemperature(c.temperature, s.temperatureUnit, 96.sp, shadow = TextShadow)
                     if (today != null) {
                         Spacer(Modifier.width(12.dp))
-                        dev.nimbus.weather.ui.components.MaxMinStack(today.tempMax, today.tempMin, s.temperatureUnit, fontSize = 18.sp, shadow = TextShadow)
+                        dev.nimbus.weather.ui.components.MaxMinStack(today.tempMax, today.tempMin, s.temperatureUnit, fontSize = 18.sp, shadow = TextShadow, labelColor = Color.White)
                     }
                 }
-                Text(condition, fontSize = 21.sp, fontWeight = FontWeight.Medium, color = Color(0xE6FFFFFF), style = androidx.compose.ui.text.TextStyle(shadow = TextShadow))
+                Text(condition, fontSize = 21.sp, fontWeight = FontWeight.Medium, color = Color.White, style = androidx.compose.ui.text.TextStyle(shadow = TextShadow))
                 if (c.stationName != null && c.stationDistanceKm != null) {
                     val explain = dev.nimbus.weather.ui.components.LocalExplain.current
+                    // small text: on a pill of its own glass, dark enough for the sky behind
                     Row(
-                        Modifier.padding(top = 2.dp).clip(RoundedCornerShape(8.dp))
+                        Modifier.padding(top = 4.dp).clip(RoundedCornerShape(10.dp)).background(header.pill)
                             .clickable { explain(dev.nimbus.weather.ui.components.Term.STATION) }
-                            .padding(horizontal = 6.dp, vertical = 4.dp),
+                            .padding(horizontal = 8.dp, vertical = 3.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             stringResource(R.string.measured_at_station, c.stationName, Units.oneDecimal(c.stationDistanceKm)),
-                            fontSize = 12.sp, color = NimbusColors.Secondary, textAlign = TextAlign.Center,
-                            style = androidx.compose.ui.text.TextStyle(shadow = TextShadow),
+                            fontSize = 12.sp, color = Color.White, textAlign = TextAlign.Center,
                         )
-                        Icon(androidx.compose.material.icons.Icons.Outlined.Info, null, tint = NimbusColors.Tertiary, modifier = Modifier.padding(start = 4.dp).size(12.dp))
+                        Icon(androidx.compose.material.icons.Icons.Outlined.Info, null, tint = Color.White, modifier = Modifier.padding(start = 4.dp).size(12.dp))
                     }
                 }
             }
@@ -402,7 +396,6 @@ private fun Header(data: WeatherData, progress: Float, statusTop: androidx.compo
     }
 }
 
-private val TextShadow = androidx.compose.ui.graphics.Shadow(Color(0x59000000), androidx.compose.ui.geometry.Offset(0f, 2f), 10f)
 
 @Composable
 private fun OfflineBanner(data: WeatherData) {

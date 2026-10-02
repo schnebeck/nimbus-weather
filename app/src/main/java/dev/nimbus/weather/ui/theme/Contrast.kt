@@ -69,8 +69,21 @@ object Legibility {
     /** Text in the glass cards: values and captions 4.5:1, the small grey labels and axes 3:1. */
     val onCards = listOf(Color.White to 4.5, NimbusColors.Secondary to 4.5, NimbusColors.Tertiary to 3.0)
 
-    /** The header straight on the sky: name, condition, station line 4.5:1; the large temperature is white. */
-    val header = listOf(Color.White to 4.5, Color(0xE6FFFFFF) to 4.5, NimbusColors.Secondary to 4.5)
+    /**
+     * The header straight on the sky – no shade over the sky: its texts are pure white and large
+     * (name, temperature, condition, max/min: large text, 3:1), each with a dark halo behind its
+     * letters; the small station line sits on a pill of its own glass (4.5:1).
+     */
+    val headerLarge = listOf(Color.White to 3.0)
+    val headerSmall = listOf(Color.White to 4.5)
+
+    /**
+     * How much of a text shadow's darkness reaches the background right next to the letters (its
+     * blur spreads it): the halo is made this much stronger than a flat shade would need to be.
+     */
+    const val HALO_EFFECT = 0.5f
+    /** The halo never quite goes away – the familiar soft shadow on dark skies. */
+    const val HALO_MIN = 0.35f
 
     /** The glass of the cards: dark blue; at least this opaque, more where the sky is bright. */
     val CardGlass = Color(0xFF0A1A33)
@@ -80,6 +93,11 @@ object Legibility {
     fun cardFill(behind: Color): Color =
         CardGlass.copy(alpha = Contrast.requiredAlpha(CardGlass, behind, onCards, CARD_MIN_ALPHA))
 
-    /** Shade behind the header (black, this opaque) for a sky whose brightest part is [behind]. */
-    fun headerShade(behind: Color): Float = Contrast.requiredAlpha(Color.Black, behind, header)
+    /** Opacity of the dark halo behind the header's letters for a sky whose brightest part is [behind]. */
+    fun headerHalo(behind: Color): Float =
+        (Contrast.requiredAlpha(Color.Black, behind, headerLarge) / HALO_EFFECT).coerceIn(HALO_MIN, 1f)
+
+    /** The glass pill behind the header's small station line. */
+    fun headerPill(behind: Color): Color =
+        CardGlass.copy(alpha = Contrast.requiredAlpha(CardGlass, behind, headerSmall, CARD_MIN_ALPHA))
 }

@@ -196,6 +196,10 @@ fun Meteogram(
     curve: List<CurvePoint>? = null,
     /** Comparison mode: the forecast curve (dashed); null: from the hourly forecast values. */
     forecastCurve: List<CurvePoint>? = null,
+    /** Shown between the hour's values and the legend (e.g. the look-back's mean deviation). */
+    summary: (@Composable () -> Unit)? = null,
+    /** Below the legend, before the press hint – the hint always ends the card. */
+    legendExtra: (@Composable () -> Unit)? = null,
 ) {
     val s = LocalSettings.current
     val tf = LocalTimeFormat.current
@@ -473,7 +477,9 @@ fun Meteogram(
                 compare = sel.compare?.let { c -> c.copy(tempM = if (c.tempM != null) tm ?: c.tempM else null, tempF = tfc ?: c.tempF) },
             )
             Readout(shown, highlighted = cursorOn, compare = compare)
+            summary?.invoke()
             BarLegend(precipTotal, sunTotalMin, measured = compare, forecastTotal = forecastTotal)
+            legendExtra?.invoke()
             // Always laid out (only faded), so the card does not change height with the cursor
             Text(
                 stringResource(R.string.meteogram_hint), fontSize = 11.sp, lineHeight = 15.sp, color = NimbusColors.Tertiary,

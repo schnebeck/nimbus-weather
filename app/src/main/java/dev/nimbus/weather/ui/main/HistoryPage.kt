@@ -390,17 +390,20 @@ private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, 
             remember(start) { nights(start, HourAxis.dayAxisEnd(start + 24 * 3_600_000L), place.latitude, place.longitude) }, System.currentTimeMillis(),
             Modifier.fillMaxWidth().bleed(CARD_BLEED),
             curve = curves.first, forecastCurve = curves.second,
+            // the result first, then what the lines and bars mean; the press hint ends the card
+            summary = sum.tempError?.let { err ->
+                {
+                    Text(
+                        stringResource(
+                            R.string.history_error_mean,
+                            Units.oneDecimal(err) + (if (settings.temperatureUnit == dev.nimbus.weather.data.model.TemperatureUnit.CELSIUS) "${NBSP}K" else "${NBSP}°F"),
+                        ),
+                        fontSize = 13.sp, color = Color.White, modifier = Modifier.padding(top = 6.dp),
+                    )
+                }
+            },
+            legendExtra = { Legend(model = hasMeasured, settings = settings) },
         )
-        Legend(model = hasMeasured, settings = settings)
-        sum.tempError?.let {
-            Text(
-                stringResource(
-                    R.string.history_error_mean,
-                    Units.oneDecimal(it) + (if (settings.temperatureUnit == dev.nimbus.weather.data.model.TemperatureUnit.CELSIUS) "${NBSP}K" else "${NBSP}°F"),
-                ),
-                fontSize = 13.sp, color = Color.White, modifier = Modifier.padding(top = 6.dp),
-            )
-        }
     }
 }
 

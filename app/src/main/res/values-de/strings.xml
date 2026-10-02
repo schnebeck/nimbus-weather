@@ -550,7 +550,7 @@
     <string name="cards_undo_hidden">„%1$s“ ausgeblendet</string>
     <string name="places_undo_order">Reihenfolge der Orte geändert</string>
     <string name="precip_measured_so_far">bisher gemessen %1$s (%2$s)</string>
-    <string name="precip_chart_hint_measured">Dunkelblau: gemessen · hellblau: Vorhersage · Linie: Wahrscheinlichkeit · lange drücken</string>
+    <string name="precip_chart_hint_measured">Hellblau: gemessen · graublau: Vorhersage · Linie: Wahrscheinlichkeit · lange drücken</string>
     <string name="pressure_chart_hint_measured">Durchgezogen: gemessen · gestrichelt: Vorhersage · lange drücken für Werte</string>
     <string name="settings_radar_colors">Radarfarben</string>
     <string name="settings_radar_colors_desc">Kontrast: Regen grün → gelb → rot → magenta, Schnee türkis → weiß → violett – viele Stufen gut unterscheidbar. Blau: ruhiger, Regen hell- bis dunkelblau, Schnee rosa bis violett.</string>

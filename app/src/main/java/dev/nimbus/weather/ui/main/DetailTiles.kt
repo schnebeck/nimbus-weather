@@ -440,9 +440,9 @@ fun PrecipChart(
                         // measured bar, in front of it when it is the smaller one
                         val mh = m?.let { bottom - yA(it) } ?: 0f
                         val front = PrecipStyle.forecastInFront(amounts[i], m)
-                        if (!front && bh > 0.5f) drawRoundRect(PrecipStyle.LookBackForecast, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()))
-                        if (mh > 0.5f) drawRoundRect(PrecipStyle.LookBackMeasured, Offset(left, bottom - mh), Size(w, mh), CornerRadius(2.dp.toPx()))
-                        if (front && bh > 0.5f) drawRoundRect(PrecipStyle.LookBackForecast, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()))
+                        if (!front && bh > 0.5f) drawRoundRect(PrecipStyle.Forecast, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()))
+                        if (mh > 0.5f) drawRoundRect(PrecipStyle.Measured, Offset(left, bottom - mh), Size(w, mh), CornerRadius(2.dp.toPx()))
+                        if (front && bh > 0.5f) drawRoundRect(PrecipStyle.Forecast, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()))
                     }
                     // Today: an hour over shows what was measured, the forecast for it is gone
                     m != null -> {
@@ -452,7 +452,9 @@ fun PrecipChart(
                     // an hour over without a reading: nothing while the station measures, else the forecast pale
                     over && hasMeasured -> Unit
                     else -> {
-                        val c = if (over) AmountBar.copy(alpha = 0.4f) else AmountBar
+                        // with readings the forecast is muted (as in the look-back), else the plain bar colour
+                        val base = if (hasMeasured) PrecipStyle.Forecast else PrecipStyle.Bar
+                        val c = if (over) base.copy(alpha = 0.4f) else base
                         if (bh > 0.5f) drawRoundRect(c, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()))
                     }
                 }
@@ -514,8 +516,8 @@ fun PrecipChart(
             // Legend in the style of the course of the day: bars with the day's totals, the line
             fun total(v: Double) = Units.precipitationNumber(v, s.precipitationUnit) + NBSP + pUnit
             LegendRow {
-                LegendItem(PrecipStyle.LookBackMeasured, stringResource(R.string.legend_precip_measured, total(hours.sumOf { it.measured ?: 0.0 })))
-                LegendItem(PrecipStyle.LookBackForecast, stringResource(R.string.legend_precip_forecast, total(hours.sumOf { it.forecast ?: 0.0 })))
+                LegendItem(PrecipStyle.Measured, stringResource(R.string.legend_precip_measured, total(hours.sumOf { it.measured ?: 0.0 })))
+                LegendItem(PrecipStyle.Forecast, stringResource(R.string.legend_precip_forecast, total(hours.sumOf { it.forecast ?: 0.0 })))
                 LegendItem(ChanceLine, stringResource(R.string.legend_chance), line = true)
             }
             Text(stringResource(R.string.meteogram_hint), fontSize = 11.sp, lineHeight = 15.sp, color = NimbusColors.Tertiary, modifier = Modifier.padding(top = 4.dp))
@@ -526,8 +528,7 @@ fun PrecipChart(
 /** One hour of a precipitation chart: forecast amount and chance, the measured amount (null: none). */
 data class PrecipHour(val time: Long, val forecast: Double?, val chance: Double?, val measured: Double?)
 
-/** Forecast amount: light blue; measured (DWD station): dark blue – as in all day charts. */
-private val AmountBar = PrecipStyle.Forecast
+/** Measured (DWD station) amounts – the colours of the course of the day. */
 private val MeasuredBar = PrecipStyle.Measured
 /** Chance of precipitation: white line, like the other curves (the bars are blue). */
 private val ChanceLine = Color(0xF2FFFFFF)

@@ -85,7 +85,7 @@ import kotlin.math.PI
 import kotlin.math.floor
 import kotlin.math.roundToInt
 
-private val PrecipBar = Color(0xB38FD3FF)
+private val PrecipBar = PrecipStyle.Bar
 // Sunshine columns: wide and faint, so rain bars and the temperature curve stay readable on top.
 // Sunshine row: light grey, no outline – the temperature curve has the warm colours.
 private val SunFill = Color(0xFFC3C9D2)
@@ -361,9 +361,9 @@ fun Meteogram(
                         val front = fp != null && PrecipStyle.forecastInFront(fp, p.takeIf { measuredBar })
                         // Look-back: the forecast muted – behind the measured bar, in front of it
                         // when it is the smaller one
-                        if (fp != null && !front) bar(fp, PrecipStyle.LookBackForecast)
-                        bar(p, if (measuredBar) PrecipStyle.LookBackMeasured else PrecipBar)
-                        if (fp != null && front) bar(fp, PrecipStyle.LookBackForecast)
+                        if (fp != null && !front) bar(fp, PrecipStyle.Forecast)
+                        bar(p, if (measuredBar) PrecipStyle.Measured else PrecipBar)
+                        if (fp != null && front) bar(fp, PrecipStyle.Forecast)
                     }
                 }
                 // Curves: one point per hour, in the column of its bar and cursor; clipped to the
@@ -533,8 +533,8 @@ private fun BarLegend(precipTotal: Double?, sunMinutes: Double?, measured: Boole
     fun amount(v: Double?) = Units.precipitationNumber(v ?: 0.0, s.precipitationUnit) + NBSP + unit
     LegendRow {
         if (measured) {
-            LegendItem(PrecipStyle.LookBackMeasured, stringResource(R.string.legend_precip_measured, amount(precipTotal)))
-            if (forecastTotal != null) LegendItem(PrecipStyle.LookBackForecast, stringResource(R.string.legend_precip_forecast, amount(forecastTotal)))
+            LegendItem(PrecipStyle.Measured, stringResource(R.string.legend_precip_measured, amount(precipTotal)))
+            if (forecastTotal != null) LegendItem(PrecipStyle.Forecast, stringResource(R.string.legend_precip_forecast, amount(forecastTotal)))
         } else LegendItem(PrecipBar, stringResource(R.string.legend_precip, amount(precipTotal)))
         if (sunMinutes != null) LegendItem(SunFill, stringResource(R.string.legend_sunshine, hoursMinutes(sunMinutes)))
     }

@@ -123,6 +123,6 @@ class FineCurveTest {
         assertFalse(PrecipStyle.forecastInFront(1.0, 1.0))
         assertFalse(PrecipStyle.forecastInFront(0.5, null))
         // the look-back forecast is opaque (it does not blend with the bar behind it)
-        assertEquals(1f, PrecipStyle.LookBackForecast.alpha, 0.001f)
+        assertEquals(1f, PrecipStyle.Forecast.alpha, 0.001f)
     }
 }

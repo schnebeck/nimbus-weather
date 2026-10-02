@@ -561,7 +561,7 @@
     <string name="cards_undo_hidden">"%1$s" hidden</string>
     <string name="places_undo_order">Order of places changed</string>
     <string name="precip_measured_so_far">%1$s measured so far (%2$s)</string>
-    <string name="precip_chart_hint_measured">Dark blue: measured · light blue: forecast · line: chance · long press</string>
+    <string name="precip_chart_hint_measured">Light blue: measured · grey-blue: forecast · line: chance · long press</string>
     <string name="pressure_chart_hint_measured">Solid: measured · dashed: forecast · long press for values</string>
     <string name="settings_radar_colors">Radar colours</string>
     <string name="settings_radar_colors_desc">Contrast: rain green → yellow → red → magenta, snow turquoise → white → violet – many steps easy to tell apart. Blue: calmer, rain light to dark blue, snow pink to violet.</string>

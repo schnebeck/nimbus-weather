@@ -117,16 +117,14 @@ object Curve {
     }
 }
 
-/** Precipitation bars of the day charts. */
+/** Precipitation bars of the day charts – the colours of the course of the day everywhere. */
 object PrecipStyle {
-    /** Measured amount on today's precipitation card (DWD station): dark blue. */
-    val Measured = Color(0xFF2563EB)
-    /** Forecast amount: light blue. */
-    val Forecast = Color(0xE08CC8FF)
-    /** Look-back (course of the day and precipitation): measured – the meteogram's light blue. */
-    val LookBackMeasured = Color(0xB38FD3FF)
-    /** Look-back: the forecast – a muted blue, opaque (no blending with the bar behind it). */
-    val LookBackForecast = Color(0xFF6F89A0)
+    /** An amount on its own (forecast days) and a measured one: the meteogram's light blue. */
+    val Bar = Color(0xB38FD3FF)
+    /** Measured amount (DWD station). */
+    val Measured = Bar
+    /** Forecast next to measurements (today, look-back): a muted blue, opaque – no blending. */
+    val Forecast = Color(0xFF6F89A0)
 
     /**
      * Look-back: the forecast bar is drawn in front of the measured one when it is smaller (it

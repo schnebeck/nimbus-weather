@@ -17,6 +17,10 @@
 
 package dev.nimbus.weather.ui.main
 
+import androidx.compose.ui.draw.alpha
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.outlined.Map
@@ -109,9 +113,22 @@ fun HistoryPage(
     val day = history?.days?.getOrNull(dayIndex)
     val summary = remember(day) { day?.takeIf { it.hours.isNotEmpty() }?.let { DaySummary.of(it, history?.fetchedAt ?: Long.MAX_VALUE) } }
     val tf = remember(history?.zone) { TimeFormat(history?.zone?.id ?: (state?.data?.timezone ?: "UTC"), DateFormat.is24HourFormat(context)) }
+    // The day in parts (early … night), growing in the course of today
+    val parts = remember(day, history?.fetchedAt) {
+        if (day == null || history == null) emptyList() else dev.nimbus.weather.data.remote.DayParts.of(day, history.zone, history.fetchedAt)
+    }
+    // The sky shows the parts one after the other, every 5 s – the row of the table it shows is lit
+    var shown by remember(parts) { androidx.compose.runtime.mutableIntStateOf(parts.lastIndex.coerceAtLeast(0)) }
+    LaunchedEffect(parts, isActive) {
+        if (!isActive || parts.size < 2) return@LaunchedEffect
+        while (true) {
+            kotlinx.coroutines.delay(PART_SHOW_MS)
+            shown = (shown + 1) % parts.size
+        }
+    }
     // Same sky as the main page at the current time (day/night, twilight, moon) – only the weather
     // is that of the shown day. A bright day sky at night made the glass cards pale.
-    val scene = remember(summary, day?.date, state?.data) {
+    val sky = remember(summary, day?.date, state?.data) {
         val (season, autumn) = SkyScene.seasonOf(day?.date ?: java.time.LocalDate.now(), place.latitude < 0)
         val base = state?.data?.let { SkyScene.from(it) } ?: placeholderScene()
         base.copy(
@@ -121,6 +138,11 @@ fun HistoryPage(
             season = season, autumnProgress = autumn, temperature = summary?.tempMax ?: 15.0,
         )
     }
+    val scene = parts.getOrNull(shown)?.let { sky.copy(condition = it.condition) } ?: sky
+    // Glass and header shade for the brightest sky of the round: they do not pulse every 5 s
+    val skies = remember(sky, parts) { parts.map { sky.copy(condition = it.condition) }.ifEmpty { listOf(sky) } }
+    val cardFill = skies.maxBy { it.cardFill.alpha }.cardFill
+    val headerStyle = dev.nimbus.weather.ui.components.HeaderStyle(skies.maxOf { it.headerHalo }, skies.maxBy { it.headerPill.alpha }.headerPill)
     val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val title = stringResource(
@@ -132,11 +154,14 @@ fun HistoryPage(
     )
 
     Box(Modifier.fillMaxSize()) {
-        WeatherBackground(scene, animate = isActive && settings.animationsEnabled)
+        // one weather into the next: clouds and rain fade over instead of switching
+        androidx.compose.animation.Crossfade(scene.condition, animationSpec = androidx.compose.animation.core.tween(1200), label = "sky") { c ->
+            WeatherBackground(scene.copy(condition = c), animate = isActive && settings.animationsEnabled)
+        }
         CompositionLocalProvider(
             LocalSettings provides settings, LocalTimeFormat provides tf,
-            dev.nimbus.weather.ui.components.LocalCardFill provides scene.cardFill,
-            dev.nimbus.weather.ui.components.LocalHeaderStyle provides dev.nimbus.weather.ui.components.HeaderStyle(scene.headerHalo, scene.headerPill),
+            dev.nimbus.weather.ui.components.LocalCardFill provides cardFill,
+            dev.nimbus.weather.ui.components.LocalHeaderStyle provides headerStyle,
         ) {
             val clipTop = with(androidx.compose.ui.platform.LocalDensity.current) { (statusTop + 52.dp).toPx() }
             // Cards keep their title at the line below the top bar and slide away under it (GlassCard)
@@ -150,7 +175,7 @@ fun HistoryPage(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = statusTop + HeaderTop, bottom = navBottom + 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                item(key = "header") { HistoryHeader(place, title, day, summary, tf) }
+                item(key = "header") { HistoryHeader(place, title, day, summary, tf, parts, shown) }
                 when {
                     day == null && state?.historyError == true -> item(key = "error") { HistoryMessage(stringResource(R.string.history_error), onRetry) }
                     day == null -> item(key = "loading") {
@@ -179,7 +204,10 @@ fun HistoryPage(
 }
 
 @Composable
-private fun HistoryHeader(place: Place, title: String, day: HistoryDay?, summary: DaySummary?, tf: TimeFormat) {
+private fun HistoryHeader(
+    place: Place, title: String, day: HistoryDay?, summary: DaySummary?, tf: TimeFormat,
+    parts: List<dev.nimbus.weather.data.remote.DayPartWeather>, shown: Int,
+) {
     val s = LocalSettings.current
     // On the open sky: white with a dark halo, as the weather page's header
     val halo = androidx.compose.ui.text.TextStyle(shadow = dev.nimbus.weather.ui.components.LocalHeaderStyle.current.shadow)
@@ -195,17 +223,57 @@ private fun HistoryHeader(place: Place, title: String, day: HistoryDay?, summary
         }
         if (summary != null) {
             Spacer(Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                WeatherIcon(summary.condition, true, size = 40.dp)
-                Spacer(Modifier.width(10.dp))
-                dev.nimbus.weather.ui.components.MaxMinStack(
-                    summary.tempMax, summary.tempMin, s.temperatureUnit, fontSize = 20.sp,
-                    shadow = halo.shadow, labelColor = Color.White,
-                )
-            }
-            Text(stringResource(Texts.condition(summary.condition, true)), fontSize = 19.sp, color = Color.White, style = halo)
+            dev.nimbus.weather.ui.components.MaxMinStack(
+                summary.tempMax, summary.tempMin, s.temperatureUnit, fontSize = 20.sp,
+                shadow = halo.shadow, labelColor = Color.White,
+            )
+        }
+        if (parts.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            DayPartsTable(parts, shown, halo)
         }
     }
+}
+
+/** How long the sky shows each part of the day. */
+private const val PART_SHOW_MS = 5_000L
+
+/**
+ * The day in parts: early, morning, forenoon, afternoon, evening, night – side by side, each with
+ * its name, symbol and weather, for the parts that have begun; the part the sky shows now is lit,
+ * the others dimmed.
+ */
+@Composable
+private fun DayPartsTable(parts: List<dev.nimbus.weather.data.remote.DayPartWeather>, shown: Int, halo: androidx.compose.ui.text.TextStyle) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+        parts.forEachIndexed { i, p ->
+            val lit by androidx.compose.animation.core.animateFloatAsState(if (i == shown) 1f else 0.55f, androidx.compose.animation.core.tween(600), label = "lit")
+            Column(
+                Modifier.weight(1f, fill = false).widthIn(max = 72.dp).alpha(lit).padding(horizontal = 2.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(stringResource(dayPartLabel(p.part)), fontSize = 12.sp, color = Color.White, style = halo, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Spacer(Modifier.height(2.dp))
+                WeatherIcon(p.condition, p.isDay, size = 30.dp)
+                Spacer(Modifier.height(2.dp))
+                // two lines for every weather, so the row does not change height with the part shown
+                Text(
+                    stringResource(Texts.condition(p.condition, p.isDay)), fontSize = 11.sp, lineHeight = 13.sp, color = Color.White, style = halo,
+                    fontWeight = if (i == shown) FontWeight.Medium else FontWeight.Normal,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center, minLines = 2, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+private fun dayPartLabel(p: dev.nimbus.weather.data.remote.DayPart) = when (p) {
+    dev.nimbus.weather.data.remote.DayPart.EARLY -> R.string.day_part_early
+    dev.nimbus.weather.data.remote.DayPart.MORNING -> R.string.day_part_morning
+    dev.nimbus.weather.data.remote.DayPart.FORENOON -> R.string.day_part_forenoon
+    dev.nimbus.weather.data.remote.DayPart.AFTERNOON -> R.string.day_part_afternoon
+    dev.nimbus.weather.data.remote.DayPart.EVENING -> R.string.day_part_evening
+    dev.nimbus.weather.data.remote.DayPart.NIGHT -> R.string.day_part_night
 }
 
 @Composable

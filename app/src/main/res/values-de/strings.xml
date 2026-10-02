@@ -574,4 +574,10 @@
     <string name="settings_separate_precip_desc">In der 10-Tage-Vorhersage und im Rückblick: Menge und Wahrscheinlichkeit in einem eigenen Diagramm unter der Temperatur – sonst ein gemeinsames Diagramm.</string>
     <string name="card_status_fresh">Daten aktuell</string>
     <string name="card_status_stale">Ältere Daten – lädt noch, oder die Quelle hat nicht geantwortet</string>
+    <string name="day_part_early">Früh</string>
+    <string name="day_part_morning">Morgens</string>
+    <string name="day_part_forenoon">Vormittags</string>
+    <string name="day_part_afternoon">Nachmittags</string>
+    <string name="day_part_evening">Abends</string>
+    <string name="day_part_night">Nachts</string>
 </resources>

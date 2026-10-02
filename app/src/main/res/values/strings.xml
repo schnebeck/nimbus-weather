@@ -585,4 +585,10 @@
     <string name="settings_separate_precip_desc">In the 10-day forecast and the look-back: amount and chance in a chart of their own under the temperature – otherwise one combined chart.</string>
     <string name="card_status_fresh">Data up to date</string>
     <string name="card_status_stale">Older data – still loading, or the source did not answer</string>
+    <string name="day_part_early">Early</string>
+    <string name="day_part_morning">Morning</string>
+    <string name="day_part_forenoon">Late morning</string>
+    <string name="day_part_afternoon">Afternoon</string>
+    <string name="day_part_evening">Evening</string>
+    <string name="day_part_night">Night</string>
 </resources>

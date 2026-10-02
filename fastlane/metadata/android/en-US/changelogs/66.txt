@@ -1,0 +1,2 @@
+• Look-back: instead of one condition for the whole day an overview – early, morning, late morning, afternoon, evening, night – with symbol and weather, growing in the course of the day
+• The sky shows the parts one after the other, every 5 seconds, softly faded; the part shown is highlighted

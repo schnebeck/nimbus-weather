@@ -1,0 +1,2 @@
+• Rückblick: Statt eines Zustands für den ganzen Tag eine Übersicht früh, morgens, vormittags, nachmittags, abends, nachts mit Symbol und Wetter – sie wächst im Laufe des Tages
+• Der Himmel zeigt die Abschnitte nacheinander, alle 5 Sekunden, weich überblendet; der gezeigte Abschnitt ist hervorgehoben

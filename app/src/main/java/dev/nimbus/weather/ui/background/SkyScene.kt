@@ -213,6 +213,22 @@ data class SkyScene(
             )
         }
 
+        /**
+         * [base] at the moment [t] at the place: daylight and twilight from the sun's altitude (as
+         * [from] ramps them around sunrise and sunset: about 6° from dark to full day, twilight
+         * within 7.5° of the horizon), the moon's phase and whether it is up – the look-back shows
+         * each part of the day in its own light, not in the light of now.
+         */
+        fun atTime(base: SkyScene, t: Long, lat: Double, lon: Double): SkyScene {
+            val alt = dev.nimbus.weather.util.Moon.sunAltitude(t, lat, lon) + 0.833
+            return base.copy(
+                daylight = (alt / 6.0 * 0.5 + 0.5).toFloat().coerceIn(0f, 1f),
+                twilight = (1.0 - abs(alt) / 7.5).toFloat().coerceIn(0f, 1f),
+                moonPhase = dev.nimbus.weather.util.Moon.preciseIllumination(t).phase.toFloat(),
+                moonUp = dev.nimbus.weather.util.Moon.altitude(t, lat, lon) > 0.0,
+            )
+        }
+
         /** Meteorological seasons; mirrored on the southern hemisphere. */
         fun seasonOf(date: java.time.LocalDate, southern: Boolean): Pair<Season, Float> {
             val d = if (southern) date.plusMonths(6) else date

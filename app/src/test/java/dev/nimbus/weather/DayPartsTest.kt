@@ -74,6 +74,19 @@ class DayPartsTest {
         assertTrue(DayParts.of(day(), zone, midnight + 30 * 60_000L).isEmpty())
     }
 
+    /** The sky of each part in the light of its time of day – no moon at noon (it showed the light of now). */
+    @Test fun eachPartInTheLightOfItsTime() {
+        val base = dev.nimbus.weather.ui.background.SkyScene(Condition.CLEAR, daylight = 0f, twilight = 0f, wind = 0.1f)
+        fun at(hour: Double) = dev.nimbus.weather.ui.background.SkyScene.atTime(base, midnight + (hour * h).toLong(), 52.42, 9.60)
+        val afternoon = at(15.0); val early = at(3.0); val morning = at(7.5)
+        assertEquals(1f, afternoon.daylight, 0.01f)
+        assertTrue(!afternoon.isNight)
+        assertEquals(0f, early.daylight, 0.01f)
+        assertTrue(early.isNight)
+        // sunrise in Garbsen on 2 Oct. is about 07:25: the morning part is in twilight
+        assertTrue("morning twilight ${morning.twilight}", morning.twilight > 0.3f)
+    }
+
     @Test fun nightPartsAreNight() {
         val parts = DayParts.of(day(), zone, Long.MAX_VALUE).associate { it.part to it.isDay }
         assertEquals(false, parts[DayPart.EARLY])

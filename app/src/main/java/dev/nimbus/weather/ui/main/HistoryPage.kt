@@ -138,9 +138,15 @@ fun HistoryPage(
             season = season, autumnProgress = autumn, temperature = summary?.tempMax ?: 15.0,
         )
     }
-    val scene = parts.getOrNull(shown)?.let { sky.copy(condition = it.condition) } ?: sky
+    // each part in its weather and in the light of its time of day (the middle of the part)
+    val skies = remember(sky, parts, day?.date) {
+        parts.map { p ->
+            val mid = day!!.date.atStartOfDay(history!!.zone).toInstant().toEpochMilli() + (p.part.from + p.part.to) * 1_800_000L
+            SkyScene.atTime(sky.copy(condition = p.condition), mid, place.latitude, place.longitude)
+        }.ifEmpty { listOf(sky) }
+    }
+    val scene = skies.getOrNull(shown) ?: skies.first()
     // Glass and header shade for the brightest sky of the round: they do not pulse every 5 s
-    val skies = remember(sky, parts) { parts.map { sky.copy(condition = it.condition) }.ifEmpty { listOf(sky) } }
     val cardFill = skies.maxBy { it.cardFill.alpha }.cardFill
     val headerStyle = dev.nimbus.weather.ui.components.HeaderStyle(skies.maxOf { it.headerHalo }, skies.maxBy { it.headerPill.alpha }.headerPill)
     val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -155,8 +161,8 @@ fun HistoryPage(
 
     Box(Modifier.fillMaxSize()) {
         // one weather into the next: clouds and rain fade over instead of switching
-        androidx.compose.animation.Crossfade(scene.condition, animationSpec = androidx.compose.animation.core.tween(1200), label = "sky") { c ->
-            WeatherBackground(scene.copy(condition = c), animate = isActive && settings.animationsEnabled)
+        androidx.compose.animation.Crossfade(scene, animationSpec = androidx.compose.animation.core.tween(1200), label = "sky") { sc ->
+            WeatherBackground(sc, animate = isActive && settings.animationsEnabled)
         }
         CompositionLocalProvider(
             LocalSettings provides settings, LocalTimeFormat provides tf,

@@ -121,7 +121,6 @@ private const val FRAME_MS = 450f
 private const val ARCHIVE_STEP_MS = 180f
 /** The live loop rests this long on its last frame before starting over. */
 private const val LOOP_PAUSE_MS = 1400L
-private const val MIN_FRAMES_TO_PLAY = 5
 private const val STYLE_TIMEOUT_MS = 15_000L
 /** How often the open live radar asks whether a newer DWD analysis is out. */
 private const val RADAR_REFRESH_CHECK_MS = 60_000L
@@ -310,8 +309,7 @@ fun RadarScreen(
             val tl = timeline ?: return@collect
             // An archived day plays as soon as the first coarse steps bridge the start; the
             // finer ones arrive while it plays
-            val canPlay = if (tl.day != null) player.canShow(minOf(frame + BUFFER_START, tl.frames.lastIndex).toFloat())
-            else playable(tl, player).count() >= MIN_FRAMES_TO_PLAY || player.loaded.value >= tl.frames.size
+            val canPlay = player.canShow(minOf(frame + BUFFER_START, tl.frames.lastIndex).toFloat())
             if (!ready && canPlay) {
                 ready = true
                 playing = true
@@ -413,40 +411,24 @@ fun RadarScreen(
     // draws the rain moved between the steps – no jumping from step to step.
     LaunchedEffect(playing, timeline) {
         val tl = timeline ?: return@LaunchedEffect
-        if (!playing) { buffering = false; player.position = frame.toFloat(); return@LaunchedEffect }
+        if (!playing) { buffering = false; player.playing = false; player.position = frame.toFloat(); return@LaunchedEffect }
         val archived = tl.day != null
         // time per 5-minute step: the live ranges show [HistoryRange.playMinutes] per beat
         val stepMs = if (archived) ARCHIVE_STEP_MS else FRAME_MS * HistoryRange.STEP_MINUTES / tl.range.playMinutes
-        var p = frame.toFloat()
+        player.playing = true
+        val lastIndex = tl.frames.lastIndex
+        var state = Playback.State(frame.toFloat(), buffering = !player.canShow(minOf(frame + BUFFER_START, lastIndex).toFloat()))
         var last = withFrameNanos { it }
-        var restAt = 0L
-        if (archived) buffering = !player.canShow(minOf(frame + BUFFER_START, tl.frames.lastIndex).toFloat())
         while (playing) {
             val now = withFrameNanos { it }
             val dt = (now - last) / 1_000_000f
             last = now
-            if (archived) {
-                // Like a video player: hold until a stretch ahead is ready instead of stuttering
-                val next = p.toInt() + 1
-                if (next > tl.frames.lastIndex) { playing = false; break }
-                if (buffering) {
-                    if (player.canShow(minOf(p + BUFFER_RESUME, tl.frames.lastIndex.toFloat()))) buffering = false else continue
-                }
-                if (!player.canShow(next.toFloat())) { buffering = true; continue }
-                p = minOf(p + dt / stepMs, next.toFloat())
-            } else {
-                // Only the loaded part of the loop; it grows while the rest loads
-                val range = playable(tl, player).takeIf { !it.isEmpty() } ?: continue
-                if (p >= range.last.toFloat()) {
-                    if (restAt == 0L) restAt = now
-                    if ((now - restAt) / 1_000_000L < LOOP_PAUSE_MS) continue
-                    restAt = 0L
-                    p = range.first.toFloat()
-                } else p = minOf(p + dt / stepMs, range.last.toFloat())
-                if (p < range.first.toFloat()) p = range.first.toFloat()
-            }
-            player.position = p
-            if (p.toInt() != frame) frame = p.toInt()
+            // Live loop and archived day alike: buffer (with the hint) instead of standing still
+            state = Playback.step(state, dt, lastIndex, loop = !archived, stepMs = stepMs, canShow = player::canShow, resumeAhead = BUFFER_RESUME, restMs = LOOP_PAUSE_MS.toFloat())
+            buffering = state.buffering
+            if (!state.playing) { playing = false; break }
+            player.position = state.position
+            if (state.position.toInt() != frame) frame = state.position.toInt()
         }
     }
 
@@ -485,7 +467,7 @@ fun RadarScreen(
         }
         val total = timeline?.frames?.size ?: 0
         val stillLoading = timeline != null && styleReady &&
-            buffering || !player.canShow(frame.toFloat()) || loadedFrames < total
+            (buffering || !player.canShow(frame.toFloat()) || loadedFrames < total)
         val trouble = netStatus.failed > 0 || netStatus.fromCache > 0
         if (error || stillLoading || trouble) {
             Column(
@@ -498,7 +480,9 @@ fun RadarScreen(
                         CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            stringResource(R.string.radar_loading_frames, loadedFrames, total),
+                            // all downloaded: the steps are being cut and smoothed for the view
+                            if (loadedFrames >= total) stringResource(R.string.radar_preparing)
+                            else stringResource(R.string.radar_loading_frames, loadedFrames, total),
                             color = Color.White, fontSize = 13.sp,
                         )
                     }
@@ -629,12 +613,6 @@ fun RadarScreen(
     }
 }
 
-/**
- * The part of the live loop that can play: from the first to the last frame at hand, if "now"
- * lies in it (gaps are bridged by the motion between the frames around them).
- */
-private fun playable(tl: RadarTimeline, player: RadarPlayer): IntRange =
-    player.playableRange().takeIf { tl.nowIndex in it } ?: IntRange.EMPTY
 
 @Composable
 private fun StepButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, enabled: Boolean, onClick: () -> Unit) {

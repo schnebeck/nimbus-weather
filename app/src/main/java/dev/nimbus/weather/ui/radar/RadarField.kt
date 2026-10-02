@@ -420,14 +420,14 @@ object Progressive {
      * playback order from [from] on (those behind last): playback needs them in that order, and
      * they arrive faster than it plays.
      */
-    fun order(n: Int, from: Int, strides: IntArray, stepMinutes: Int = 5): List<Int> {
+    fun order(n: Int, from: Int, strides: IntArray, stepMinutes: Int = 5, overviewMinutes: Int = OVERVIEW_MINUTES): List<Int> {
         if (n <= 0) return emptyList()
         val seen = BooleanArray(n)
         val out = ArrayList<Int>(n)
         fun rank(i: Int) = if (i >= from) i - from else n + (from - i)      // ahead first, then behind
         // The first half hour from the position first: playback can start at once
         (from..minOf(n - 1, from + START_MINUTES / maxOf(1, stepMinutes))).forEach { seen[it] = true; out += it }
-        strides.filter { it * stepMinutes >= OVERVIEW_MINUTES }.forEachIndexed { level, s ->
+        strides.filter { it * stepMinutes >= overviewMinutes }.forEachIndexed { level, s ->
             val take = (0 until n).filter { !seen[it] && (it % s == 0 || level == 0 && (it == n - 1 || it == from)) }
             take.sortedBy { rank(it) }.forEach { seen[it] = true; out += it }
         }
@@ -445,6 +445,19 @@ object Progressive {
      */
     fun blend(gapMs: Long, t: Float): Pair<Boolean, Float> =
         if (gapMs <= MAX_MOTION_MS) true to t else false to ((t - 0.4f) / 0.2f).coerceIn(0f, 1f)
+
+    /**
+     * Steps a long live time line keeps for good while windowed: every [keepMinutes] by the clock
+     * (:00, :20, :40 …; at most [MAX_MOTION_MS] apart, so playback can always move between them),
+     * the first and the last one. The loop then starts over without preparing its start again –
+     * and since they are chosen by time, a refreshed time line (a step later every 5 minutes)
+     * keeps the same ones.
+     */
+    fun keepSteps(times: List<Long>, keepMinutes: Int): Set<Int> {
+        val every = minOf(keepMinutes.toLong() * 60_000L, MAX_MOTION_MS)
+        if (times.isEmpty()) return emptySet()
+        return (times.indices.filter { times[it] % every == 0L } + 0 + times.lastIndex).toSet()
+    }
 
     /** Can position [p] play: on a frame, or between two at most [MAX_MOTION_MS] apart ([timeOf] of an index). */
     fun playable(p: Float, n: Int, has: (Int) -> Boolean, timeOf: (Int) -> Long): Boolean {
@@ -467,5 +480,43 @@ object Progressive {
         var b = i + 1
         while (b < n && !has(b)) b++
         return if (b < n) a to b else a to a
+    }
+}
+
+/**
+ * One display frame of radar playback – the same rule for the live loop and an archived day: the
+ * position moves on at [stepMs] per step while the next step can be shown; when it cannot (not
+ * loaded yet, or the frame window of a long time line is still moving), playback buffers – with
+ * the loading hint – until [resumeAhead] steps ahead are there. It never just stands still. At the
+ * end the live loop rests [restMs] and starts over; an archived day stops.
+ */
+object Playback {
+    data class State(val position: Float, val buffering: Boolean = false, val restedMs: Float = 0f, val playing: Boolean = true)
+
+    fun step(
+        s: State, dtMs: Float, last: Int, loop: Boolean, stepMs: Float, canShow: (Float) -> Boolean,
+        resumeAhead: Int = 12, restMs: Float = 1400f,
+    ): State {
+        if (!s.playing) return s
+        val p = s.position
+        if (p >= last) {
+            if (!loop) return s.copy(playing = false, buffering = false)
+            val rested = s.restedMs + dtMs
+            return if (rested < restMs) s.copy(restedMs = rested, buffering = false)
+            else State(0f, buffering = !canShow(minOf(resumeAhead, last).toFloat()))
+        }
+        // buffering ends with a stretch ahead – and playback moves on in the same frame
+        if (s.buffering && !canShow(minOf(p + resumeAhead, last.toFloat()))) return s
+        // on to where the time has gone – over several steps when a display frame took long,
+        // but never past a step that cannot be shown
+        val target = minOf(p + dtMs / stepMs, last.toFloat())
+        var reach = p
+        var k = p.toInt() + 1
+        while (k <= target) {
+            if (!canShow(k.toFloat())) return s.copy(position = reach, buffering = true)
+            reach = k.toFloat(); k++
+        }
+        if (target > reach && !canShow(k.toFloat())) return s.copy(position = reach, buffering = reach == p)
+        return s.copy(position = target, restedMs = 0f, buffering = false)
     }
 }

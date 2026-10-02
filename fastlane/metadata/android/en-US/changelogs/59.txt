@@ -1,0 +1,2 @@
+• Radar 6 and 24 h: no longer freezes – plays smoothly and starts over at the end; "Preparing the radar" while images are processed
+• Long ranges load the images playback moves between first, and keep them across DWD updates

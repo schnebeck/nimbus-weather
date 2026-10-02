@@ -80,4 +80,23 @@ class ProgressiveTest {
         assertEquals(24 to 24, Progressive.bracket(30f, 288, has::contains))     // past the last loaded: hold it
         assertNull(Progressive.bracket(3f, 288, setOf(12)::contains))
     }
+
+    @Test fun aLongLiveLoopKeepsAStepEvery20To30MinutesByTheClock() {
+        val m5 = 5 * 60_000L
+        val t0 = 1_790_900_000_000L / m5 * m5 + m5          // not on a full hour
+        // 6 hours: 97 steps of 5 min, played 20 min per beat – every 20 min by the clock
+        val six = (0 until 97).map { t0 + it * m5 }
+        val keep6 = Progressive.keepSteps(six, 20)
+        assertTrue(keep6.all { it == 0 || it == 96 || six[it] % (20 * 60_000L) == 0L })
+        assertTrue(keep6.sorted().zipWithNext().all { (a, b) -> (b - a) * 5 <= 20 })
+        // 24 hours, played 60 min per beat: every 30 min at most (motion is only found across 30 min)
+        val day = (0 until 313).map { t0 + it * m5 }
+        val keep24 = Progressive.keepSteps(day, 60)
+        assertTrue(keep24.sorted().zipWithNext().all { (a, b) -> (b - a) * 5 <= 30 })
+        assertTrue((0 until 312).all { Progressive.playable(it + 0.5f, 313, keep24::contains, { i -> day[i] }) })
+        // a refreshed time line, one step later: the same moments kept
+        val later = day.drop(1) + (day.last() + m5)
+        val k1 = keep24.map { day[it] }.toSet(); val k2 = Progressive.keepSteps(later, 60).map { later[it] }.toSet()
+        assertTrue((k1 intersect k2).size >= k1.size - 3)
+    }
 }

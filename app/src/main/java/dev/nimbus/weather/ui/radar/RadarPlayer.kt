@@ -78,8 +78,16 @@ class RadarPlayer(private val scope: CoroutineScope, private val http: OkHttpCli
             field = v
             requestRender()
             // A long time line (archived day) holds a window of frames: it follows the position
-            if (windowed && kotlin.math.abs(v - windowAnchor) > WINDOW_SLIDE) wake.trySend(Unit)
+            if (windowed && !(playing && timeline?.day == null) && kotlin.math.abs(v - windowAnchor) > WINDOW_SLIDE) wake.trySend(Unit)
         }
+
+    /**
+     * Set by the screen while the loop plays: a long live loop then prepares only the steps it
+     * plays between (every 20–30 min) – the 5-minute steps around the position, which it would
+     * not show, come when it is paused (for stepping through them).
+     */
+    @Volatile var playing = false
+        set(v) { if (field != v) { field = v; wake.trySend(Unit) } }
 
     /** Long time lines keep only [WINDOW_BEHIND] … [WINDOW_AHEAD] frames around the position. */
     private val windowed get() = (timeline?.frames?.size ?: 0) > MAX_ALL
@@ -120,13 +128,6 @@ class RadarPlayer(private val scope: CoroutineScope, private val http: OkHttpCli
         return Progressive.playable(p, tl.frames.size, { extracted(tl, it) }, { tl.frames[it].time })
     }
 
-    /** From the first to the last frame ready: the part of the live loop that can play. */
-    fun playableRange(): IntRange {
-        val tl = timeline ?: return IntRange.EMPTY
-        val have = tl.frames.indices.filter { extracted(tl, it) }
-        return if (have.isEmpty()) IntRange.EMPTY else have.first()..have.last()
-    }
-
     fun setTimeline(tl: RadarTimeline) {
         timeline = tl
         restartDownloader()
@@ -164,7 +165,9 @@ class RadarPlayer(private val scope: CoroutineScope, private val http: OkHttpCli
             withContext(Dispatchers.IO) { tl.frames.forEach { f -> RadarStore.dwdKey(f).let { k -> if (RadarStore.has(k)) stored += k } } }
             countStored(tl)
             wake.trySend(Unit)
-            val order = Progressive.order(tl.frames.size, position.toInt().coerceIn(0, tl.frames.lastIndex), Progressive.strides(stepMinutes(tl)), stepMinutes(tl))
+            // A long live loop plays between steps 20–30 minutes apart: those belong to the overview
+            val overview = if (tl.day == null && tl.frames.size > MAX_ALL) 30 else 60
+            val order = Progressive.order(tl.frames.size, position.toInt().coerceIn(0, tl.frames.lastIndex), Progressive.strides(stepMinutes(tl)), stepMinutes(tl), overview)
             // A fixed number of workers takes the steps strictly in this order (each download
             // on its own reordered them: the step needed next could end up far back in the queue)
             val queue = Channel<Int>(Channel.UNLIMITED)
@@ -210,16 +213,24 @@ class RadarPlayer(private val scope: CoroutineScope, private val http: OkHttpCli
             for (w in wake) {
                 val p = position.toInt().coerceIn(0, tl.frames.lastIndex)
                 windowAnchor = p.toFloat()
-                val lo = if (windowed) maxOf(0, p - WINDOW_BEHIND) else 0
-                val hi = if (windowed) minOf(tl.frames.lastIndex, p + WINDOW_AHEAD) else tl.frames.lastIndex
+                // A long live loop keeps a step every 20–30 minutes for good (it plays between
+                // them); the 5-minute steps only around the position (for stepping with ‹ ›)
+                val live = tl.day == null
+                val keepSteps = if (windowed && live) Progressive.keepSteps(tl.frames.map { it.time }, tl.range.playMinutes) else emptySet()
+                val ahead = if (live) LIVE_WINDOW_AHEAD else WINDOW_AHEAD
+                val coarseOnly = windowed && live && playing
+                val lo = if (coarseOnly) p else if (windowed) maxOf(0, p - WINDOW_BEHIND) else 0
+                val hi = if (coarseOnly) p - 1 else if (windowed) minOf(tl.frames.lastIndex, p + ahead) else tl.frames.lastIndex
                 if (windowed) {
-                    val keep = (lo..hi).map { key(tl, it) }.toSet()
+                    val keep = ((lo..hi) + keepSteps).map { key(tl, it) }.toSet()
                     frames.keys.filter { it !in keep }.forEach { frames.remove(it) }
                     flows.keys.filter { k -> k.substringBefore('>') !in keep || k.substringAfter('>') !in keep }.forEach { flows.remove(it) }
                 }
-                for (i in Progressive.order(tl.frames.size, p, strides, stepMinutes(tl))) {
+                // the kept steps first, from the position on and around the loop, then the window
+                val kept = keepSteps.sortedBy { (it - p + tl.frames.size) % tl.frames.size }
+                for (i in kept + Progressive.order(tl.frames.size, p, strides, stepMinutes(tl)).filter { it !in keepSteps }) {
                     if (gen != generation) return@launch
-                    if (i !in lo..hi) continue
+                    if (i !in lo..hi && i !in keepSteps) continue
                     val f = tl.frames[i]
                     val k = RadarStore.dwdKey(f)
                     if (frames.containsKey(k)) continue
@@ -236,7 +247,7 @@ class RadarPlayer(private val scope: CoroutineScope, private val http: OkHttpCli
                     _ready.value++
                     requestRender()
                     // moved on meanwhile: plan the window around the new position
-                    if (windowed && kotlin.math.abs(position - windowAnchor) > WINDOW_SLIDE) { wake.trySend(Unit); break }
+                    if (windowed && !coarseOnly && kotlin.math.abs(position - windowAnchor) > WINDOW_SLIDE) { wake.trySend(Unit); break }
                 }
             }
         }
@@ -352,6 +363,8 @@ class RadarPlayer(private val scope: CoroutineScope, private val http: OkHttpCli
         private const val MAX_ALL = 60
         private const val WINDOW_BEHIND = 8
         private const val WINDOW_AHEAD = 36
+        /** A long live loop: the 5-minute steps ahead of the position (the rest are the kept ones). */
+        private const val LIVE_WINDOW_AHEAD = 12
         private const val WINDOW_SLIDE = 12f
         private const val O = 20037508.342789244
     }

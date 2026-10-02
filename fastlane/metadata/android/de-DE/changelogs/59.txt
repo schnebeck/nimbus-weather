@@ -1,0 +1,2 @@
+• Radar 6 und 24 Std.: hängt nicht mehr – läuft flüssig durch und beginnt am Ende von vorn; beim Aufbereiten der Hinweis „Radar wird vorbereitet“
+• Lange Bereiche laden zuerst die Bilder, zwischen denen das Abspielen läuft, und bereiten sie nach jeder DWD-Aktualisierung nicht neu auf

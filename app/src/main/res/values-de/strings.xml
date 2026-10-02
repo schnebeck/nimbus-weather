@@ -566,4 +566,5 @@
     <string name="legend_precip_measured">Gemessen %1$s</string>
     <string name="legend_precip_forecast">Vorhersage %1$s</string>
     <string name="legend_chance">Wahrscheinlichkeit</string>
+    <string name="radar_preparing">Radar wird vorbereitet…</string>
 </resources>

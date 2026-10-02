@@ -577,4 +577,5 @@
     <string name="legend_precip_measured">Measured %1$s</string>
     <string name="legend_precip_forecast">Forecast %1$s</string>
     <string name="legend_chance">Chance of precipitation</string>
+    <string name="radar_preparing">Preparing the radar…</string>
 </resources>

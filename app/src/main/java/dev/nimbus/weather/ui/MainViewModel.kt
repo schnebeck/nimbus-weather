@@ -251,9 +251,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         if (!force && fresh) return
         if (jobs[place.id]?.isActive == true) return
         jobs[place.id] = viewModelScope.launch {
-            updatePlace(place.id) { it.copy(loading = true, error = false) }
+            // what is shown now is the last data: every card yellow until its part is new
+            updatePlace(place.id) { it.copy(loading = true, error = false, data = it.data?.copy(stale = dev.nimbus.weather.data.model.DataPart.entries.toSet())) }
             val settings = store.settings.first()
-            val result = runCatching { repo.load(place, settings, german) }
+            // The forecast shows as soon as it is there; the extras' cards pop in when theirs arrive
+            val result = runCatching {
+                repo.load(place, settings, german, previous = data) { core -> updatePlace(place.id) { it.copy(data = core) } }
+            }
             result.onSuccess { d ->
                 updatePlace(place.id) { it.copy(data = d, loading = false, error = false, models = null) }
                 runCatching { store.cacheWeather(d) }

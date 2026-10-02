@@ -238,6 +238,8 @@ fun Meteogram(
     val mainCurve = remember(curve, pts) {
         (curve ?: pts.filter { !it.forecastOnly }.map { CurvePoint(it.time, it.temperature) }).filter { it.time >= start - 3_600_000L && it.at <= curveEnd }
     }
+    // drawn: the station's 10-minute reports as a 30-minute mean; the readout keeps the readings
+    val drawnCurve = remember(mainCurve) { Curve.smoothed(mainCurve) }
     val dashCurve = remember(forecastCurve, pts) {
         if (!compare) emptyList()
         else (forecastCurve ?: pts.mapNotNull { p -> p.forecastTemperature?.let { CurvePoint(p.time, it) } }).filter { it.time >= start - 3_600_000L && it.at <= curveEnd }
@@ -446,7 +448,7 @@ fun Meteogram(
                     // every point in the middle of the interval it stands for
                     val path = Path()
                     val single = mutableListOf<Offset>()
-                    Curve.segments(mainCurve).forEach { seg ->
+                    Curve.segments(drawnCurve).forEach { seg ->
                         if (seg.size == 1) single += Offset(axis.point(seg[0].time, seg[0].interval), yC(seg[0].value))
                         else seg.forEachIndexed { k, c -> val o = axis.point(c.time, c.interval); if (k == 0) path.moveTo(o, yC(c.value)) else path.lineTo(o, yC(c.value)) }
                     }
@@ -498,7 +500,7 @@ fun Meteogram(
                     val xs = axis.cursor(pts[i].time)
                     // on the curve at the cursor (the measured one, else the forecast)
                     val tc = pts[i].time - 1_800_000L
-                    val yc = (Curve.at(mainCurve, tc) ?: Curve.at(dashCurve, tc))?.let { yT(Units.temperature(it, s.temperatureUnit)) } ?: yT(temps[i])
+                    val yc = (Curve.at(drawnCurve, tc) ?: Curve.at(dashCurve, tc))?.let { yT(Units.temperature(it, s.temperatureUnit)) } ?: yT(temps[i])
                     drawLine(Color.White.copy(alpha = 0.85f * cursorAlpha), Offset(xs, top - 2.dp.toPx()), Offset(xs, rows + below), 1.5.dp.toPx())
                     drawCircle(Color(0xFF1A2A40).copy(alpha = cursorAlpha), 5.5.dp.toPx(), Offset(xs, yc))
                     drawCircle(Color.White.copy(alpha = cursorAlpha), 3.5.dp.toPx(), Offset(xs, yc))

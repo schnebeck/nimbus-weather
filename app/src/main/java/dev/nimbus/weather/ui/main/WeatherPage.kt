@@ -89,6 +89,8 @@ import dev.nimbus.weather.ui.PlaceState
 import dev.nimbus.weather.ui.background.SkyScene
 import dev.nimbus.weather.ui.background.WeatherBackground
 import dev.nimbus.weather.ui.theme.NimbusColors
+import dev.nimbus.weather.ui.components.CardStatus
+import dev.nimbus.weather.ui.components.LocalCardStatus
 import dev.nimbus.weather.ui.components.WeatherIcon
 import dev.nimbus.weather.ui.components.windiness
 import androidx.compose.foundation.layout.width
@@ -243,6 +245,11 @@ private fun WeatherContent(
     val todayMeasured = remember(state.history, now / 600_000L) { TodayMeasured.of(state.history, tfToday.zoned(now).toLocalDate()) }
     val stale = state.error && now - data.fetchedAt > 30 * 60_000L
 
+    // A dry day hides the precipitation card (setting) – worked out once per minute, not per frame
+    val dryToday = remember(data, now / 60_000L, raining, todayMeasured) {
+        PrecipToday.of(data, now, raining, todayMeasured, tfToday)?.dry == true
+    }
+
     // The page as a list of cards; wide ones (header, alerts, hourly row, sources) span all columns
     val items = buildList {
         add(PageItem("header-space", true) { Spacer(Modifier.height(ExpandedHeader + statusTop - 12.dp)) })
@@ -254,7 +261,7 @@ private fun WeatherContent(
                 WeatherCard.HOURLY -> add(PageItem("hourly", true) { HourlyCard(data, now) })
                 WeatherCard.DAILY -> add(PageItem("daily") { DailyCard(data, now, todayMeasured) })
                 // on a dry day hidden (setting) – decided here, an empty card would leave a gap
-                WeatherCard.PRECIPITATION -> if (cards.showDryPrecipitation || PrecipToday.of(data, now, raining, todayMeasured, tfToday)?.dry != true)
+                WeatherCard.PRECIPITATION -> if (cards.showDryPrecipitation || !dryToday)
                     add(PageItem("precip") { PrecipitationCard(data, now, raining, todayMeasured) })
                 WeatherCard.RADAR -> add(PageItem("radar") { RadarPreviewCard(data, onOpenRadar) })
                 WeatherCard.TILES -> if (cards.orderedTiles().any(cards::shows)) add(PageItem("tiles") { DetailTiles(data, now) })
@@ -272,6 +279,9 @@ private fun WeatherContent(
         }
         add(PageItem("sources", true) { SourcesFooter(data) })
     }
+    // Cards whose data comes after the page is shown (the extras of a new place) pop in
+    val arrivals = remember(data.place.id) { Arrivals() }
+    arrivals.note(items.map { it.key })
 
     // Only show the spinner for a refresh the user pulled, not for automatic background updates.
     var pulled by remember { mutableStateOf(false) }
@@ -299,7 +309,7 @@ private fun WeatherContent(
                 contentPadding = PaddingValues(start = side, end = side, bottom = navBottom + 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                items(items.size, key = { items[it].key }) { items[it].content() }
+                items(items.size, key = { items[it].key }) { Card(items[it], arrivals, data.stale) }
             }
         } else {
             androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid(
@@ -312,16 +322,17 @@ private fun WeatherContent(
                 items(
                     items.size, key = { items[it].key },
                     span = { if (items[it].fullSpan) androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan.FullLine else androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan.SingleLane },
-                ) { items[it].content() }
+                ) { Card(items[it], arrivals, data.stale) }
             }
         }
         }
-        Header(data, progress, statusTop)
+        // read while drawing only: scrolling never recomposes the page (and rebuilds its cards)
+        Header(data, { progress }, statusTop)
     }
 }
 
 @Composable
-private fun Header(data: WeatherData, progress: Float, statusTop: androidx.compose.ui.unit.Dp) {
+private fun Header(data: WeatherData, progress: () -> Float, statusTop: androidx.compose.ui.unit.Dp) {
     val s = LocalSettings.current
     val c = data.current
     val today = data.daily.lastOrNull { it.date <= System.currentTimeMillis() } ?: data.daily.firstOrNull()
@@ -351,14 +362,15 @@ private fun Header(data: WeatherData, progress: Float, statusTop: androidx.compo
             // Collapsed line: "12° | Cloudy"
             Text(
                 "${Units.tempFull(c.temperature, s.temperatureUnit)} | $condition",
-                Modifier.graphicsLayer { alpha = ((progress - 0.65f) / 0.35f).coerceIn(0f, 1f) },
+                Modifier.graphicsLayer { alpha = ((progress() - 0.65f) / 0.35f).coerceIn(0f, 1f) },
                 fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White,
                 style = androidx.compose.ui.text.TextStyle(shadow = TextShadow),
             )
             Column(
                 Modifier.graphicsLayer {
-                    alpha = (1f - progress * 1.8f).coerceIn(0f, 1f)
-                    translationY = -progress * 60.dp.toPx()
+                    val p = progress()
+                    alpha = (1f - p * 1.8f).coerceIn(0f, 1f)
+                    translationY = -p * 60.dp.toPx()
                 },
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -438,6 +450,74 @@ private fun LoadingOrError(place: Place, state: PlaceState?, onRetry: () -> Unit
 
 /** One card of the weather page; [fullSpan] cards span all columns on a tablet. */
 private class PageItem(val key: String, val fullSpan: Boolean = false, val content: @Composable () -> Unit)
+
+/**
+ * Which cards of a page came later than the rest: the first list of a page is there; a key that
+ * joins a later list arrived (its data came in, or the card was switched on) and is [fresh] for
+ * [FRESH_MS] – long enough to pop in when it is drawn, never again when it scrolls back into view.
+ */
+internal class Arrivals(private val clock: () -> Long = System::currentTimeMillis) {
+    private var known: Set<String>? = null
+    private val since = HashMap<String, Long>()
+
+    fun note(keys: List<String>) {
+        val k = known
+        if (k != null) for (key in keys) if (key !in k) since[key] = clock()
+        known = keys.toSet()
+    }
+
+    fun fresh(key: String): Boolean = since[key]?.let { clock() - it < FRESH_MS } == true
+
+    companion object { const val FRESH_MS = 2_000L }
+}
+
+/**
+ * The data part a card of the page shows (its status dot follows it); null: no dot (the header
+ * space, banners, the footer, the model comparison loaded on demand).
+ */
+internal fun cardParts(key: String): Set<dev.nimbus.weather.data.model.DataPart>? = when (key) {
+    "header-space", "offline", "sources", "models" -> null
+    "alerts" -> setOf(dev.nimbus.weather.data.model.DataPart.FORECAST, dev.nimbus.weather.data.model.DataPart.FLOOD)
+    "aqi" -> setOf(dev.nimbus.weather.data.model.DataPart.AIR_QUALITY)
+    "pollen" -> setOf(dev.nimbus.weather.data.model.DataPart.POLLEN)
+    "community" -> setOf(dev.nimbus.weather.data.model.DataPart.COMMUNITY)
+    "gauge" -> setOf(dev.nimbus.weather.data.model.DataPart.GAUGES)
+    "bathing" -> setOf(dev.nimbus.weather.data.model.DataPart.BATHING)
+    else -> setOf(dev.nimbus.weather.data.model.DataPart.FORECAST)
+}
+
+/** Status of the card [key] when [stale] parts still show older values. */
+internal fun cardStatus(key: String, stale: Set<dev.nimbus.weather.data.model.DataPart>): CardStatus? =
+    cardParts(key)?.let { parts -> if (parts.any { it in stale }) CardStatus.STALE else CardStatus.FRESH }
+
+/** One card of the page: popping in when it arrived, with its status dot. */
+@Composable
+private fun Card(item: PageItem, arrivals: Arrivals, stale: Set<dev.nimbus.weather.data.model.DataPart>) {
+    PopIn(arrivals.fresh(item.key)) {
+        CompositionLocalProvider(LocalCardStatus provides cardStatus(item.key, stale)) { item.content() }
+    }
+}
+
+/** Overshoots a little before it settles – the "pop". */
+private val Pop = androidx.compose.animation.core.Easing { t -> val x = t - 1f; x * x * (2.70158f * x + 1.70158f) + 1f }
+
+/**
+ * A card that arrives: first its place opens in the list (the cards below slide down), then it
+ * pops in from small to its size. [fresh] false: simply there (the same layout, so a card never
+ * loses its state when the flag changes).
+ */
+@Composable
+private fun PopIn(fresh: Boolean, content: @Composable () -> Unit) {
+    val state = remember { androidx.compose.animation.core.MutableTransitionState(!fresh).apply { targetState = true } }
+    androidx.compose.animation.AnimatedVisibility(
+        state,
+        enter = androidx.compose.animation.expandVertically(
+            androidx.compose.animation.core.tween(260, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+            expandFrom = Alignment.Top, clip = false,
+        ) + androidx.compose.animation.scaleIn(androidx.compose.animation.core.tween(380, delayMillis = 240, easing = Pop), initialScale = 0.6f) +
+            androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(200, delayMillis = 240)),
+    ) { content() }
+}
 
 /**
  * Width available to the weather page (the screen minus the places sidebar on a tablet in

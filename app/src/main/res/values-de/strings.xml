@@ -572,4 +572,6 @@
     <string name="settings_show_dry_precip_desc">Zeigt „Heute trocken“ und den nächsten Niederschlag der Vorhersage. Aus: An trockenen Tagen wird die Kachel ausgeblendet.</string>
     <string name="settings_separate_precip">Niederschlag als eigenes Diagramm</string>
     <string name="settings_separate_precip_desc">In der 10-Tage-Vorhersage und im Rückblick: Menge und Wahrscheinlichkeit in einem eigenen Diagramm unter der Temperatur – sonst ein gemeinsames Diagramm.</string>
+    <string name="card_status_fresh">Daten aktuell</string>
+    <string name="card_status_stale">Ältere Daten – lädt noch, oder die Quelle hat nicht geantwortet</string>
 </resources>

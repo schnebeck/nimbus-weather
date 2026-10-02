@@ -42,6 +42,8 @@ import org.junit.Test
 class RepositoryTest {
     private val server = MockWebServer()
     private var failForecast = false
+    /** The citizen sensors answer this late (ms) – a slow extra source. */
+    private var communityDelayMs = 0L
     private val requested = mutableListOf<String>()
 
     @Before
@@ -58,7 +60,9 @@ class RepositoryTest {
                     url.encodedPath == "/v1/air-quality" -> ok("openmeteo_aq.json")
                     url.encodedPath == "/current_weather" -> ok("brightsky_current.json")
                     url.encodedPath == "/alerts" -> MockResponse.Builder().code(200).body("""{"alerts":[]}""").build()
-                    url.encodedPath.startsWith("/airrohr") -> ok("sensor_community.json")
+                    url.encodedPath.startsWith("/airrohr") ->
+                        MockResponse.Builder().code(200).body(Fixtures.text("sensor_community.json"))
+                            .headersDelay(communityDelayMs, java.util.concurrent.TimeUnit.MILLISECONDS).build()
                     url.encodedPath == "/pollen.json" -> ok("dwd_pollen.json")
                     url.encodedPath == "/wms" -> ok("dwd_pollen_region.json")
                     else -> MockResponse.Builder().code(404).build()
@@ -71,7 +75,7 @@ class RepositoryTest {
     @After
     fun tearDown() = server.close()
 
-    private fun repo(clock: Long): WeatherRepository {
+    private fun repo(clock: Long, extrasDeadlineMs: Long = 60_000L): WeatherRepository {
         val http = OkHttpClient()
         val base = server.url("/").toString().trimEnd('/')
         return WeatherRepository(
@@ -80,6 +84,7 @@ class RepositoryTest {
             CommunitySource(http, base),
             PollenSource(http, "$base/pollen.json", "$base/wms", base),
             clock = { clock },
+            extrasDeadlineMs = extrasDeadlineMs,
         )
     }
 
@@ -121,6 +126,59 @@ class RepositoryTest {
     fun `station usage can be disabled`() = runTest {
         val data = repo(fixtureNow).load(berlin, Settings(useStationObservations = false), german = false)
         assertNull(data.current.stationName)
+    }
+
+    @Test
+    fun `the forecast shows before a slow extra source answers`() = runTest {
+        // warm up (class loading, first connections) – then the slow source
+        repo(fixtureNow).load(berlin, Settings(model = ForecastModel.DWD_ICON), german = true)
+        communityDelayMs = 2_500
+        val t0 = System.nanoTime()
+        var coreAfterMs = -1L
+        var core: dev.nimbus.weather.data.model.WeatherData? = null
+        val data = repo(fixtureNow).load(berlin, Settings(model = ForecastModel.DWD_ICON), german = true) {
+            coreAfterMs = (System.nanoTime() - t0) / 1_000_000; core = it
+        }
+        val totalMs = (System.nanoTime() - t0) / 1_000_000
+        assertTrue("core after $coreAfterMs ms, all after $totalMs ms", coreAfterMs in 0..1_500 && totalMs >= 2_500)
+        // the core has the forecast, the extras come with the result
+        assertEquals(10, core!!.daily.size)
+        assertNull(core!!.community)
+        assertNotNull(data.community)
+    }
+
+    @Test
+    fun `a refresh keeps the extras until the new ones arrive`() = runTest {
+        val first = repo(fixtureNow).load(berlin, Settings(), german = true)
+        var core: dev.nimbus.weather.data.model.WeatherData? = null
+        repo(fixtureNow).load(berlin, Settings(), german = true, previous = first) { core = it }
+        assertEquals(first.community, core!!.community)
+        assertEquals(first.airQuality, core!!.airQuality)
+    }
+
+    @Test
+    fun `an extra too late keeps its last value and is marked older`() = runTest {
+        val first = repo(fixtureNow).load(berlin, Settings(), german = true)
+        assertTrue(first.stale.isEmpty())
+        communityDelayMs = 3_000
+        var core: dev.nimbus.weather.data.model.WeatherData? = null
+        val t0 = System.nanoTime()
+        val data = repo(fixtureNow, extrasDeadlineMs = 1_000).load(berlin, Settings(), german = true, previous = first) { core = it }
+        // the time for the extras is up after 1 s – not waiting for the 3 s
+        assertTrue((System.nanoTime() - t0) / 1_000_000 < 2_500)
+        assertEquals(first.community, data.community)
+        assertEquals(setOf(dev.nimbus.weather.data.model.DataPart.COMMUNITY), data.stale)
+        // while the extras were loading, all of them counted as older
+        assertTrue(core!!.stale.containsAll(listOf(dev.nimbus.weather.data.model.DataPart.POLLEN, dev.nimbus.weather.data.model.DataPart.COMMUNITY)))
+        assertTrue(dev.nimbus.weather.data.model.DataPart.FORECAST !in core!!.stale)
+    }
+
+    @Test
+    fun `cards switched off load nothing`() = runTest {
+        val off = Settings(hiddenCards = setOf(dev.nimbus.weather.data.model.WeatherCard.COMMUNITY))
+        val data = repo(fixtureNow).load(berlin, off, german = true)
+        assertNull(data.community)
+        assertTrue(requested.none { it.startsWith("/airrohr") })
     }
 
     @Test(expected = Exception::class)

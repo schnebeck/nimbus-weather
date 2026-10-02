@@ -68,6 +68,28 @@ class RadarFieldTest {
         assertTrue("area $nm vs $n0", nm in (n0 * 0.75).toInt()..(n0 * 1.25).toInt())
     }
 
+    /** [a] and [b] laid over each other (the stronger pixel wins). */
+    private fun both(a: ViewFrame, b: ViewFrame) = ViewFrame(
+        ByteArray(w * h) { maxOf(a.dbz[it].toInt() and 0xFF, b.dbz[it].toInt() and 0xFF).toByte() },
+        ByteArray(w * h) { maxOf(a.wet[it].toInt() and 0xFF, b.wet[it].toInt() and 0xFF).toByte() }, null,
+    )
+
+    /**
+     * A cell that dissolves while another forms nearby: it fades where it is (or drifts with the
+     * rain around it) – it does not slide over to the new one (the "unrealistic shifts" when the
+     * clouds dissolve). The rain around moves 2 px east.
+     */
+    @Test fun aDissolvingCellDoesNotJumpToANewOne() {
+        val a = both(blob(60f, 75f, 8f), blob(150f, 40f, 14f))
+        val b = both(blob(75f, 78f, 8f), blob(152f, 40f, 14f))           // 60 gone, 75 new; the big one moved by 2
+        val flow = RadarField.motion(a, b, w, h, maxShift = 20f)
+        val v = FloatArray(2).also { flow.at(60f, 75f, it) }
+        assertTrue("dissolving cell moved by (${v[0]}, ${v[1]})", hypot(v[0], v[1]) < 5f)
+        // the cell that moves is still found
+        flow.at(150f, 40f, v)
+        assertEquals(2f, v[0], 1.5f); assertEquals(0f, v[1], 1.5f)
+    }
+
     @Test fun stillRainStaysStill() {
         val a = blob(100f, 75f)
         val flow = RadarField.motion(a, a, w, h, maxShift = 20f)

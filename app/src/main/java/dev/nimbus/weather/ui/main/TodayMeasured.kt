@@ -91,7 +91,6 @@ fun dayCurve(
         measured.fine.map { (t, v) -> CurvePoint(t, v, 10 * 60_000L) },
         measured.hours.mapNotNull { (t, m) -> m.temperature?.let { CurvePoint(t, it) } },
     ).filter { it.time in from..end }
-    if (readings.isEmpty()) return forecast
-    val last = readings.maxOf { it.time }
-    return readings + forecast.filter { it.time > last }
+    // the forecast goes on from the last reading, no step at "now"
+    return Curve.joined(readings, forecast)
 }

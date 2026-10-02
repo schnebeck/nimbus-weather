@@ -22,6 +22,7 @@ import kotlin.math.atan
 import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.floor
+import kotlin.math.hypot
 import kotlin.math.ln
 import kotlin.math.max
 import kotlin.math.min
@@ -239,6 +240,10 @@ object RadarField {
      * Motion from [a] to [b] by block matching on a coarse copy (intensity = wet × dBZ): for every
      * block with rain the shift with the smallest difference, refined below a coarse pixel, then
      * smoothed; blocks without rain take the motion of their surroundings (or of the whole field).
+     * A block whose motion is far off the motion around it (or of the whole field, when it stands
+     * alone) is not believed: a cell that dissolves while another forms nearby matches the new one
+     * – the pictures cannot tell "moved" from "gone and new elsewhere", but rain drifts with the
+     * flow it is in. Such a block takes the motion around it, and the cell fades where it is.
      * [maxShift]: the largest motion to look for, in field pixels.
      */
     fun motion(a: ViewFrame, b: ViewFrame, w: Int, h: Int, maxShift: Float): Flow {
@@ -279,6 +284,7 @@ object RadarField {
             val i = gy * gw + gx
             u[i] = (bdx + sx) * f; v[i] = (bdy + sy) * f; wt[i] = mass
         }
+        rejectOutliers(u, v, wt, gw, gh, tolerance = 2.5f * f)
         // Fill and smooth: weighted mean of the 3 × 3 neighbourhood, twice; empty blocks get the field's mean
         val total = wt.sum()
         val mu = if (total > 0) (0 until u.size).sumOf { (u[it] * wt[it]).toDouble() }.toFloat() / total else 0f
@@ -301,6 +307,67 @@ object RadarField {
         }
         val x0 = (bs / 2f) * f; val step = (stride * f).toFloat()
         return Flow(gw, gh, x0, x0, step, cu, cv)
+    }
+
+    /** Blocks of the surroundings (beyond the block's own cell) that a block's motion is compared with. */
+    private const val AROUND = 6
+
+    /**
+     * Drops ([wt] = 0) the blocks whose motion is further than [tolerance] (field pixels, or 60 %
+     * of the reference motion if more) from the motion they are in:
+     * - a rain area (connected blocks) smaller than half the rain, against the whole field –
+     *   a small cell cannot be checked against itself;
+     * - a single block against its surroundings: the mass-weighted median of the blocks
+     *   2 … [AROUND] blocks away – or of the whole field when nothing rains there.
+     */
+    private fun rejectOutliers(u: FloatArray, v: FloatArray, wt: FloatArray, gw: Int, gh: Int, tolerance: Float) {
+        fun median(idx: List<Int>, c: FloatArray): Float {
+            val s = idx.sortedBy { c[it] }
+            val half = idx.sumOf { wt[it].toDouble() } / 2
+            var acc = 0.0
+            for (j in s) { acc += wt[j]; if (acc >= half) return c[j] }
+            return c[s.last()]
+        }
+        fun off(du: Float, dv: Float, ru: Float, rv: Float) = hypot(du - ru, dv - rv) > max(tolerance, 0.6f * hypot(ru, rv))
+        val all = wt.indices.filter { wt[it] > 0f }
+        if (all.size < 2) return
+        val gu = median(all, u); val gv = median(all, v)
+        val total = all.sumOf { wt[it].toDouble() }
+        // Rain areas: blocks with rain connected to each other (8 neighbours)
+        val area = IntArray(wt.size) { -1 }
+        val areas = ArrayList<List<Int>>()
+        for (s in all) {
+            if (area[s] >= 0) continue
+            val members = ArrayList<Int>(); val queue = ArrayDeque<Int>()
+            area[s] = areas.size; queue.add(s)
+            while (queue.isNotEmpty()) {
+                val i = queue.removeFirst(); members += i
+                val x = i % gw; val y = i / gw
+                for (yy in max(0, y - 1)..min(gh - 1, y + 1)) for (xx in max(0, x - 1)..min(gw - 1, x + 1)) {
+                    val j = yy * gw + xx
+                    if (wt[j] > 0f && area[j] < 0) { area[j] = areas.size; queue.add(j) }
+                }
+            }
+            areas += members
+        }
+        val dropAreas = areas.filter { m ->
+            m.sumOf { wt[it].toDouble() } < total / 2 && off(median(m, u), median(m, v), gu, gv)
+        }
+        val drop = ArrayList<Int>()
+        dropAreas.forEach { drop += it }
+        for (i in all) {
+            val gx = i % gw; val gy = i / gw
+            val around = ArrayList<Int>()
+            for (yy in max(0, gy - AROUND)..min(gh - 1, gy + AROUND)) for (xx in max(0, gx - AROUND)..min(gw - 1, gx + AROUND)) {
+                if (abs(xx - gx) <= 1 && abs(yy - gy) <= 1) continue
+                val j = yy * gw + xx
+                if (wt[j] > 0f) around += j
+            }
+            val ru = if (around.isEmpty()) gu else median(around, u)
+            val rv = if (around.isEmpty()) gv else median(around, v)
+            if (off(u[i], v[i], ru, rv)) drop += i
+        }
+        for (i in drop) wt[i] = 0f
     }
 
     private fun coarse(a: ViewFrame, w: Int, h: Int, f: Int, cw: Int, ch: Int): FloatArray {

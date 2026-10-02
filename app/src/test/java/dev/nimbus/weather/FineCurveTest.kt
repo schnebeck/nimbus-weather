@@ -87,7 +87,35 @@ class FineCurveTest {
         val c = dayCurve(hours, minutely, start, start + 24 * h, measured)
         assertEquals(1, Curve.segments(c).size)
         assertEquals(15.0, Curve.at(c, start + 11 * h)!!, 1e-9)                        // measured
-        assertEquals(18.0, Curve.at(c, start + 14 * h)!!, 1e-9)                        // forecast
+        // the forecast starts at the reading (no step at "now") and is its own after 3 hours
+        assertEquals(15.0, Curve.at(c, start + 11 * h + 50 * 60_000L)!!, 0.6)
+        val at14 = Curve.at(c, start + 14 * h)!!
+        assertTrue("14:00 between reading and forecast: $at14", at14 > 15.0 && at14 < 18.0)
+        assertEquals(18.0, Curve.at(c, start + 15 * h)!!, 1e-9)
+    }
+
+    @Test fun stationFlickerIsDrawnAsItsMean() {
+        // a sunny-cloudy day: the reports jump by 2 K every 10 minutes
+        val reports = (0..12).map { CurvePoint(start + it * ten, if (it % 2 == 0) 17.0 else 19.0, ten) }
+        val hourly = CurvePoint(start + 4 * h, 20.0)
+        val drawn = Curve.smoothed(reports + hourly)
+        val inner = drawn.filter { it.interval == ten }.drop(1).dropLast(1).map { it.value }
+        assertTrue("still flickering: $inner", inner.max() - inner.min() < 0.7)
+        assertEquals(20.0, drawn.single { it.interval == h }.value, 1e-9)              // hourly values stay
+        // the mean of three: the report (17) and its neighbours (19, 19)
+        assertEquals((19.0 + 17.0 + 19.0) / 3, drawn.first { it.time == start + 2 * ten }.value, 1e-9)
+    }
+
+    @Test fun forecastStartsAtTheLastReading() {
+        val readings = (0..6).map { CurvePoint(start + it * ten, 11.0, ten) }                 // 11° up to 01:00
+        val forecast = (0..8).map { CurvePoint(start + it * h, 14.0) }                       // the model says 14°
+        val c = Curve.joined(readings, forecast)
+        val last = readings.last()
+        // right after the last reading the curve is near it, not 3 K higher
+        assertEquals(11.0, Curve.at(c, last.at + 30 * 60_000L)!!, 0.6)
+        assertEquals(14.0, Curve.at(c, last.at + Curve.JOIN_MS + h)!!, 1e-9)
+        // without readings the forecast is as it is
+        assertEquals(forecast, Curve.joined(emptyList(), forecast))
     }
 
     @Test fun stationReportsFillTheLatestHour() {

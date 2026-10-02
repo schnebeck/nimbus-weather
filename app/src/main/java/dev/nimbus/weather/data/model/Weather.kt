@@ -157,7 +157,13 @@ data class WeatherData(
     val bathing: List<BathingSite> = emptyList(),
     val sources: List<Source>,
     val fetchedAt: Long,
+    /** Parts still showing older values: being refreshed, or their source failed (cards: yellow dot). */
+    val stale: Set<DataPart> = emptySet(),
 )
+
+/** The parts of [WeatherData] that come from sources of their own (and can be older than the rest). */
+@Serializable
+enum class DataPart { FORECAST, AIR_QUALITY, POLLEN, COMMUNITY, GAUGES, BATHING, FLOOD }
 
 @Serializable
 enum class BathingCategory { LAKE, RIVER, COAST, TRANSITIONAL }

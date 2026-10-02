@@ -1,0 +1,4 @@
+• Forecast at once; cards with slow sources pop in when their data arrives; hidden cards load nothing
+• Status dot per card: green up to date, yellow older data (still loading or the source failed – the last data stays)
+• Station curve as a 30-minute mean; the forecast continues from the reading without a step
+• Radar: dissolving rain no longer slides over to neighbouring cells

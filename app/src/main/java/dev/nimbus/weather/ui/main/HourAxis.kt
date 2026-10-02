@@ -126,6 +126,50 @@ object Curve {
         return null
     }
 
+    /** Readings this fine (the station's 10-minute reports) are drawn as a mean over [SMOOTH_MS]. */
+    const val SMOOTH_UP_TO_MS = 10 * 60_000L
+    const val SMOOTH_MS = 30 * 60_000L
+
+    /**
+     * The curve as drawn: the station's 10-minute reports are moments – every cloud shadow and
+     * warm gust shows as a jump of a degree or more; drawn is the mean of the reports within
+     * ±[SMOOTH_MS]/2 (three reports), the course without the flicker. Coarser points stay.
+     */
+    fun smoothed(points: List<CurvePoint>): List<CurvePoint> {
+        val s = points.sortedBy { it.at }
+        return s.mapIndexed { i, p ->
+            if (p.interval > SMOOTH_UP_TO_MS) return@mapIndexed p
+            var sum = 0.0; var n = 0
+            var j = i
+            while (j >= 0 && p.at - s[j].at <= SMOOTH_MS / 2) { if (s[j].interval <= SMOOTH_UP_TO_MS) { sum += s[j].value; n++ }; j-- }
+            j = i + 1
+            while (j < s.size && s[j].at - p.at <= SMOOTH_MS / 2) { if (s[j].interval <= SMOOTH_UP_TO_MS) { sum += s[j].value; n++ }; j++ }
+            p.copy(value = sum / n)
+        }
+    }
+
+    /** How long the forecast takes to close the gap to the last reading. */
+    const val JOIN_MS = 3 * 3_600_000L
+
+    /**
+     * [readings] and the [forecast] after them, the forecast starting at the last reading: the
+     * station and the model differ (the station is up to 20 km away, the model a grid value) –
+     * without this the curve jumped at "now". The difference fades out over [JOIN_MS]; it is taken
+     * from the drawn (smoothed) readings, not from a single report.
+     */
+    fun joined(readings: List<CurvePoint>, forecast: List<CurvePoint>): List<CurvePoint> {
+        if (readings.isEmpty()) return forecast
+        val last = readings.maxBy { it.time }
+        val after = forecast.filter { it.time > last.time }
+        val anchor = smoothed(readings).maxBy { it.time }
+        val model = at(forecast, anchor.at) ?: return readings + after
+        val d = anchor.value - model
+        return readings + after.map { p ->
+            val k = 1.0 - (p.at - anchor.at).toDouble() / JOIN_MS
+            if (k <= 0.0) p else p.copy(value = p.value + d * k)
+        }
+    }
+
     /**
      * Fine points where there are some, the coarse ones elsewhere: [coarse] points falling inside
      * the span of [fine] are dropped (e.g. 15-minute model values for two days, hourly after that).

@@ -1,0 +1,4 @@
+• Vorhersage sofort, Kacheln mit langsamen Quellen poppen herein, sobald ihre Daten da sind; ausgeblendete Kacheln laden nichts
+• Status-Punkt je Kachel: grün aktuell, gelb ältere Daten (lädt noch oder Quelle ausgefallen – die alten Daten bleiben)
+• Stationskurve als 30-Minuten-Mittel; die Vorhersage schließt ohne Sprung an die Messung an
+• Radar: sich auflösender Regen rutscht nicht mehr zu Nachbarzellen

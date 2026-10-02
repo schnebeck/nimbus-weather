@@ -26,6 +26,8 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.foundation.layout.padding
@@ -45,6 +47,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.background
 import androidx.compose.ui.unit.dp
@@ -123,6 +127,13 @@ fun GlassCard(
                 if (contentPadding) HairlineDivider(Modifier.padding(horizontal = 14.dp))
             }
         }
+        // a card without a title shows its status dot in the top corner
+        val status = LocalCardStatus.current
+        if (title == null && status != null) {
+            Box(Modifier.fillMaxWidth().height(0.dp).zIndex(1f)) {
+                StatusDot(status, Modifier.align(Alignment.TopEnd).offset(x = (-10).dp, y = 10.dp))
+            }
+        }
         Column(
             (if (contentPadding) Modifier.padding(horizontal = 14.dp, vertical = 10.dp) else Modifier)
                 // the content disappears under the title (or the card's top edge) – never above it
@@ -161,6 +172,7 @@ val LocalHeaderStyle = androidx.compose.runtime.compositionLocalOf { HeaderStyle
 
 @Composable
 fun CardHeader(title: String, icon: ImageVector?, modifier: Modifier = Modifier, info: Term? = null) {
+    val status = LocalCardStatus.current
     Row(modifier.heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         if (icon != null) Icon(icon, contentDescription = null, tint = NimbusColors.Tertiary, modifier = Modifier.size(14.dp))
         // Long titles (e.g. German compounds) shrink instead of being cut off.
@@ -174,8 +186,30 @@ fun CardHeader(title: String, icon: ImageVector?, modifier: Modifier = Modifier,
                 minFontSize = 7.sp, maxFontSize = CardLabelStyle.fontSize, stepSize = 0.5.sp,
             ),
         )
+        if (status != null) StatusDot(status)
         if (info != null) InfoButton(info)
     }
+}
+
+/** How current a card's data is: [FRESH] just loaded (light green), [STALE] older values – still loading or the source failed (yellow). */
+enum class CardStatus { FRESH, STALE }
+
+/** The status of the cards below (the weather page sets it per card; elsewhere none: no dot). */
+val LocalCardStatus = androidx.compose.runtime.compositionLocalOf<CardStatus?> { null }
+
+private val FreshDot = Color(0xFF9BE59B)
+private val StaleDot = Color(0xFFFFD54F)
+
+/** The small status dot beside a card's info button. */
+@Composable
+fun StatusDot(status: CardStatus, modifier: Modifier = Modifier) {
+    val label = androidx.compose.ui.res.stringResource(
+        if (status == CardStatus.FRESH) dev.nimbus.weather.R.string.card_status_fresh else dev.nimbus.weather.R.string.card_status_stale,
+    )
+    Box(
+        modifier.requiredSize(8.dp).background(if (status == CardStatus.FRESH) FreshDot else StaleDot, androidx.compose.foundation.shape.CircleShape)
+            .semantics { contentDescription = label },
+    )
 }
 
 /** Small ⓘ button that opens the explanation of [term]. */

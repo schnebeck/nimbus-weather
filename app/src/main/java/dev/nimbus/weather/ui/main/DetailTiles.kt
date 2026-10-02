@@ -19,13 +19,7 @@ package dev.nimbus.weather.ui.main
 
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.input.pointer.pointerInput
 import dev.nimbus.weather.data.model.WeatherCard
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
@@ -34,7 +28,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -81,6 +74,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.nimbus.weather.R
 import dev.nimbus.weather.data.model.WeatherData
+import dev.nimbus.weather.data.model.HourlyPoint
+import dev.nimbus.weather.util.TimeFormat
 import dev.nimbus.weather.ui.components.GlassCard
 import dev.nimbus.weather.ui.components.LocalExplain
 import dev.nimbus.weather.ui.components.Term
@@ -259,26 +254,74 @@ private fun WindTile(data: WeatherData, modifier: Modifier) {
 }
 
 /** Chance and amount of precipitation hour by hour for the next 24 hours. */
+/**
+ * Today's precipitation: the amount so far and until midnight, the station's readings, the
+ * highest chance, the nowcast notice – and whether the day stays [dry] (then the card shrinks to
+ * one line with the next precipitation in the forecast, [nextWet], or is hidden – setting).
+ */
+class PrecipToday(
+    val todaySum: Double, val next: Double, val readings: Map<Long, Double>,
+    val peak: HourlyPoint?, val notice: Insights.PrecipNotice?, val dry: Boolean, val nextWet: HourlyPoint?,
+) {
+    companion object {
+        /** Below this an amount shows as 0.0 mm – nothing. */
+        const val DRY_MM = 0.05
+        /** A day stays dry while no hour reaches this chance … */
+        const val DRY_CHANCE = 20.0
+        /** … and the next precipitation is the first hour with this chance or [WET_MM]. */
+        const val WET_CHANCE = 40.0
+        const val WET_MM = 0.2
+
+        fun of(data: WeatherData, now: Long, raining: Boolean, measured: TodayMeasured?, tf: TimeFormat): PrecipToday? {
+            // Today from 00:00 to 24:00 (like the meteogram); each value covers the hour before its time
+            val dayStart = tf.zoned(now).toLocalDate().atStartOfDay(tf.zone).toInstant().toEpochMilli()
+            val hours = data.hourly.filter { it.time > dayStart && it.time <= dayStart + 24 * HOUR }
+            if (hours.size < 2) return null
+            val today = data.daily.lastOrNull { it.date <= now } ?: data.daily.firstOrNull()
+            // Hours already over with a station reading count as measured, the others as forecast
+            val readings = measured?.precipitation.orEmpty().filterKeys { it > dayStart && it <= now }
+            val todaySum = if (readings.isEmpty()) today?.precipitationSum ?: 0.0
+            else readings.values.sum() + hours.filter { it.time !in readings }.sumOf { it.precipitation ?: 0.0 }
+            // The rest of the day: hours not yet over
+            val rest = hours.filter { it.time > now }
+            val notice = Insights.precipNotice(data.minutely, data.hourly, data.current.condition, now, raining)
+            val dry = !raining && notice == null && todaySum < DRY_MM &&
+                rest.all { (it.precipitation ?: 0.0) < DRY_MM && (it.precipitationProbability ?: 0.0) < DRY_CHANCE }
+            val nextWet = data.hourly.firstOrNull { it.time > now && ((it.precipitationProbability ?: 0.0) >= WET_CHANCE || (it.precipitation ?: 0.0) >= WET_MM) }
+            return PrecipToday(
+                todaySum, rest.sumOf { it.precipitation ?: 0.0 }, readings,
+                rest.maxByOrNull { it.precipitationProbability ?: 0.0 }, notice, dry, nextWet,
+            )
+        }
+
+        private const val HOUR = 3_600_000L
+    }
+}
+
 @Composable
 fun PrecipitationCard(data: WeatherData, now: Long, raining: Boolean = false, measured: TodayMeasured? = null) {
     val s = LocalSettings.current
     val tf = LocalTimeFormat.current
-    // Today from 00:00 to 24:00 (like the meteogram); each value covers the hour before its time
-    val dayStart = remember(now / 3_600_000L) { tf.zoned(now).toLocalDate().atStartOfDay(tf.zone).toInstant().toEpochMilli() }
-    val hours = remember(data, dayStart) { data.hourly.filter { it.time > dayStart && it.time <= dayStart + 24 * 3_600_000L } }
-    if (hours.size < 2) return
+    val p = remember(data, now / 60_000L, raining, measured, tf) { PrecipToday.of(data, now, raining, measured, tf) } ?: return
     val unit = stringResource(Texts.precipUnit(s.precipitationUnit))
-    val today = data.daily.lastOrNull { it.date <= now } ?: data.daily.firstOrNull()
-    // Hours already over with a station reading count as measured, the others as forecast
-    val readings = measured?.precipitation.orEmpty().filterKeys { it > dayStart && it <= now }
-    val todaySum = if (readings.isEmpty()) today?.precipitationSum ?: 0.0
-    else readings.values.sum() + hours.filter { it.time !in readings }.sumOf { it.precipitation ?: 0.0 }
-    // The rest of the day: hours not yet over
-    val rest = hours.filter { it.time > now }
-    val next = rest.sumOf { it.precipitation ?: 0.0 }
-    val peak = rest.maxByOrNull { it.precipitationProbability ?: 0.0 }
+    val todaySum = p.todaySum; val next = p.next; val readings = p.readings; val peak = p.peak; val notice = p.notice
     val peakChance = peak?.precipitationProbability ?: 0.0
-    val notice = remember(data, now, raining) { Insights.precipNotice(data.minutely, data.hourly, data.current.condition, now, raining) }
+    if (p.dry) {
+        // A dry day: one line – and when the forecast has some, the next precipitation
+        GlassCard(title = stringResource(R.string.precip_title), icon = Icons.Outlined.WaterDrop, info = Term.PRECIP_PROBABILITY) {
+            Text(stringResource(R.string.precip_dry_today), fontSize = 17.sp, fontWeight = FontWeight.Medium, color = Color.White)
+            val w = p.nextWet
+            Text(
+                if (w == null) stringResource(R.string.precip_dry_ahead)
+                else stringResource(
+                    R.string.precip_next_wet, tf.weekdayShort(w.time - 3_600_000L), tf.time(w.time - 3_600_000L),
+                    (w.precipitationProbability ?: 0.0).roundToInt(),
+                ),
+                fontSize = 14.sp, color = NimbusColors.Secondary,
+            )
+        }
+        return
+    }
     // One card for all precipitation: a one-line notice on top when it rains now or within 2 hours.
     GlassCard(title = stringResource(R.string.precip_title), icon = Icons.Outlined.WaterDrop, info = Term.PRECIP_PROBABILITY) {
         if (notice != null) {
@@ -307,233 +350,10 @@ fun PrecipitationCard(data: WeatherData, now: Long, raining: Boolean = false, me
             else stringResource(R.string.precip_no_chance),
             fontSize = 14.sp, color = Color.White,
         )
-        Spacer(Modifier.height(10.dp))
-        PrecipChart(
-            // with the next day's first hour: the 24 column
-            data.hourly.filter { it.time > dayStart && it.time <= dayStart + 25 * 3_600_000L }
-                .map { PrecipHour(it.time, it.precipitation, it.precipitationProbability, readings[it.time]) },
-            remember(dayStart, data.place) { nights(dayStart, HourAxis.dayAxisEnd(dayStart + 24 * 3_600_000L), data.place.latitude, data.place.longitude) },
-            now, compare = false,
-            Modifier.fillMaxWidth().bleed(CARD_BLEED),
-        )
+        // The hour-by-hour chart is part of the 10-day forecast (in the temperature chart, or as
+        // a chart of its own – setting "precipitation as its own chart")
     }
 }
-
-/**
- * Today from 00:00 to 24:00 in the style of the meteogram (hours already over paler, a dashed
- * mark at the current time): amount per hour as bars (right axis, mm or in) – measured (dark blue)
- * for the hours already over, where a station reading exists, else forecast –, chance
- * of precipitation as a line (left axis, %) over the forecast hours, night shading. Each bar covers the hour before its
- * time stamp (like the model values). A long press shows a cursor with the values of the hour –
- * dragging moves it, it fades out after 10 s, as in the 10-day forecast.
- *
- * [compare] (look-back): measured and forecast amount together – the measurement as a dark blue
- * bar under the translucent forecast – and the chance over all hours.
- */
-@Composable
-fun PrecipChart(
-    hours: List<PrecipHour>, nights: List<LongRange>, now: Long, compare: Boolean, modifier: Modifier,
-    /** End of the day (24:00) when the last hours are missing. */
-    endOfDay: Long? = null,
-) {
-    // [hours] may hold the next day's first hour: the 24 column, like the 00 (HourAxis.dayAxisEnd)
-    val s = LocalSettings.current
-    val tf = LocalTimeFormat.current
-    val measurer = rememberTextMeasurer()
-    val labelStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Tertiary)
-    val unitStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Secondary, fontWeight = FontWeight.SemiBold)
-    val pUnit = stringResource(Texts.precipUnit(s.precipitationUnit))
-    val inch = s.precipitationUnit == dev.nimbus.weather.data.model.PrecipitationUnit.INCH
-    val start = hours.first().time - 3_600_000L
-    // The day 00–24 (the first hour's value ends at 01:00) plus the 24 column
-    val end = HourAxis.dayAxisEnd(endOfDay ?: (start + 24 * 3_600_000L))
-    val span = (end - start).toFloat()
-    val amounts = hours.map { Units.precipitationValue(it.forecast ?: 0.0, s.precipitationUnit) }
-    val measuredAmounts = hours.map { h -> h.measured?.takeIf { compare || h.time <= now }?.let { Units.precipitationValue(it, s.precipitationUnit) } }
-    val hasMeasured = measuredAmounts.any { it != null }
-    // Today the measurement replaces the forecast; in the look-back both are drawn
-    val shownForecast = if (compare) amounts else amounts.filterIndexed { i, _ -> measuredAmounts[i] == null }
-    val amountMax = maxOf(if (inch) 0.04 else 1.0, shownForecast.maxOrNull() ?: 0.0, measuredAmounts.maxOf { it ?: 0.0 }).let { if (inch) kotlin.math.ceil(it * 20) / 20 else kotlin.math.ceil(it) }
-    fun amountLabel(k: Int): String = when {
-        k == 0 -> "0"
-        inch -> String.format(java.util.Locale.getDefault(), "%.2f", amountMax * k / 2)
-        else -> Units.oneDecimal(amountMax * k / 2)
-    }
-
-    var selected by remember(hours) { mutableStateOf(hours.indexOfFirst { it.time > now }.coerceAtLeast(0)) }
-    var cursorOn by remember { mutableStateOf(false) }
-    var touched by remember { androidx.compose.runtime.mutableIntStateOf(0) }
-    androidx.compose.runtime.LaunchedEffect(touched, cursorOn) {
-        if (cursorOn) { kotlinx.coroutines.delay(10_000L); cursorOn = false }
-    }
-    val cursorAlpha by androidx.compose.animation.core.animateFloatAsState(
-        if (cursorOn) 1f else 0f, androidx.compose.animation.core.tween(if (cursorOn) 150 else 700), label = "cursor",
-    )
-    // Plot edges, shared by drawing and touch handling
-    var plotL by remember { mutableStateOf(0f) }
-    var plotR by remember { mutableStateOf(1f) }
-    // Touch: the hour whose bar is nearest – the same geometry as the drawing
-    fun indexAt(xPx: Float): Int = HourAxis(start, end, plotL, plotR).indexAt(xPx, hours.map { it.time })
-
-    Column(modifier) {
-        Canvas(
-            Modifier.fillMaxWidth().height(124.dp)
-                .pointerInput(hours) {
-                    detectDragGesturesAfterLongPress(
-                        onDragStart = { cursorOn = true; selected = indexAt(it.x); touched++ },
-                    ) { change, _ ->
-                        change.consume()
-                        selected = indexAt(change.position.x)
-                        touched++
-                    }
-                }
-                .pointerInput(hours) {
-                    detectTapGestures(onTap = { if (cursorOn) { selected = indexAt(it.x); touched++ } })
-                },
-        ) {
-            val gap = 3.dp.toPx()
-            val axisL = listOf("100", "50", "0").maxOf { measurer.measure(it, labelStyle).size.width } + gap
-            val axisR = maxOf((0..2).maxOf { measurer.measure(amountLabel(it), labelStyle).size.width }, measurer.measure(pUnit, unitStyle).size.width) + gap
-            val unitP = measurer.measure("%", unitStyle)
-            val unitA = measurer.measure(pUnit, unitStyle)
-            val top = unitP.size.height + measurer.measure("0", labelStyle).size.height / 2f + 4.dp.toPx()
-            val labelH = measurer.measure("00", labelStyle).size.height
-            val bottom = size.height - labelH - 4.dp.toPx()
-            val l = axisL
-            val r = size.width - axisR
-            plotL = l; plotR = r
-            fun x(t: Long) = l + (r - l) * ((t - start) / span)
-            fun yP(chance: Double) = (bottom - (chance / 100.0).coerceIn(0.0, 1.0) * (bottom - top)).toFloat()
-            fun yA(v: Double) = (bottom - (v / amountMax).coerceIn(0.0, 1.0) * (bottom - top)).toFloat()
-            drawRect(DayTint, Offset(l, top), Size(r - l, bottom - top))
-            nights.forEach { n ->
-                val a = maxOf(n.first, start); val b = minOf(n.last + 1, end)
-                if (b > a) drawRect(NightShade, Offset(x(a), top), Size(x(b) - x(a), bottom - top))
-            }
-            drawText(unitP, topLeft = Offset(0f, 0f))
-            drawText(unitA, topLeft = Offset(size.width - unitA.size.width, 0f))
-            for (k in 0..2) {
-                val y = top + (bottom - top) * k / 2
-                drawLine(Color(0x1FFFFFFF), Offset(l, y), Offset(r, y), 1f)
-                val t = measurer.measure("${100 - 50 * k}", labelStyle)
-                drawText(t, topLeft = Offset(l - t.size.width - gap, y - t.size.height / 2f))
-                val ta = measurer.measure(amountLabel(2 - k), labelStyle)
-                drawText(ta, topLeft = Offset(r + gap, y - ta.size.height / 2f))
-            }
-            // Bars, line points, labels and cursor from one geometry (see HourAxis)
-            val axis = HourAxis(start, end, l, r)
-            // Time labels every 3 hours in the middle of their hour: under its bar and cursor
-            axis.labelHours().forEach { hs ->
-                val xm = axis.label(hs)
-                drawLine(Color(0x1FFFFFFF), Offset(xm, top), Offset(xm, bottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
-                val lt = measurer.measure(if (hs >= end - 3_600_000L) tf.hourEnd(hs) else tf.hour(hs), labelStyle)
-                drawText(lt, topLeft = Offset((xm - lt.size.width / 2f).coerceIn(0f, size.width - lt.size.width), bottom + 4.dp.toPx()))
-            }
-            fun centre(i: Int) = axis.point(hours[i].time)
-            // Amount: bars
-            amounts.forEachIndexed { i, v ->
-                val bh = bottom - yA(v)
-                val m = measuredAmounts[i]
-                val left = axis.barLeft(hours[i].time)
-                val w = axis.barWidth()
-                val over = hours[i].time <= now
-                when {
-                    compare -> {
-                        // Look-back: the measured bar in one colour, the forecast as a thin unfilled frame in front
-                        val mh = m?.let { bottom - yA(it) } ?: 0f
-                        if (mh > 0.5f) drawRoundRect(PrecipStyle.Measured, Offset(left, bottom - mh), Size(w, mh), CornerRadius(2.dp.toPx()))
-                        if (bh > 0.5f) with(PrecipStyle) { forecastFrame(left, bottom - bh, w, bottom) }
-                    }
-                    // Today: an hour over shows what was measured, the forecast for it is gone
-                    m != null -> {
-                        val mh = bottom - yA(m)
-                        if (mh > 0.5f) drawRoundRect(MeasuredBar, Offset(left, bottom - mh), Size(w, mh), CornerRadius(2.dp.toPx()))
-                    }
-                    // an hour over without a reading: nothing while the station measures, else the forecast pale
-                    over && hasMeasured -> Unit
-                    else -> {
-                        // with readings the forecast is muted (as in the look-back), else the plain bar colour
-                        val base = if (hasMeasured) PrecipStyle.Forecast else PrecipStyle.Bar
-                        val c = if (over) base.copy(alpha = 0.4f) else base
-                        if (bh > 0.5f) drawRoundRect(c, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()))
-                    }
-                }
-            }
-            // Chance: a line over the whole day, as forecast
-            val line = androidx.compose.ui.graphics.Path()
-            hours.forEachIndexed { i, h ->
-                val y = yP(h.chance ?: 0.0)
-                if (i == 0) line.moveTo(centre(i), y) else line.lineTo(centre(i), y)
-            }
-            drawPath(line, ChanceLine, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
-            // Current time
-            if (now in start..end) {
-                val xn = x(now)
-                drawLine(Color(0xB3FFFFFF), Offset(xn, top), Offset(xn, bottom), 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())))
-            }
-            // Cursor
-            if (cursorAlpha > 0f) {
-                val i = selected.coerceIn(0, hours.lastIndex)
-                val xc = axis.cursor(hours[i].time)
-                drawLine(Color.White.copy(alpha = 0.85f * cursorAlpha), Offset(xc, top - 2.dp.toPx()), Offset(xc, bottom), 1.5.dp.toPx())
-                val yc = yP(hours[i].chance ?: 0.0)
-                drawCircle(Color(0xFF1A2A40).copy(alpha = cursorAlpha), 5.dp.toPx(), Offset(xc, yc))
-                drawCircle(ChanceLine.copy(alpha = cursorAlpha), 3.dp.toPx(), Offset(xc, yc))
-            }
-        }
-        // Legend, or the values of the hour under the cursor – same place, so the card keeps its height
-        // (look-back: values always shown, the legend below as in the course of the day)
-        // The plot reaches into the card's padding (callers use bleed); the text keeps it
-        Box(Modifier.fillMaxWidth().padding(top = 4.dp, start = CARD_BLEED, end = CARD_BLEED)) {
-            // One line in every language and font size (shrinks instead of wrapping)
-            if (!compare) androidx.compose.foundation.text.BasicText(
-                stringResource(if (hasMeasured) R.string.precip_chart_hint_measured else R.string.precip_chart_hint), Modifier.fillMaxWidth().alpha(1f - cursorAlpha),
-                style = TextStyle(fontSize = 11.sp, color = NimbusColors.Tertiary), maxLines = 1,
-                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = 11.sp, stepSize = 0.5.sp),
-            )
-            val sel = selected.coerceIn(0, hours.lastIndex)
-            val h = hours[sel]
-            fun amount(v: Double?) = v?.let { Units.precipitationNumber(it, s.precipitationUnit) + NBSP + pUnit } ?: NO_VALUE
-            val chance = h.chance?.let { (Insights.chanceText(it, h.forecast) ?: "0") + NBSP + "%" } ?: NO_VALUE
-            val time = stringResource(R.string.readout_time) to tf.time(h.time - 3_600_000L) + "–" + tf.time(h.time)
-            val m = measuredAmounts[sel]?.let { h.measured }
-            // Fixed cells: sliding the cursor changes the values, nothing moves
-            ReadoutCells(
-                if (compare) listOf(
-                    time,
-                    stringResource(R.string.history_legend_measured) to amount(m),
-                    stringResource(R.string.forecast) to amount(h.forecast),
-                    stringResource(R.string.readout_chance) to chance,
-                ) else listOf(
-                    time,
-                    (if (m != null) stringResource(R.string.history_legend_measured) else stringResource(R.string.forecast)) to amount(m ?: h.forecast ?: 0.0),
-                    stringResource(R.string.readout_chance) to chance,
-                ),
-                Modifier.alpha(if (compare) 1f else cursorAlpha),
-            )
-        }
-        if (compare) Column(Modifier.padding(horizontal = CARD_BLEED)) {
-            // Legend in the style of the course of the day: bars with the day's totals, the line
-            fun total(v: Double) = Units.precipitationNumber(v, s.precipitationUnit) + NBSP + pUnit
-            LegendRow {
-                // the day's totals: 00–24, without the 24 column
-                val day = hours.filter { it.time <= start + 24 * 3_600_000L }
-                LegendItem(PrecipStyle.Measured, stringResource(R.string.legend_precip_measured, total(day.sumOf { it.measured ?: 0.0 })))
-                LegendItem(PrecipStyle.ForecastFrame, stringResource(R.string.legend_precip_forecast, total(day.sumOf { it.forecast ?: 0.0 })), frame = true)
-                LegendItem(ChanceLine, stringResource(R.string.legend_chance), line = true)
-            }
-            Text(stringResource(R.string.meteogram_hint), fontSize = 11.sp, lineHeight = 15.sp, color = NimbusColors.Tertiary, modifier = Modifier.padding(top = 4.dp))
-        }
-    }
-}
-
-/** One hour of a precipitation chart: forecast amount and chance, the measured amount (null: none). */
-data class PrecipHour(val time: Long, val forecast: Double?, val chance: Double?, val measured: Double?)
-
-/** Measured (DWD station) amounts – the colours of the course of the day. */
-private val MeasuredBar = PrecipStyle.Measured
-/** Chance of precipitation: white line, like the other curves (the bars are blue). */
-private val ChanceLine = Color(0xF2FFFFFF)
 
 @Composable
 private fun HumidityTile(data: WeatherData, modifier: Modifier) {

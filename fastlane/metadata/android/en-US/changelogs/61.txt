@@ -1,0 +1,4 @@
+• Precipitation as its own chart (setting): in the 10-day forecast and the look-back, amount and chance under the temperature, one cursor through all
+• "Precipitation today" card as text only and first by default; on dry days one line with the next precipitation, or hidden (setting)
+• Legend with the temperature (in the look-back also its forecast), shorter, in a fixed order
+• Values under the chart no longer jump between one and two columns while sliding

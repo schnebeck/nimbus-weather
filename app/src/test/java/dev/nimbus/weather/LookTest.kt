@@ -25,6 +25,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -32,19 +35,22 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
 import dev.nimbus.weather.data.model.Condition
 import dev.nimbus.weather.data.model.Settings
+import dev.nimbus.weather.ui.main.HourCompare
 import dev.nimbus.weather.ui.main.LocalSettings
 import dev.nimbus.weather.ui.main.LocalTimeFormat
 import dev.nimbus.weather.ui.main.Meteogram
 import dev.nimbus.weather.ui.main.MeteoPoint
-import dev.nimbus.weather.ui.main.PrecipChart
-import dev.nimbus.weather.ui.main.PrecipHour
 import dev.nimbus.weather.util.TimeFormat
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -174,20 +180,102 @@ class LookTest {
         compose.onRoot().captureRoboImage("src/test/screenshots/meteogram_lookback.png")
     }
 
-    @Test fun precipitationChartCursorStandsInTheMiddleOfItsBar() {
-        val hours = (1..25).map { k -> PrecipHour(day + k * h, 0.3 + (k % 4) * 0.3, 70.0, if (k <= 10) 0.4 + (k % 3) * 0.3 else null) }
-        compose.setContent { Card { PrecipChart(hours, emptyList(), day + 10 * h + 600_000L, compare = false, Modifier) } }
-        val x = pressAt(0.6f, 0.4f)
-        assertCursorCentredOnABar(bitmap(), "precipitation", x)
-        compose.onRoot().captureRoboImage("src/test/screenshots/precip_cursor.png")
+    /** Rows where at least [share] of the width is near-white: the chance line (60 % all day). */
+    private fun Bitmap.whiteRows(share: Float = 0.5f): List<Int> = (0 until height).filter { y ->
+        (0 until width).count { x -> val (r, g, b) = rgb(x, y); r > 215 && g > 215 && b > 215 } > width * share
     }
 
-    @Test fun lookBackPrecipitation() {
-        val hours = (1..25).map { k -> PrecipHour(day + k * h, 0.3 + (k % 4) * 0.3, 70.0, 0.2 + (k % 3) * 0.35) }
-        compose.setContent { Card { PrecipChart(hours, emptyList(), day + 30 * h, compare = true, Modifier) } }
+    @Test fun separatePrecipitationChart() {
+        compose.setContent { Card { Meteogram(forecastDay(), day, day + 24 * h, emptyList(), day + 15 * h, separatePrecip = true) } }
         compose.waitForIdle()
-        compose.onRoot().captureRoboImage("src/test/screenshots/precip_lookback.png")
+        val plain = bitmap()
+        // the chance as a white line across the precipitation chart, below the temperature
+        val chance = plain.whiteRows()
+        assertTrue("chance line not found", chance.isNotEmpty())
+        val x = pressAt(0.37f, 0.45f)
+        assertCursorCentredOnABar(bitmap(), "separate precipitation", x)
+        // the bars stand in the chart below the temperature: under the chance line's top
+        assertTrue("bars below the temperature chart", bitmap().barRow() > chance.first())
+        compose.onRoot().captureRoboImage("src/test/screenshots/meteogram_separate.png")
     }
+
+    @Test fun combinedChartHasNoChanceLine() {
+        compose.setContent { Card { Meteogram(forecastDay(), day, day + 24 * h, emptyList(), day + 30 * h) } }
+        compose.waitForIdle()
+        assertTrue("a chance line in the combined chart", bitmap().whiteRows().isEmpty())
+    }
+
+    // ---- the readout while the finger slides --------------------------------------------------
+
+    /** A day whose values change in width from hour to hour: names, signs, digits, missing gusts. */
+    private fun restlessDay() = (0..25).map { k ->
+        val c = Condition.entries[k % Condition.entries.size]
+        MeteoPoint(
+            day + k * h, -14.0 + k * 1.7, c, k in 7..19, if (k % 3 == 0) 0.0 else k * 0.53,
+            precipitationChance = (k * 37 % 101).toDouble(), windSpeed = (k * 9 % 140).toDouble(), windDirection = k * 45.0,
+            windGust = if (k % 4 == 0) null else (k * 11 % 160).toDouble(), humidity = (k * 7 % 101).toDouble(),
+            apparentTemperature = -20.0 + k * 2.1, sunshine = (k * 7 % 61).toDouble(),
+        )
+    }
+
+    private fun restlessLookBack() = restlessDay().map { p ->
+        p.copy(compare = HourCompare(
+            p.temperature, p.temperature + 3, p.precipitation, if (p.time / h % 2 == 0L) null else 4.4, p.precipitationChance,
+            p.windSpeed, p.windDirection, 120.0, p.windGust, null, p.sunshine, 60.0,
+        ))
+    }
+
+    /**
+     * Slides the finger over every hour; the card's height, the hint and legend below the readout
+     * and the readout's columns must not move (they "fluttered" when a value's width decided the layout).
+     */
+    private fun assertSteadyWhileSliding(points: List<MeteoPoint>, separate: Boolean, columnLabel: String) {
+        // font sizes from normal to the largest system setting: somewhere two pairs per row stop fitting
+        var fontScale by mutableFloatStateOf(1f)
+        compose.setContent {
+            val d = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(d.density, fontScale)) {
+                Card { Meteogram(points, day, day + 24 * h, emptyList(), day + 30 * h, separatePrecip = separate) }
+            }
+        }
+        for (scale in listOf(1f, 1.15f, 1.3f, 1.5f, 1.8f, 2f)) {
+            compose.mainClock.autoAdvance = true
+            fontScale = scale
+            compose.waitForIdle()
+            compose.mainClock.advanceTimeBy(11_000)                       // the cursor of the last round fades out
+            slide(separate, columnLabel, scale)
+        }
+    }
+
+    private fun slide(separate: Boolean, columnLabel: String, scale: Float) {
+        bitmap()
+        val hint = ctx().getString(R.string.meteogram_hint)
+        fun probe(): Triple<Int, Float, Float> = Triple(
+            compose.onRoot().fetchSemanticsNode().size.height,
+            compose.onNodeWithText(hint).fetchSemanticsNode().positionInRoot.y,
+            compose.onNodeWithText(columnLabel).fetchSemanticsNode().positionInRoot.x,
+        )
+        val root = compose.onRoot().fetchSemanticsNode().size
+        val y = root.height * 0.3f
+        compose.mainClock.autoAdvance = false
+        compose.onRoot().performTouchInput { down(Offset(root.width * 0.1f, y)) }
+        compose.mainClock.advanceTimeBy(800)                              // the long press
+        val seen = (0..60).map { i ->
+            compose.onRoot().performTouchInput { moveTo(Offset(root.width * (0.1f + 0.8f * i / 60), y)) }
+            compose.mainClock.advanceTimeBy(32)
+            probe()
+        }
+        compose.onRoot().performTouchInput { up() }
+        val first = seen.first()
+        seen.forEachIndexed { i, p -> assertEquals("font $scale, step $i (separate=$separate): height, hint y, column x", first, p) }
+    }
+
+    @Test fun forecastReadoutSteady() = assertSteadyWhileSliding(restlessDay(), false, ctx().getString(R.string.readout_feels))
+    @Test fun forecastReadoutSteadySeparate() = assertSteadyWhileSliding(restlessDay(), true, ctx().getString(R.string.readout_feels))
+    @Test fun lookBackReadoutSteady() = assertSteadyWhileSliding(restlessLookBack(), false, ctx().getString(R.string.forecast))
+    @Test fun lookBackReadoutSteadySeparate() = assertSteadyWhileSliding(restlessLookBack(), true, ctx().getString(R.string.forecast))
+
+    private fun ctx(): android.content.Context = org.robolectric.RuntimeEnvironment.getApplication()
 
     /** Garbsen, the test day (UTC): night until about 05:20, from about 17:00, and in the 24 column. */
     private val garbsenNights = dev.nimbus.weather.ui.main.nights(day, day + 25 * h, 52.42, 9.60)

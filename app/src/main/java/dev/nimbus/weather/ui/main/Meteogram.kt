@@ -69,7 +69,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.nimbus.weather.R
 import dev.nimbus.weather.data.model.Condition
-import dev.nimbus.weather.data.model.DailyPoint
 import dev.nimbus.weather.data.model.HourlyPoint
 import dev.nimbus.weather.data.model.PrecipitationUnit
 import dev.nimbus.weather.data.model.TemperatureUnit
@@ -86,6 +85,8 @@ import kotlin.math.floor
 import kotlin.math.roundToInt
 
 private val PrecipBar = PrecipStyle.Bar
+/** The chance of precipitation: a white line, as in the precipitation chart. */
+private val ChanceLine = Color(0xF2FFFFFF)
 // Sunshine columns: wide and faint, so rain bars and the temperature curve stay readable on top.
 // Sunshine row: light grey, no outline – the temperature curve has the warm colours.
 private val SunFill = Color(0xFFC3C9D2)
@@ -200,6 +201,12 @@ fun Meteogram(
     summary: (@Composable () -> Unit)? = null,
     /** Below the legend, before the press hint – the hint always ends the card. */
     legendExtra: (@Composable () -> Unit)? = null,
+    /**
+     * Precipitation in a chart of its own under the temperature (setting): amount as bars, the
+     * chance as a line, % on the left and mm on the right; the temperature chart then has no bars.
+     * Both share the time axis, the night shading and the cursor.
+     */
+    separatePrecip: Boolean = false,
 ) {
     val s = LocalSettings.current
     val tf = LocalTimeFormat.current
@@ -272,7 +279,10 @@ fun Meteogram(
     }
     val gap = 3.dp
     val axisL = with(density) {
-        (0..2).maxOf { k -> measurer.measure("${(tLo + (tHi - tLo) * k / 2.0).roundToInt()}", labelStyle).size.width }.toDp()
+        maxOf(
+            (0..2).maxOf { k -> measurer.measure("${(tLo + (tHi - tLo) * k / 2.0).roundToInt()}", labelStyle).size.width },
+            if (separatePrecip) measurer.measure("100", labelStyle).size.width else 0,
+        ).toDp()
     } + gap
     // Daily totals (the first point, 00:00, belongs to the hour before the day)
     val dayPts = pts.filter { it.time > start && it.time <= end }
@@ -294,9 +304,12 @@ fun Meteogram(
     // The sunshine row keeps a small gap to the plot, where the lowest axis numbers reach down.
     val sunGap = 6.dp
     val sunH = if (sunTotalMin != null) 20.dp + sunGap else 0.dp
+    // The precipitation chart of its own: a gap for its units, then the plot
+    val precipGap = if (separatePrecip) 30.dp else 0.dp
+    val precipPlotH = if (separatePrecip) 76.dp else 0.dp
 
     Column(modifier) {
-        BoxWithConstraints(Modifier.fillMaxWidth().height(labelsH + iconsH + plotH + windH + sunH)) {
+        BoxWithConstraints(Modifier.fillMaxWidth().height(labelsH + iconsH + plotH + precipGap + precipPlotH + windH + sunH)) {
             val plotW = maxWidth - axisL - axisR
             fun xDp(t: Long) = axisL + plotW * ((t - start) / span)
             // Touch: the hour whose bar is nearest (same geometry as the drawing, in dp)
@@ -322,13 +335,24 @@ fun Meteogram(
                 val top = (labelsH + iconsH).toPx(); val bottom = top + plotH.toPx()
                 fun x(t: Long) = l + (r - l) * ((t - start) / span)
                 fun yT(v: Double) = (bottom - (v - tLo) / (tHi - tLo) * (bottom - top)).toFloat()
-                fun yP(v: Double) = (bottom - v / precipMax * (bottom - top)).toFloat()
+                // The precipitation chart: under the temperature (own plot) or in it (bars from its bottom)
+                val pTop = if (separatePrecip) bottom + precipGap.toPx() else top
+                val pBottom = if (separatePrecip) pTop + precipPlotH.toPx() else bottom
+                fun yP(v: Double) = (pBottom - v / precipMax * (pBottom - pTop)).toFloat()
+                fun yChance(c: Double) = (pBottom - (c / 100.0).coerceIn(0.0, 1.0) * (pBottom - pTop)).toFloat()
+                /** Where the rows below the charts (sunshine, wind) start. */
+                val rows = pBottom
                 val below = sunH.toPx() + windH.toPx()   // sunshine row and wind arrows under the plot
 
-                drawRect(DayTint, Offset(l, top), Size(r - l, bottom - top + below))
-                nights.forEach { n ->
-                    val a = maxOf(n.first, start); val b = minOf(n.last + 1, axisEnd)
-                    if (b > a) drawRect(NightShade, Offset(x(a), top), Size(x(b) - x(a), bottom - top + below))
+                // Day and night: behind the temperature chart, and behind the precipitation chart
+                // with the rows below (the gap between them stays clear for the units)
+                val bands = if (separatePrecip) listOf(top to bottom, pTop to rows + below) else listOf(top to rows + below)
+                bands.forEach { (y0, y1) ->
+                    drawRect(DayTint, Offset(l, y0), Size(r - l, y1 - y0))
+                    nights.forEach { n ->
+                        val a = maxOf(n.first, start); val b = minOf(n.last + 1, axisEnd)
+                        if (b > a) drawRect(NightShade, Offset(x(a), y0), Size(x(b) - x(a), y1 - y0))
+                    }
                 }
                 // Units in the top corners (free: symbols sit in the block middles), numbers on the axes
                 // Units sit clearly above the top axis numbers (which are centred on the top line).
@@ -336,7 +360,13 @@ fun Meteogram(
                 val unitY = top - measurer.measure("0", labelStyle).size.height / 2f - 4.dp.toPx()
                 drawText(ut, topLeft = Offset(0f, unitY - ut.size.height))
                 val up = measurer.measure(pUnit, unitStyle)
-                drawText(up, topLeft = Offset(size.width - up.size.width, unitY - up.size.height))
+                // the mm unit above its axis: the temperature chart's (combined) or the precipitation chart's
+                val pUnitY = if (separatePrecip) pTop - measurer.measure("0", labelStyle).size.height / 2f - 2.dp.toPx() else unitY
+                drawText(up, topLeft = Offset(size.width - up.size.width, pUnitY - up.size.height))
+                if (separatePrecip) {
+                    val pc = measurer.measure("%", unitStyle)
+                    drawText(pc, topLeft = Offset(0f, pUnitY - pc.size.height))
+                }
                 for (k in 0..2) {
                     val v = tLo + (tHi - tLo) * k / 2.0
                     drawLine(GridLine, Offset(l, yT(v)), Offset(r, yT(v)), 1f)
@@ -344,12 +374,18 @@ fun Meteogram(
                     drawText(lt, topLeft = Offset(l - lt.size.width - gap.toPx(), yT(v) - lt.size.height / 2f))
                     val lp = measurer.measure(precipLabel(k), labelStyle)
                     drawText(lp, topLeft = Offset(r + gap.toPx(), yP(precipMax * k / 2) - lp.size.height / 2f))
+                    if (separatePrecip) {
+                        drawLine(GridLine, Offset(l, yChance(50.0 * k)), Offset(r, yChance(50.0 * k)), 1f)
+                        val lc = measurer.measure("${50 * k}", labelStyle)
+                        drawText(lc, topLeft = Offset(l - lc.size.width - gap.toPx(), yChance(50.0 * k) - lc.size.height / 2f))
+                    }
                 }
                 // Time labels every 3 hours in the middle of their hour: under its bar and cursor
                 val labelAxis = HourAxis(start, axisEnd, l, r)
                 labelAxis.labelHours().forEach { hs ->
                     val xm = labelAxis.label(hs)
                     drawLine(GridLine, Offset(xm, top), Offset(xm, bottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
+                    if (separatePrecip) drawLine(GridLine, Offset(xm, pTop), Offset(xm, pBottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
                     val lt = measurer.measure(if (hs >= end) tf.hourEnd(hs) else tf.hour(hs), labelStyle)
                     drawText(lt, topLeft = Offset((xm - lt.size.width / 2f).coerceIn(0f, size.width - lt.size.width), 0f))
                 }
@@ -362,8 +398,8 @@ fun Meteogram(
                 clipRect(left = l, right = r) {
                     // Sunshine row right below the plot: minutes per hour, full row height = 60 min
                     if (sunTotalMin != null) {
-                        val rowTop = bottom + sunGap.toPx() + 2.dp.toPx()
-                        val rowBottom = bottom + sunH.toPx() - 2.dp.toPx()
+                        val rowTop = rows + sunGap.toPx() + 2.dp.toPx()
+                        val rowBottom = rows + sunH.toPx() - 2.dp.toPx()
                         drawRect(SunTrack, Offset(l, rowTop), Size(r - l, rowBottom - rowTop))
                         pts.filter { it.time > start }.forEach { h ->
                             val m = (h.sunshine ?: 0.0).coerceIn(0.0, 60.0)
@@ -375,14 +411,25 @@ fun Meteogram(
                     }
                     pts.filter { it.time > start }.forEach { h ->
                         fun bar(v: Double, c: Color) {
-                            if (v > 0.0) drawRoundRect(c, Offset(barX(h.time), yP(v)), Size(barW, bottom - yP(v)), CornerRadius(2.dp.toPx()))
+                            if (v > 0.0) drawRoundRect(c, Offset(barX(h.time), yP(v)), Size(barW, pBottom - yP(v)), CornerRadius(2.dp.toPx()))
                         }
                         val p = Units.precipitationValue(h.precipitation ?: 0.0, s.precipitationUnit)
                         val measuredBar = compare && !h.forecastOnly
                         val fp = h.forecastPrecipitation?.let { Units.precipitationValue(it, s.precipitationUnit) }
                         bar(p, if (measuredBar) PrecipStyle.Measured else PrecipBar)
                         // Look-back: the forecast as a thin unfilled frame in front
-                        if (fp != null && fp > 0.0) with(PrecipStyle) { forecastFrame(barX(h.time), yP(fp), barW, bottom) }
+                        if (fp != null && fp > 0.0) with(PrecipStyle) { forecastFrame(barX(h.time), yP(fp), barW, pBottom) }
+                    }
+                    // The chance of precipitation as a line (precipitation chart of its own)
+                    if (separatePrecip) {
+                        val line = Path()
+                        var started = false
+                        pts.forEach { h ->
+                            val c = h.precipitationChance ?: h.compare?.chanceF ?: run { started = false; return@forEach }
+                            val o = Offset(axis.point(h.time), yChance(c))
+                            if (!started) { line.moveTo(o.x, o.y); started = true } else line.lineTo(o.x, o.y)
+                        }
+                        drawPath(line, ChanceLine, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
                     }
                 }
                 // Curves: one point per hour, in the column of its bar and cursor; clipped to the
@@ -415,7 +462,7 @@ fun Meteogram(
                 }
                 // Sunshine row label: sun glyph on the left (the day's total is in the legend)
                 if (sunTotalMin != null) {
-                    val cy = bottom + sunGap.toPx() + (sunH - sunGap).toPx() / 2
+                    val cy = rows + sunGap.toPx() + (sunH - sunGap).toPx() / 2
                     val c = Offset((l - gap.toPx()) / 2f, cy)
                     val rr = 3.dp.toPx()
                     drawCircle(NimbusColors.Secondary, rr, c)
@@ -426,7 +473,7 @@ fun Meteogram(
                     }
                 }
                 // Wind arrows every 3 h, pointing where the wind blows to
-                val windY = bottom + sunH.toPx() + windH.toPx() / 2
+                val windY = rows + sunH.toPx() + windH.toPx() / 2
                 drawWindGlyph(Offset((l - gap.toPx()) / 2f, windY), NimbusColors.Secondary)
                 blocks.forEach { (centre, h) ->
                     val dir = h.windDirection ?: return@forEach
@@ -443,7 +490,7 @@ fun Meteogram(
                 // Current time: thin dashed line with a dot on top (the cursor is a solid line)
                 if (showNow && now in start..end) {
                     val xn = x(now)
-                    drawLine(NowMark, Offset(xn, top), Offset(xn, bottom + below), 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())))
+                    drawLine(NowMark, Offset(xn, top), Offset(xn, rows + below), 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())))
                     drawCircle(NowMark, 2.5.dp.toPx(), Offset(xn, top))
                 }
                 // Cursor (long press)
@@ -454,9 +501,14 @@ fun Meteogram(
                     // on the curve at the cursor (the measured one, else the forecast)
                     val tc = pts[i].time - 1_800_000L
                     val yc = (Curve.at(mainCurve, tc) ?: Curve.at(dashCurve, tc))?.let { yT(Units.temperature(it, s.temperatureUnit)) } ?: yT(temps[i])
-                    drawLine(Color.White.copy(alpha = 0.85f * cursorAlpha), Offset(xs, top - 2.dp.toPx()), Offset(xs, bottom + below), 1.5.dp.toPx())
+                    drawLine(Color.White.copy(alpha = 0.85f * cursorAlpha), Offset(xs, top - 2.dp.toPx()), Offset(xs, rows + below), 1.5.dp.toPx())
                     drawCircle(Color(0xFF1A2A40).copy(alpha = cursorAlpha), 5.5.dp.toPx(), Offset(xs, yc))
                     drawCircle(Color.White.copy(alpha = cursorAlpha), 3.5.dp.toPx(), Offset(xs, yc))
+                    // and on the chance line in the precipitation chart
+                    if (separatePrecip) (pts[i].precipitationChance ?: pts[i].compare?.chanceF)?.let { c ->
+                        drawCircle(Color(0xFF1A2A40).copy(alpha = cursorAlpha), 5.dp.toPx(), Offset(xs, yChance(c)))
+                        drawCircle(ChanceLine.copy(alpha = cursorAlpha), 3.dp.toPx(), Offset(xs, yChance(c)))
+                    }
                 }
             }
             // Weather symbols every 3 h
@@ -478,7 +530,11 @@ fun Meteogram(
             )
             Readout(shown, highlighted = cursorOn, compare = compare)
             summary?.invoke()
-            BarLegend(precipTotal, sunTotalMin, measured = compare, forecastTotal = forecastTotal)
+            BarLegend(
+                precipTotal, sunTotalMin, measured = compare, forecastTotal = forecastTotal, chance = separatePrecip,
+                tempColors = Insights.temperatureColor(pts.minOf { it.temperature }) to Insights.temperatureColor(pts.maxOf { it.temperature }),
+                tempForecast = compare && dashCurve.isNotEmpty(),
+            )
             legendExtra?.invoke()
             // Always laid out (only faded), so the card does not change height with the cursor
             Text(
@@ -521,13 +577,14 @@ fun hoursMinutes(minutes: Double): String {
 
 /** A legend entry: a colour swatch (or a line) and its text; the swatch stays at the first line when the text wraps. */
 @Composable
-fun LegendItem(color: Color, text: String, line: Boolean = false, dashed: Boolean = false, frame: Boolean = false) = Row(verticalAlignment = Alignment.Top) {
+fun LegendItem(color: Color, text: String, line: Boolean = false, dashed: Boolean = false, frame: Boolean = false, brush: Brush? = null) = Row(verticalAlignment = Alignment.Top) {
     val lineH = 15.sp
     Box(Modifier.height(with(LocalDensity.current) { lineH.toDp() }), contentAlignment = Alignment.Center) {
         Canvas(Modifier.size(if (line) 16.dp else 12.dp, 10.dp)) {
-            if (line) drawLine(
+            if (line && brush != null) drawLine(brush, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.5.dp.toPx(), StrokeCap.Round)
+            else if (line) drawLine(
                 color, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.dp.toPx(),
-                pathEffect = if (dashed) PathEffect.dashPathEffect(floatArrayOf(6f, 4f)) else null,
+                pathEffect = if (dashed) PathEffect.dashPathEffect(floatArrayOf(10f, 7f)) else null,   // as the forecast curve
             ) else if (frame) {
                 val w = PrecipStyle.FRAME_DP.dp.toPx()
                 drawRoundRect(color, Offset(w / 2, w / 2), Size(size.width - w, size.height - w), CornerRadius(2.dp.toPx()), style = Stroke(w))
@@ -547,20 +604,30 @@ fun LegendRow(content: @Composable () -> Unit) = androidx.compose.foundation.lay
 ) { content() }
 
 /**
- * What the bars mean, with the day's totals – readable without the cursor. [measured]: the bars
- * are (partly) measurements – shown as such, with the forecast's total when there is one.
+ * What the curves and bars mean, with the day's totals – readable without the cursor: the
+ * temperature curve in its colours ([tempColors]: of the day's lowest and highest value) and, in
+ * the look-back, the dashed forecast ([tempForecast]). [measured]: the bars are (partly)
+ * measurements – shown as such, with the forecast's total when there is one.
  */
 @Composable
-private fun BarLegend(precipTotal: Double?, sunMinutes: Double?, measured: Boolean = false, forecastTotal: Double? = null) {
+private fun BarLegend(
+    precipTotal: Double?, sunMinutes: Double?, measured: Boolean = false, forecastTotal: Double? = null, chance: Boolean = false,
+    tempColors: Pair<Color, Color>, tempForecast: Boolean = false,
+) {
     val s = LocalSettings.current
     val unit = stringResource(Texts.precipUnit(s.precipitationUnit))
     fun amount(v: Double?) = Units.precipitationNumber(v ?: 0.0, s.precipitationUnit) + NBSP + unit
+    // Temperature, sunshine, precipitation – each named, the chart shows all of them
     LegendRow {
+        val temp = Brush.horizontalGradient(listOf(tempColors.first, tempColors.second))
+        LegendItem(tempColors.second, stringResource(R.string.legend_temperature), line = true, brush = temp)
+        if (tempForecast) LegendItem(ForecastLine, stringResource(R.string.legend_temp_forecast), line = true, dashed = true)
+        if (sunMinutes != null) LegendItem(SunFill, stringResource(R.string.legend_sunshine, hoursMinutes(sunMinutes)))
         if (measured) {
             LegendItem(PrecipStyle.Measured, stringResource(R.string.legend_precip_measured, amount(precipTotal)))
             if (forecastTotal != null) LegendItem(PrecipStyle.ForecastFrame, stringResource(R.string.legend_precip_forecast, amount(forecastTotal)), frame = true)
         } else LegendItem(PrecipBar, stringResource(R.string.legend_precip, amount(precipTotal)))
-        if (sunMinutes != null) LegendItem(SunFill, stringResource(R.string.legend_sunshine, hoursMinutes(sunMinutes)))
+        if (chance) LegendItem(ChanceLine, stringResource(R.string.legend_chance), line = true)
     }
 }
 
@@ -640,7 +707,9 @@ private fun Readout(h: MeteoPoint, highlighted: Boolean, compare: Boolean) {
                         stringResource(R.string.humidity) to (h.humidity?.let { "${it.roundToInt()}" + NBSP + "%" } ?: NO_VALUE),
                     ),
                     // the widest values to expect, in the units set
-                    reserve = listOf(t(-88.0), p(88.8), w(88.0, 292.5), "100" + NBSP + "%", sun(60.0)),
+                    // (every compass direction; a rarer wider value, e.g. a gust of 120 km/h, still fits
+                    // its cell beside the short label – the layout never switches for it)
+                    reserve = listOf(t(-88.0), p(88.8), "100" + NBSP + "%", sun(60.0)) + (0 until 8).map { w(88.0, it * 45.0) },
                 )
             }
         }

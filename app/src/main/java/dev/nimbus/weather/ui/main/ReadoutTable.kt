@@ -75,7 +75,8 @@ fun ReadoutPairs(pairs: List<Pair<String, String>>, reserve: List<String>, modif
     val density = androidx.compose.ui.platform.LocalDensity.current
     androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth()) {
         val labelW = pairs.maxOf { measurer.measure(it.first, Label).size.width }
-        val valueW = (reserve + pairs.map { it.second }).maxOf { measurer.measure(it, Value).size.width }
+        // the reserve only – a wider value now would switch the layout while the cursor moves
+        val valueW = reserve.maxOf { measurer.measure(it, Value).size.width }
         val pairW = with(density) { (labelW + valueW).toDp() } + 12.dp
         val perRow = if (pairW * 2 + 14.dp <= maxWidth) 2 else 1
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {

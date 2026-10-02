@@ -300,6 +300,7 @@ private fun DayRow(
                 Modifier.fillMaxWidth().bleed(CARD_BLEED).padding(bottom = 12.dp),
                 showNow = currentTemp != null,   // today only
                 curve = remember(hours, minutely, measured) { dayCurve(hours, minutely, day.date, HourAxis.dayAxisEnd(end), measured) },
+                separatePrecip = settings.separatePrecipitation,
             )
         }
     }

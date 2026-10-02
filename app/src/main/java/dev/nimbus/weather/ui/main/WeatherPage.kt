@@ -253,7 +253,9 @@ private fun WeatherContent(
             when (card) {
                 WeatherCard.HOURLY -> add(PageItem("hourly", true) { HourlyCard(data, now) })
                 WeatherCard.DAILY -> add(PageItem("daily") { DailyCard(data, now, todayMeasured) })
-                WeatherCard.PRECIPITATION -> add(PageItem("precip") { PrecipitationCard(data, now, raining, todayMeasured) })
+                // on a dry day hidden (setting) – decided here, an empty card would leave a gap
+                WeatherCard.PRECIPITATION -> if (cards.showDryPrecipitation || PrecipToday.of(data, now, raining, todayMeasured, tfToday)?.dry != true)
+                    add(PageItem("precip") { PrecipitationCard(data, now, raining, todayMeasured) })
                 WeatherCard.RADAR -> add(PageItem("radar") { RadarPreviewCard(data, onOpenRadar) })
                 WeatherCard.TILES -> if (cards.orderedTiles().any(cards::shows)) add(PageItem("tiles") { DetailTiles(data, now) })
                 WeatherCard.SUN -> add(PageItem("sun") { SunCard(data, now) })

@@ -66,9 +66,9 @@ class HourAxisTest {
      */
     @Test fun chartsUseTheSharedGeometry() {
         val main = File("src/main/java/dev/nimbus/weather/ui/main")
-        // the hourly charts: the meteogram, and the precipitation chart in DetailTiles (the sun's
-        // path there is a continuous curve, not hourly)
-        for ((name, chart) in listOf("Meteogram.kt" to "fun Meteogram(", "DetailTiles.kt" to "fun PrecipChart(")) {
+        // the hourly chart: the meteogram (10-day forecast and look-back; precipitation in it or
+        // as a chart of its own under the temperature)
+        for ((name, chart) in listOf("Meteogram.kt" to "fun Meteogram(")) {
             val file = File(main, name).readText()
             val from = file.indexOf(chart)
             assertTrue("$name: $chart not found", from >= 0)
@@ -102,7 +102,7 @@ class HourAxisTest {
      * the two lists – that is the point: nobody adds a cursor without this check.
      */
     @Test fun everyCursorChartKeepsLabelsUnderTheCursor() {
-        val hourly = mapOf("Meteogram.kt" to "fun Meteogram(", "DetailTiles.kt" to "fun PrecipChart(")
+        val hourly = mapOf("Meteogram.kt" to "fun Meteogram(")
         val moments = mapOf("PressureCard.kt" to "private fun PressureChart(", "GaugeCard.kt" to "val cursorAlpha")
         val ui = File("src/main/java/dev/nimbus/weather/ui")
         val withCursor = ui.walkTopDown().filter { it.extension == "kt" && "cursorAlpha" in it.readText() }.map { it.name }.toSet()

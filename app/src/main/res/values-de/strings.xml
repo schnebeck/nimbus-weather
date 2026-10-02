@@ -246,7 +246,9 @@
     <string name="precip_next_amount">noch %1$s bis Mitternacht</string>
     <string name="precip_max_chance">Höchste Wahrscheinlichkeit: %1$d %% gegen %2$s</string>
     <string name="precip_no_chance">Bis Mitternacht kein Niederschlag zu erwarten</string>
-    <string name="precip_chart_hint">Balken: Menge · Linie: Wahrscheinlichkeit · lange drücken für Stundenwerte</string>
+    <string name="precip_dry_today">Heute trocken</string>
+    <string name="precip_next_wet">Nächster Niederschlag %1$s ab etwa %2$s (%3$d %%)</string>
+    <string name="precip_dry_ahead">Kein Niederschlag in der Vorhersage</string>
     <string name="term_hourly_title">Stündliche Vorhersage</string>
     <string name="term_hourly_body">Die nächsten 24 Stunden auf einen Blick. Das Symbol zeigt das wahrscheinlichste Wetter der Stunde, die Zahl darunter die Temperatur.\n\n• Jetzt: das aktuelle Wetter – wo vorhanden an der nächsten DWD-Station gemessen, daher kann es leicht von der Vorhersage für diese Stunde abweichen\n• Prozentwerte: Niederschlagswahrscheinlichkeit – ab 10 % blau, darunter blass – Details in der Karte „Niederschlag“ weiter unten\n• Sonnensymbole mit Uhrzeit: Sonnenauf- und -untergang\n\nSeitlich wischen für weitere Stunden.\n\nDer Text über den Stunden ist eine kurze Vorhersage für die nächsten 12 Stunden, automatisch aus der stündlichen Vorhersage des gewählten Wettermodells erzeugt (Standard: DWD ICON). Sie stammt nicht von einer Meteorologin oder einem Meteorologen.\n\nSie nennt den nächsten Wetterwechsel, den Temperaturverlauf, ob und wann Niederschlag wahrscheinlich (ab 60 %) oder möglich (ab 30 %) ist, starke Böen ab 50 km/h und – nachmittags und abends – einen kurzen Ausblick auf morgen.\n\nRegnet es gerade, stammt das Ende des Niederschlags aus der 15-Minuten-Vorhersage.</string>
     <string name="term_daily_title">10-Tage-Vorhersage</string>
@@ -396,7 +398,7 @@
     <string name="history_source_pending">Noch keine Messwerte der DWD-Station %1$s für diesen Tag – Vorhersagewerte (%2$s)</string>
     <string name="sunshine_short">Sonne</string>
     <string name="legend_precip">Niederschlag %1$s</string>
-    <string name="legend_sunshine">Sonnenschein %1$s (Balken: Minuten je Stunde)</string>
+    <string name="legend_sunshine">Sonne %1$s</string>
     <string name="licenses_title">Open-Source-Lizenzen</string>
     <string name="licenses_settings_desc">Lizenzen von Nimbus und der verwendeten Bibliotheken</string>
     <string name="licenses_app_text">Nimbus ist freie Software: Die App darf unter den Bedingungen der GNU General Public License, Version 3 oder später, weitergegeben und verändert werden. Es gibt keine Gewährleistung, soweit gesetzlich zulässig.</string>
@@ -550,7 +552,6 @@
     <string name="cards_undo_hidden">„%1$s“ ausgeblendet</string>
     <string name="places_undo_order">Reihenfolge der Orte geändert</string>
     <string name="precip_measured_so_far">bisher gemessen %1$s (%2$s)</string>
-    <string name="precip_chart_hint_measured">Hellblau: gemessen · graublau: Vorhersage · Linie: Wahrscheinlichkeit · lange drücken</string>
     <string name="pressure_chart_hint_measured">Durchgezogen: gemessen · gestrichelt: Vorhersage · lange drücken für Werte</string>
     <string name="settings_radar_colors">Radarfarben</string>
     <string name="settings_radar_colors_desc">Kontrast: Regen grün → gelb → rot → magenta, Schnee türkis → weiß → violett – viele Stufen gut unterscheidbar. Blau: ruhiger, Regen hell- bis dunkelblau, Schnee rosa bis violett.</string>
@@ -560,11 +561,16 @@
     <string name="readout_feels">Gefühlt</string>
     <string name="readout_chance">Wahrsch.</string>
     <string name="readout_time">Zeit</string>
-    <string name="history_precip_title">Niederschlag</string>
     <string name="radar_step_back">5 Minuten zurück</string>
     <string name="radar_step_forward">5 Minuten vor</string>
-    <string name="legend_precip_measured">Gemessen %1$s</string>
-    <string name="legend_precip_forecast">Vorhersage %1$s</string>
-    <string name="legend_chance">Wahrscheinlichkeit</string>
+    <string name="legend_precip_measured">Niederschl. gemessen %1$s</string>
+    <string name="legend_precip_forecast">Niederschl. Prognose %1$s</string>
+    <string name="legend_temperature">Temperatur</string>
+    <string name="legend_temp_forecast">Temp. Prognose</string>
+    <string name="legend_chance">Niederschl.-Wahrsch.</string>
     <string name="radar_preparing">Radar wird vorbereitet…</string>
+    <string name="settings_show_dry_precip">Niederschlag-Kachel an trockenen Tagen</string>
+    <string name="settings_show_dry_precip_desc">Zeigt „Heute trocken“ und den nächsten Niederschlag der Vorhersage. Aus: An trockenen Tagen wird die Kachel ausgeblendet.</string>
+    <string name="settings_separate_precip">Niederschlag als eigenes Diagramm</string>
+    <string name="settings_separate_precip_desc">In der 10-Tage-Vorhersage und im Rückblick: Menge und Wahrscheinlichkeit in einem eigenen Diagramm unter der Temperatur – sonst ein gemeinsames Diagramm.</string>
 </resources>

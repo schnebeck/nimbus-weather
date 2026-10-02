@@ -41,14 +41,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Air
 import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Thermostat
-import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -69,17 +64,11 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -186,7 +175,6 @@ fun HistoryPage(
                         item(key = "summary") { SummaryCard(summary, history, settings, tf) }
                         // Right after midnight there is only one hour – nothing to draw yet.
                         if (day.hours.size >= 2) item(key = "course") { DayCourseCard(day, summary, settings, tf, history, place) }
-                        if (day.hours.count { it.model != null || it.measured?.precipitation != null } >= 2) item(key = "precip") { PrecipDayCard(day, tf, history, place) }
                         // The DWD keeps about 3½ days of radar: the whole day, in 5-minute steps (Germany)
                         if (WeatherRepository.isInDwdArea(place.latitude, place.longitude)) item(key = "radar") {
                             val start = day.date.atStartOfDay(history.zone).toInstant().toEpochMilli()
@@ -390,6 +378,8 @@ private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, 
             remember(start) { nights(start, HourAxis.dayAxisEnd(start + 24 * 3_600_000L), place.latitude, place.longitude) }, System.currentTimeMillis(),
             Modifier.fillMaxWidth().bleed(CARD_BLEED),
             curve = curves.first, forecastCurve = curves.second,
+            // precipitation in the same card: in the temperature chart or as a chart of its own
+            separatePrecip = settings.separatePrecipitation,
             // the result first, then what the lines and bars mean; the press hint ends the card
             summary = sum.tempError?.let { err ->
                 {
@@ -404,28 +394,6 @@ private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, 
             },
             legendExtra = { Legend(model = hasMeasured, settings = settings) },
         )
-    }
-}
-
-/**
- * The day's precipitation: measured amount (dark blue) under the forecast amount (translucent
- * light blue), and the forecast chance as a line – hour by hour, with a cursor.
- */
-@Composable
-private fun PrecipDayCard(day: HistoryDay, tf: TimeFormat, history: dev.nimbus.weather.data.remote.History, place: Place) {
-    val start = day.date.atStartOfDay(tf.zone).toInstant().toEpochMilli()
-    val asOf = remember(day) { System.currentTimeMillis() }
-    // Each value covers the hour before its time: 01:00 … 24:00 make the day, 01:00 tomorrow the 24 column
-    val hours = remember(day, history) {
-        history.chartHours(start).filter { it.time > start }
-            .map { h -> PrecipHour(h.time, h.model?.precipitation, h.model?.chance, h.measured?.precipitation) }
-    }
-    if (hours.size < 2) return
-    val nights = remember(day) {
-        nights(start, HourAxis.dayAxisEnd(start + 24 * 3_600_000L), place.latitude, place.longitude)
-    }
-    dev.nimbus.weather.ui.components.GlassCard(title = stringResource(R.string.history_precip_title), icon = Icons.Outlined.WaterDrop) {
-        PrecipChart(hours, nights, asOf, compare = true, Modifier.fillMaxWidth().bleed(CARD_BLEED), endOfDay = start + 24 * 3_600_000L)
     }
 }
 

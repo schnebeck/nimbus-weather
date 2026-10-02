@@ -47,7 +47,7 @@ enum class WeatherCard {
 
     companion object {
         /** Default order of the page below the alerts (which always stay on top). */
-        val DEFAULT_ORDER = listOf(HOURLY, DAILY, PRECIPITATION, RADAR, TILES, PRESSURE_CHART, SUN, MOON, AIR_QUALITY, POLLEN, GAUGES, BATHING, COMMUNITY, MODELS)
+        val DEFAULT_ORDER = listOf(PRECIPITATION, HOURLY, DAILY, RADAR, TILES, PRESSURE_CHART, SUN, MOON, AIR_QUALITY, POLLEN, GAUGES, BATHING, COMMUNITY, MODELS)
         /** Alternatives that are off until switched on (e.g. the pressure chart next to the small tile). */
         val OPT_IN = setOf(PRESSURE_CHART)
         val DEFAULT_TILES = listOf(FEELS_LIKE, UV_INDEX, WIND, HUMIDITY, VISIBILITY, PRESSURE)
@@ -79,6 +79,13 @@ data class Settings(
     /** Own order of the small tiles (see [orderedTiles]); empty = default. */
     val tileOrder: List<WeatherCard> = emptyList(),
     val radarColors: RadarColors = RadarColors.CONTRAST,
+    /**
+     * Precipitation as a chart of its own under the temperature (10-day forecast, look-back):
+     * amount and chance; off, the bars stay in the temperature chart (one combined chart).
+     */
+    val separatePrecipitation: Boolean = false,
+    /** The precipitation card on a dry day: one line with the next precipitation – off, hidden. */
+    val showDryPrecipitation: Boolean = true,
     /** Radius of the bathing water card in km. */
     val bathingRadiusKm: Int = 50,
     /** Favourite bathing waters (EU ids), shown at any distance. */

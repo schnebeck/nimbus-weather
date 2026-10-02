@@ -1,0 +1,4 @@
+• Niederschlag als eigenes Diagramm (Einstellung): in 10-Tage-Vorhersage und Rückblick Menge und Wahrscheinlichkeit unter der Temperatur, ein Cursor durch alles
+• Kachel „Niederschlag heute“ als Text, standardmäßig oben; an trockenen Tagen eine Zeile mit dem nächsten Niederschlag oder ausgeblendet (Einstellung)
+• Legende mit Temperatur (im Rückblick auch Prognose), kürzer
+• Werte unter dem Diagramm springen beim Schieben nicht mehr zwischen ein- und zweispaltig

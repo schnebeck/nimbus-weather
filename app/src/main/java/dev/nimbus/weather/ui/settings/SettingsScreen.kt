@@ -169,7 +169,16 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                 }
             }
             item {
-                Section(stringResource(R.string.settings_cards)) { CardsAccordion(settings, cardsChange) }
+                Section(stringResource(R.string.settings_cards)) {
+                    CardsAccordion(settings, cardsChange)
+                    Spacer(Modifier.size(8.dp))
+                    ToggleRow(stringResource(R.string.settings_separate_precip), stringResource(R.string.settings_separate_precip_desc), settings.separatePrecipitation) { v ->
+                        onChange { it.copy(separatePrecipitation = v) }
+                    }
+                    ToggleRow(stringResource(R.string.settings_show_dry_precip), stringResource(R.string.settings_show_dry_precip_desc), settings.showDryPrecipitation) { v ->
+                        onChange { it.copy(showDryPrecipitation = v) }
+                    }
+                }
             }
             item {
                 Section(stringResource(R.string.settings_radar_colors)) {

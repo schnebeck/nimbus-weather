@@ -257,7 +257,9 @@
     <string name="precip_next_amount">%1$s more until midnight</string>
     <string name="precip_max_chance">Highest chance: %1$d%% around %2$s</string>
     <string name="precip_no_chance">No precipitation expected until midnight</string>
-    <string name="precip_chart_hint">Bars: amount · line: chance · long press for the values of each hour</string>
+    <string name="precip_dry_today">Dry today</string>
+    <string name="precip_next_wet">Next precipitation %1$s from about %2$s (%3$d%%)</string>
+    <string name="precip_dry_ahead">No precipitation in the forecast</string>
     <string name="term_hourly_title">Hourly Forecast</string>
     <string name="term_hourly_body">The next 24 hours at a glance. The symbol shows the most likely weather for the hour, the number below it the temperature.\n\n• Now: the current weather – where available measured at the nearest DWD station, therefore it can differ slightly from the forecast for this hour\n• Percentages: chance of precipitation – blue from 10 %, below that dimmed – details in the “Precipitation” card further down\n• Sun symbols with a time: sunrise and sunset\n\nSwipe sideways for more hours.\n\nThe text above the hours is a short forecast for the next 12 hours, generated automatically from the hourly forecast of the selected weather model (default: DWD ICON). It is not written by a meteorologist.\n\nIt names the next change in weather, how the temperature develops, whether and when precipitation is likely (from 60 %) or possible (from 30 %), strong gusts from 50 km/h and – in the afternoon and evening – a short outlook for tomorrow.\n\nIf it is raining now, the end of the precipitation comes from the 15-minute forecast.</string>
     <string name="term_daily_title">10-Day Forecast</string>
@@ -407,7 +409,7 @@
     <string name="history_source_pending">No readings from DWD station %1$s for this day yet – forecast values (%2$s)</string>
     <string name="sunshine_short">Sun</string>
     <string name="legend_precip">Precipitation %1$s</string>
-    <string name="legend_sunshine">Sunshine %1$s (bars: minutes per hour)</string>
+    <string name="legend_sunshine">Sun %1$s</string>
     <string name="licenses_title">Open-source licenses</string>
     <string name="licenses_settings_desc">Licenses of Nimbus and of the libraries it uses</string>
     <string name="licenses_app_text">Nimbus is free software: it may be shared and modified under the terms of the GNU General Public License, version 3 or later. There is no warranty, to the extent permitted by law.</string>
@@ -561,7 +563,6 @@
     <string name="cards_undo_hidden">"%1$s" hidden</string>
     <string name="places_undo_order">Order of places changed</string>
     <string name="precip_measured_so_far">%1$s measured so far (%2$s)</string>
-    <string name="precip_chart_hint_measured">Light blue: measured · grey-blue: forecast · line: chance · long press</string>
     <string name="pressure_chart_hint_measured">Solid: measured · dashed: forecast · long press for values</string>
     <string name="settings_radar_colors">Radar colours</string>
     <string name="settings_radar_colors_desc">Contrast: rain green → yellow → red → magenta, snow turquoise → white → violet – many steps easy to tell apart. Blue: calmer, rain light to dark blue, snow pink to violet.</string>
@@ -571,11 +572,16 @@
     <string name="readout_feels">Feels like</string>
     <string name="readout_chance">Chance</string>
     <string name="readout_time">Time</string>
-    <string name="history_precip_title">Precipitation</string>
     <string name="radar_step_back">5 minutes back</string>
     <string name="radar_step_forward">5 minutes forward</string>
-    <string name="legend_precip_measured">Measured %1$s</string>
-    <string name="legend_precip_forecast">Forecast %1$s</string>
-    <string name="legend_chance">Chance of precipitation</string>
+    <string name="legend_precip_measured">Precip. measured %1$s</string>
+    <string name="legend_precip_forecast">Precip. forecast %1$s</string>
+    <string name="legend_temperature">Temperature</string>
+    <string name="legend_temp_forecast">Temp. forecast</string>
+    <string name="legend_chance">Precip. chance</string>
     <string name="radar_preparing">Preparing the radar…</string>
+    <string name="settings_show_dry_precip">Precipitation card on dry days</string>
+    <string name="settings_show_dry_precip_desc">Shows “Dry today” and the next precipitation in the forecast. Off: on a dry day the card is hidden.</string>
+    <string name="settings_separate_precip">Precipitation as its own chart</string>
+    <string name="settings_separate_precip_desc">In the 10-day forecast and the look-back: amount and chance in a chart of their own under the temperature – otherwise one combined chart.</string>
 </resources>

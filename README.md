@@ -65,13 +65,16 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   trockenem Wetter treiben je nach Jahreszeit Blüten, Samen, Blätter oder Eiskristalle, Pollen nach
   der echten Belastung.
 - **Wetterseite**: Kombisymbol, Temperatur mit Einheit und Max/Min, Kurzvorhersage für die nächsten
-  Stunden, DWD-Warnungen, Niederschlag der nächsten 3 Stunden, Stunden- und 10-Tage-Vorhersage mit
-  Niederschlagswahrscheinlichkeit, Kacheln für Gefühlt, UV, Wind, Luftfeuchte, Sichtweite und Luftdruck.
+  Stunden, DWD-Warnungen, „Niederschlag heute“ obenauf (Menge, nächste 3 Stunden, höchste
+  Wahrscheinlichkeit; an trockenen Tagen eine Zeile mit dem nächsten Niederschlag oder ausgeblendet),
+  Stunden- und 10-Tage-Vorhersage mit Niederschlagswahrscheinlichkeit, Kacheln für Gefühlt, UV, Wind,
+  Luftfeuchte, Sichtweite und Luftdruck.
   Aktuelle Werte stammen, wo möglich, von der nächsten DWD-Station.
 - **Meteogramm** je Tag (00–24 Uhr): Temperatur (Vorhersage alle 15 Minuten, Messwerte der
   DWD-Station alle 10 Minuten), Niederschlag, Sonnenscheindauer und Wind pro Stunde,
-  Nachtschattierung, Legende mit Tagessummen. Langes Drücken blendet einen Cursor mit allen Werten
-  der Stunde ein. Heute zeigen Meteogramm, Niederschlag und Luftdruck für die vergangenen Stunden
+  Nachtschattierung, Legende mit Tagessummen. Niederschlag wahlweise im Temperaturdiagramm oder als
+  eigenes Diagramm darunter, mit der Wahrscheinlichkeit als Linie (auch im Rückblick). Langes Drücken
+  blendet einen Cursor mit allen Werten der Stunde ein. Heute zeigen Meteogramm, Niederschlag und Luftdruck für die vergangenen Stunden
   die Messwerte der DWD-Station, danach die Vorhersage.
 - **Rückblick** per Wischen nach rechts: heute bisher, gestern, vorgestern – DWD-Messwerte im
   Vergleich zur Vorhersage des gewählten Modells, mit mittlerer Abweichung, Stundenwerte als Tabelle

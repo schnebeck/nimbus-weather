@@ -65,6 +65,8 @@ class SettingsLocaleTest {
         assertEquals(order.indexOf(W.GAUGES) + 1, order.indexOf(W.BATHING))     // after its default predecessor
         assertEquals(W.DEFAULT_ORDER.size, order.size)
         assertEquals(W.DEFAULT_ORDER, dev.nimbus.weather.data.model.Settings().orderedCards())
+        // the precipitation card leads the page (1.22)
+        assertEquals(W.PRECIPITATION, dev.nimbus.weather.data.model.Settings().orderedCards().first())
         // tiles: own order, unknown and duplicate entries dropped
         val t = dev.nimbus.weather.data.model.Settings(tileOrder = listOf(W.WIND, W.MOON, W.WIND, W.FEELS_LIKE)).orderedTiles()
         assertEquals(W.DEFAULT_TILES.toSet(), t.toSet())

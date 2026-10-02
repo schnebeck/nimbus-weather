@@ -415,17 +415,15 @@ fun PrecipChart(
                 val ta = measurer.measure(amountLabel(2 - k), labelStyle)
                 drawText(ta, topLeft = Offset(r + gap, y - ta.size.height / 2f))
             }
-            // Time axis every 3 hours, 00 … 24
-            var mark = start
-            while (mark <= end) {
-                val xm = x(mark)
-                drawLine(Color(0x1FFFFFFF), Offset(xm, top), Offset(xm, bottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
-                val lt = measurer.measure(if (mark == end) tf.hourEnd(mark) else tf.hour(mark), labelStyle)
-                drawText(lt, topLeft = Offset((xm - lt.size.width / 2f).coerceIn(0f, size.width - lt.size.width), bottom + 4.dp.toPx()))
-                mark += 3 * 3_600_000L
-            }
-            // Bars, line points and cursor from one geometry (see HourAxis)
+            // Bars, line points, labels and cursor from one geometry (see HourAxis)
             val axis = HourAxis(start, end, l, r)
+            // Time labels every 3 hours in the middle of their hour: under its bar and cursor
+            axis.labelHours().forEach { hs ->
+                val xm = axis.label(hs)
+                drawLine(Color(0x1FFFFFFF), Offset(xm, top), Offset(xm, bottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
+                val lt = measurer.measure(tf.hour(hs), labelStyle)
+                drawText(lt, topLeft = Offset((xm - lt.size.width / 2f).coerceIn(0f, size.width - lt.size.width), bottom + 4.dp.toPx()))
+            }
             fun centre(i: Int) = axis.point(hours[i].time)
             // Amount: bars
             amounts.forEachIndexed { i, v ->
@@ -436,13 +434,14 @@ fun PrecipChart(
                 val over = hours[i].time <= now
                 when {
                     compare -> {
-                        // Look-back (colours of the course of the day): the forecast muted – behind the
-                        // measured bar, in front of it when it is the smaller one
+                        // Look-back: the measured bar in one colour, the forecast as a short bar across
+                        // the column at its height
                         val mh = m?.let { bottom - yA(it) } ?: 0f
-                        val front = PrecipStyle.forecastInFront(amounts[i], m)
-                        if (!front && bh > 0.5f) drawRoundRect(PrecipStyle.Forecast, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()))
                         if (mh > 0.5f) drawRoundRect(PrecipStyle.Measured, Offset(left, bottom - mh), Size(w, mh), CornerRadius(2.dp.toPx()))
-                        if (front && bh > 0.5f) drawRoundRect(PrecipStyle.Forecast, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()))
+                        if (bh > 0.5f) {
+                            val th = PrecipStyle.FORECAST_TICK_DP.dp.toPx()
+                            drawRoundRect(PrecipStyle.Forecast, Offset(left, bottom - bh - th / 2), Size(w, th), CornerRadius(th / 2))
+                        }
                     }
                     // Today: an hour over shows what was measured, the forecast for it is gone
                     m != null -> {
@@ -517,7 +516,7 @@ fun PrecipChart(
             fun total(v: Double) = Units.precipitationNumber(v, s.precipitationUnit) + NBSP + pUnit
             LegendRow {
                 LegendItem(PrecipStyle.Measured, stringResource(R.string.legend_precip_measured, total(hours.sumOf { it.measured ?: 0.0 })))
-                LegendItem(PrecipStyle.Forecast, stringResource(R.string.legend_precip_forecast, total(hours.sumOf { it.forecast ?: 0.0 })))
+                LegendItem(PrecipStyle.Forecast, stringResource(R.string.legend_precip_forecast, total(hours.sumOf { it.forecast ?: 0.0 })), line = true)
                 LegendItem(ChanceLine, stringResource(R.string.legend_chance), line = true)
             }
             Text(stringResource(R.string.meteogram_hint), fontSize = 11.sp, lineHeight = 15.sp, color = NimbusColors.Tertiary, modifier = Modifier.padding(top = 4.dp))

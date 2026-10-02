@@ -229,12 +229,12 @@ fun Meteogram(
     val unitStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Secondary, fontWeight = FontWeight.SemiBold)
     val tUnit = if (s.temperatureUnit == TemperatureUnit.FAHRENHEIT) "°F" else "°C"
     val pUnit = stringResource(Texts.precipUnit(s.precipitationUnit))
-    // Symbols and wind arrows stand for 3-hour blocks and sit in their middle (01:30, 04:30 …):
-    // the point closest to the block centre represents the block.
+    // Symbols and wind arrows every 3 hours, in the column of their hour's label, bar and cursor
+    // (00:30, 03:30 …): the values of that hour (00–01, 03–04 …).
     val blocks = remember(pts, start, end) {
         generateSequence(start) { it + 3 * 3_600_000L }.takeWhile { it < end }.mapNotNull { b ->
-            val centre = b + 90 * 60_000L
-            pts.minByOrNull { kotlin.math.abs(it.time - centre) }?.let { centre to it }
+            val centre = b + 30 * 60_000L
+            (pts.firstOrNull { it.time == b + 3_600_000L } ?: pts.minByOrNull { kotlin.math.abs(it.time - centre) })?.let { centre to it }
         }.toList()
     }
 
@@ -323,13 +323,13 @@ fun Meteogram(
                     val lp = measurer.measure(precipLabel(k), labelStyle)
                     drawText(lp, topLeft = Offset(r + gap.toPx(), yP(precipMax * k / 2) - lp.size.height / 2f))
                 }
-                var mark = start
-                while (mark <= end) {
-                    val xm = x(mark)
+                // Time labels every 3 hours in the middle of their hour: under its bar and cursor
+                val labelAxis = HourAxis(start, end, l, r)
+                labelAxis.labelHours().forEach { hs ->
+                    val xm = labelAxis.label(hs)
                     drawLine(GridLine, Offset(xm, top), Offset(xm, bottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
-                    val lt = measurer.measure(if (mark == end) tf.hourEnd(mark) else tf.hour(mark), labelStyle)
+                    val lt = measurer.measure(tf.hour(hs), labelStyle)
                     drawText(lt, topLeft = Offset((xm - lt.size.width / 2f).coerceIn(0f, size.width - lt.size.width), 0f))
-                    mark += 3 * 3_600_000L
                 }
                 // Hourly bars stand on the hour they cover: the values are the sums of the hour before
                 // the time stamp, as delivered by the models and stations. 00:00 is the previous
@@ -358,12 +358,12 @@ fun Meteogram(
                         val p = Units.precipitationValue(h.precipitation ?: 0.0, s.precipitationUnit)
                         val measuredBar = compare && !h.forecastOnly
                         val fp = h.forecastPrecipitation?.let { Units.precipitationValue(it, s.precipitationUnit) }
-                        val front = fp != null && PrecipStyle.forecastInFront(fp, p.takeIf { measuredBar })
-                        // Look-back: the forecast muted – behind the measured bar, in front of it
-                        // when it is the smaller one
-                        if (fp != null && !front) bar(fp, PrecipStyle.Forecast)
                         bar(p, if (measuredBar) PrecipStyle.Measured else PrecipBar)
-                        if (fp != null && front) bar(fp, PrecipStyle.Forecast)
+                        // Look-back: the forecast as a short bar across the column at its height
+                        if (fp != null && fp > 0.0) {
+                            val th = PrecipStyle.FORECAST_TICK_DP.dp.toPx()
+                            drawRoundRect(PrecipStyle.Forecast, Offset(barX(h.time), yP(fp) - th / 2), Size(barW, th), CornerRadius(th / 2))
+                        }
                     }
                 }
                 // Curves: one point per hour, in the column of its bar and cursor; clipped to the
@@ -534,7 +534,7 @@ private fun BarLegend(precipTotal: Double?, sunMinutes: Double?, measured: Boole
     LegendRow {
         if (measured) {
             LegendItem(PrecipStyle.Measured, stringResource(R.string.legend_precip_measured, amount(precipTotal)))
-            if (forecastTotal != null) LegendItem(PrecipStyle.Forecast, stringResource(R.string.legend_precip_forecast, amount(forecastTotal)))
+            if (forecastTotal != null) LegendItem(PrecipStyle.Forecast, stringResource(R.string.legend_precip_forecast, amount(forecastTotal)), line = true)
         } else LegendItem(PrecipBar, stringResource(R.string.legend_precip, amount(precipTotal)))
         if (sunMinutes != null) LegendItem(SunFill, stringResource(R.string.legend_sunshine, hoursMinutes(sunMinutes)))
     }

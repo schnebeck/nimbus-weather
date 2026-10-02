@@ -1,0 +1,2 @@
+• Diagramme: die Uhrzeiten stehen in der Mitte ihrer Stunde – unter Balken und Cursor (ein Test prüft das für alle Diagramme mit Cursor)
+• Rückblick-Niederschlag: Messung als einfarbiger Balken, Vorhersage als Querstrich auf ihrer Höhe

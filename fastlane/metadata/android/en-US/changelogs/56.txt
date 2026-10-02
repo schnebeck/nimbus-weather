@@ -1,0 +1,2 @@
+• Charts: time labels in the middle of their hour – under bars and cursor (a test checks every chart with a cursor)
+• Look-back precipitation: measured as a single-colour bar, the forecast as a tick at its height

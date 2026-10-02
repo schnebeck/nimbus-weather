@@ -82,4 +82,46 @@ class HourAxisTest {
             assertTrue("$name: curve point on the time stamp", !Regex("""(moveTo|lineTo)\(x\(""").containsMatchIn(src))
         }
     }
+
+    @Test fun labelBarCurvePointAndCursorOfAnHourAreOneColumn() {
+        for (hs in axis.labelHours()) {
+            val t = hs + h                                        // the hour's value has the time stamp at its end
+            val bar = axis.barLeft(t) + axis.barWidth() / 2
+            assertEquals("label ${(hs - start) / h}", axis.cursor(t), axis.label(hs), 0.01f)
+            assertEquals(axis.label(hs), bar, 0.01f)
+            assertEquals(axis.label(hs), axis.point(t), 0.01f)
+        }
+        // 00, 03 … 21 – no "24": no hour starts there
+        assertEquals((0 until 24 step 3).map { start + it * h }, axis.labelHours())
+    }
+
+    /**
+     * Every chart with a long-press cursor, wherever it is: hourly charts (bars) take labels,
+     * bars, points and cursor from HourAxis; charts of moments (pressure, water level) put the
+     * labels and the cursor on the same moment. A new chart with a cursor has to be put in one of
+     * the two lists – that is the point: nobody adds a cursor without this check.
+     */
+    @Test fun everyCursorChartKeepsLabelsUnderTheCursor() {
+        val hourly = mapOf("Meteogram.kt" to "fun Meteogram(", "DetailTiles.kt" to "fun PrecipChart(")
+        val moments = mapOf("PressureCard.kt" to "private fun PressureChart(", "GaugeCard.kt" to "val cursorAlpha")
+        val ui = File("src/main/java/dev/nimbus/weather/ui")
+        val withCursor = ui.walkTopDown().filter { it.extension == "kt" && "cursorAlpha" in it.readText() }.map { it.name }.toSet()
+        assertEquals("charts with a cursor", withCursor, hourly.keys + moments.keys)
+        fun body(name: String, marker: String): String {
+            val f = ui.walkTopDown().first { it.name == name }.readText()
+            val from = f.indexOf(marker)
+            assertTrue("$name: $marker", from >= 0)
+            return f.substring(from, f.indexOf("\n@Composable", from).takeIf { it > 0 } ?: f.length)
+        }
+        for ((name, marker) in hourly) {
+            val src = body(name, marker)
+            assertTrue("$name: labels from HourAxis", ".label(" in src && "labelHours(" in src)
+            assertTrue("$name: label on a bare time", !Regex("""val xm = x\(""").containsMatchIn(src))
+        }
+        for ((name, marker) in moments) {
+            val src = body(name, marker)
+            assertTrue("$name: cursor on the moment", Regex("""val xc = x\(p\.time\)""").containsMatchIn(src))
+            assertTrue("$name: labels on the moment", Regex("""val xm = x\(mark\)""").containsMatchIn(src))
+        }
+    }
 }

@@ -55,6 +55,16 @@ class HourAxis(private val start: Long, private val end: Long, val left: Float, 
      */
     fun point(t: Long, interval: Long = HOUR): Float = x(t - interval / 2)
 
+    /**
+     * The time label of the hour starting at [hourStart] ("03" for 03:00–04:00): in the middle of
+     * that hour – right under its bar and its cursor, so the label names what the cursor shows.
+     */
+    fun label(hourStart: Long): Float = centre(hourStart + HOUR)
+
+    /** Starts of the labelled hours: every [every] hours from the axis start (00, 03 … 21). */
+    fun labelHours(every: Int = 3): List<Long> =
+        generateSequence(start) { it + every * HOUR }.takeWhile { it < end }.toList()
+
     /** The hour ([times] index) whose bar is nearest to [pos]; only hours within the axis count. */
     fun indexAt(pos: Float, times: List<Long>): Int {
         val inside = times.indices.filter { times[it] > start && times[it] <= end }
@@ -127,8 +137,8 @@ object PrecipStyle {
     val Forecast = Color(0xFF6F89A0)
 
     /**
-     * Look-back: the forecast bar is drawn in front of the measured one when it is smaller (it
-     * would be hidden behind it), behind it when it is as large or larger.
+     * Look-back: next to a measured bar the forecast is a short bar across its column at the
+     * forecast height (this thick, dp) – the measured bar stays one colour.
      */
-    fun forecastInFront(forecast: Double, measured: Double?): Boolean = measured != null && forecast < measured
+    const val FORECAST_TICK_DP = 2.5f
 }

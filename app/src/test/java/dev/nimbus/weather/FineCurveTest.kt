@@ -117,11 +117,7 @@ class FineCurveTest {
         assertEquals("02014", HistorySource.synopStation(hourly))
     }
 
-    @Test fun forecastBarInFrontOnlyWhenSmaller() {
-        assertTrue(PrecipStyle.forecastInFront(0.5, 1.2))
-        assertFalse(PrecipStyle.forecastInFront(1.2, 0.5))
-        assertFalse(PrecipStyle.forecastInFront(1.0, 1.0))
-        assertFalse(PrecipStyle.forecastInFront(0.5, null))
+    @Test fun lookBackForecastIsOpaque() {
         // the look-back forecast is opaque (it does not blend with the bar behind it)
         assertEquals(1f, PrecipStyle.Forecast.alpha, 0.001f)
     }

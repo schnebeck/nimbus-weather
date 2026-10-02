@@ -436,13 +436,13 @@ fun PrecipChart(
                 val over = hours[i].time <= now
                 when {
                     compare -> {
-                        // Look-back: the forecast light blue, 40 % transparent – behind the measured
-                        // bar, in front of it when it is the smaller one
+                        // Look-back (colours of the course of the day): the forecast muted – behind the
+                        // measured bar, in front of it when it is the smaller one
                         val mh = m?.let { bottom - yA(it) } ?: 0f
                         val front = PrecipStyle.forecastInFront(amounts[i], m)
-                        if (!front && bh > 0.5f) drawRoundRect(PrecipStyle.ForecastOverlay, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()))
-                        if (mh > 0.5f) drawRoundRect(MeasuredBar, Offset(left, bottom - mh), Size(w, mh), CornerRadius(2.dp.toPx()))
-                        if (front && bh > 0.5f) drawRoundRect(PrecipStyle.ForecastOverlay, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()))
+                        if (!front && bh > 0.5f) drawRoundRect(PrecipStyle.LookBackForecast, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()))
+                        if (mh > 0.5f) drawRoundRect(PrecipStyle.LookBackMeasured, Offset(left, bottom - mh), Size(w, mh), CornerRadius(2.dp.toPx()))
+                        if (front && bh > 0.5f) drawRoundRect(PrecipStyle.LookBackForecast, Offset(left, bottom - bh), Size(w, bh), CornerRadius(2.dp.toPx()))
                     }
                     // Today: an hour over shows what was measured, the forecast for it is gone
                     m != null -> {
@@ -514,8 +514,8 @@ fun PrecipChart(
             // Legend in the style of the course of the day: bars with the day's totals, the line
             fun total(v: Double) = Units.precipitationNumber(v, s.precipitationUnit) + NBSP + pUnit
             LegendRow {
-                LegendItem(MeasuredBar, stringResource(R.string.legend_precip_measured, total(hours.sumOf { it.measured ?: 0.0 })))
-                LegendItem(PrecipStyle.ForecastOverlay, stringResource(R.string.legend_precip_forecast, total(hours.sumOf { it.forecast ?: 0.0 })))
+                LegendItem(PrecipStyle.LookBackMeasured, stringResource(R.string.legend_precip_measured, total(hours.sumOf { it.measured ?: 0.0 })))
+                LegendItem(PrecipStyle.LookBackForecast, stringResource(R.string.legend_precip_forecast, total(hours.sumOf { it.forecast ?: 0.0 })))
                 LegendItem(ChanceLine, stringResource(R.string.legend_chance), line = true)
             }
             Text(stringResource(R.string.meteogram_hint), fontSize = 11.sp, lineHeight = 15.sp, color = NimbusColors.Tertiary, modifier = Modifier.padding(top = 4.dp))

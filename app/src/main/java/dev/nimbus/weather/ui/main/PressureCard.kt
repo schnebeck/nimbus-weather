@@ -131,7 +131,7 @@ fun PressureCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) 
             }
         }
         Spacer(Modifier.height(8.dp))
-        PressureChart(points, start, end, now, nightsFromDaily(data.daily, start, end), readings.filterKeys { it in start..now })
+        PressureChart(points, start, end, now, remember(start, data.place) { nights(start, end, data.place.latitude, data.place.longitude) }, readings.filterKeys { it in start..now })
     }
 }
 

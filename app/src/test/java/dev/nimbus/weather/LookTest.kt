@@ -188,4 +188,25 @@ class LookTest {
         compose.waitForIdle()
         compose.onRoot().captureRoboImage("src/test/screenshots/precip_lookback.png")
     }
+
+    /** Garbsen, the test day (UTC): night until about 05:20, from about 17:00, and in the 24 column. */
+    private val garbsenNights = dev.nimbus.weather.ui.main.nights(day, day + 25 * h, 52.42, 9.60)
+
+    @Test fun nightShadingCoversThe00And24Columns() {
+        compose.setContent { Card { Meteogram(forecastDay(), day, day + 24 * h, garbsenNights, day + 30 * h) } }
+        compose.waitForIdle()
+        val img = bitmap()
+        fun lum(x: Int, y: Int) = img.rgb(x, y).let { (r, g, b) -> 0.2126 * r + 0.7152 * g + 0.0722 * b }
+        // the upper part of the plot (above the bars): median brightness of each column
+        val rows = (img.height * 15 / 100 until img.height * 24 / 100).toList()
+        val med = DoubleArray(img.width) { x -> rows.map { lum(x, it) }.sorted()[rows.size / 2] }
+        val card = lum(1, 1)
+        val inPlot = (0 until img.width).filter { abs(med[it] - card) > 2.5 }
+        val l = inPlot.first(); val r = inPlot.last(); val w = r - l
+        fun at(f: Double) = med[(l + w * f).toInt()]
+        val n00 = at(0.01); val n24 = at(0.99); val noon = at(12.75 / 25)
+        assertTrue("00 column ($n00) darker than noon ($noon)", n00 < noon - 8)
+        assertTrue("24 column ($n24) as dark as the 00 column ($n00)", abs(n24 - n00) < 3 && n24 < noon - 8)
+        compose.onRoot().captureRoboImage("src/test/screenshots/meteogram_nights.png")
+    }
 }

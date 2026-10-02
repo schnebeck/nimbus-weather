@@ -76,13 +76,6 @@ class TodayMeasuredTest {
         assertEquals(forecast.copy(time = t + 3_600_000L), m.apply(forecast.copy(time = t + 3_600_000L), now = t + 600_000L))
     }
 
-    @Test fun nightLastsUntilTheEndOfTheLastHour() {
-        // Look-back: 21:00, 22:00, 23:00 at night – the last night runs to 24:00, not to 23:00
-        val pts = (21..23).map { MeteoPoint(t0 + it * 3_600_000L, 10.0, Condition.CLEAR, false, null) }
-        val nights = dev.nimbus.weather.ui.main.nightsFromFlags(pts)
-        assertEquals(t0 + 24 * 3_600_000L - 1, nights.maxOf { it.last })
-        assertEquals(t0 + 21 * 3_600_000L, nights.minOf { it.first })
-    }
 
     @Test fun anHourOverWithoutAReadingShowsNoForecastAmount() {
         val m = TodayMeasured.of(history(HistoryDay(today, listOf(hour(13, 1.2, 1021.0)))), today)!!

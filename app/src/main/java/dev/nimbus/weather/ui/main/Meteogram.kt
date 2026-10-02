@@ -148,20 +148,33 @@ fun HourlyPoint.toMeteo() = MeteoPoint(
     windSpeed, windDirection, windGust, humidity, apparentTemperature, sunshine = sunshine,
 )
 
-/** Night intervals from sunrise/sunset of the daily forecast. */
-fun nightsFromDaily(daily: List<DailyPoint>, start: Long, end: Long): List<LongRange> =
-    daily.filter { it.date < end && it.date + 24 * 3_600_000L > start }.flatMap { d ->
-        val rise = d.sunrise ?: return@flatMap emptyList()
-        val set = d.sunset ?: return@flatMap emptyList()
-        listOf(d.date until rise, set until d.date + 24 * 3_600_000L)
+/**
+ * Night between [start] and [end] at the place: wherever the sun is below the horizon (its upper
+ * limb with refraction, −0.833° – sunrise and sunset as on the sun card), found every 5 minutes and
+ * interpolated to the minute. One source for every day chart, across the whole axis including the
+ * 24 column; also right on polar days and nights. (The hourly day/night flags of the models put
+ * sunrise and sunset on full hours; the daily sunrise/sunset ended at midnight.)
+ */
+fun nights(start: Long, end: Long, lat: Double, lon: Double): List<LongRange> {
+    if (end <= start) return emptyList()
+    val step = 5 * 60_000L
+    fun alt(t: Long) = dev.nimbus.weather.util.Moon.sunAltitude(t, lat, lon) + 0.833
+    val out = ArrayList<LongRange>()
+    var t = start
+    var a = alt(t)
+    var nightFrom: Long? = if (a < 0) start else null
+    while (t < end) {
+        val n = minOf(t + step, end)
+        val b = alt(n)
+        if ((a < 0) != (b < 0)) {
+            val edge = t + ((n - t) * (a / (a - b))).toLong()
+            if (b < 0) nightFrom = edge else { out += nightFrom!! until edge; nightFrom = null }
+        }
+        t = n; a = b
     }
-
-/** Night intervals from the hourly day/night flag (when no sunrise/sunset is at hand). */
-fun nightsFromFlags(points: List<MeteoPoint>): List<LongRange> =
-    points.zipWithNext().filter { (a, b) -> !a.isDay && !b.isDay }.map { (a, b) -> a.time until b.time } +
-        // a night at the last point lasts its hour (the look-back ends at 23:00, not at 24:00 –
-        // the last hour was drawn as day)
-        listOfNotNull(points.lastOrNull()?.takeIf { !it.isDay }?.let { it.time until it.time + 3_600_000L })
+    nightFrom?.let { out += it until end }
+    return out
+}
 
 /**
  * Compact meteogram of [start]..[end] (one day 00–24 h): time labels and weather symbols every

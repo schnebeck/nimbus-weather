@@ -312,7 +312,8 @@ fun PrecipitationCard(data: WeatherData, now: Long, raining: Boolean = false, me
             // with the next day's first hour: the 24 column
             data.hourly.filter { it.time > dayStart && it.time <= dayStart + 25 * 3_600_000L }
                 .map { PrecipHour(it.time, it.precipitation, it.precipitationProbability, readings[it.time]) },
-            nightsFromDaily(data.daily, dayStart, dayStart + 24 * 3_600_000L), now, compare = false,
+            remember(dayStart, data.place) { nights(dayStart, HourAxis.dayAxisEnd(dayStart + 24 * 3_600_000L), data.place.latitude, data.place.longitude) },
+            now, compare = false,
             Modifier.fillMaxWidth().bleed(CARD_BLEED),
         )
     }

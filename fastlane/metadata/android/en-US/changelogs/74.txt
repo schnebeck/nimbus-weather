@@ -1,0 +1,1 @@
+• Pulling to reload "My location" reloads at once (cards briefly yellow), also when the position has not changed; the location is looked for beside it, another place is loaded afterwards

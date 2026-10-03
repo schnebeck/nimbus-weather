@@ -23,6 +23,7 @@ import dev.nimbus.weather.data.model.Place
 import dev.nimbus.weather.ui.Screen
 import dev.nimbus.weather.ui.UiState
 import dev.nimbus.weather.ui.locationWanted
+import dev.nimbus.weather.ui.sameSpot
 import dev.nimbus.weather.data.repo.Freshness
 import dev.nimbus.weather.data.repo.Locate
 import dev.nimbus.weather.ui.components.CardStatus
@@ -131,5 +132,23 @@ class LocationTest {
         assertTrue(locationWanted(atBerlin, sidebar = true))
         // without "my location" nothing to look for (the first position is asked for on its own)
         assertFalse(locationWanted(UiState(savedPlaces = listOf(berlin)), sidebar = true))
+    }
+
+    /**
+     * Pulling to reload "my location" with the position unchanged: the same current position is
+     * no failed search (it made the next one wait) – nothing or an older position is.
+     */
+    @Test fun theSamePositionIsNoMiss() {
+        assertFalse(Freshness.locationMissed(now - 1 * min, now))
+        assertTrue(Freshness.locationMissed(now - 20 * min, now))
+        assertTrue(Freshness.locationMissed(null, now))
+    }
+
+    /** "My location" keeps its id when it moves: a load for the spot left behind gives way, one for the same spot is enough. */
+    @Test fun aLoadIsForASpotNotAnId() {
+        val hannover = Place("current-location", "Hannover", latitude = 52.37, longitude = 9.73, isCurrentLocation = true)
+        assertTrue(sameSpot(hannover, hannover.copy(name = "Hannover-Mitte")))
+        assertFalse(sameSpot(hannover, hannover.copy(name = "Bad Harzburg", latitude = 51.88, longitude = 10.56)))
+        assertFalse(sameSpot(null, hannover))
     }
 }

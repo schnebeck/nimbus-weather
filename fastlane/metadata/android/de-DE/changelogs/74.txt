@@ -1,0 +1,1 @@
+• Neu laden bei „Mein Standort“ lädt sofort neu (Kacheln kurz gelb), auch wenn sich die Position nicht geändert hat; die Ortung läuft daneben, ein anderer Ort wird danach geladen

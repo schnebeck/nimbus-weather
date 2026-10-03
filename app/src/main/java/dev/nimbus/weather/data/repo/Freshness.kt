@@ -58,6 +58,12 @@ object Freshness {
         else -> 10 * 60_000L
     }
 
+    /**
+     * Whether a search that brought the position found at [foundAt] (null: none) came back
+     * empty-handed at [now]: nothing, or only an older position – not the same current one again.
+     */
+    fun locationMissed(foundAt: Long?, now: Long): Boolean = foundAt == null || !locationCurrent(foundAt, now)
+
     /** Whether the position found at [fixedAt] is still the current one at [now]. */
     fun locationCurrent(fixedAt: Long, now: Long): Boolean = now - fixedAt < LOCATION_MS
 

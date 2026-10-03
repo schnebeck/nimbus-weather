@@ -41,6 +41,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
 import java.util.Locale
 
 data class PlaceState(
@@ -101,6 +102,9 @@ data class UiState(
  * beside the weather (tablet, [sidebar]): only then is the position looked for. For another
  * place the GPS stays off, the page of "my location" shows on its return whether it is current.
  */
+/** Whether [a] and [b] are the same spot (not only the same id: "my location" keeps its id). */
+internal fun sameSpot(a: Place?, b: Place): Boolean = a != null && a.latitude == b.latitude && a.longitude == b.longitude
+
 internal fun locationWanted(st: UiState, sidebar: Boolean): Boolean {
     val current = st.currentPlace ?: return false
     val selected = st.pages.firstOrNull { it.id == st.selectedPlaceId } ?: st.pages.firstOrNull()
@@ -117,6 +121,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val state: StateFlow<UiState> = _state.asStateFlow()
 
     private val jobs = HashMap<String, Job>()
+    /** The place each of [jobs] loads – "my location" keeps its id when it moves. */
+    private val jobSpots = HashMap<String, Place>()
     /** The places shown beside the weather (tablet sideways): "my location" among them. */
     private var sidebar = false
     private var lastSettings: Settings? = null
@@ -269,15 +275,21 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             val found = runCatching { location.currentLocation() }.getOrNull()
             val off = !location.enabled()
             val known = _state.value.locationFixedAt
-            // Nothing new: the page stays with the old place, shown as not current, and is tried again soon.
+            val now = System.currentTimeMillis()
+            // No position newer than the one shown: the page stays with its place – and is loaded
+            // all the same (pulled: anew; it reloaded nothing when the position was the same)
             if (found == null || found.at <= known && _state.value.currentPlace != null) {
+                val missed = dev.nimbus.weather.data.repo.Freshness.locationMissed(found?.at, now)
                 _state.update {
                     it.copy(
                         locationStatus = if (it.currentPlace != null) LocationStatus.AVAILABLE else LocationStatus.UNAVAILABLE,
-                        locationTriedAt = System.currentTimeMillis(), locationMisses = it.locationMisses + 1, locationOff = off,
+                        // the same, still current position is no miss: no pause before the next search
+                        locationTriedAt = if (missed) now else it.locationTriedAt,
+                        locationMisses = if (missed) it.locationMisses + 1 else it.locationMisses,
+                        locationOff = off,
                     )
                 }
-                _state.value.currentPlace?.let { load(it, force = false) }
+                _state.value.currentPlace?.let { load(it, force = force) }
                 return@launch
             }
             val loc = found.value
@@ -325,7 +337,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val fresh = data != null && !dev.nimbus.weather.data.repo.Freshness.forecastDue(data.fetchedAt, System.currentTimeMillis(), data.stale) &&
             data.place.latitude == place.latitude && data.place.longitude == place.longitude
         if (!force && fresh) return
-        if (jobs[place.id]?.isActive == true) return
+        // a load already running for the same spot is enough; one for the spot left behind ("my
+        // location" moved meanwhile) gives way
+        if (jobs[place.id]?.isActive == true) {
+            if (sameSpot(jobSpots[place.id], place)) return
+            jobs[place.id]?.cancel()
+        }
+        jobSpots[place.id] = place
         jobs[place.id] = viewModelScope.launch {
             // what is shown now is the last data: every card yellow until its part is new
             updatePlace(place.id) { it.copy(loading = true, error = false, data = it.data?.copy(stale = dev.nimbus.weather.data.model.DataPart.entries.toSet())) }
@@ -334,6 +352,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             val result = runCatching {
                 repo.load(place, settings, german, previous = data) { core -> updatePlace(place.id) { it.copy(data = core) } }
             }
+            // given way to a load for another spot: neither its data nor an error over the new one's
+            if (!kotlinx.coroutines.currentCoroutineContext().isActive) return@launch
             result.onSuccess { d ->
                 updatePlace(place.id) { it.copy(data = d, loading = false, error = false, models = null) }
                 runCatching { store.cacheWeather(d) }
@@ -367,7 +387,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun refresh(placeId: String) {
         val place = _state.value.pages.firstOrNull { it.id == placeId } ?: return
-        if (place.isCurrentLocation) refreshLocation(force = true) else load(place, force = true)
+        // "my location": the data anew at once (cards yellow, the circle turns) and the position
+        // looked for beside it – the reload waited for the search before (with the GPS a minute);
+        // a position elsewhere loads its place afterwards
+        if (place.isCurrentLocation) {
+            load(place, force = true)
+            refreshLocation()
+        } else load(place, force = true)
     }
 
     /** Past 48 h for the place, fetched on demand when the user swipes back; kept for 30 min. */

@@ -17,6 +17,7 @@
 
 package dev.nimbus.weather.ui.main
 
+import dev.nimbus.weather.ui.components.statusBarsStable
 import androidx.compose.ui.draw.alpha
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.setValue
@@ -152,7 +153,7 @@ fun HistoryPage(
     // Glass and header shade for the brightest sky of the round: they do not pulse every 5 s
     val cardFill = skies.maxBy { it.cardFill.alpha }.cardFill
     val headerStyle = dev.nimbus.weather.ui.components.HeaderStyle(skies.maxOf { it.headerHalo }, skies.maxBy { it.headerPill.alpha }.headerPill)
-    val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val statusTop = WindowInsets.statusBarsStable.asPaddingValues().calculateTopPadding()
     val navBottom = dev.nimbus.weather.ui.components.navBarBottom()
     val title = stringResource(
         when (HISTORY_DAYS - 1 - dayIndex) {

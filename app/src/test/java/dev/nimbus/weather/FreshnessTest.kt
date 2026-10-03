@@ -51,6 +51,18 @@ class FreshnessTest {
         assertTrue(Freshness.historyDue(now - 15 * min, now))
     }
 
+    /**
+     * Full screen hides the status bar: whatever keeps clear of it uses its space whether shown or
+     * not ([dev.nimbus.weather.ui.components.statusBarsStable]) – with the plain insets the menu
+     * and the radar button slid up into the screen's rounded corners.
+     */
+    @Test fun nothingMovesUpInFullScreen() {
+        val ui = java.io.File("src/main/java/dev/nimbus/weather/ui")
+        val plain = ui.walkTopDown().filter { it.extension == "kt" && it.name != "SystemBars.kt" }
+            .filter { Regex("""WindowInsets\.statusBars\b(?!Stable|Ignoring)""").containsMatchIn(it.readText()) }.map { it.name }.toList()
+        assertTrue("plain status bar insets in $plain", plain.isEmpty())
+    }
+
     @Test fun navigationBarAndFullScreen() {
         assertEquals(NavBarMode.EDGE_TO_EDGE, navBarMode(fullscreen = false, buttons = false))   // gesture handle
         assertEquals(NavBarMode.RESERVED, navBarMode(fullscreen = false, buttons = true))       // back, home, recents

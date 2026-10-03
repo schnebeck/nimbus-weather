@@ -1,0 +1,3 @@
+• Full screen: menu, page dots and radar button stay in place instead of sliding into the rounded corners and the camera cut-out; held sideways they keep clear of the cut-out
+• The pull-to-refresh circle appears below the top bar, no longer in the front camera
+• Moon: "Waxing" and "Waning Half Moon" instead of "First" and "Last Quarter"

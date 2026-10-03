@@ -25,6 +25,10 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.tappableElement
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.statusBarsIgnoringVisibility
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -94,3 +98,14 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
     is ContextWrapper -> baseContext.findActivity()
     else -> null
 }
+
+/**
+ * The space at the top whether the status bar is shown or hidden (full screen), and at least the
+ * camera cut-out: menu, radar button and header stay where they are when the bars go – they slid
+ * up into the screen's rounded corners.
+ */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+val WindowInsets.Companion.statusBarsStable: WindowInsets
+    @Composable get() = WindowInsets.statusBarsIgnoringVisibility.union(
+        WindowInsets.displayCutout.only(androidx.compose.foundation.layout.WindowInsetsSides.Top),
+    )

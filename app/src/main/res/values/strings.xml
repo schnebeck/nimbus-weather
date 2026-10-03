@@ -213,11 +213,11 @@
     <string name="moon">Moon</string>
     <string name="moon_new">New Moon</string>
     <string name="moon_waxing_crescent">Waxing Crescent</string>
-    <string name="moon_first_quarter">First Quarter</string>
+    <string name="moon_first_quarter">Waxing Half Moon</string>
     <string name="moon_waxing_gibbous">Waxing Gibbous</string>
     <string name="moon_full">Full Moon</string>
     <string name="moon_waning_gibbous">Waning Gibbous</string>
-    <string name="moon_last_quarter">Last Quarter</string>
+    <string name="moon_last_quarter">Waning Half Moon</string>
     <string name="moon_waning_crescent">Waning Crescent</string>
     <string name="moon_illumination">%1$d%% illuminated</string>
     <string name="moonrise">Moonrise</string>

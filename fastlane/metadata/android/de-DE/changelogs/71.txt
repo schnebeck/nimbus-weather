@@ -1,0 +1,3 @@
+• Vollbild: Menü, Seitenpunkte und Radar-Knopf bleiben an ihrem Platz, statt in die Displayrundung und die Kamera-Aussparung zu rutschen; quer halten sie Abstand zur Aussparung
+• Aktualisieren-Kreis beim Herunterziehen erscheint unter der oberen Leiste, nicht mehr in der Frontkamera
+• Mond: „Zunehmender“ und „Abnehmender Halbmond“ statt „Erstes“ und „Letztes Viertel“

@@ -17,6 +17,7 @@
 
 package dev.nimbus.weather.ui.main
 
+import dev.nimbus.weather.ui.components.statusBarsStable
 import dev.nimbus.weather.data.model.WeatherCard
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
@@ -116,6 +117,8 @@ private val CollapsedHeader = 134.dp
 /** Below this window height (dp) – a phone held sideways – the header is compact. */
 private const val COMPACT_HEIGHT_DP = 500
 private val CompactExpandedHeader = 200.dp
+/** The pull-to-refresh spinner starts this far below the status bar: under the top bar (52 dp). */
+private val RefreshBelow = 56.dp
 /** Space between the bottom of the open header and the first card. */
 private val HeaderGap = 20.dp
 /** Top of the city name, below the top bar with menu and radar buttons. */
@@ -227,7 +230,7 @@ private fun WeatherContent(
 ) {
     val density = LocalDensity.current
     val cards = LocalSettings.current
-    val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val statusTop = WindowInsets.statusBarsStable.asPaddingValues().calculateTopPadding()
     val navBottom = dev.nimbus.weather.ui.components.navBarBottom()
     // Phone: one column. Tablet (from 600 dp): the cards flow in two columns, three from 1150 dp.
     val columns = when {
@@ -302,10 +305,20 @@ private fun WeatherContent(
     // Only show the spinner for a refresh the user pulled, not for automatic background updates.
     var pulled by remember { mutableStateOf(false) }
     LaunchedEffect(state.loading) { if (!state.loading) pulled = false }
+    val refreshState = androidx.compose.material3.pulltorefresh.rememberPullToRefreshState()
     PullToRefreshBox(
         isRefreshing = pulled && state.loading,
         onRefresh = { pulled = true; onRefresh() },
         modifier = Modifier.fillMaxSize(),
+        state = refreshState,
+        // The spinner below the status bar and the top bar (menu, page dots, radar) – from the
+        // top edge it came down into the front camera ("a black snowman"), in full screen too
+        indicator = {
+            androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator(
+                state = refreshState, isRefreshing = pulled && state.loading,
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = statusTop + RefreshBelow),
+            )
+        },
     ) {
         // Cards slide *under* the header instead of over it. The cards themselves keep their title
         // at this line and slide away below it (see GlassCard); the clip catches everything else.
@@ -443,7 +456,7 @@ private fun OfflineBanner(data: WeatherData) {
 
 @Composable
 private fun LoadingOrError(place: Place, state: PlaceState?, onRetry: () -> Unit) {
-    val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val statusTop = WindowInsets.statusBarsStable.asPaddingValues().calculateTopPadding()
     Column(
         Modifier.fillMaxSize().padding(top = statusTop + HeaderTop, start = 24.dp, end = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

@@ -17,6 +17,10 @@
 
 package dev.nimbus.weather.ui.main
 
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.displayCutout
+import dev.nimbus.weather.ui.components.statusBarsStable
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.PaddingValues
@@ -173,7 +177,7 @@ private fun PlacesSidebar(state: UiState, selectedId: String, onSelect: (String)
         modifier.background(Brush.verticalGradient(listOf(Color(0xFF0B1424), Color(0xFF111D33)))),
         contentPadding = PaddingValues(
             start = 14.dp, end = 14.dp,
-            top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 8.dp,
+            top = WindowInsets.statusBarsStable.asPaddingValues().calculateTopPadding() + 8.dp,
             bottom = dev.nimbus.weather.ui.components.navBarBottom() + 16.dp,
         ),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -203,7 +207,9 @@ const val HISTORY_DAYS = 3
 private fun TopBar(count: Int, current: Int, fullscreen: Boolean, button: Boolean, onRadar: () -> Unit, onMenu: () -> Unit, modifier: Modifier) {
     val update = LocalSettingsUpdater.current
     Row(
-        modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = 6.dp).height(52.dp),
+        // below the status bar (shown or not) and beside a camera cut-out held sideways
+        modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBarsStable)
+            .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)).padding(horizontal = 6.dp).height(52.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onMenu) {

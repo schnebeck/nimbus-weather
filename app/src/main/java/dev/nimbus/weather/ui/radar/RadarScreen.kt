@@ -17,6 +17,7 @@
 
 package dev.nimbus.weather.ui.radar
 
+import dev.nimbus.weather.ui.components.statusBarsStable
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import android.os.Bundle
@@ -461,7 +462,7 @@ fun RadarScreen(
         Row(
             Modifier.fillMaxWidth()
                 .background(Brush.verticalGradient(listOf(Color(0xCC000000), Color.Transparent)))
-                .windowInsetsPadding(WindowInsets.statusBars)
+                .windowInsetsPadding(WindowInsets.statusBarsStable)
                 .padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -496,7 +497,7 @@ fun RadarScreen(
         val trouble = netStatus.failed > 0 || netStatus.fromCache > 0
         if (error || stillLoading || trouble) {
             Column(
-                Modifier.align(Alignment.TopCenter).windowInsetsPadding(WindowInsets.statusBars).padding(top = 64.dp, start = 24.dp, end = 24.dp)
+                Modifier.align(Alignment.TopCenter).windowInsetsPadding(WindowInsets.statusBarsStable).padding(top = 64.dp, start = 24.dp, end = 24.dp)
                     .clip(RoundedCornerShape(12.dp)).background(Color(0xCC0B1424)).padding(horizontal = 14.dp, vertical = 10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {

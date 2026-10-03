@@ -17,6 +17,7 @@
 
 package dev.nimbus.weather.ui.settings
 
+import dev.nimbus.weather.ui.components.statusBarsStable
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import dev.nimbus.weather.ui.components.NimbusSnackbarHost
@@ -97,7 +98,7 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
     Column(
         Modifier.fillMaxSize()
             .background(Brush.verticalGradient(listOf(Color(0xFF0B1424), Color(0xFF111D33))))
-            .windowInsetsPadding(WindowInsets.statusBars)
+            .windowInsetsPadding(WindowInsets.statusBarsStable)
             // Tablet: a readable column in the middle, the background still fills the screen
             .wrapContentWidth().widthIn(max = 720.dp),
     ) {

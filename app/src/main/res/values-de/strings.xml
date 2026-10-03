@@ -202,11 +202,11 @@
     <string name="moon">Mond</string>
     <string name="moon_new">Neumond</string>
     <string name="moon_waxing_crescent">Zunehmende Sichel</string>
-    <string name="moon_first_quarter">Erstes Viertel</string>
+    <string name="moon_first_quarter">Zunehmender Halbmond</string>
     <string name="moon_waxing_gibbous">Zunehmender Mond</string>
     <string name="moon_full">Vollmond</string>
     <string name="moon_waning_gibbous">Abnehmender Mond</string>
-    <string name="moon_last_quarter">Letztes Viertel</string>
+    <string name="moon_last_quarter">Abnehmender Halbmond</string>
     <string name="moon_waning_crescent">Abnehmende Sichel</string>
     <string name="moon_illumination">%1$d %% beleuchtet</string>
     <string name="moonrise">Mondaufgang</string>

@@ -83,7 +83,6 @@ object RadarSources {
     const val DWD_WMS = "https://maps.dwd.de/geoserver/dwd/wms"
     const val DWD_LAYER = "dwd:Radar_wn-product_1x1km_ger"
     const val DWD_ANALYSIS_LAYER = "Radar_wn-analysis_1x1km_ger"
-    const val SAT_LAYER = "dwd:Satellite_meteosat_1km_euat_rgb_day_hrv_and_night_ir108_3h"
     const val WARN_LAYER = "dwd:Warnungen_Gemeinden_vereinigt"
 
     /**

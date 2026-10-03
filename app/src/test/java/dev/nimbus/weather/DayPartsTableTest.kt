@@ -36,6 +36,8 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.test.captureToImage
 import com.github.takahirom.roborazzi.captureRoboImage
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -170,6 +172,28 @@ class DayPartsTableTest {
     }
 
     @Test @Config(qualifiers = "de") fun germanWordsStayWhole() = checkAll("de")
+
+    /**
+     * Every cell readable, not only the one the sky shows: the others were dimmed to 55 % and
+     * vanished on a bright sky. On a light ground (a foggy day sky) the text of a cell not shown
+     * keeps its white letters.
+     */
+    @Test @Config(qualifiers = "de-w411dp-h891dp-xxhdpi") fun cellsNotShownStayReadable() {
+        val day = DayPart.entries.map { DayPartWeather(it, Condition.CLOUDY, true, null) }
+        compose.setContent {
+            Box(Modifier.width(411.dp).background(androidx.compose.ui.graphics.Color(0xFF8E99A6)).padding(16.dp)) { DayPartsTable(day, 0, TextStyle()) }
+        }
+        compose.waitForIdle()
+        compose.mainClock.advanceTimeBy(1_000)
+        val img = compose.onRoot().captureToImage().asAndroidBitmap()
+        // the right half of the upper row: cells 2 and 3, not shown – white letters there
+        var white = 0
+        for (y in 0 until img.height / 2) for (x in img.width / 2 until img.width) {
+            val c = img.getPixel(x, y)
+            if ((c shr 16 and 255) > 235 && (c shr 8 and 255) > 235 && (c and 255) > 235) white++
+        }
+        assertTrue("no white letters in the cells not shown ($white px)", white > 200)
+    }
 
     /** The table as it looks: a phone, German, the day of the screenshot (yesterday, 2 Oct.). */
     @Test @Config(qualifiers = "de-w411dp-h891dp-xxhdpi") fun looksLikeThis() {

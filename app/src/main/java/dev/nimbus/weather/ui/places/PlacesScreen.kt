@@ -114,7 +114,7 @@ fun PlacesScreen(
         delay(300)
         results = search(query.trim())
     }
-    val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val navBottom = dev.nimbus.weather.ui.components.navBarBottom()
     // Edit mode (long press on a place): sort by dragging, delete with a confirmation.
     var editing by rememberSaveable { mutableStateOf(false) }
     val saved = state.savedPlaces.filter { it.id != state.currentPlace?.id }

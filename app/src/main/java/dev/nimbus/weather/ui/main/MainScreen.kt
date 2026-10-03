@@ -42,6 +42,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material.icons.rounded.FullscreenExit
+import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.Radar
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
@@ -147,6 +149,8 @@ fun MainScreen(
         TopBar(
             count = pageCount,
             current = pagerState.currentPage,
+            fullscreen = state.settings.fullscreen,
+            button = state.settings.fullscreenButton,
             onRadar = { onOpenRadar(place.id) },
             onMenu = onOpenPlaces,
             modifier = Modifier.align(Alignment.TopCenter),
@@ -170,7 +174,7 @@ private fun PlacesSidebar(state: UiState, selectedId: String, onSelect: (String)
         contentPadding = PaddingValues(
             start = 14.dp, end = 14.dp,
             top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 8.dp,
-            bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp,
+            bottom = dev.nimbus.weather.ui.components.navBarBottom() + 16.dp,
         ),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -196,13 +200,22 @@ const val HISTORY_DAYS = 3
 
 /** Menu (places & settings) top left, radar top right, page dots in between. */
 @Composable
-private fun TopBar(count: Int, current: Int, onRadar: () -> Unit, onMenu: () -> Unit, modifier: Modifier) {
+private fun TopBar(count: Int, current: Int, fullscreen: Boolean, button: Boolean, onRadar: () -> Unit, onMenu: () -> Unit, modifier: Modifier) {
+    val update = LocalSettingsUpdater.current
     Row(
         modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = 6.dp).height(52.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onMenu) {
             Icon(Icons.Rounded.Menu, stringResource(R.string.places), tint = Color.White, modifier = Modifier.size(26.dp))
+        }
+        // Full screen on and off as a button (setting) – the double-tap on the sky does the same
+        if (button) IconButton(onClick = { update { it.copy(fullscreen = !it.fullscreen) } }) {
+            Icon(
+                if (fullscreen) Icons.Rounded.FullscreenExit else Icons.Rounded.Fullscreen,
+                stringResource(if (fullscreen) R.string.fullscreen_leave else R.string.fullscreen_enter),
+                tint = Color.White, modifier = Modifier.size(24.dp),
+            )
         }
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             // Time position: history pages as small dots, "now" as a larger dot on the right.

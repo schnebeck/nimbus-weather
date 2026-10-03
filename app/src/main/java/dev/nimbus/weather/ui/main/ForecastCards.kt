@@ -128,6 +128,24 @@ fun HourlyCard(data: WeatherData, now: Long) {
         list.sortedBy { if (it is HourItem.Hour && it.isNow) start - 1 else it.time }
     }
     val summary = outlookText(data, now)
+    // One width for every cell: wide enough for the widest label, chance and temperature in the
+    // font size set ("Jetzt", "07:25", "-12°") – the cells grow with a large font, all alike
+    val nowLabel = stringResource(R.string.now)
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val cellWidth = remember(items, nowLabel, settings.temperatureUnit, density) {
+        fun widest(texts: List<String>, style: androidx.compose.ui.text.TextStyle) =
+            with(density) { (texts.maxOfOrNull { measurer.measure(it, style, softWrap = false, density = density).size.width } ?: 0).toDp() }
+        val labels = items.map { if (it is HourItem.Hour) (if (it.isNow) nowLabel else tf.hour(it.point.time)) else tf.time(it.time) }
+        val temps = items.mapNotNull { (it as? HourItem.Hour)?.let { h -> Units.temp(if (h.isNow) data.current.temperature else h.point.temperature, settings.temperatureUnit) } }
+        val chances = items.mapNotNull { (it as? HourItem.Hour)?.point?.let { p -> Insights.chanceText(p.precipitationProbability, p.precipitation) + NBSP + "%" } }
+        maxOf(
+            52.dp,
+            widest(labels, androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.SemiBold)) + 8.dp,
+            widest(temps, androidx.compose.ui.text.TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Medium)) + 8.dp,
+            widest(chances, ChanceStyle.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold)) + 6.dp,
+        )
+    }
     // The short forecast replaces the title, as in Apple Weather: one card instead of two.
     GlassCard(title = null) {
         Row(verticalAlignment = Alignment.Top) {
@@ -156,8 +174,9 @@ fun HourlyCard(data: WeatherData, now: Long) {
                         precipAmount = item.point.precipitation,
                         value = Units.temp(if (item.isNow) data.current.temperature else item.point.temperature, settings.temperatureUnit),
                         bold = item.isNow,
+                        width = cellWidth,
                     )
-                    is HourItem.Sun -> SunCell(tf.time(item.time), item.rise)
+                    is HourItem.Sun -> SunCell(tf.time(item.time), item.rise, cellWidth + 4.dp)
                 }
             }
         }
@@ -165,12 +184,10 @@ fun HourlyCard(data: WeatherData, now: Long) {
 }
 
 @Composable
-private fun HourCell(label: String, condition: Condition, isDay: Boolean, precipProb: Double?, precipAmount: Double?, value: String, bold: Boolean) {
-    // as wide as the font needs ("Jetzt" was cut to "Jet" with a large system font); all cells alike
-    val grow = androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceIn(1f, 1.7f)
-    Column(Modifier.width(52.dp * grow), horizontalAlignment = Alignment.CenterHorizontally) {
+private fun HourCell(label: String, condition: Condition, isDay: Boolean, precipProb: Double?, precipAmount: Double?, value: String, bold: Boolean, width: androidx.compose.ui.unit.Dp) {
+    Column(Modifier.width(width), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, fontSize = 14.sp, fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Medium, color = Color.White, maxLines = 1)
-        Box(Modifier.height(46.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.heightIn(min = 46.dp), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 WeatherIcon(condition, isDay, size = 26.dp)
                 // Shown regardless of the symbol: fog or clouds can still come with a 40 % rain risk.
@@ -182,11 +199,10 @@ private fun HourCell(label: String, condition: Condition, isDay: Boolean, precip
 }
 
 @Composable
-private fun SunCell(time: String, rise: Boolean) {
-    val grow = androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceIn(1f, 1.7f)
-    Column(Modifier.width(56.dp * grow), horizontalAlignment = Alignment.CenterHorizontally) {
+private fun SunCell(time: String, rise: Boolean, width: androidx.compose.ui.unit.Dp) {
+    Column(Modifier.width(width), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(time, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1)
-        Box(Modifier.height(46.dp), contentAlignment = Alignment.Center) { SunHorizonGlyph(rise) }
+        Box(Modifier.heightIn(min = 46.dp), contentAlignment = Alignment.Center) { SunHorizonGlyph(rise) }
         // Short label ("Untergang"), shrinking a little rather than being cut off ("Sonnenu…")
         androidx.compose.foundation.text.BasicText(
             stringResource(if (rise) R.string.hour_sunrise else R.string.hour_sunset),
@@ -245,7 +261,7 @@ fun DailyCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) {
     val labels = days.mapIndexed { i, d -> if (i == 0) stringResource(R.string.today) else tf.weekdayShort(d.date) }
     val measurer = androidx.compose.ui.text.rememberTextMeasurer()
     val density = androidx.compose.ui.platform.LocalDensity.current
-    val columns = remember(labels, days, settings.temperatureUnit, density) {
+    val natural = remember(labels, days, settings.temperatureUnit, density) {
         fun widest(texts: List<String>, style: androidx.compose.ui.text.TextStyle) =
             with(density) { (texts.maxOfOrNull { measurer.measure(it, style, softWrap = false, density = density).size.width } ?: 0).toDp() }
         val big = androidx.compose.ui.text.TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Medium)
@@ -257,6 +273,10 @@ fun DailyCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) {
             temp = maxOf(44.dp, widest(temps, big) + 4.dp),
         )
     }
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+    // one line while the bar keeps a useful width (its 10 dp padding on each side included)
+    val columns = natural.copy(stacked = maxWidth - (natural.label + natural.symbol + natural.temp * 2 - 4.dp + 20.dp) < MIN_BAR)
+    Column {
     days.forEachIndexed { i, d ->
             if (i > 0) HairlineDivider()
             val isToday = i == 0
@@ -279,6 +299,8 @@ fun DailyCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) {
             )
         }
     }
+    }
+    }
 }
 
 @Composable
@@ -294,7 +316,7 @@ private fun DayRow(
 ) {
     val settings = LocalSettings.current
     Column(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Row(Modifier.fillMaxWidth().heightIn(min = 50.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (!columns.stacked) Row(Modifier.fillMaxWidth().heightIn(min = 50.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(label, Modifier.width(columns.label), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1, softWrap = false)
             Column(Modifier.width(columns.symbol), horizontalAlignment = Alignment.CenterHorizontally) {
                 WeatherIcon(day.condition, true, size = 26.dp)
@@ -309,6 +331,25 @@ private fun DayRow(
                 Units.temp(day.tempMax, settings.temperatureUnit), Modifier.width(columns.temp - 4.dp), fontSize = 18.sp, softWrap = false,
                 color = Color.White, fontWeight = FontWeight.Medium,
             )
+        } else Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+            // Large text: day, symbol and temperatures in full size on one line, the bar below
+            // across the whole width – nothing squeezed, nothing shortened
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(label, Modifier.weight(1f), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1, softWrap = false)
+                Column(Modifier.width(columns.symbol), horizontalAlignment = Alignment.CenterHorizontally) {
+                    WeatherIcon(day.condition, true, size = 26.dp)
+                    ChanceText(day.precipitationProbability, day.precipitationSum)
+                }
+                Text(
+                    Units.temp(day.tempMin, settings.temperatureUnit), Modifier.width(columns.temp), fontSize = 18.sp, softWrap = false,
+                    color = NimbusColors.Tertiary, textAlign = TextAlign.End, fontWeight = FontWeight.Medium,
+                )
+                Text(
+                    Units.temp(day.tempMax, settings.temperatureUnit), Modifier.width(columns.temp), fontSize = 18.sp, softWrap = false,
+                    color = Color.White, textAlign = TextAlign.End, fontWeight = FontWeight.Medium,
+                )
+            }
+            TemperatureRangeBar(day.tempMin, day.tempMax, min, max, currentTemp, Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 4.dp))
         }
         // Unfolds downwards from its row and is clipped while it does (unclipped and growing from
         // the bottom it was drawn over the rows above). The whole animation reaches into the
@@ -332,8 +373,17 @@ private fun DayRow(
     }
 }
 
-/** Widths of the day rows' columns: day name, symbol with chance, temperatures (the bar takes the rest). */
-private data class DayColumns(val label: androidx.compose.ui.unit.Dp, val symbol: androidx.compose.ui.unit.Dp, val temp: androidx.compose.ui.unit.Dp)
+/**
+ * Widths of the day rows' columns: day name, symbol with chance, temperatures (the bar takes the
+ * rest). [stacked]: the bar would get less than [MIN_BAR] – the row puts it on a line of its own.
+ */
+private data class DayColumns(
+    val label: androidx.compose.ui.unit.Dp, val symbol: androidx.compose.ui.unit.Dp, val temp: androidx.compose.ui.unit.Dp,
+    val stacked: Boolean = false,
+)
+
+/** The temperature bar's least width in a one-line day row. */
+private val MIN_BAR = 56.dp
 
 @Composable
 fun TemperatureRangeBar(low: Double, high: Double, min: Double, max: Double, current: Double?, modifier: Modifier = Modifier) {

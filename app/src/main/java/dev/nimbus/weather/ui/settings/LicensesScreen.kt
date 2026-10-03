@@ -82,7 +82,7 @@ private const val SOURCE_URL = "https://github.com/schnebeck/nimbus-weather"
 @Composable
 fun LicensesScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val navBottom = dev.nimbus.weather.ui.components.navBarBottom()
     // The list is generated at build time (AboutLibraries) and read once from the raw resource.
     val libs by produceState<Libs?>(null) {
         value = withContext(Dispatchers.IO) { Libs.Builder().withJson(context, R.raw.aboutlibraries).build() }

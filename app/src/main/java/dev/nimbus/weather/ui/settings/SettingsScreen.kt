@@ -90,7 +90,7 @@ import dev.nimbus.weather.ui.theme.NimbusColors
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Unit, onOpenLicenses: () -> Unit, onBack: () -> Unit) {
-    val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val navBottom = dev.nimbus.weather.ui.components.navBarBottom()
     val snackbar = remember { androidx.compose.material3.SnackbarHostState() }
     val cardsChange = undoableCardsChange(settings, onChange, snackbar)
     Box(Modifier.fillMaxSize()) {
@@ -159,6 +159,12 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                         onChange { it.copy(useStationObservations = v) }
                     }
                     Spacer(Modifier.size(8.dp))
+                    ToggleRow(stringResource(R.string.settings_fullscreen), stringResource(R.string.settings_fullscreen_desc), settings.fullscreen) { v ->
+                        onChange { it.copy(fullscreen = v) }
+                    }
+                    ToggleRow(stringResource(R.string.settings_fullscreen_button), stringResource(R.string.settings_fullscreen_button_desc), settings.fullscreenButton) { v ->
+                        onChange { it.copy(fullscreenButton = v) }
+                    }
                     ToggleRow(stringResource(R.string.settings_animations), stringResource(R.string.settings_animations_desc), settings.animationsEnabled) { v ->
                         onChange { it.copy(animationsEnabled = v) }
                     }

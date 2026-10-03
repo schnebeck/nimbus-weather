@@ -176,7 +176,7 @@
     <string name="settings_language">Sprache</string>
     <string name="settings_language_desc">Folgt der Systemsprache (Englisch oder Deutsch). Ab Android 13 kann sie in den Systemeinstellungen pro App gewählt werden.</string>
     <string name="settings_about">Über</string>
-    <string name="settings_about_text">Nimbus ist eine freie Wetter-App ohne Werbung und Tracking. Daten: Deutscher Wetterdienst (DWD) über Open-Meteo und Bright Sky, ECMWF, Météo-France und weitere nationale Wetterdienste über Open-Meteo, CAMS-Luftqualität, RainViewer, Sensor.Community. Karten © OpenFreeMap, OpenMapTiles, OpenStreetMap-Mitwirkende.</string>
+    <string name="settings_about_text">Nimbus ist eine freie Wetter-App ohne Werbung und Tracking. Daten: Deutscher Wetterdienst (DWD) über Open-Meteo und Bright Sky, ECMWF, Météo-France und weitere nationale Wetterdienste über Open-Meteo, CAMS-Luftqualität, RainViewer, EUMETSAT (Meteosat), Sensor.Community. Karten © OpenFreeMap, OpenMapTiles, OpenStreetMap-Mitwirkende.</string>
     <string name="version">Version %1$s</string>
 
     <string name="dir_n">N</string>
@@ -406,7 +406,7 @@
     <string name="licenses_show_text">Lizenztext anzeigen</string>
     <string name="licenses_libraries">Bibliotheken (%1$d)</string>
     <string name="licenses_data">Daten und Karten</string>
-    <string name="licenses_data_text">Wetterdaten: Deutscher Wetterdienst (DWD), CC BY 4.0, teils über Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, RainViewer · Bürger-Messnetz: Sensor.Community, ODbL · Pegel: PEGELONLINE (WSV), DL-DE Zero 2.0; NLWKN Pegelonline, pegelonline.nlwkn.niedersachsen.de; LANUK NRW (Hochwasserportal NRW), DL-DE Zero 2.0; LfULG Sachsen (Pegelnetz); HLNUG; Hochwasser-Einstufung und -Warnungen: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0 · Ortsnamen: Nominatim, © OpenStreetMap-Mitwirkende, ODbL · Karten: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap-Mitwirkende, ODbL.</string>
+    <string name="licenses_data_text">Wetterdaten: Deutscher Wetterdienst (DWD), CC BY 4.0, teils über Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, RainViewer · Satellit: Contains modified EUMETSAT Meteosat data, CC BY 4.0 · Bürger-Messnetz: Sensor.Community, ODbL · Pegel: PEGELONLINE (WSV), DL-DE Zero 2.0; NLWKN Pegelonline, pegelonline.nlwkn.niedersachsen.de; LANUK NRW (Hochwasserportal NRW), DL-DE Zero 2.0; LfULG Sachsen (Pegelnetz); HLNUG; Hochwasser-Einstufung und -Warnungen: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0 · Ortsnamen: Nominatim, © OpenStreetMap-Mitwirkende, ODbL · Karten: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap-Mitwirkende, ODbL.</string>
     <string name="radar_loading_frames">Radarbilder werden geladen %1$d/%2$d</string>
     <string name="radar_partly_cached">Verbindungsprobleme – einige Radarbilder sind ältere Kopien aus dem Speicher.</string>
     <string name="radar_partly_missing">Einige Radarbilder konnten nicht geladen werden.</string>
@@ -590,4 +590,10 @@
     <string name="history_row_gust_short">Max. Böe</string>
     <string name="radar_title_short">Radar</string>
     <string name="forecast_short">Progn.</string>
+    <string name="fullscreen_enter">Vollbild</string>
+    <string name="fullscreen_leave">Vollbild verlassen</string>
+    <string name="settings_fullscreen">Vollbild</string>
+    <string name="settings_fullscreen_desc">Status- und Navigationsleiste ausblenden; vom Rand wischen blendet sie kurz ein. Doppeltippen auf den Himmel über den Karten schaltet ein und aus.</string>
+    <string name="settings_fullscreen_button">Vollbild-Knopf</string>
+    <string name="settings_fullscreen_button_desc">Ein Knopf in der Kopfleiste schaltet das Vollbild zusätzlich zum Doppeltippen.</string>
 </resources>

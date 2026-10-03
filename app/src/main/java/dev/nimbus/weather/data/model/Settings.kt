@@ -66,6 +66,10 @@ data class Settings(
     val precipitationUnit: PrecipitationUnit = PrecipitationUnit.MM,
     val useStationObservations: Boolean = true,
     val animationsEnabled: Boolean = true,
+    /** Status and navigation bar hidden; a swipe from the edge shows them for a moment. Double-tapping the sky switches it. */
+    val fullscreen: Boolean = false,
+    /** A full-screen button in the top bar as well (off: the double-tap only). */
+    val fullscreenButton: Boolean = false,
     /** Load the radar loop in the background once the location is known (Wi-Fi only). */
     val preloadRadar: Boolean = true,
     /** Pollen types shown in the pollen card (at least one). */

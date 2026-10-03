@@ -1,0 +1,4 @@
+• Daten mit Haltbarkeit: beim Zurückholen und minütlich lädt die App nach, was abgelaufen ist – auch den Rückblick; Status-Punkte auch dort
+• Vollbild per Doppeltippen auf den Himmel, optional mit Knopf; Drei-Tasten-Navigation wird nicht mehr überzeichnet
+• Satellit von EUMETSAT alle 10 Minuten zur Radarzeit; Radar im Rückblick mit Temperatur, Wind und Satellit
+• Rückblick-Tabelle auf hellem Himmel lesbar; 10-Tage-Zeile bei großer Schrift zweizeilig

@@ -27,6 +27,8 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.doubleClick
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import dev.nimbus.weather.data.model.Condition
@@ -132,6 +134,28 @@ class PageLayoutTest {
         val top = check(914, 1f, heightDp = 411, cards = false)
         val px = org.robolectric.RuntimeEnvironment.getApplication().resources.displayMetrics.density
         assertTrue("first card at ${top / px} dp of 411", top / px < 411 * 0.6f)
+    }
+
+    /** Double-tapping the sky above the cards switches full screen; scrolling stays. */
+    @Test fun doubleTapOnTheSkySwitchesFullScreen() {
+        var settings = Settings(hiddenCards = setOf(WeatherCard.RADAR, WeatherCard.MODELS))
+        compose.setContent {
+            CompositionLocalProvider(
+                LocalContentWidth provides 411.dp,
+                dev.nimbus.weather.ui.main.LocalSettingsUpdater provides { f -> settings = f(settings) },
+            ) {
+                WeatherPage(Place("p", "Garbsen", latitude = 52.42, longitude = 9.60), PlaceState(data()), settings, null, false, {}, {}, {})
+            }
+        }
+        compose.waitForIdle()
+        // the place name in the header: the sky above the cards
+        val name = compose.onAllNodesWithText("Garbsen").fetchSemanticsNodes().first().boundsInRoot
+        compose.onRoot().performTouchInput { doubleClick(androidx.compose.ui.geometry.Offset(name.center.x, name.bottom + 40f)) }
+        compose.waitForIdle()
+        assertTrue("full screen not switched on", settings.fullscreen)
+        compose.onRoot().performTouchInput { doubleClick(androidx.compose.ui.geometry.Offset(name.center.x, name.bottom + 40f)) }
+        compose.waitForIdle()
+        assertTrue("full screen not switched off again", !settings.fullscreen)
     }
 
     @Test fun phone() { check(411, 1f) }

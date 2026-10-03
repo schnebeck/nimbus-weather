@@ -164,10 +164,24 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Refreshes the radar cache of the shown place while the app is open (Wi-Fi only). */
     private var radarTicker: kotlinx.coroutines.Job? = null
+    private var freshTicker: kotlinx.coroutines.Job? = null
+
+    /**
+     * Loads what has expired ([dev.nimbus.weather.data.repo.Freshness]): every place's forecast and
+     * the look-back already loaded – brought back from the background the app does not show old
+     * data as if it were current.
+     */
+    private fun refreshExpired() {
+        val st = _state.value
+        st.pages.forEach { load(it, force = false) }
+        st.states.forEach { (id, ps) -> if (ps.history != null) loadHistory(id) }
+    }
 
     fun onPause() {
         radarTicker?.cancel()
         radarTicker = null
+        freshTicker?.cancel()
+        freshTicker = null
     }
 
     fun onResume() {
@@ -180,6 +194,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 maybePrefetchRadar(place, st.settings)
             }
         }
+        // while the app is in front: whatever expires meanwhile (from the first start on)
+        freshTicker?.cancel()
+        freshTicker = viewModelScope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(dev.nimbus.weather.data.repo.Freshness.CHECK_EVERY_MS)
+                if (_state.value.initialized) refreshExpired()
+            }
+        }
         if (!_state.value.initialized) return
         viewModelScope.launch {
             // Take over what the hourly background refresh stored in the meantime.
@@ -189,7 +211,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 if (current == null || cached.fetchedAt > current.fetchedAt) updatePlace(p.id) { it.copy(data = cached) }
             }
             refreshLocation()
-            _state.value.pages.forEach { load(it, force = false) }
+            refreshExpired()
         }
     }
 
@@ -246,7 +268,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun load(place: Place, force: Boolean) {
         val current = _state.value.states[place.id]
         val data = current?.data
-        val fresh = data != null && System.currentTimeMillis() - data.fetchedAt < 10 * 60_000L &&
+        // current: not expired, nothing older left to try again (Freshness), the same spot
+        val fresh = data != null && !dev.nimbus.weather.data.repo.Freshness.forecastDue(data.fetchedAt, System.currentTimeMillis(), data.stale) &&
             data.place.latitude == place.latitude && data.place.longitude == place.longitude
         if (!force && fresh) return
         if (jobs[place.id]?.isActive == true) return
@@ -299,7 +322,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val st = _state.value.states[placeId] ?: return
         val place = st.data?.place ?: _state.value.pages.firstOrNull { it.id == placeId } ?: return
         val h = st.history
-        if (!force && (st.historyLoading || (h != null && System.currentTimeMillis() - h.fetchedAt < 30 * 60_000L))) return
+        if (!force && (st.historyLoading || (h != null && !dev.nimbus.weather.data.repo.Freshness.historyDue(h.fetchedAt, System.currentTimeMillis())))) return
         viewModelScope.launch {
             updatePlace(placeId) { it.copy(historyLoading = true, historyError = false) }
             val model = _state.value.settings.model.openMeteoId

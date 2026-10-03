@@ -35,6 +35,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.nimbus.weather.ui.components.ExplainHost
@@ -57,9 +60,16 @@ fun NimbusRoot(viewModel: MainViewModel) {
 
     ExplainHost {
     CompositionLocalProvider(dev.nimbus.weather.ui.main.LocalSettingsUpdater provides viewModel::updateSettings) {
+    // Full screen (setting), or – with button navigation – the app ending above the buttons on
+    // this dark ground; with gesture navigation the sky goes on under the handle
+    dev.nimbus.weather.ui.components.SystemBarsVisibility(state.settings.fullscreen)
+    val navMode = dev.nimbus.weather.ui.components.navBarMode(state.settings.fullscreen, dev.nimbus.weather.ui.components.hasNavButtons())
+    val reserve = navMode == dev.nimbus.weather.ui.components.NavBarMode.RESERVED
     Box(Modifier.fillMaxSize().background(Color(0xFF0E1726))) {
         if (!state.initialized) return@Box
+        CompositionLocalProvider(dev.nimbus.weather.ui.components.LocalNavBarReserved provides reserve) {
         AnimatedContent(
+            modifier = if (reserve) Modifier.windowInsetsPadding(WindowInsets.navigationBars) else Modifier,
             targetState = state.screen,
             transitionSpec = {
                 (fadeIn(tween(220)) + scaleIn(tween(220), initialScale = 0.96f)) togetherWith
@@ -103,6 +113,7 @@ fun NimbusRoot(viewModel: MainViewModel) {
                     RadarScreen(place = place, temperatureUnit = state.settings.temperatureUnit, archiveDay = screen.day, onBack = { viewModel.back() })
                 }
             }
+        }
         }
     }
     }

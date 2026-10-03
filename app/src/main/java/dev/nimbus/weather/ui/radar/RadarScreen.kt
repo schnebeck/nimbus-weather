@@ -150,7 +150,7 @@ private class RadarMapController {
     var anchor: String? = null
 
     /** Satellite and warning layers; the radar picture is inserted between them. */
-    fun installBase(style: Style) {
+    fun installBase(style: Style, satellite: SatelliteLayer) {
         this.style = style
         // No animated property changes (MapLibre fades every change over 300 ms by default)
         style.transition = org.maplibre.android.style.layers.TransitionOptions(0, 0, false)
@@ -159,8 +159,10 @@ private class RadarMapController {
         val below = style.layers.firstOrNull { it is SymbolLayer || it is org.maplibre.android.style.layers.LineLayer }?.id
         anchor = below
         fun add(layer: RasterLayer) = if (below != null) style.addLayerBelow(layer, below) else style.addLayer(layer)
-        style.addSource(RasterSource("sat", TileSet("2.2.0", RadarSources.dwdTileUrl(RadarSources.SAT_LAYER, null)).apply { maxZoom = 9f }, 512).apply { prefetchZoomDelta = 0 })
-        add(RasterLayer("sat", "sat").withProperties(PropertyFactory.rasterOpacity(0f), PropertyFactory.rasterFadeDuration(0f), PropertyFactory.visibility(Property.NONE)))
+        // the satellite: one picture of the view at the radar's time (EUMETSAT, see SatelliteLayer)
+        style.addSource(satellite.source())
+        satellite.install(style)
+        add(RasterLayer("sat", SatelliteLayer.SOURCE).withProperties(PropertyFactory.rasterOpacity(0f), PropertyFactory.rasterFadeDuration(0f), PropertyFactory.visibility(Property.NONE)))
         style.addSource(RasterSource("warn", TileSet("2.2.0", RadarSources.dwdTileUrl(RadarSources.WARN_LAYER, null)).apply {
             maxZoom = 10f
             setBounds(5.5f, 47.0f, 15.5f, 55.2f)
@@ -205,6 +207,9 @@ fun RadarScreen(
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val scope = rememberCoroutineScope()
     val controller = remember { RadarMapController() }
+    val sat = remember { SatelliteLayer(scope, container.http) }
+    // a new picture area for the satellite after panning or zooming
+    var satView by remember { mutableIntStateOf(0) }
     val player = remember {
         val am = context.getSystemService(android.content.Context.ACTIVITY_SERVICE) as android.app.ActivityManager
         RadarPlayer(scope, container.http, RadarPlayer.fieldSideFor(am.memoryClass, am.isLowRamDevice))
@@ -282,7 +287,7 @@ fun RadarScreen(
             map.setMaxZoomPreference(10.0)
             map.setMinZoomPreference(3.0)
             map.setStyle(styleBuilder) { style ->
-                controller.installBase(style)
+                controller.installBase(style, sat)
                 overlays.install(style, fieldBelow = "sat", linesBelow = controller.anchor)
                 overlays.setVisible(showTemp, showWind)
                 // The radar picture: one image between satellite and warnings
@@ -291,7 +296,11 @@ fun RadarScreen(
                 // picture area once the view leaves the old one
                 map.addOnCameraIdleListener {
                     gridCheck++
-                    map.projection.visibleRegion.latLngBounds.let { b -> player.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast) }
+                    map.projection.visibleRegion.latLngBounds.let { b ->
+                        player.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast)
+                        sat.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast)
+                    }
+                    satView++
                 }
                 place?.let { controller.addLocation(style, it) }
                 controller.setOverlays(satellite, warnings)
@@ -401,7 +410,8 @@ fun RadarScreen(
     }
     LaunchedEffect(showTemp, showWind, styleReady) {
         if (!styleReady) return@LaunchedEffect
-        overlays.setVisible(showTemp && !archive, showWind && !archive)
+        // a past day too: the grid holds its hours (model values, up to four days back)
+        overlays.setVisible(showTemp, showWind)
     }
     // The visible map has priority over background preloading.
     DisposableEffect(Unit) {
@@ -410,7 +420,15 @@ fun RadarScreen(
         onDispose { RadarPrefetcher.paused = false }
     }
 
-    LaunchedEffect(satellite, warnings) { controller.setOverlays(satellite, warnings) }
+    LaunchedEffect(satellite, warnings) { controller.setOverlays(satellite, warnings && !archive) }
+    // The satellite picture at the radar's time: every 10 minutes when standing, every hour while
+    // playing (the next hour loaded ahead) – live and on a past day
+    val satTime = timeline?.let { tl -> SatelliteLayer.timeFor(tl.frames[frame.coerceIn(0, tl.frames.lastIndex)].time, System.currentTimeMillis(), playing) }
+    LaunchedEffect(satellite, satTime, satView, styleReady) {
+        if (!satellite || !styleReady || satTime == null) return@LaunchedEffect
+        if (satView == 0) controller.map?.projection?.visibleRegion?.latLngBounds?.let { b -> sat.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast) }
+        sat.show(satTime, if (playing) satTime + SatelliteLayer.PLAY_STEP_MS else null)
+    }
     // Playback runs continuously: the position moves on with every display frame and the player
     // draws the rain moved between the steps – no jumping from step to step.
     LaunchedEffect(playing, timeline) {
@@ -607,21 +625,28 @@ fun RadarScreen(
                     }
                 }
                 Spacer(Modifier.height(4.dp))
-                Legend(showTemp && !archive, snowLegend, temperatureUnit)
+                Legend(showTemp, snowLegend, temperatureUnit)
                 Spacer(Modifier.height(8.dp))
-                // Temperature, wind, satellite and warnings are live layers – not offered for a past day.
-                if (!archive) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
+                // Temperature, wind and satellite for a past day too; the warnings are live only
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
                     ToggleChip(stringResource(R.string.overlay_temperature), showTemp) { showTemp = !showTemp }
                     Spacer(Modifier.width(6.dp))
                     ToggleChip(stringResource(R.string.overlay_wind), showWind) { showWind = !showWind }
                     Spacer(Modifier.width(6.dp))
                     ToggleChip(stringResource(R.string.satellite), satellite) { satellite = !satellite }
-                    Spacer(Modifier.width(6.dp))
-                    ToggleChip(stringResource(R.string.warnings), warnings) { warnings = !warnings }
+                    if (!archive) {
+                        Spacer(Modifier.width(6.dp))
+                        ToggleChip(stringResource(R.string.warnings), warnings) { warnings = !warnings }
+                    }
                 }
             }
             Spacer(Modifier.height(6.dp))
             Text(stringResource(R.string.radar_attribution), fontSize = 9.sp, color = NimbusColors.Tertiary, maxLines = 2)
+            // the satellite's licence (CC BY 4.0) asks for this line while its picture is shown
+            if (satellite && satTime != null) Text(
+                String.format(java.util.Locale.ROOT, SatelliteLayer.ATTRIBUTION, java.time.Instant.ofEpochMilli(satTime).atZone(java.time.ZoneOffset.UTC).year),
+                fontSize = 9.sp, color = NimbusColors.Tertiary, maxLines = 1,
+            )
         }
     }
 }

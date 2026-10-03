@@ -58,6 +58,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -150,7 +153,7 @@ fun HistoryPage(
     val cardFill = skies.maxBy { it.cardFill.alpha }.cardFill
     val headerStyle = dev.nimbus.weather.ui.components.HeaderStyle(skies.maxOf { it.headerHalo }, skies.maxBy { it.headerPill.alpha }.headerPill)
     val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val navBottom = dev.nimbus.weather.ui.components.navBarBottom()
     val title = stringResource(
         when (HISTORY_DAYS - 1 - dayIndex) {
             0 -> R.string.history_today
@@ -164,10 +167,14 @@ fun HistoryPage(
         androidx.compose.animation.Crossfade(scene, animationSpec = androidx.compose.animation.core.tween(1200), label = "sky") { sc ->
             WeatherBackground(sc, animate = isActive && settings.animationsEnabled)
         }
+        // the look-back's cards say whether they are current: yellow while loading or expired
+        val status = if (state?.historyLoading == true || (history != null && dev.nimbus.weather.data.repo.Freshness.historyDue(history.fetchedAt, System.currentTimeMillis())))
+            dev.nimbus.weather.ui.components.CardStatus.STALE else dev.nimbus.weather.ui.components.CardStatus.FRESH
         CompositionLocalProvider(
             LocalSettings provides settings, LocalTimeFormat provides tf,
             dev.nimbus.weather.ui.components.LocalCardFill provides cardFill,
             dev.nimbus.weather.ui.components.LocalHeaderStyle provides headerStyle,
+            dev.nimbus.weather.ui.components.LocalCardStatus provides status,
         ) {
             val clipTop = with(androidx.compose.ui.platform.LocalDensity.current) { (statusTop + 52.dp).toPx() }
             // Cards keep their title at the line below the top bar and slide away under it (GlassCard)
@@ -181,7 +188,7 @@ fun HistoryPage(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = statusTop + HeaderTop, bottom = navBottom + 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                item(key = "header") { HistoryHeader(place, title, day, summary, tf, parts, shown) }
+                item(key = "header") { Box(Modifier.fullscreenByDoubleTap()) { HistoryHeader(place, title, day, summary, tf, parts, shown) } }
                 when {
                     day == null && state?.historyError == true -> item(key = "error") { HistoryMessage(stringResource(R.string.history_error), onRetry) }
                     day == null -> item(key = "loading") {
@@ -300,8 +307,14 @@ private fun DayPartCell(
     column: androidx.compose.ui.unit.Dp, labelSize: androidx.compose.ui.unit.TextUnit, weatherSize: androidx.compose.ui.unit.TextUnit,
     halo: androidx.compose.ui.text.TextStyle,
 ) {
-    val alpha by androidx.compose.animation.core.animateFloatAsState(if (lit) 1f else 0.55f, androidx.compose.animation.core.tween(600), label = "lit")
-    Column(Modifier.width(column + 4.dp).alpha(alpha).padding(horizontal = 2.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    // Every cell in full white with its halo – dimmed ones vanished on a bright sky; the part the
+    // sky shows sits on the glass pill of the station line (dark enough for any sky behind)
+    val pill = dev.nimbus.weather.ui.components.LocalHeaderStyle.current.pill
+    val ground by androidx.compose.animation.animateColorAsState(if (lit) pill else pill.copy(alpha = 0f), androidx.compose.animation.core.tween(600), label = "lit")
+    Column(
+        Modifier.width(column + 4.dp).padding(horizontal = 2.dp).clip(RoundedCornerShape(12.dp)).background(ground).padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Text(label, fontSize = labelSize, color = Color.White, style = halo, maxLines = 1, softWrap = false)
         Spacer(Modifier.height(2.dp))
         WeatherIcon(p.condition, p.isDay, size = 34.dp)

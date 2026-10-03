@@ -64,6 +64,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.layout.onSizeChanged
 import dev.nimbus.weather.ui.components.shrinkToFit
 import androidx.compose.ui.draw.clip
@@ -226,7 +228,7 @@ private fun WeatherContent(
     val density = LocalDensity.current
     val cards = LocalSettings.current
     val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val navBottom = dev.nimbus.weather.ui.components.navBarBottom()
     // Phone: one column. Tablet (from 600 dp): the cards flow in two columns, three from 1150 dp.
     val columns = when {
         LocalContentWidth.current >= 1150.dp -> 3
@@ -265,7 +267,8 @@ private fun WeatherContent(
 
     // The page as a list of cards; wide ones (header, alerts, hourly row, sources) span all columns
     val items = spanLonely(buildList {
-        add(PageItem("header-space", true) { Spacer(Modifier.height(with(density) { expandedPx.toDp() } - 12.dp)) })
+        // the sky above the cards: double-tapping it switches full screen (the header drawn over it has no touch of its own)
+        add(PageItem("header-space", true) { Spacer(Modifier.fillMaxWidth().height(with(density) { expandedPx.toDp() } - 12.dp).fullscreenByDoubleTap()) })
         if (stale) add(PageItem("offline", true) { OfflineBanner(data) })
         if (data.alerts.isNotEmpty() && cards.shows(WeatherCard.ALERTS)) add(PageItem("alerts", true) { AlertsCard(data.alerts) })
         // The cards in the order chosen in the settings (Settings → Cards)
@@ -464,6 +467,15 @@ private fun LoadingOrError(place: Place, state: PlaceState?, onRetry: () -> Unit
 
 /** One card of the weather page; [fullSpan] cards span all columns on a tablet. */
 private class PageItem(val key: String, val fullSpan: Boolean = false, val content: @Composable () -> Unit)
+
+/** Double-tap: full screen on, double-tap again: off – on the sky above the cards (taps only: scrolling and swiping stay). */
+@Composable
+internal fun Modifier.fullscreenByDoubleTap(): Modifier {
+    val update = LocalSettingsUpdater.current
+    return this.then(Modifier.pointerInput(Unit) {
+        detectTapGestures(onDoubleTap = { update { it.copy(fullscreen = !it.fullscreen) } })
+    })
+}
 
 /**
  * In the columns of a tablet, a card between two wide ones (or a wide one and the end) would

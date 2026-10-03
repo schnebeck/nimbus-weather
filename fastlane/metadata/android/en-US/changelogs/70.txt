@@ -1,0 +1,4 @@
+• Data that expires: when brought back and every minute the app reloads what is out of date – the look-back too, with status dots there
+• Full screen by double-tapping the sky, optionally with a button; three-button navigation is no longer drawn over
+• Satellite from EUMETSAT every 10 minutes at the radar's time; the look-back radar shows temperature, wind and satellite
+• Look-back table readable on bright skies; 10-day rows on two lines with a large font

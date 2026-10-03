@@ -70,7 +70,8 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   Stunden- und 10-Tage-Vorhersage mit Niederschlagswahrscheinlichkeit, Kacheln für Gefühlt, UV, Wind,
   Luftfeuchte, Sichtweite und Luftdruck. Die Vorhersage erscheint sofort, Kacheln mit langsameren
   Quellen kommen hinzu, sobald ihre Daten da sind; ein Punkt je Kachel zeigt, ob ihre Daten aktuell
-  sind (grün) oder noch die vorigen (gelb).
+  sind (grün) oder noch die vorigen (gelb). Jede Datenart hat eine Haltbarkeit (Vorhersage 10, Rückblick
+  15 Minuten): zurückgeholt und danach minütlich lädt die App nach, was abgelaufen ist.
   Aktuelle Werte stammen, wo möglich, von der nächsten DWD-Station.
 - **Meteogramm** je Tag (00–24 Uhr): Temperatur (Vorhersage alle 15 Minuten, Messwerte der
   DWD-Station alle 10 Minuten), Niederschlag, Sonnenscheindauer und Wind pro Stunde,
@@ -107,8 +108,9 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   Bewegung der Regengebiete berechnet; eigener Radarspeicher – jedes Bild (ganz Deutschland in
   einem) wird einmal geladen, zu Reflektivität aufbereitet und bis zum Verfall lokal gehalten
   (Analysen ~3½ Tage), Verschieben und Zoomen brauchen kein Netz; deckende Farben, Straßen, Grenzen
-  und Namen über dem Radar; Temperatur- (mit Isothermen) und Windebene, Satellit, Warnkarte,
-  Rückblick bis 24 h. Im WLAN hält die App die 2-Stunden-Schleife des aktuellen Orts etwa alle 15
+  und Namen über dem Radar; Temperatur- (mit Isothermen) und Windebene, Satellit (Meteosat, alle
+  10 Minuten, zur Zeit des Radarbilds), Warnkarte, Rückblick bis 24 h. Auch das Radar eines Tages
+  im Rückblick zeigt Temperatur, Wind und Satellit. Im WLAN hält die App die 2-Stunden-Schleife des aktuellen Orts etwa alle 15
   Minuten aktuell, auch im Hintergrund – solange die App am Vortag benutzt wurde. Die Auflösung des
   Radarbilds richtet sich nach dem Speicher des Geräts. Ohne Verbindung zeigt das Radar die
   gespeicherten Bilder; nichts wartet endlos.
@@ -117,7 +119,10 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   Hintergrund lädt nur die Vorhersage (die übrigen Quellen beim Öffnen) und pausiert, wenn die App
   drei Tage nicht geöffnet wurde.
 - **Barrierefreiheit**: große Systemschrift bis 200 % und kleine Displays ab 320 dp – nichts überlappt
-  oder wird abgeschnitten, lange Wörter werden getrennt oder abgekürzt.
+  oder wird abgeschnitten, lange Wörter werden getrennt oder abgekürzt; die 10-Tage-Zeilen werden
+  bei großer Schrift zweizeilig.
+- **Vollbild**: Doppeltippen auf den Himmel über den Karten blendet Status- und Navigationsleiste aus
+  und wieder ein, optional auch per Knopf; mit Drei-Tasten-Navigation endet die App über den Tasten.
 - **Lexikon**: ⓘ an jeder Karte erklärt die Begriffe.
 - **Orte, Einstellungen**: Standort und gespeicherte Orte (lange drücken zum Sortieren und Löschen);
   Vorhersagemodell, Einheiten (beim ersten Start passend zum Land), Stationswerte, Animationen,
@@ -134,7 +139,8 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
 |---|---|
 | Vorhersage | DWD ICON-D2/-EU/global via [Open-Meteo](https://open-meteo.com), Lücken aus Open-Meteo „best match“ |
 | Aktuelle Messwerte, Warnungen, Rückblick | DWD-Stationen und -Warnungen via [Bright Sky](https://brightsky.dev) |
-| Radar, Satellit, Warnkarte | DWD GeoServer; Europa: [RainViewer](https://www.rainviewer.com/api.html) |
+| Radar, Warnkarte | DWD GeoServer; Europa: [RainViewer](https://www.rainviewer.com/api.html) |
+| Satellit | Meteosat (MTG, GeoColour) via [EUMETView](https://view.eumetsat.int) – „Contains modified EUMETSAT Meteosat data“, CC BY 4.0 |
 | Luftqualität, Pollen Europa | Copernicus CAMS via Open-Meteo |
 | Pollenflug Deutschland | [DWD-Pollenflug-Gefahrenindex](https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json) |
 | Bürger-Messnetz | [Sensor.Community](https://sensor.community) |

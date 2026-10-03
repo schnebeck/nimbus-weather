@@ -1,0 +1,5 @@
+• Jetzt-Linie der Tagesdiagramme trifft die Kurve beim aktuellen Wert
+• Große Schrift, kleine Displays: kein Überlappen von Kopf und Karten, nichts abgeschnitten (Max/Min, Heute, Jetzt); Silbentrennung oder Kurzformen; Zahl und Einheit bleiben zusammen
+• Quer: kompakter Kopf; Tablet: Niederschlag heute in voller Breite
+• Radar: Zeitregler löst am Rand keine Zurück-Geste aus; Auflösung passend zum Gerätespeicher
+• Akku: Hintergrundabruf nur Vorhersage, Pause ohne Nutzung

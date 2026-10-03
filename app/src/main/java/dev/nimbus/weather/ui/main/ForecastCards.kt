@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -165,7 +166,9 @@ fun HourlyCard(data: WeatherData, now: Long) {
 
 @Composable
 private fun HourCell(label: String, condition: Condition, isDay: Boolean, precipProb: Double?, precipAmount: Double?, value: String, bold: Boolean) {
-    Column(Modifier.width(52.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    // as wide as the font needs ("Jetzt" was cut to "Jet" with a large system font); all cells alike
+    val grow = androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceIn(1f, 1.7f)
+    Column(Modifier.width(52.dp * grow), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, fontSize = 14.sp, fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Medium, color = Color.White, maxLines = 1)
         Box(Modifier.height(46.dp), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -180,7 +183,8 @@ private fun HourCell(label: String, condition: Condition, isDay: Boolean, precip
 
 @Composable
 private fun SunCell(time: String, rise: Boolean) {
-    Column(Modifier.width(56.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    val grow = androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceIn(1f, 1.7f)
+    Column(Modifier.width(56.dp * grow), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(time, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1)
         Box(Modifier.height(46.dp), contentAlignment = Alignment.Center) { SunHorizonGlyph(rise) }
         // Short label ("Untergang"), shrinking a little rather than being cut off ("Sonnenu…")
@@ -235,12 +239,31 @@ fun DailyCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) {
         icon = Icons.Outlined.CalendarMonth,
         info = Term.DAILY,
     ) {
-        days.forEachIndexed { i, d ->
+        // One set of column widths for all rows (the bars stay aligned): wide enough for the longest
+    // day name, chance and temperature in the font size set – fixed widths cut "Heute" to "Heu"
+    // and "20°" to "20" with a large system font
+    val labels = days.mapIndexed { i, d -> if (i == 0) stringResource(R.string.today) else tf.weekdayShort(d.date) }
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val columns = remember(labels, days, settings.temperatureUnit, density) {
+        fun widest(texts: List<String>, style: androidx.compose.ui.text.TextStyle) =
+            with(density) { (texts.maxOfOrNull { measurer.measure(it, style, softWrap = false, density = density).size.width } ?: 0).toDp() }
+        val big = androidx.compose.ui.text.TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Medium)
+        val chances = days.mapNotNull { d -> Insights.chanceLabel(d.precipitationProbability)?.let { Insights.chanceText(d.precipitationProbability, d.precipitationSum) + NBSP + "%" } }
+        val temps = days.flatMap { listOf(Units.temp(it.tempMin, settings.temperatureUnit), Units.temp(it.tempMax, settings.temperatureUnit)) }
+        DayColumns(
+            label = maxOf(62.dp, widest(labels, big) + 6.dp),
+            symbol = maxOf(44.dp, widest(chances, ChanceStyle.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold)) + 4.dp),
+            temp = maxOf(44.dp, widest(temps, big) + 4.dp),
+        )
+    }
+    days.forEachIndexed { i, d ->
             if (i > 0) HairlineDivider()
             val isToday = i == 0
             DayRow(
                 day = d,
-                label = if (isToday) stringResource(R.string.today) else tf.weekdayShort(d.date),
+                label = labels[i],
+                columns = columns,
                 min = lo, max = hi,
                 currentTemp = if (isToday) data.current.temperature else null,
                 expanded = expanded == d.date,
@@ -260,7 +283,7 @@ fun DailyCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) {
 
 @Composable
 private fun DayRow(
-    day: DailyPoint, label: String, min: Double, max: Double, currentTemp: Double?,
+    day: DailyPoint, label: String, columns: DayColumns, min: Double, max: Double, currentTemp: Double?,
     expanded: Boolean, onClick: () -> Unit, hours: List<HourlyPoint>, daily: List<DailyPoint>, now: Long,
     /** The place (night shading from the sun's position there). */
     place: dev.nimbus.weather.data.model.Place,
@@ -271,19 +294,19 @@ private fun DayRow(
 ) {
     val settings = LocalSettings.current
     Column(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Row(Modifier.fillMaxWidth().height(50.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(label, Modifier.width(62.dp), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1)
-            Column(Modifier.width(44.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(Modifier.fillMaxWidth().heightIn(min = 50.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(label, Modifier.width(columns.label), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1, softWrap = false)
+            Column(Modifier.width(columns.symbol), horizontalAlignment = Alignment.CenterHorizontally) {
                 WeatherIcon(day.condition, true, size = 26.dp)
                 ChanceText(day.precipitationProbability, day.precipitationSum)
             }
             Text(
-                Units.temp(day.tempMin, settings.temperatureUnit), Modifier.width(44.dp), fontSize = 18.sp,
+                Units.temp(day.tempMin, settings.temperatureUnit), Modifier.width(columns.temp), fontSize = 18.sp, softWrap = false,
                 color = NimbusColors.Tertiary, textAlign = TextAlign.End, fontWeight = FontWeight.Medium,
             )
             TemperatureRangeBar(day.tempMin, day.tempMax, min, max, currentTemp, Modifier.weight(1f).padding(horizontal = 10.dp))
             Text(
-                Units.temp(day.tempMax, settings.temperatureUnit), Modifier.width(40.dp), fontSize = 18.sp,
+                Units.temp(day.tempMax, settings.temperatureUnit), Modifier.width(columns.temp - 4.dp), fontSize = 18.sp, softWrap = false,
                 color = Color.White, fontWeight = FontWeight.Medium,
             )
         }
@@ -308,6 +331,9 @@ private fun DayRow(
         }
     }
 }
+
+/** Widths of the day rows' columns: day name, symbol with chance, temperatures (the bar takes the rest). */
+private data class DayColumns(val label: androidx.compose.ui.unit.Dp, val symbol: androidx.compose.ui.unit.Dp, val temp: androidx.compose.ui.unit.Dp)
 
 @Composable
 fun TemperatureRangeBar(low: Double, high: Double, min: Double, max: Double, current: Double?, modifier: Modifier = Modifier) {

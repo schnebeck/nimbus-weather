@@ -42,6 +42,8 @@ class RadarWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
         val container = (applicationContext as NimbusApp).container
         val store = container.store
         if (!store.settings.first().preloadRadar || !RadarPrefetcher.isUnmetered(applicationContext)) return Result.success()
+        // the loop is for opening the radar at once – not worth it while nobody opens the app
+        if (!AppUse.worthIt(AppUse.lastUsed(applicationContext), System.currentTimeMillis(), AppUse.RADAR_IDLE_MS)) return Result.success()
         val place = store.cachedWeather(LocationProvider.CURRENT_LOCATION_ID)?.place
             ?: store.places.first().firstOrNull()
             ?: return Result.success()

@@ -47,7 +47,11 @@ import kotlin.math.roundToInt
  * to step. Panning within the picture's margin and zooming a little need nothing new; beyond
  * that the frames are cut again from the store (no download).
  */
-class RadarPlayer(private val scope: CoroutineScope, private val http: OkHttpClient) {
+class RadarPlayer(
+    private val scope: CoroutineScope, private val http: OkHttpClient,
+    /** Longest side of the picture area in field pixels – smaller on devices with less app memory ([fieldSideFor]). */
+    private val maxSide: Int = 1024,
+) {
     private var style: Style? = null
     private var timeline: RadarTimeline? = null
     @Volatile private var geo: FieldGeo? = null
@@ -136,7 +140,7 @@ class RadarPlayer(private val scope: CoroutineScope, private val http: OkHttpCli
 
     /** The visible area changed (camera idle): a new picture area if the old one no longer serves. */
     fun setView(south: Double, north: Double, west: Double, east: Double) {
-        val want = FieldGeo.forView(south, north, west, east)
+        val want = FieldGeo.forView(south, north, west, east, maxSide = maxSide)
         val g = geo
         val ratio = g?.let { want.pxM / it.pxM } ?: 0.0
         val inside = g != null && FieldGeo.R * Math.toRadians(west) >= g.minX && FieldGeo.R * Math.toRadians(east) <= g.maxX &&
@@ -361,6 +365,20 @@ class RadarPlayer(private val scope: CoroutineScope, private val http: OkHttpCli
         private const val DOWNLOAD_WORKERS = 6
         /** Up to this many frames are all kept (live loop); more (a day of 288) use a window. */
         private const val MAX_ALL = 60
+
+        /**
+         * The picture area's longest side for an app memory of [memoryClassMb] (what Android grants
+         * the app, ActivityManager.memoryClass) on a [lowRam] device or not. A frame takes about
+         * 2 bytes per field pixel and a long loop holds up to ~70 of them: at 1024 px that is
+         * 70–100 MB – too much where the app may use 192 MB or less. The picture is scaled up on
+         * the map; a smaller field is a little softer, nothing else.
+         */
+        fun fieldSideFor(memoryClassMb: Int, lowRam: Boolean): Int = when {
+            lowRam || memoryClassMb < 160 -> 576
+            memoryClassMb < 256 -> 768
+            memoryClassMb < 384 -> 896
+            else -> 1024
+        }
         private const val WINDOW_BEHIND = 8
         private const val WINDOW_AHEAD = 36
         /** A long live loop: the 5-minute steps ahead of the position (the rest are the kept ones). */

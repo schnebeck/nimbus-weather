@@ -64,6 +64,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import dev.nimbus.weather.ui.components.shrinkToFit
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -109,6 +111,11 @@ val LocalTimeFormat = staticCompositionLocalOf { TimeFormat("UTC", true) }
 private val ExpandedHeader = 288.dp
 // Collapsed: name and "15 °C | Rain" end at about 124 dp – the cards start a little below
 private val CollapsedHeader = 134.dp
+/** Below this window height (dp) – a phone held sideways – the header is compact. */
+private const val COMPACT_HEIGHT_DP = 500
+private val CompactExpandedHeader = 200.dp
+/** Space between the bottom of the open header and the first card. */
+private val HeaderGap = 20.dp
 /** Top of the city name, below the top bar with menu and radar buttons. */
 val HeaderTop = 58.dp
 
@@ -228,7 +235,13 @@ private fun WeatherContent(
     }
     val listState = rememberLazyListState()
     val gridState = androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState()
-    val expandedPx = with(density) { (ExpandedHeader + statusTop).toPx() }
+    // The header as tall as it is: a large system font makes it taller than [ExpandedHeader] –
+    // the first card started under the station line then
+    var headerPx by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    // a low window (a phone held sideways): a compact header, the cards get the height
+    val compact = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp < COMPACT_HEIGHT_DP
+    val expandedBase = if (compact) CompactExpandedHeader else ExpandedHeader
+    val expandedPx = with(density) { maxOf((expandedBase + statusTop).toPx(), headerPx + HeaderGap.toPx()) }
     val collapsedPx = with(density) { (CollapsedHeader + statusTop).toPx() }
     val scrolled by remember(columns) {
         derivedStateOf {
@@ -251,8 +264,8 @@ private fun WeatherContent(
     }
 
     // The page as a list of cards; wide ones (header, alerts, hourly row, sources) span all columns
-    val items = buildList {
-        add(PageItem("header-space", true) { Spacer(Modifier.height(ExpandedHeader + statusTop - 12.dp)) })
+    val items = spanLonely(buildList {
+        add(PageItem("header-space", true) { Spacer(Modifier.height(with(density) { expandedPx.toDp() } - 12.dp)) })
         if (stale) add(PageItem("offline", true) { OfflineBanner(data) })
         if (data.alerts.isNotEmpty() && cards.shows(WeatherCard.ALERTS)) add(PageItem("alerts", true) { AlertsCard(data.alerts) })
         // The cards in the order chosen in the settings (Settings → Cards)
@@ -278,7 +291,7 @@ private fun WeatherContent(
             }
         }
         add(PageItem("sources", true) { SourcesFooter(data) })
-    }
+    })
     // Cards whose data comes after the page is shown (the extras of a new place) pop in
     val arrivals = remember(data.place.id) { Arrivals() }
     arrivals.note(items.map { it.key })
@@ -327,12 +340,12 @@ private fun WeatherContent(
         }
         }
         // read while drawing only: scrolling never recomposes the page (and rebuilds its cards)
-        Header(data, { progress }, statusTop)
+        Header(data, { progress }, statusTop, compact) { headerPx = it }
     }
 }
 
 @Composable
-private fun Header(data: WeatherData, progress: () -> Float, statusTop: androidx.compose.ui.unit.Dp) {
+private fun Header(data: WeatherData, progress: () -> Float, statusTop: androidx.compose.ui.unit.Dp, compact: Boolean = false, onHeight: (Int) -> Unit = {}) {
     val s = LocalSettings.current
     val c = data.current
     val today = data.daily.lastOrNull { it.date <= System.currentTimeMillis() } ?: data.daily.firstOrNull()
@@ -342,7 +355,7 @@ private fun Header(data: WeatherData, progress: () -> Float, statusTop: androidx
     val header = dev.nimbus.weather.ui.components.LocalHeaderStyle.current
     val TextShadow = header.shadow
     Column(
-        Modifier.fillMaxWidth().padding(top = statusTop + HeaderTop, start = 24.dp, end = 24.dp),
+        Modifier.fillMaxWidth().onSizeChanged { onHeight(it.height) }.padding(top = statusTop + HeaderTop, start = 24.dp, end = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -354,7 +367,7 @@ private fun Header(data: WeatherData, progress: () -> Float, statusTop: androidx
                 )
             }
             Text(
-                data.place.name, fontSize = 32.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                data.place.name, fontSize = if (compact) 26.sp else 32.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 style = androidx.compose.ui.text.TextStyle(shadow = TextShadow),
             )
         }
@@ -375,20 +388,21 @@ private fun Header(data: WeatherData, progress: () -> Float, statusTop: androidx
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 // Combined symbol (sun/moon, clouds, rain/snow, wind), temperature with unit and the
-                // day's max/min stacked like on a weather station display.
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                // day's max/min stacked like on a weather station display – shrunk as a whole
+                // where it does not fit (a narrow phone, a large font), never cut off
+                Row(Modifier.shrinkToFit(), verticalAlignment = Alignment.CenterVertically) {
                     WeatherIcon(
-                        c.condition, c.isDay, size = 64.dp, wind = windiness(c.windSpeed, c.windGust),
+                        c.condition, c.isDay, size = if (compact) 46.dp else 64.dp, wind = windiness(c.windSpeed, c.windGust),
                         description = condition,
                     )
                     Spacer(Modifier.width(8.dp))
-                    dev.nimbus.weather.ui.components.BigTemperature(c.temperature, s.temperatureUnit, 96.sp, shadow = TextShadow)
+                    dev.nimbus.weather.ui.components.BigTemperature(c.temperature, s.temperatureUnit, if (compact) 56.sp else 96.sp, shadow = TextShadow)
                     if (today != null) {
                         Spacer(Modifier.width(12.dp))
                         dev.nimbus.weather.ui.components.MaxMinStack(today.tempMax, today.tempMin, s.temperatureUnit, fontSize = 18.sp, shadow = TextShadow, labelColor = Color.White)
                     }
                 }
-                Text(condition, fontSize = 21.sp, fontWeight = FontWeight.Medium, color = Color.White, style = androidx.compose.ui.text.TextStyle(shadow = TextShadow))
+                Text(condition, fontSize = if (compact) 18.sp else 21.sp, fontWeight = FontWeight.Medium, color = Color.White, style = androidx.compose.ui.text.TextStyle(shadow = TextShadow))
                 if (c.stationName != null && c.stationDistanceKm != null) {
                     val explain = dev.nimbus.weather.ui.components.LocalExplain.current
                     // small text: on a pill of its own glass, dark enough for the sky behind
@@ -450,6 +464,18 @@ private fun LoadingOrError(place: Place, state: PlaceState?, onRetry: () -> Unit
 
 /** One card of the weather page; [fullSpan] cards span all columns on a tablet. */
 private class PageItem(val key: String, val fullSpan: Boolean = false, val content: @Composable () -> Unit)
+
+/**
+ * In the columns of a tablet, a card between two wide ones (or a wide one and the end) would
+ * stand alone in its row, the other column empty – e.g. "precipitation today" right above the
+ * hourly row: it gets the full width.
+ */
+private fun spanLonely(items: List<PageItem>): List<PageItem> =
+    items.mapIndexed { i, it -> if (!it.fullSpan && lonely(items.map { p -> p.fullSpan }, i)) PageItem(it.key, true, it.content) else it }
+
+/** Whether the narrow item [i] of a list ([wide]: which items span all columns) stands alone between wide ones. */
+internal fun lonely(wide: List<Boolean>, i: Int): Boolean =
+    !wide[i] && (i == 0 || wide[i - 1]) && (i == wide.lastIndex || wide[i + 1])
 
 /**
  * Which cards of a page came later than the rest: the first list of a page is there; a key that

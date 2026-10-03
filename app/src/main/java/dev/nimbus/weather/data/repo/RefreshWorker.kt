@@ -1,6 +1,7 @@
 /*
  * Nimbus - app/src/main/java/dev/nimbus/weather/data/repo/RefreshWorker.kt
- * Hourly background refresh of the weather for all places.
+ * Hourly background refresh of the weather for all places – the forecast only, and only while
+ * the app is in use.
  *
  *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
  *   Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
@@ -37,6 +38,8 @@ import java.util.concurrent.TimeUnit
  */
 class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
+        // nobody opened the app for days: nothing to keep fresh (the first opening loads everything)
+        if (!AppUse.worthIt(AppUse.lastUsed(applicationContext), System.currentTimeMillis(), AppUse.REFRESH_IDLE_MS)) return Result.success()
         val container = (applicationContext as NimbusApp).container
         val store = container.store
         val settings = store.settings.first()
@@ -44,7 +47,9 @@ class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         val places = store.places.first() + listOfNotNull(store.cachedWeather(LocationProvider.CURRENT_LOCATION_ID)?.place)
         var failures = 0
         places.distinctBy { it.id }.forEach { place ->
-            runCatching { container.repository.load(place, settings, german) }
+            // the forecast with station and warnings; the extras (gauges, bathing waters, pollen …)
+            // keep their last values until the app is opened – a fraction of the requests and CPU
+            runCatching { container.repository.load(place, settings, german, previous = store.cachedWeather(place.id), extras = false) }
                 .onSuccess { store.cacheWeather(it) }
                 .onFailure { failures++ }
         }

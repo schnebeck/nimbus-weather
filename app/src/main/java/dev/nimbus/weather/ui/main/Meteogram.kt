@@ -238,6 +238,8 @@ fun Meteogram(
     val mainCurve = remember(curve, pts) {
         (curve ?: pts.filter { !it.forecastOnly }.map { CurvePoint(it.time, it.temperature) }).filter { it.time >= start - 3_600_000L && it.at <= curveEnd }
     }
+    // The curve's resolution at "now" – the "now" line is placed like its points
+    val nowInterval = remember(mainCurve, now) { mainCurve.minByOrNull { kotlin.math.abs(it.time - now) }?.interval ?: HourAxis.HOUR }
     // drawn: the station's 10-minute reports as a 30-minute mean; the readout keeps the readings
     val drawnCurve = remember(mainCurve) { Curve.smoothed(mainCurve) }
     val dashCurve = remember(forecastCurve, pts) {
@@ -489,7 +491,10 @@ fun Meteogram(
                 }
                 // Current time: thin dashed line with a dot on top (the cursor is a solid line)
                 if (showNow && now in start..end) {
-                    val xn = x(now)
+                    // placed like the curve's points (in the middle of the interval before their
+                    // time): an hourly curve half an hour back, a 15-minute one 7½ minutes – the
+                    // line meets the curve at the value of now
+                    val xn = axis.point(now, nowInterval)
                     drawLine(NowMark, Offset(xn, top), Offset(xn, rows + below), 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())))
                     drawCircle(NowMark, 2.5.dp.toPx(), Offset(xn, top))
                 }

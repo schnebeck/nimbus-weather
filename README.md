@@ -109,15 +109,21 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   (Analysen ~3½ Tage), Verschieben und Zoomen brauchen kein Netz; deckende Farben, Straßen, Grenzen
   und Namen über dem Radar; Temperatur- (mit Isothermen) und Windebene, Satellit, Warnkarte,
   Rückblick bis 24 h. Im WLAN hält die App die 2-Stunden-Schleife des aktuellen Orts etwa alle 15
-  Minuten aktuell, auch im Hintergrund. Ohne Verbindung zeigt das Radar die gespeicherten Bilder;
-  nichts wartet endlos.
+  Minuten aktuell, auch im Hintergrund – solange die App am Vortag benutzt wurde. Die Auflösung des
+  Radarbilds richtet sich nach dem Speicher des Geräts. Ohne Verbindung zeigt das Radar die
+  gespeicherten Bilder; nichts wartet endlos.
 - **Akku**: Der animierte Himmel läuft mit 30 Bildern/s (Regen, Schnee: 60), nach einer Minute ohne
-  Berührung mit 15; im Energiesparmodus des Systems steht er still.
+  Berührung mit 15; im Energiesparmodus des Systems steht er still. Die stündliche Aktualisierung im
+  Hintergrund lädt nur die Vorhersage (die übrigen Quellen beim Öffnen) und pausiert, wenn die App
+  drei Tage nicht geöffnet wurde.
+- **Barrierefreiheit**: große Systemschrift bis 200 % und kleine Displays ab 320 dp – nichts überlappt
+  oder wird abgeschnitten, lange Wörter werden getrennt oder abgekürzt.
 - **Lexikon**: ⓘ an jeder Karte erklärt die Begriffe.
 - **Orte, Einstellungen**: Standort und gespeicherte Orte (lange drücken zum Sortieren und Löschen);
   Vorhersagemodell, Einheiten (beim ersten Start passend zum Land), Stationswerte, Animationen,
   Reihenfolge und Sichtbarkeit der Kacheln.
-- **Tablet**: ab 600 dp Breite die Kacheln in zwei Spalten, im Querformat großer Tablets links eine
+- **Tablet, Querformat**: ab 600 dp Breite die Kacheln in zwei Spalten (eine Karte, die allein in ihrer
+  Zeile stünde, über die volle Breite), quer gehaltene Handys mit kompaktem Kopf, im Querformat großer Tablets links eine
   Ortsleiste; Einstellungen, Orte, Rückblick und Radar-Bedienung mittig in lesbarer Breite. Unter „Open-Source-Lizenzen“ stehen die Lizenzen
   von Nimbus und aller verwendeten Bibliotheken. Stündliche Aktualisierung im Hintergrund,
   offline die zuletzt geladenen Daten.

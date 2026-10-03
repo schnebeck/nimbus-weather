@@ -174,6 +174,32 @@ class RepositoryTest {
     }
 
     @Test
+    fun `the background refresh asks the forecast only and keeps the extras`() = runTest {
+        val first = repo(fixtureNow).load(berlin, Settings(), german = true)
+        synchronized(requested) { requested.clear() }
+        val bg = repo(fixtureNow).load(berlin, Settings(), german = true, previous = first, extras = false)
+        // forecast, station and warnings – nothing else
+        assertTrue(requested.toString(), requested.none { it.startsWith("/airrohr") || it.startsWith("/v1/air-quality") || it.startsWith("/pollen") || it.startsWith("/wms") })
+        assertTrue(requested.any { it.startsWith("/v1/forecast") })
+        // the extras are the last ones, marked older
+        assertEquals(first.community, bg.community)
+        assertEquals(first.pollen, bg.pollen)
+        assertTrue(bg.stale.containsAll(listOf(dev.nimbus.weather.data.model.DataPart.POLLEN, dev.nimbus.weather.data.model.DataPart.COMMUNITY)))
+        assertTrue(dev.nimbus.weather.data.model.DataPart.FORECAST !in bg.stale)
+    }
+
+    @Test
+    fun `background work rests while nobody uses the app`() {
+        val now = fixtureNow
+        val use = dev.nimbus.weather.data.repo.AppUse
+        assertTrue(use.worthIt(now - 3_600_000L, now, use.RADAR_IDLE_MS))
+        assertTrue(!use.worthIt(now - 2 * 24 * 3_600_000L, now, use.RADAR_IDLE_MS))         // radar: a day
+        assertTrue(use.worthIt(now - 2 * 24 * 3_600_000L, now, use.REFRESH_IDLE_MS))         // weather: three days
+        assertTrue(!use.worthIt(now - 4 * 24 * 3_600_000L, now, use.REFRESH_IDLE_MS))
+        assertTrue(!use.worthIt(0L, now, use.REFRESH_IDLE_MS))                              // never opened
+    }
+
+    @Test
     fun `cards switched off load nothing`() = runTest {
         val off = Settings(hiddenCards = setOf(dev.nimbus.weather.data.model.WeatherCard.COMMUNITY))
         val data = repo(fixtureNow).load(berlin, off, german = true)

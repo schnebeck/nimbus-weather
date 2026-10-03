@@ -222,7 +222,12 @@ private fun HistoryHeader(
             if (place.isCurrentLocation) Icon(Icons.Rounded.LocationOn, null, tint = Color.White, modifier = Modifier.size(20.dp))
             Text(place.name, fontSize = 26.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis, style = halo)
         }
-        Text(title, fontSize = 40.sp, fontWeight = FontWeight.Light, color = Color.White, lineHeight = 46.sp, style = halo)
+        // a low window (a phone held sideways): a smaller title, the cards get the height
+        val compact = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp < 500
+        Text(
+            title, fontSize = if (compact) 30.sp else 40.sp, fontWeight = FontWeight.Light, color = Color.White,
+            lineHeight = if (compact) 34.sp else 46.sp, style = halo,
+        )
         day?.let {
             val ms = it.date.atStartOfDay(tf.zone).toInstant().toEpochMilli() + 12 * 3600_000L
             Text(tf.weekdayLong(ms) + ", " + tf.dayMonth(ms).substringAfter('\u00A0'), fontSize = 19.sp, color = Color.White, style = halo)
@@ -343,22 +348,22 @@ private fun SummaryCard(sum: DaySummary, history: History, settings: Settings, t
     val model = stringResource(R.string.history_model_value, "")
     GlassCard(title = stringResource(R.string.history_summary), icon = Icons.Outlined.History, info = Term.HISTORY) {
         SummaryRow(
-            stringResource(R.string.history_row_temp), "${t(sum.tempMax)} / ${t(sum.tempMin)}",
+            stringResource(R.string.history_row_temp) to stringResource(R.string.history_row_temp_short), "${t(sum.tempMax)} / ${t(sum.tempMin)}",
             if (sum.measured && sum.modelTempMax != null) model + "${t(sum.modelTempMax)} / ${t(sum.modelTempMin)}" else null,
         )
         HairlineDivider(Modifier.padding(vertical = 6.dp))
         SummaryRow(
-            stringResource(R.string.precipitation), p(sum.precipitation),
+            stringResource(R.string.precipitation) to stringResource(R.string.precipitation_short), p(sum.precipitation),
             if (sum.measured && sum.modelPrecipitation != null) model + p(sum.modelPrecipitation) else null,
         )
         sum.sunshineHours?.let {
             HairlineDivider(Modifier.padding(vertical = 6.dp))
-            SummaryRow(stringResource(R.string.history_row_sun), hoursMinutes(it * 60.0), null)
+            SummaryRow(stringResource(R.string.history_row_sun) to stringResource(R.string.history_row_sun_short), hoursMinutes(it * 60.0), null)
         }
         sum.maxGust?.let { g ->
             HairlineDivider(Modifier.padding(vertical = 6.dp))
             SummaryRow(
-                stringResource(R.string.history_row_gust), Units.windNumber(g, settings.windUnit) + NBSP + wUnit,
+                stringResource(R.string.history_row_gust) to stringResource(R.string.history_row_gust_short), Units.windNumber(g, settings.windUnit) + NBSP + wUnit,
                 sum.maxGustAt?.let { stringResource(R.string.history_at, tf.time(it)) },
             )
         }
@@ -375,9 +380,13 @@ private fun SummaryCard(sum: DaySummary, history: History, settings: Settings, t
 }
 
 @Composable
-private fun SummaryRow(label: String, value: String, secondary: String?) {
+private fun SummaryRow(label: Pair<String, String>, value: String, secondary: String?) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, Modifier.weight(1f), fontSize = 15.sp, color = NimbusColors.Secondary)
+        // the label in full, or abbreviated where it does not fit beside the value ("Niederschl.")
+        dev.nimbus.weather.ui.components.FitText(
+            label.first, label.second, Modifier.weight(1f).padding(end = 8.dp),
+            androidx.compose.ui.text.TextStyle(fontSize = 15.sp, color = NimbusColors.Secondary),
+        )
         Column(horizontalAlignment = Alignment.End) {
             Text(value, fontSize = 17.sp, fontWeight = FontWeight.Medium, color = Color.White)
             if (secondary != null) Text(secondary, fontSize = 12.sp, color = NimbusColors.Tertiary)

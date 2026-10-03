@@ -104,6 +104,71 @@ class DayPartsTableTest {
         assertTrue(failures.distinct().joinToString("\n"), failures.isEmpty())
     }
 
+    /**
+     * "Böen 3 km/h" in ever narrower space, as Android breaks lines: never "km/" | "h" (seen in
+     * the wind tile on a narrow phone) – the unit strings carry a word joiner after the slash.
+     */
+    @Test @Config(qualifiers = "de") fun unitsDoNotBreak() {
+        var width by mutableFloatStateOf(120f)
+        var text by mutableStateOf("")
+        compose.setContent { Box(Modifier.width(width.dp)) { androidx.compose.material3.Text(text) } }
+        val failures = ArrayList<String>()
+        for (unit in listOf(R.string.unit_kmh, R.string.unit_ms)) {
+            val u = org.robolectric.RuntimeEnvironment.getApplication().getString(unit)
+            for (w in 50..120 step 2) {
+                width = w.toFloat(); text = "aus NO · Böen 13\u00A0$u"
+                compose.waitForIdle()
+                val node = compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text)).fetchSemanticsNodes().first()
+                val results = ArrayList<TextLayoutResult>()
+                node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
+                val layout = results.first()
+                val at = text.indexOf(u)
+                for (line in 0 until layout.lineCount - 1) {
+                    val end = layout.getLineEnd(line)
+                    if (end in at + 1 until at + u.length) failures += "$w dp: \"${text.substring(0, end)}|${text.substring(end)}\""
+                }
+            }
+        }
+        assertTrue(failures.joinToString("\n"), failures.isEmpty())
+    }
+
+    /** The radar's time slider reaches the screen's edges: dragging it there must not start the back gesture. */
+    @Test fun radarSliderIsNotABackGesture() {
+        lateinit var view: android.view.View
+        val frames = (0..24).map { dev.nimbus.weather.ui.radar.RadarFrame(it * 300_000L, false, null, null) }
+        compose.setContent {
+            view = androidx.compose.ui.platform.LocalView.current
+            Box(Modifier.width(400.dp)) { dev.nimbus.weather.ui.radar.TimelineSlider(dev.nimbus.weather.ui.radar.RadarTimeline(frames, 24, ""), 12) {} }
+        }
+        compose.waitForIdle()
+        val rects = view.systemGestureExclusionRects
+        assertTrue("no gesture exclusion: $rects", rects.isNotEmpty() && rects.any { it.width() > 0 && it.height() > 0 })
+    }
+
+    /** A label in full where it fits, its short form where not – one line, nothing cut off. */
+    @Test @Config(qualifiers = "de") fun fitTextAbbreviatesInsteadOfCutting() {
+        var width by mutableFloatStateOf(300f)
+        var fontScale by mutableFloatStateOf(1f)
+        compose.setContent {
+            val d = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(d.density, fontScale)) {
+                Box(Modifier.width(width.dp)) { dev.nimbus.weather.ui.components.FitText("Sonnenuntergang", "Untergang", style = TextStyle(fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp))) }
+            }
+        }
+        fun shown(): String {
+            compose.waitForIdle()
+            return compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text)).fetchSemanticsNodes()
+                .first().config[SemanticsProperties.Text].joinToString()
+        }
+        assertTrue(shown() == "Sonnenuntergang")
+        width = 70f
+        assertTrue(shown() == "Untergang")
+        width = 300f; fontScale = 2f
+        assertTrue(shown() == "Sonnenuntergang")
+        width = 110f
+        assertTrue("at 200 % in 110 dp: ${shown()}", shown() == "Untergang")
+    }
+
     @Test @Config(qualifiers = "de") fun germanWordsStayWhole() = checkAll("de")
 
     /** The table as it looks: a phone, German, the day of the screenshot (yesterday, 2 Oct.). */

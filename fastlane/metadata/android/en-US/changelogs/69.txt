@@ -1,0 +1,5 @@
+• The day charts' "now" line meets the curve at the current value
+• Large font, small screens: header and cards no longer overlap, nothing cut off (max/min, Today, Now); hyphenation or short forms; numbers stay with their units
+• Landscape: compact header; tablets: precipitation today at full width
+• Radar: the time slider no longer triggers the back gesture at the edge; resolution suited to the device's memory
+• Battery: background refresh forecast only, paused when unused

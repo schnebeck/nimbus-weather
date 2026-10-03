@@ -57,6 +57,7 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         dev.nimbus.weather.ui.background.UserActivity.touch()
+        dev.nimbus.weather.data.repo.AppUse.touch(this)
         viewModel.onResume()
     }
 

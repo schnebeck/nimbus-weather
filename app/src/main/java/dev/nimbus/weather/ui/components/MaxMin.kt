@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -86,3 +87,41 @@ fun BigTemperature(celsius: Double?, unit: TemperatureUnit, fontSize: TextUnit, 
         )
     }
 }
+
+/**
+ * Shrinks the content as a whole when it is wider than the space it gets (a narrow phone, a large
+ * system font) – the header's symbol, temperature and max/min stay one line and complete instead
+ * of being cut off at the edge. Content that fits is left as it is.
+ */
+fun Modifier.shrinkToFit(): Modifier = this.then(
+    Modifier.layout { measurable, constraints ->
+        val p = measurable.measure(constraints.copy(minWidth = 0, maxWidth = androidx.compose.ui.unit.Constraints.Infinity))
+        val s = if (constraints.hasBoundedWidth && p.width > constraints.maxWidth) constraints.maxWidth.toFloat() / p.width else 1f
+        val w = kotlin.math.ceil(p.width * s).toInt(); val h = kotlin.math.ceil(p.height * s).toInt()
+        layout(w, h) {
+            // scaled about its centre, placed so that the centre is the middle of the space taken
+            p.placeWithLayer((w - p.width) / 2, (h - p.height) / 2) { scaleX = s; scaleY = s }
+        }
+    },
+)
+
+/**
+ * [text] on one line – or [short] (an abbreviation) when the full form does not fit the space
+ * (a narrow tile, a large system font): never broken inside a word, never cut off at the edge.
+ */
+@Composable
+fun FitText(text: String, short: String, modifier: Modifier = Modifier, style: TextStyle = TextStyle.Default) {
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val density = LocalDensity.current
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier) {
+        val fits = !constraints.hasBoundedWidth ||
+            measurer.measure(text, style, softWrap = false, density = density).size.width <= constraints.maxWidth
+        Text(if (fits) text else short, style = style, maxLines = 1, softWrap = false)
+    }
+}
+
+/** Running text in German: hyphenated where a long word does not fit the line ("Luftfeuch-tigkeit"), not broken anywhere. */
+val Hyphenated = TextStyle(
+    hyphens = androidx.compose.ui.text.style.Hyphens.Auto,
+    lineBreak = androidx.compose.ui.text.style.LineBreak.Paragraph,
+)

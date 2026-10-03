@@ -56,6 +56,16 @@ class ArrivalsTest {
         assertNull(cardStatus("models", emptySet()))
     }
 
+    /** Tablet columns: a card alone between wide ones (precipitation above the hourly row) spans the width. */
+    @Test fun aLonelyCardSpansTheColumns() {
+        // header, precipitation, hourly, 10 days, radar, tiles, sources
+        val wide = listOf(true, false, true, false, false, false, true)
+        assertTrue(dev.nimbus.weather.ui.main.lonely(wide, 1))           // precipitation: alone
+        assertFalse(dev.nimbus.weather.ui.main.lonely(wide, 3))          // 10 days: beside the radar
+        assertFalse(dev.nimbus.weather.ui.main.lonely(wide, 5))          // tiles: below the radar in the other column
+        assertTrue(dev.nimbus.weather.ui.main.lonely(listOf(true, false), 1))   // the last one
+    }
+
     @Test fun onlyOnceNotWhenScrolledBackLater() {
         arrivals.note(listOf("a"))
         now = 100

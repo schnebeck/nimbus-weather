@@ -141,7 +141,9 @@ private fun BigValue(text: String, unit: String? = null) {
 
 @Composable
 private fun Caption(text: String, modifier: Modifier = Modifier) {
-    Text(text, modifier, fontSize = 13.sp, color = Color.White, lineHeight = 17.sp, maxLines = 3)
+    // hyphenated, not broken anywhere, when a long word meets a narrow tile; the row of tiles
+    // grows for the lines a large font needs (no line limit: nothing cut off at the bottom)
+    Text(text, modifier, fontSize = 13.sp, color = Color.White, lineHeight = 17.sp, style = dev.nimbus.weather.ui.components.Hyphenated)
 }
 
 @Composable
@@ -241,10 +243,18 @@ private fun WindTile(data: WeatherData, modifier: Modifier) {
                     }
                 }
                 drawCircle(Color(0x33000000), r * 0.36f, center)
-            }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(Units.windNumber(c.windSpeed, s.windUnit), fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color.White, lineHeight = 22.sp)
-                Text(unit, fontSize = 11.sp, color = Color.White, lineHeight = 12.sp)
+                // Speed and unit in the middle, fitted into its circle: with a large system font
+                // they ran over the arrow and the letters of the directions
+                val number = Units.windNumber(c.windSpeed, s.windUnit)
+                fun lay(k: Float) = measurer.measure(number, TextStyle(fontSize = 22.sp * k, fontWeight = FontWeight.SemiBold, color = Color.White)) to
+                    measurer.measure(unit, TextStyle(fontSize = 11.sp * k, color = Color.White))
+                var (big, small) = lay(1f)
+                val room = r * 0.36f * 2f * 0.92f
+                val need = maxOf(maxOf(big.size.width, small.size.width).toFloat(), (big.size.height + small.size.height) * 0.9f)
+                if (need > room) lay(room / need).let { big = it.first; small = it.second }
+                val top = center.y - (big.size.height + small.size.height) / 2f + small.size.height * 0.1f
+                drawText(big, topLeft = Offset(center.x - big.size.width / 2f, top))
+                drawText(small, topLeft = Offset(center.x - small.size.width / 2f, top + big.size.height * 0.85f))
             }
         }
         val gust = c.windGust
@@ -478,8 +488,8 @@ fun SunCard(data: WeatherData, now: Long) {
 
     GlassCard(title = stringResource(R.string.sun), icon = Icons.Outlined.WbTwilight, info = Term.SUN, onClick = { explain(Term.SUN) }) {
         Row(Modifier.fillMaxWidth()) {
-            SunFact(stringResource(R.string.sunrise), rise?.let { tf.time(it) } ?: "–", null, Modifier.weight(1f))
-            SunFact(stringResource(R.string.sunset), set?.let { tf.time(it) } ?: "–", null, Modifier.weight(1f))
+            SunFact(stringResource(R.string.sunrise), rise?.let { tf.time(it) } ?: "–", null, Modifier.weight(1f), stringResource(R.string.sunrise_short))
+            SunFact(stringResource(R.string.sunset), set?.let { tf.time(it) } ?: "–", null, Modifier.weight(1f), stringResource(R.string.sunset_short))
             val len = if (rise != null && set != null) (set - rise) / 60_000L else null
             SunFact(
                 stringResource(R.string.day_length),
@@ -490,6 +500,7 @@ fun SunCard(data: WeatherData, now: Long) {
                     stringResource(R.string.day_length_delta, "$sign${kotlin.math.abs(d)}${NBSP}min")
                 },
                 Modifier.weight(1.1f),
+                stringResource(R.string.day_length_short),
             )
         }
         Spacer(Modifier.height(12.dp))
@@ -528,9 +539,10 @@ fun SunCard(data: WeatherData, now: Long) {
 private val TWILIGHT = setOf(SunPhases.Phase.GOLDEN, SunPhases.Phase.BLUE)
 
 @Composable
-private fun SunFact(label: String, value: String, note: String?, modifier: Modifier) {
+private fun SunFact(label: String, value: String, note: String?, modifier: Modifier, short: String = label) {
     Column(modifier) {
-        Text(label, fontSize = 12.sp, color = NimbusColors.Secondary, maxLines = 1)
+        // "Sonnenuntergang" in a third of a narrow card: "Untergang" rather than "Sonnenuntergan"
+        dev.nimbus.weather.ui.components.FitText(label, short, style = androidx.compose.ui.text.TextStyle(fontSize = 12.sp, color = NimbusColors.Secondary))
         Text(value, fontSize = 20.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1)
         if (note != null) Text(note, fontSize = 11.sp, color = NimbusColors.Tertiary, maxLines = 1)
     }

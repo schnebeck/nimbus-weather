@@ -90,6 +90,23 @@ class RadarFieldTest {
         assertEquals(2f, v[0], 1.5f); assertEquals(0f, v[1], 1.5f)
     }
 
+    /**
+     * A long loop (~70 frames: the steps it keeps plus the window around the position) of a phone
+     * view takes at most a third of the memory Android grants the app – it took 70–100 MB at
+     * 1024 px whatever the device.
+     */
+    @Test fun radarFramesFitTheAppMemory() {
+        // a phone's view around Hannover, portrait (about 0.46 wide per height)
+        for ((memoryClass, lowRam) in listOf(128 to true, 192 to false, 256 to false, 512 to false)) {
+            val side = dev.nimbus.weather.ui.radar.RadarPlayer.fieldSideFor(memoryClass, lowRam)
+            val g = dev.nimbus.weather.ui.radar.FieldGeo.forView(51.6, 53.4, 8.9, 10.5, maxSide = side)
+            val loopBytes = g.w.toLong() * g.h * 2 * 70
+            assertTrue("memoryClass $memoryClass: ${loopBytes / 1_000_000} MB for the loop", loopBytes <= memoryClass * 1_000_000L / 3)
+        }
+        // high-end devices keep the full resolution
+        assertEquals(1024, dev.nimbus.weather.ui.radar.RadarPlayer.fieldSideFor(512, false))
+    }
+
     @Test fun stillRainStaysStill() {
         val a = blob(100f, 75f)
         val flow = RadarField.motion(a, a, w, h, maxShift = 20f)

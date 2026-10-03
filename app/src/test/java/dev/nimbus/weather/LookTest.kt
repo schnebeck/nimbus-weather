@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
 import dev.nimbus.weather.data.model.Condition
 import dev.nimbus.weather.data.model.Settings
+import dev.nimbus.weather.ui.main.CurvePoint
 import dev.nimbus.weather.ui.main.HourCompare
 import dev.nimbus.weather.ui.main.LocalSettings
 import dev.nimbus.weather.ui.main.LocalTimeFormat
@@ -182,6 +183,39 @@ class LookTest {
         assertTrue("forecast frames not visible ($amber columns)", amber > 100)
         compose.onRoot().captureRoboImage("src/test/screenshots/meteogram_lookback.png")
     }
+
+    /**
+     * The "now" line meets the temperature curve at the temperature of now: the line is placed
+     * like the curve's points (an hourly value in the middle of the hour before its time) – it
+     * stood half an hour off. 10° until 12:00, 20° from 13:00: at the line (12:00) the curve is
+     * on the 10° level. [fine]: 15-minute points, 10° until 11:45, 20° from 12:00 – at 12:00 on 20°.
+     */
+    private fun nowLineMeetsTheCurve(fine: Boolean) {
+        val q = 15 * 60_000L
+        val step = (0..25).map { k ->
+            MeteoPoint(day + k * h, if (k <= 12) 10.0 else 20.0, Condition.CLOUDY, k in 7..19, 0.0, windSpeed = 10.0, windDirection = 200.0)
+        }
+        val curve = if (!fine) null else (0..100).map { i -> CurvePoint(day + i * q, if (i <= 47) 10.0 else 20.0, q) }
+        compose.setContent { Card { Meteogram(step, day, day + 24 * h, emptyList(), day + 12 * h, showNow = true, curve = curve) } }
+        compose.waitForIdle()
+        val img = bitmap()
+        fun vivid(x: Int, y: Int) = img.rgb(x, y).let { (r, g, b) -> maxOf(r, g, b) - minOf(r, g, b) > 70 }
+        val plot = 0 until img.height * 60 / 100
+        // the curve's height in a column (mean of its pixels)
+        fun curveY(x: Int): Double? = plot.filter { vivid(x, it) }.takeIf { it.isNotEmpty() }?.average()
+        // the "now" line: the column with the most light grey pixels
+        val nowX = (img.width / 10 until img.width * 9 / 10).maxBy { x ->
+            plot.count { y -> img.rgb(x, y).let { (r, g, b) -> r > 170 && g > 170 && b > 170 && maxOf(r, g, b) - minOf(r, g, b) < 30 } }
+        }
+        val low = curveY(img.width / 5)!!; val high = curveY(img.width * 17 / 20)!!
+        val atNow = (nowX - 3..nowX + 3).mapNotNull { curveY(it) }.average()
+        val want = if (fine) high else low
+        assertTrue("fine=$fine: curve at now ($atNow) should be on ${if (fine) 20 else 10}° ($want; 10° $low, 20° $high)", abs(atNow - want) < abs(high - low) * 0.15)
+    }
+
+    @Test fun nowLineMeetsTheHourlyCurveAtNow() = nowLineMeetsTheCurve(fine = false)
+
+    @Test fun nowLineMeetsTheFineCurveAtNow() = nowLineMeetsTheCurve(fine = true)
 
     /** Rows where at least [share] of the width is near-white: the chance line (60 % all day). */
     private fun Bitmap.whiteRows(share: Float = 0.5f): List<Int> = (0 until height).filter { y ->

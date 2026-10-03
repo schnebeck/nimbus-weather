@@ -23,6 +23,7 @@ import android.os.Bundle
 import android.text.format.DateFormat
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -204,7 +205,10 @@ fun RadarScreen(
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val scope = rememberCoroutineScope()
     val controller = remember { RadarMapController() }
-    val player = remember { RadarPlayer(scope, container.http) }
+    val player = remember {
+        val am = context.getSystemService(android.content.Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+        RadarPlayer(scope, container.http, RadarPlayer.fieldSideFor(am.memoryClass, am.isLowRamDevice))
+    }
     var timeline by remember { mutableStateOf<RadarTimeline?>(null) }
     var error by remember { mutableStateOf(false) }
     var ready by remember { mutableStateOf(false) }
@@ -444,7 +448,10 @@ fun RadarScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f).padding(start = 8.dp)) {
-                Text(stringResource(R.string.radar_title), fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                dev.nimbus.weather.ui.components.FitText(
+                    stringResource(R.string.radar_title), stringResource(R.string.radar_title_short),
+                    style = androidx.compose.ui.text.TextStyle(fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.White),
+                )
                 val dayLabel = archiveDay?.let { tf.dayMonth(it) }
                 place?.let { Text(listOfNotNull(it.name, dayLabel).joinToString(" · "), fontSize = 13.sp, color = NimbusColors.Secondary) }
             }
@@ -560,8 +567,10 @@ fun RadarScreen(
                             // Frames of another day (24 h history) get the weekday in front.
                             val timeLabel = if (archive || tf.isSameDay(f.time, System.currentTimeMillis())) tf.time(f.time)
                             else tf.weekdayShort(f.time) + "\u00A0" + tf.time(f.time)
-                            Text(timeLabel, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                            Text(timeLabel, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1, softWrap = false)
                             Spacer(Modifier.width(8.dp))
+                            // what is between time and step buttons gives way first: the buttons always fit
+                            Row(Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
                             val delta = ((f.time - tl.frames[tl.nowIndex].time) / 60_000L).toInt()
                             val label = when {
                                 delta == 0 -> stringResource(R.string.now)
@@ -569,16 +578,20 @@ fun RadarScreen(
                                 delta < 0 -> stringResource(R.string.radar_minutes_ago, -delta)
                                 else -> stringResource(R.string.radar_minutes_ahead, delta)
                             }
-                            if (!archive) Text(label, fontSize = 13.sp, color = NimbusColors.Secondary, modifier = Modifier.padding(bottom = 2.dp))
+                            if (!archive) Text(
+                                label, fontSize = 13.sp, color = NimbusColors.Secondary, maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false).padding(bottom = 2.dp),
+                            )
                             if (f.isForecast) {
                                 Spacer(Modifier.width(8.dp))
-                                Text(
-                                    stringResource(R.string.forecast).uppercase(),
-                                    Modifier.clip(RoundedCornerShape(4.dp)).background(Color(0x40FFD27A)).padding(horizontal = 5.dp, vertical = 1.dp),
-                                    fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD27A),
+                                dev.nimbus.weather.ui.components.FitText(
+                                    stringResource(R.string.forecast).uppercase(), stringResource(R.string.forecast_short).uppercase(),
+                                    Modifier.weight(1f, fill = false).clip(RoundedCornerShape(4.dp)).background(Color(0x40FFD27A)).padding(horizontal = 5.dp, vertical = 1.dp),
+                                    androidx.compose.ui.text.TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD27A)),
                                 )
                             }
-                            Spacer(Modifier.weight(1f))
+                            }
                             // Step by step: one 5-minute step back or forward (the slider is too
                             // fine for that with hundreds of steps)
                             fun stepTo(i: Int) { playing = false; frame = i.coerceIn(0, tl.frames.lastIndex); player.position = frame.toFloat() }
@@ -626,14 +639,16 @@ private fun StepButton(icon: androidx.compose.ui.graphics.vector.ImageVector, la
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TimelineSlider(tl: RadarTimeline, frame: Int, onChange: (Int) -> Unit) {
+internal fun TimelineSlider(tl: RadarTimeline, frame: Int, onChange: (Int) -> Unit) {
     val n = tl.frames.size - 1
     Slider(
         value = frame.toFloat(),
         onValueChange = { onChange(it.roundToInt()) },
         valueRange = 0f..n.toFloat(),
         steps = n - 1,
-        modifier = Modifier.height(36.dp),
+        // the slider runs almost to the screen's edges: dragging it there is for the slider, not
+        // the system's back gesture (gesture navigation)
+        modifier = Modifier.height(36.dp).systemGestureExclusion(),
         thumb = {
             Box(Modifier.size(18.dp).clip(CircleShape).background(Color.White))
         },

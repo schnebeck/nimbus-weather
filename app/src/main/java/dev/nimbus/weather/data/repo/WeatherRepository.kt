@@ -62,7 +62,10 @@ class WeatherRepository(
     // take noticeable CPU time – on the main thread they froze the UI.
     suspend fun load(
         place: Place, settings: Settings, german: Boolean,
-        previous: WeatherData? = null, onCore: (WeatherData) -> Unit = {},
+        previous: WeatherData? = null,
+        /** False (the hourly background refresh): the core only – the extras keep [previous]'s, marked older. */
+        extras: Boolean = true,
+        onCore: (WeatherData) -> Unit = {},
     ): WeatherData = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { coroutineScope {
         val lat = place.latitude
         val lon = place.longitude
@@ -90,24 +93,28 @@ class WeatherRepository(
         }
         // The extras: each an answer (its value may be "nothing here") – or null when it failed or
         // took too long; then the place's last value stays (a refresh does not empty a card)
-        val aqJob = async { fetch(EXTRA_TIMEOUT_MS, "air quality") { openMeteo.airQuality(lat, lon) } }
+        val aqJob = async { if (!extras) null else fetch(EXTRA_TIMEOUT_MS, "air quality") { openMeteo.airQuality(lat, lon) } }
         val communityJob = async {
-            if (!settings.shows(dev.nimbus.weather.data.model.WeatherCard.COMMUNITY)) Fetched(null)
+            if (!extras) null
+            else if (!settings.shows(dev.nimbus.weather.data.model.WeatherCard.COMMUNITY)) Fetched(null)
             else fetch(COMMUNITY_TIMEOUT_MS, "citizen sensors") { community.nearby(lat, lon) }
         }
-        val pollenJob = async { fetch(EXTRA_TIMEOUT_MS, "pollen") { pollen.forecast(lat, lon, inDwdArea) } }
+        val pollenJob = async { if (!extras) null else fetch(EXTRA_TIMEOUT_MS, "pollen") { pollen.forecast(lat, lon, inDwdArea) } }
         // Water levels and state flood alerts (Germany). Optional – never fail the forecast.
         val gaugeJob = async {
-            if (gauges == null || !inDwdArea || !settings.shows(dev.nimbus.weather.data.model.WeatherCard.GAUGES)) Fetched(emptyList())
+            if (!extras) null
+            else if (gauges == null || !inDwdArea || !settings.shows(dev.nimbus.weather.data.model.WeatherCard.GAUGES)) Fetched(emptyList())
             else fetch(GAUGE_TIMEOUT_MS, "gauges") { gauges.nearby(lat, lon) }
         }
         // Bathing waters (EEA, Europe-wide) – only when the card is shown; optional like the gauges
         val bathingJob = async {
-            if (bathing == null || !settings.shows(dev.nimbus.weather.data.model.WeatherCard.BATHING)) Fetched(emptyList())
+            if (!extras) null
+            else if (bathing == null || !settings.shows(dev.nimbus.weather.data.model.WeatherCard.BATHING)) Fetched(emptyList())
             else fetch(BATHING_TIMEOUT_MS, "bathing waters") { bathing.nearby(lat, lon, settings.bathingRadiusKm, settings.bathingFavorites) }
         }
         val floodJob = async {
-            if (gauges?.lhp == null || !inDwdArea) Fetched(emptyList())
+            if (!extras) null
+            else if (gauges?.lhp == null || !inDwdArea) Fetched(emptyList())
             else fetch(10_000L, "flood alerts") { gauges.lhp.alerts(lat, lon) }
         }
 

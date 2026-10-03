@@ -36,6 +36,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -61,6 +66,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.drawWithContent
@@ -111,6 +117,7 @@ fun modelName(m: ForecastModel) = when (m) {
 fun HistoryPage(
     place: Place, state: PlaceState?, settings: Settings, dayIndex: Int, isActive: Boolean, onRetry: () -> Unit,
     onOpenRadarDay: (Long) -> Unit = {},
+    locationCurrent: Boolean = true,
 ) {
     val context = LocalContext.current
     val history = state?.history
@@ -169,7 +176,8 @@ fun HistoryPage(
             WeatherBackground(sc, animate = isActive && settings.animationsEnabled)
         }
         // the look-back's cards say whether they are current: yellow while loading or expired
-        val status = if (state?.historyLoading == true || (history != null && dev.nimbus.weather.data.repo.Freshness.historyDue(history.fetchedAt, System.currentTimeMillis())))
+        // and, for "my location", while its position is not current
+        val status = if (!locationCurrent || state?.historyLoading == true || (history != null && dev.nimbus.weather.data.repo.Freshness.historyDue(history.fetchedAt, System.currentTimeMillis())))
             dev.nimbus.weather.ui.components.CardStatus.STALE else dev.nimbus.weather.ui.components.CardStatus.FRESH
         CompositionLocalProvider(
             LocalSettings provides settings, LocalTimeFormat provides tf,
@@ -178,18 +186,38 @@ fun HistoryPage(
             dev.nimbus.weather.ui.components.LocalCardStatus provides status,
         ) {
             val clipTop = with(androidx.compose.ui.platform.LocalDensity.current) { (statusTop + 52.dp).toPx() }
+            // a phone held sideways: the header as a pane of its own on the left (as on the weather
+            // page), the day's parts and the cards beside it; nothing under the camera's cut-out
+            val config = androidx.compose.ui.platform.LocalConfiguration.current
+            val sideways = sideways(config.screenWidthDp, config.screenHeightDp)
+            val paneWidth = if (sideways) headerPaneWidth(LocalContentWidth.current) else 0.dp
+            val dir = androidx.compose.ui.platform.LocalLayoutDirection.current
+            val cutout = androidx.compose.foundation.layout.WindowInsets.displayCutout
+                .only(androidx.compose.foundation.layout.WindowInsetsSides.Horizontal).asPaddingValues()
+            val cutStart = cutout.calculateStartPadding(dir)
+            val cutEnd = cutout.calculateEndPadding(dir)
+            if (sideways) {
+                Box(
+                    Modifier.width(cutStart + paneWidth).fillMaxHeight().fullscreenByDoubleTap()
+                        .padding(start = cutStart + 16.dp, end = 16.dp, top = statusTop + HeaderTop),
+                    contentAlignment = Alignment.Center,
+                ) { HistoryHeader(place, title, day, summary, tf, emptyList(), shown) }
+            }
             // Cards keep their title at the line below the top bar and slide away under it (GlassCard)
             val listTop = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
             CompositionLocalProvider(dev.nimbus.weather.ui.components.LocalPinLine provides { listTop.floatValue + clipTop }) {
             LazyColumn(
                 // Content scrolls away below the top bar instead of running under menu and radar button.
-                Modifier.fillMaxSize().wrapContentWidth().widthIn(max = 760.dp)
+                Modifier.fillMaxSize().padding(start = cutStart + paneWidth, end = cutEnd).wrapContentWidth().widthIn(max = 760.dp)
                     .onGloballyPositioned { listTop.floatValue = it.positionInRoot().y }
                     .drawWithContent { clipRect(top = clipTop) { this@drawWithContent.drawContent() } },
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = statusTop + HeaderTop, bottom = navBottom + 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                item(key = "header") { Box(Modifier.fullscreenByDoubleTap()) { HistoryHeader(place, title, day, summary, tf, parts, shown) } }
+                if (!sideways) item(key = "header") { Box(Modifier.fullscreenByDoubleTap()) { HistoryHeader(place, title, day, summary, tf, parts, shown) } }
+                else if (parts.isNotEmpty()) item(key = "parts") {
+                    DayPartsTable(parts, shown, androidx.compose.ui.text.TextStyle(shadow = dev.nimbus.weather.ui.components.LocalHeaderStyle.current.shadow))
+                }
                 when {
                     day == null && state?.historyError == true -> item(key = "error") { HistoryMessage(stringResource(R.string.history_error), onRetry) }
                     day == null -> item(key = "loading") {
@@ -308,12 +336,15 @@ private fun DayPartCell(
     column: androidx.compose.ui.unit.Dp, labelSize: androidx.compose.ui.unit.TextUnit, weatherSize: androidx.compose.ui.unit.TextUnit,
     halo: androidx.compose.ui.text.TextStyle,
 ) {
-    // Every cell in full white with its halo – dimmed ones vanished on a bright sky; the part the
-    // sky shows sits on the glass pill of the station line (dark enough for any sky behind)
+    // Every cell in full white on the glass pill of the station line – as opaque as the brightest
+    // sky behind needs (on the bare sky "Früh / Nebel" vanished on a white cloud); the part the sky
+    // shows on a darker glass with a white rim
     val pill = dev.nimbus.weather.ui.components.LocalHeaderStyle.current.pill
-    val ground by androidx.compose.animation.animateColorAsState(if (lit) pill else pill.copy(alpha = 0f), androidx.compose.animation.core.tween(600), label = "lit")
+    val ground by androidx.compose.animation.animateColorAsState(dayPartGround(pill, lit), androidx.compose.animation.core.tween(600), label = "lit")
+    val rim by androidx.compose.animation.animateColorAsState(if (lit) LitRim else LitRim.copy(alpha = 0f), androidx.compose.animation.core.tween(600), label = "rim")
     Column(
-        Modifier.width(column + 4.dp).padding(horizontal = 2.dp).clip(RoundedCornerShape(12.dp)).background(ground).padding(vertical = 4.dp),
+        Modifier.width(column + 4.dp).padding(horizontal = 2.dp).clip(RoundedCornerShape(12.dp)).background(ground)
+            .border(1.5.dp, rim, RoundedCornerShape(12.dp)).padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(label, fontSize = labelSize, color = Color.White, style = halo, maxLines = 1, softWrap = false)
@@ -327,6 +358,19 @@ private fun DayPartCell(
         )
     }
 }
+
+/**
+ * The glass behind a cell of the day parts: every cell at least the station line's [pill] (the
+ * contrast its small text needs on the brightest sky behind), the one the sky shows darker.
+ */
+internal fun dayPartGround(pill: Color, lit: Boolean): Color =
+    if (lit) pill.copy(alpha = (pill.alpha + LIT_EXTRA).coerceAtMost(1f)) else pill
+
+/** How much darker the glass of the part the sky shows is. */
+private const val LIT_EXTRA = 0.3f
+
+/** The rim of the part the sky shows. */
+private val LitRim = Color(0xD9FFFFFF)
 
 /** Columns of the day-parts table: two rows of three. */
 private const val PART_COLUMNS = 3

@@ -69,7 +69,13 @@ No ads, no account, no Google services. The app speaks English and German.
   the radar; temperature (with isotherms) and wind layers, satellite and warning map.
 - An ⓘ on every card explains the terms. Units follow the country on first start; the order and visibility of
   the cards can be set in the settings, places are sorted or deleted after a long press.
-- Tablets: two columns of cards from 600 dp, a places sidebar in landscape on large tablets.
+- My location: while it is shown (its page, the list of places) the position is looked for on opening
+  and after 5 minutes – by cell/Wi-Fi first, by GPS as well where that gives nothing (e.g. on an EDGE
+  network); a dot on the location pin tells whether the position is current (green) or older (yellow,
+  then the cards too); searches without result wait longer each time (2, 5, 10 minutes). For saved
+  places the GPS stays off.
+- Tablets: two columns of cards from 600 dp, a places sidebar in landscape on large tablets; phones
+  held sideways show the header as a pane of its own beside the cards, clear of the camera cut-out.
 
 ## Data sources
 

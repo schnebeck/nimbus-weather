@@ -33,10 +33,33 @@ object Freshness {
     const val HISTORY_MS = 15 * 60_000L
     /** How often the app looks while it is in front. */
     const val CHECK_EVERY_MS = 60_000L
+    /**
+     * The position of "my location": on the road 5 minutes are a few kilometres. Older, the page
+     * of the current location no longer counts as current (its dots turn yellow).
+     */
+    const val LOCATION_MS = 5 * 60_000L
 
     /** Whether the forecast fetched at [fetchedAt] (with [stale] parts older) should be loaded again at [now]. */
     fun forecastDue(fetchedAt: Long, now: Long, stale: Set<DataPart>): Boolean =
         now - fetchedAt >= FORECAST_MS || (stale.isNotEmpty() && now - fetchedAt >= STALE_RETRY_MS)
+
+    /**
+     * Whether the position found at [fixedAt] should be looked for again at [now] – after
+     * [misses] searches in a row without result (the last at [triedAt]) only after a growing
+     * pause ([locationPauseMs]): indoors without network location the GPS ran half the time.
+     */
+    fun locationDue(fixedAt: Long, triedAt: Long, now: Long, misses: Int = 1): Boolean =
+        now - fixedAt >= LOCATION_MS && now - triedAt >= locationPauseMs(misses)
+
+    /** The pause after [misses] searches in a row without result: 2, 5, then 10 minutes. */
+    fun locationPauseMs(misses: Int): Long = when {
+        misses <= 1 -> STALE_RETRY_MS
+        misses == 2 -> 5 * 60_000L
+        else -> 10 * 60_000L
+    }
+
+    /** Whether the position found at [fixedAt] is still the current one at [now]. */
+    fun locationCurrent(fixedAt: Long, now: Long): Boolean = now - fixedAt < LOCATION_MS
 
     /** Whether the look-back fetched at [fetchedAt] should be loaded again at [now]. */
     fun historyDue(fetchedAt: Long, now: Long): Boolean = now - fetchedAt >= HISTORY_MS

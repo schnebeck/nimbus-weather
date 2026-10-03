@@ -154,6 +154,11 @@
     <string name="search_city">Stadt suchen</string>
     <string name="location_permission_denied">Standortzugriff verweigert. Du kannst trotzdem nach Orten suchen.</string>
     <string name="location_unavailable">Standort derzeit nicht verfügbar</string>
+    <string name="location_current">Standort aktuell</string>
+    <string name="location_not_current">Standort nicht aktuell – wird neu gesucht</string>
+    <string name="location_searching">Standort wird bestimmt …</string>
+    <string name="location_off">Standortdienst aus – einschalten</string>
+    <string name="location_locate">Standort neu bestimmen</string>
 
     <string name="settings">Einstellungen</string>
     <string name="settings_forecast_source">Vorhersagequelle</string>

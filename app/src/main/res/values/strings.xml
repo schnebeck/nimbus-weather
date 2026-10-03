@@ -163,6 +163,11 @@
     <string name="search_city">Search city</string>
     <string name="location_permission_denied">Location access denied. You can still search for places.</string>
     <string name="location_unavailable">Location currently unavailable</string>
+    <string name="location_current">Location up to date</string>
+    <string name="location_not_current">Location not up to date – being looked for again</string>
+    <string name="location_searching">Finding your location…</string>
+    <string name="location_off">Location is off – turn on</string>
+    <string name="location_locate">Find location again</string>
 
     <!-- Settings -->
     <string name="settings">Settings</string>

@@ -96,6 +96,7 @@ fun MainScreen(
     onRequestModels: (String) -> Unit,
     onRequestHistory: (String) -> Unit,
     onRequestLocation: () -> Unit,
+    onSidebar: (Boolean) -> Unit = {},
 ) {
     val pages = state.pages
     if (pages.isEmpty()) {
@@ -108,6 +109,9 @@ fun MainScreen(
     val pageCount = HISTORY_DAYS + 1
     val pagerState = key(place.id) { rememberPagerState(initialPage = pageCount - 1) { pageCount } }
     val placeState = state.states[place.id]
+    // "my location": whether its position is current – part of whether its page is
+    val now = rememberNow()
+    val location = if (place.isCurrentLocation) locationMark(state, now) else null
 
     // Load the history as soon as the user starts swiping back.
     LaunchedEffect(pagerState, place.id) {
@@ -120,6 +124,11 @@ fun MainScreen(
     // Only with a choice: a single place would just repeat the header next to it
     val sidebar = maxWidth >= 1000.dp && maxWidth > maxHeight && pages.size >= 2
     val contentWidth = if (sidebar) maxWidth - SidebarWidth else maxWidth
+    // "my location" in the sidebar: its position is looked for while it is seen
+    androidx.compose.runtime.DisposableEffect(sidebar) {
+        onSidebar(sidebar)
+        onDispose { onSidebar(false) }
+    }
     Row(Modifier.fillMaxSize()) {
     if (sidebar) PlacesSidebar(state, place.id, onSelect, onOpenPlaces, Modifier.width(SidebarWidth).fillMaxHeight())
     androidx.compose.runtime.CompositionLocalProvider(LocalContentWidth provides contentWidth) {
@@ -136,6 +145,7 @@ fun MainScreen(
                     onOpenRadar = { onOpenRadar(place.id) },
                     onRequestModels = { onRequestModels(place.id) },
                     onRequestHistory = { onRequestHistory(place.id) },
+                    location = location,
                 )
             } else {
                 // page 0 = two days ago, page HISTORY_DAYS - 1 = today so far
@@ -147,6 +157,7 @@ fun MainScreen(
                     isActive = pagerState.currentPage == page,
                     onRetry = { onRequestHistory(place.id) },
                     onOpenRadarDay = { day -> onOpenRadarDay(place.id, day) },
+                    locationCurrent = location?.current != false,
                 )
             }
         }
@@ -173,6 +184,7 @@ private val SidebarWidth = 340.dp
  */
 @Composable
 private fun PlacesSidebar(state: UiState, selectedId: String, onSelect: (String) -> Unit, onOpenPlaces: () -> Unit, modifier: Modifier) {
+    val now = rememberNow()
     androidx.compose.foundation.lazy.LazyColumn(
         modifier.background(Brush.verticalGradient(listOf(Color(0xFF0B1424), Color(0xFF111D33)))),
         contentPadding = PaddingValues(
@@ -194,7 +206,12 @@ private fun PlacesSidebar(state: UiState, selectedId: String, onSelect: (String)
             Box(
                 Modifier.clip(RoundedCornerShape(16.dp))
                     .border(if (selected) 2.dp else 0.dp, if (selected) Color.White else Color.Transparent, RoundedCornerShape(16.dp)),
-            ) { dev.nimbus.weather.ui.places.PlaceCard(p, state.states[p.id], state.settings) { onSelect(p.id) } }
+            ) {
+                dev.nimbus.weather.ui.places.PlaceCard(
+                    p, state.states[p.id], state.settings,
+                    location = if (p.isCurrentLocation) locationMark(state, now) else null,
+                ) { onSelect(p.id) }
+            }
         }
     }
 }

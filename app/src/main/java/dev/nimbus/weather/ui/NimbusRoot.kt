@@ -89,6 +89,7 @@ fun NimbusRoot(viewModel: MainViewModel) {
                     onRequestModels = viewModel::loadModels,
                     onRequestHistory = { viewModel.loadHistory(it) },
                     onRequestLocation = requestLocation,
+                    onSidebar = viewModel::onSidebar,
                 )
                 Screen.Places -> PlacesScreen(
                     state = state,

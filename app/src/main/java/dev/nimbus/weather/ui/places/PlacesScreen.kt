@@ -108,6 +108,7 @@ fun PlacesScreen(
     onRequestLocation: () -> Unit,
     onBack: () -> Unit,
 ) {
+    val now = dev.nimbus.weather.ui.main.rememberNow()
     var query by rememberSaveable { mutableStateOf("") }
     var results by remember { mutableStateOf<List<Place>?>(null) }
     LaunchedEffect(query) {
@@ -233,6 +234,7 @@ fun PlacesScreen(
                 PlaceCard(
                     place, state.states[place.id], state.settings,
                     onLongClick = if (place.isCurrentLocation) null else ({ editing = true }),
+                    location = if (place.isCurrentLocation) dev.nimbus.weather.ui.main.locationMark(state, now) else null,
                 ) { onOpen(place.id) }
             }
             if (saved.isNotEmpty()) item(key = "edit-hint") {
@@ -305,7 +307,10 @@ private fun EditList(
 @Composable
 fun PlaceCard(
     place: Place, st: PlaceState?, settings: dev.nimbus.weather.data.model.Settings,
-    onLongClick: (() -> Unit)? = null, onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
+    /** For "my location": whether its position is current – the pin with the status dot as on its page. */
+    location: dev.nimbus.weather.ui.main.LocationMark? = null,
+    onClick: () -> Unit,
 ) {
     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
     val context = LocalContext.current
@@ -328,7 +333,7 @@ fun PlaceCard(
                         if (place.isCurrentLocation) stringResource(R.string.my_location) else place.name,
                         fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
-                    if (place.isCurrentLocation) Icon(Icons.Rounded.LocationOn, null, tint = Color.White, modifier = Modifier.padding(start = 4.dp).size(14.dp))
+                    if (place.isCurrentLocation) Box(Modifier.padding(start = 6.dp)) { dev.nimbus.weather.ui.main.LocationPin(location, size = 18.dp) }
                 }
                 Text(
                     if (place.isCurrentLocation) place.name else (tf?.time(System.currentTimeMillis()) ?: place.subtitle),

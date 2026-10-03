@@ -29,6 +29,9 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.doubleClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.swipeUp
+import org.junit.Assert.assertEquals
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import dev.nimbus.weather.data.model.Condition
@@ -129,11 +132,42 @@ class PageLayoutTest {
         return firstCard.top
     }
 
-    /** A phone held sideways (411 dp high): a compact header, the first card in the upper 60 %. */
+    /**
+     * A phone held sideways (411 dp high): the header as a pane of its own on the left, the cards
+     * beside it in the full height – with the header above them they had a strip of sky. The
+     * camera's cut-out at the left: nothing of the page under it (the 10-day card's sun symbol
+     * lay in it).
+     */
     @Test @Config(qualifiers = "de-w914dp-h411dp-xxhdpi") fun phoneSideways() {
-        val top = check(914, 1f, heightDp = 411, cards = false)
-        val px = org.robolectric.RuntimeEnvironment.getApplication().resources.displayMetrics.density
-        assertTrue("first card at ${top / px} dp of 411", top / px < 411 * 0.6f)
+        val settings = Settings(hiddenCards = setOf(WeatherCard.RADAR, WeatherCard.MODELS))
+        val cut = 136
+        compose.setContent {
+            CompositionLocalProvider(LocalContentWidth provides 914.dp) {
+                WeatherPage(Place("p", "Garbsen", latitude = 52.42, longitude = 9.60), PlaceState(data()), settings, null, false, {}, {}, {})
+            }
+        }
+        compose.runOnUiThread {
+            val insets = androidx.core.view.WindowInsetsCompat.Builder()
+                .setInsets(androidx.core.view.WindowInsetsCompat.Type.displayCutout(), androidx.core.graphics.Insets.of(cut, 0, 0, 0))
+                .build()
+            val root = compose.onRoot().fetchSemanticsNode().root!!.let { (it as? android.view.View) } ?: error("no view")
+            androidx.core.view.ViewCompat.dispatchApplyWindowInsets(root.rootView, insets)
+        }
+        compose.waitForIdle()
+        val ctx = org.robolectric.RuntimeEnvironment.getApplication()
+        val px = ctx.resources.displayMetrics.density
+        val station = compose.onAllNodesWithText("Hannover-Herrenhause", substring = true).fetchSemanticsNodes().first().boundsInRoot
+        val name = compose.onAllNodesWithText("Garbsen").fetchSemanticsNodes().first().boundsInRoot
+        val titles = compose.onAllNodesWithText(ctx.getString(R.string.precip_title), ignoreCase = true).fetchSemanticsNodes()
+            .map { it.boundsInRoot }.filter { it.width > 0f }
+        val card = titles.minBy { it.top }
+        assertTrue("header beside the cards: station line ends at ${station.right}, the card begins at ${card.left}", station.right < card.left)
+        assertTrue("first card at ${card.top / px} dp of 411 – below the top bar, not below the header", card.top / px < 411 * 0.3f)
+        assertTrue("header in the camera's cut-out (name ${name.left}, station line ${station.left} < $cut)", name.left >= cut && station.left >= cut)
+        // the header stays where it is when the cards scroll
+        compose.onAllNodes(androidx.compose.ui.test.hasScrollAction()).onFirst().performTouchInput { swipeUp() }
+        compose.waitForIdle()
+        assertEquals(name, compose.onAllNodesWithText("Garbsen").fetchSemanticsNodes().first().boundsInRoot)
     }
 
     /** Double-tapping the sky above the cards switches full screen; scrolling stays. */

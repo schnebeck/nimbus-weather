@@ -124,11 +124,17 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
 - **Vollbild**: Doppeltippen auf den Himmel über den Karten blendet Status- und Navigationsleiste aus
   und wieder ein, optional auch per Knopf; mit Drei-Tasten-Navigation endet die App über den Tasten.
 - **Lexikon**: ⓘ an jeder Karte erklärt die Begriffe.
+- **Mein Standort**: Solange er zu sehen ist (seine Seite, die Ortsliste), sucht die App die Position
+  beim Öffnen und nach 5 Minuten neu – zuerst per Mobilfunk/WLAN, gibt das nichts (etwa im EDGE-Netz),
+  zusätzlich per GPS. Ein Punkt am Standort-Pin zeigt, ob die Position aktuell ist (grün) oder älter
+  (gelb, dann auch die Kacheln); bleibt die Suche erfolglos, wartet die nächste länger (2, 5, 10 Minuten).
+  Bei gespeicherten Orten bleibt das GPS aus.
 - **Orte, Einstellungen**: Standort und gespeicherte Orte (lange drücken zum Sortieren und Löschen);
   Vorhersagemodell, Einheiten (beim ersten Start passend zum Land), Stationswerte, Animationen,
   Reihenfolge und Sichtbarkeit der Kacheln.
 - **Tablet, Querformat**: ab 600 dp Breite die Kacheln in zwei Spalten (eine Karte, die allein in ihrer
-  Zeile stünde, über die volle Breite), quer gehaltene Handys mit kompaktem Kopf, im Querformat großer Tablets links eine
+  Zeile stünde, über die volle Breite), quer gehaltene Handys mit dem Kopf als eigener Spalte links
+  und den Kacheln daneben (nichts unter der Kamera-Aussparung), im Querformat großer Tablets links eine
   Ortsleiste; Einstellungen, Orte, Rückblick und Radar-Bedienung mittig in lesbarer Breite. Unter „Open-Source-Lizenzen“ stehen die Lizenzen
   von Nimbus und aller verwendeten Bibliotheken. Stündliche Aktualisierung im Hintergrund,
   offline die zuletzt geladenen Daten.

@@ -32,6 +32,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -50,34 +52,40 @@ class LocationProvider(private val context: Context, private val http: okhttp3.O
         ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
+    /** Whether the device's location is switched on at all (no position can come otherwise). */
+    fun enabled(): Boolean {
+        val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return runCatching { androidx.core.location.LocationManagerCompat.isLocationEnabled(lm) }.getOrDefault(true)
+    }
+
+    /**
+     * The device's position and when it was taken ([Locate.Found.at], wall clock) – a fresh one
+     * if any can be had (see [Locate.best]), else the newest the system knows (perhaps old), null
+     * when there is none at all.
+     */
     @SuppressLint("MissingPermission")
-    suspend fun currentLocation(): Location? {
+    suspend fun currentLocation(): Locate.Found<Location>? {
         if (!hasPermission()) return null
         val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        val providers = listOf(LocationManager.NETWORK_PROVIDER, LocationManager.GPS_PROVIDER, LocationManager.PASSIVE_PROVIDER)
-            .filter { runCatching { lm.isProviderEnabled(it) }.getOrDefault(false) }
+        fun on(p: String) = runCatching { lm.isProviderEnabled(p) }.getOrDefault(false)
+        val providers = listOf(LocationManager.NETWORK_PROVIDER, LocationManager.GPS_PROVIDER, LocationManager.PASSIVE_PROVIDER).filter(::on)
+        val now = System.currentTimeMillis()
         val lastKnown = providers.mapNotNull { runCatching { lm.getLastKnownLocation(it) }.getOrNull() }
-            .maxByOrNull { it.time }
-        // For the weather a position from a few minutes ago is as good as a new one.
-        if (lastKnown != null && System.currentTimeMillis() - lastKnown.time < 30 * 60_000L) return lastKnown
+            .map { Locate.Found(it, now - ageMs(it)) }
+            .maxByOrNull { it.at }
         // Network (cell/Wi-Fi) or the fused provider first: a few hundred metres are plenty for a
-        // weather forecast and cost almost no battery. GPS only when they give nothing (e.g. no
-        // network location service on the device), and then for a limited time.
+        // weather forecast and cost almost no battery; the GPS joins when they stay silent.
         val coarse = buildList {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && runCatching { lm.isProviderEnabled(LocationManager.FUSED_PROVIDER) }.getOrDefault(false)) {
-                add(LocationManager.FUSED_PROVIDER)
-            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && on(LocationManager.FUSED_PROVIDER)) add(LocationManager.FUSED_PROVIDER)
             if (LocationManager.NETWORK_PROVIDER in providers) add(LocationManager.NETWORK_PROVIDER)
-        }
-        suspend fun firstFix(list: List<String>, timeoutMs: Long): Location? = if (list.isEmpty()) null else withTimeoutOrNull(timeoutMs) {
-            channelFlow {
-                list.forEach { provider -> launch { singleFix(lm, provider)?.let { send(it) } } }
-            }.firstOrNull()
-        }
-        val fresh = firstFix(coarse, 6_000L)
-            ?: firstFix(listOf(LocationManager.GPS_PROVIDER).filter { it in providers }, 12_000L)
-        return fresh ?: lastKnown
+        }.map { p -> suspend { singleFix(lm, p) } }
+        val gps = if (LocationManager.GPS_PROVIDER in providers) suspend { singleFix(lm, LocationManager.GPS_PROVIDER) } else null
+        return Locate.best(lastKnown, now, coarse, gps) { System.currentTimeMillis() }
     }
+
+    /** How old [l] is – by the device's uptime clock, the GPS' wall clock time may be off. */
+    private fun ageMs(l: Location): Long =
+        ((android.os.SystemClock.elapsedRealtimeNanos() - l.elapsedRealtimeNanos) / 1_000_000L).coerceAtLeast(0L)
 
     @SuppressLint("MissingPermission")
     private suspend fun singleFix(lm: LocationManager, provider: String): Location? = suspendCancellableCoroutine { cont ->
@@ -169,5 +177,47 @@ class LocationProvider(private val context: Context, private val http: okhttp3.O
         }
 
         const val CURRENT_LOCATION_ID = "current-location"
+    }
+}
+
+/**
+ * How the position is looked for. A position the system knows from the last [RECENT_MS] is taken
+ * as it is; anything older may lie far behind (it showed Hannover in Bad Harzburg). Then the
+ * coarse providers (cell, Wi-Fi) are asked, and if they give nothing within [GPS_AFTER_MS] – on
+ * an EDGE network the cell lookup hardly gets through – the GPS joins, for up to [TIMEOUT_MS] in
+ * all (a GPS without help from the network needs half a minute and more). Without any new
+ * position the old one comes back with its time: the app shows it as not current.
+ */
+object Locate {
+    const val RECENT_MS = 2 * 60_000L
+    const val GPS_AFTER_MS = 5_000L
+    const val TIMEOUT_MS = 60_000L
+    /** Pause before the GPS is asked again after a request without a position. */
+    private const val GPS_AGAIN_MS = 1_000L
+
+    /** [value] taken at [at] (wall clock). */
+    data class Found<out T>(val value: T, val at: Long)
+
+    suspend fun <T : Any> best(
+        last: Found<T>?,
+        now: Long,
+        coarse: List<suspend () -> T?>,
+        gps: (suspend () -> T?)?,
+        clock: () -> Long,
+    ): Found<T>? {
+        if (last != null && now - last.at < RECENT_MS) return last
+        val fresh = withTimeoutOrNull(TIMEOUT_MS) {
+            channelFlow {
+                val asked = coarse.map { f -> launch { f()?.let { send(it) } } }
+                if (gps != null) launch {
+                    withTimeoutOrNull(GPS_AFTER_MS) { asked.joinAll() }
+                    while (true) {
+                        gps()?.let { send(it); return@launch }
+                        delay(GPS_AGAIN_MS)
+                    }
+                }
+            }.firstOrNull()
+        }
+        return fresh?.let { Found(it, clock()) } ?: last
     }
 }

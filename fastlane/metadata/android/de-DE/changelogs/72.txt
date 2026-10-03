@@ -1,0 +1,6 @@
+• Mein Standort: neue Suche beim Öffnen und nach 5 Min., ohne Funk-Ortung (EDGE) per GPS; alte Position gilt nicht mehr als aktuell
+• Punkt am Standort-Pin (Kopf, Ortsliste): grün aktuell, gelb älter; Hinweis bei ausgeschalteter Ortung
+• Geortet wird nur, wenn „Mein Standort“ zu sehen ist
+• Handy quer: Kopf links, Kacheln daneben; nichts in der Kamera-Aussparung
+• Drehen-Knopf nach Vollbild wieder da
+• Tageszeiten: jedes Feld auf Glas

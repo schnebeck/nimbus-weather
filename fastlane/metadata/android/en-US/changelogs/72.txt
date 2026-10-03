@@ -1,0 +1,6 @@
+• My location: looked for on opening and after 5 min, by GPS where cell location fails (EDGE); an old position no longer counts as current
+• Dot on the location pin (header, places): green current, yellow older; hint when location is off
+• Location only while "My location" is shown
+• Phone sideways: header left, cards beside it; nothing in the camera cut-out
+• Rotate button back after full screen
+• Parts of the day: every cell on glass

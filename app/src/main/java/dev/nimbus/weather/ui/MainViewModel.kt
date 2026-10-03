@@ -80,12 +80,31 @@ data class UiState(
     val settings: Settings = Settings(),
     val selectedPlaceId: String? = null,
     val locationStatus: LocationStatus = LocationStatus.UNKNOWN,
+    /** When the position of "my location" was taken (wall clock): older than [dev.nimbus.weather.data.repo.Freshness.LOCATION_MS], its page is not current. */
+    val locationFixedAt: Long = 0L,
+    /** When the last search found no new position – the next one waits a little. */
+    val locationTriedAt: Long = 0L,
+    /** Searches in a row without a new position: the pause before the next grows. */
+    val locationMisses: Int = 0,
+    /** The device's location is switched off: no position can come until it is on again. */
+    val locationOff: Boolean = false,
     val backStack: List<Screen> = listOf(Screen.Main),
     val demo: Demo? = null,
 ) {
     /** Pages shown in the pager: current location first, then saved places. */
     val pages: List<Place> get() = listOfNotNull(currentPlace) + savedPlaces.filter { it.id != currentPlace?.id }
     val screen: Screen get() = backStack.last()
+}
+
+/**
+ * Whether "my location" is on screen – its page chosen, the list of places open, or the places
+ * beside the weather (tablet, [sidebar]): only then is the position looked for. For another
+ * place the GPS stays off, the page of "my location" shows on its return whether it is current.
+ */
+internal fun locationWanted(st: UiState, sidebar: Boolean): Boolean {
+    val current = st.currentPlace ?: return false
+    val selected = st.pages.firstOrNull { it.id == st.selectedPlaceId } ?: st.pages.firstOrNull()
+    return selected?.id == current.id || st.screen == Screen.Places || sidebar
 }
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
@@ -98,6 +117,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val state: StateFlow<UiState> = _state.asStateFlow()
 
     private val jobs = HashMap<String, Job>()
+    /** The places shown beside the weather (tablet sideways): "my location" among them. */
+    private var sidebar = false
     private var lastSettings: Settings? = null
 
     init {
@@ -148,7 +169,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 val needsReload = prev != null && (prev.model != settings.model ||
                     prev.useStationObservations != settings.useStationObservations)
                 if (first) {
-                    refreshLocation()
+                    if (_state.value.currentPlace == null || locationWanted(_state.value, sidebar)) refreshLocation()
                     _state.value.pages.forEach { load(it, force = false) }
                 } else if (needsReload) {
                     _state.value.pages.forEach { load(it, force = true) }
@@ -172,8 +193,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      * data as if it were current.
      */
     private fun refreshExpired() {
+        locateIfDue()
         val st = _state.value
-        st.pages.forEach { load(it, force = false) }
+        // "my location" while its position is looked for: loaded for the place found (or, without one, for the old place) afterwards
+        st.pages.forEach { if (!(it.isCurrentLocation && st.locationStatus == LocationStatus.LOADING)) load(it, force = false) }
         st.states.forEach { (id, ps) -> if (ps.history != null) loadHistory(id) }
     }
 
@@ -210,9 +233,24 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 val current = _state.value.states[p.id]?.data
                 if (current == null || cached.fetchedAt > current.fetchedAt) updatePlace(p.id) { it.copy(data = cached) }
             }
-            refreshLocation()
+            // the position only while "my location" is shown (the first one always: it makes the place)
+            if (_state.value.currentPlace == null || locationWanted(_state.value, sidebar)) refreshLocation()
             refreshExpired()
         }
+    }
+
+    /** Looks for the position when it has expired – and "my location" is on screen. */
+    private fun locateIfDue() {
+        val st = _state.value
+        if (locationWanted(st, sidebar) &&
+            dev.nimbus.weather.data.repo.Freshness.locationDue(st.locationFixedAt, st.locationTriedAt, System.currentTimeMillis(), st.locationMisses)
+        ) refreshLocation()
+    }
+
+    /** The places beside the weather appear or go (tablet sideways). */
+    fun onSidebar(shown: Boolean) {
+        sidebar = shown
+        locateIfDue()
     }
 
     fun onLocationPermissionResult(granted: Boolean) {
@@ -226,13 +264,23 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
         if (_state.value.locationStatus == LocationStatus.LOADING) return
+        _state.update { it.copy(locationStatus = LocationStatus.LOADING) }
         viewModelScope.launch {
-            _state.update { it.copy(locationStatus = LocationStatus.LOADING) }
-            val loc = runCatching { location.currentLocation() }.getOrNull()
-            if (loc == null) {
-                _state.update { it.copy(locationStatus = if (it.currentPlace != null) LocationStatus.AVAILABLE else LocationStatus.UNAVAILABLE) }
+            val found = runCatching { location.currentLocation() }.getOrNull()
+            val off = !location.enabled()
+            val known = _state.value.locationFixedAt
+            // Nothing new: the page stays with the old place, shown as not current, and is tried again soon.
+            if (found == null || found.at <= known && _state.value.currentPlace != null) {
+                _state.update {
+                    it.copy(
+                        locationStatus = if (it.currentPlace != null) LocationStatus.AVAILABLE else LocationStatus.UNAVAILABLE,
+                        locationTriedAt = System.currentTimeMillis(), locationMisses = it.locationMisses + 1, locationOff = off,
+                    )
+                }
+                _state.value.currentPlace?.let { load(it, force = false) }
                 return@launch
             }
+            val loc = found.value
             val old = _state.value.currentPlace
             val fallbackName = getApplication<Application>().getString(R.string.my_location)
             val moved = old == null || distanceKm(old.latitude, old.longitude, loc.latitude, loc.longitude) > 1.5
@@ -249,6 +297,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 st.copy(
                     currentPlace = place,
                     locationStatus = LocationStatus.AVAILABLE,
+                    locationFixedAt = found.at,
+                    locationTriedAt = if (dev.nimbus.weather.data.repo.Freshness.locationCurrent(found.at, System.currentTimeMillis())) 0L else System.currentTimeMillis(),
+                    // an older position (the system's last one) is no success: the pause keeps growing
+                    locationMisses = if (dev.nimbus.weather.data.repo.Freshness.locationCurrent(found.at, System.currentTimeMillis())) 0 else st.locationMisses + 1,
+                    locationOff = off,
                     selectedPlaceId = if (st.selectedPlaceId == null || old == null && st.savedPlaces.isEmpty()) place.id else st.selectedPlaceId,
                 )
             }
@@ -386,6 +439,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun select(placeId: String) {
         _state.update { it.copy(selectedPlaceId = placeId) }
+        locateIfDue()
         val st = _state.value
         val place = st.pages.firstOrNull { it.id == placeId } ?: return
         if (st.states[placeId]?.data != null) maybePrefetchRadar(place, st.settings)
@@ -397,7 +451,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     // ---- navigation ---------------------------------------------------------
 
-    fun navigate(screen: Screen) = _state.update { it.copy(backStack = it.backStack + screen) }
+    fun navigate(screen: Screen) {
+        _state.update { it.copy(backStack = it.backStack + screen) }
+        locateIfDue()
+    }
 
     fun back(): Boolean {
         if (_state.value.backStack.size <= 1) return false

@@ -209,4 +209,20 @@ class DayPartsTableTest {
     }
 
     @Test @Config(qualifiers = "en") fun englishWordsStayWhole() = checkAll("en")
+
+    /**
+     * Every cell readable on the brightest sky: the cells the sky does not show stood on the bare
+     * sky – "Früh / Nebel" white on a white cloud. Now each on glass, the shown one darker.
+     */
+    @Test fun everyCellHasItsContrast() {
+        for (sky in listOf(androidx.compose.ui.graphics.Color.White, androidx.compose.ui.graphics.Color(0xFF8EC5FF), androidx.compose.ui.graphics.Color(0xFF1B3A6B))) {
+            val pill = dev.nimbus.weather.ui.theme.Legibility.headerPill(sky)
+            for (lit in listOf(false, true)) {
+                val ground = dev.nimbus.weather.ui.theme.Contrast.over(dev.nimbus.weather.ui.main.dayPartGround(pill, lit), sky)
+                val ratio = dev.nimbus.weather.ui.theme.Contrast.textRatio(androidx.compose.ui.graphics.Color.White, ground)
+                assertTrue("white on the ${if (lit) "shown" else "other"} cell over $sky: $ratio", ratio >= 4.5 - 1e-6)
+            }
+            assertTrue("the shown cell stands out", dev.nimbus.weather.ui.main.dayPartGround(pill, true).alpha > pill.alpha)
+        }
+    }
 }

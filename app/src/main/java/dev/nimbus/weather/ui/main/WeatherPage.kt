@@ -260,6 +260,8 @@ private fun WeatherContent(
     // Phone: one column. Tablet (from 600 dp): the cards flow in two columns, three from 1150 dp.
     val listWidth = LocalContentWidth.current - paneWidth
     val columns = when {
+        // beside the header pane: two only where each gets at least a narrow phone's width
+        sideways -> if (listWidth >= SidewaysTwoColumns) 2 else 1
         listWidth >= 1150.dp -> 3
         listWidth >= 600.dp -> 2
         else -> 1
@@ -289,7 +291,8 @@ private fun WeatherContent(
     val tfToday = LocalTimeFormat.current
     val todayMeasured = remember(state.history, now / 600_000L) { TodayMeasured.of(state.history, tfToday.zoned(now).toLocalDate()) }
     val stale = state.error && now - data.fetchedAt > 30 * 60_000L
-    val pageStale = pageStale(data.stale, location)
+    // yellow: a part being loaded or left from a failed source – or past its shelf life
+    val pageStale = pageStale(data.stale + dev.nimbus.weather.data.repo.Freshness.expiredParts(data, now), location)
 
     // A dry day hides the precipitation card (setting) – worked out once per minute, not per frame
     val dryToday = remember(data, now / 60_000L, raining, todayMeasured) {
@@ -332,7 +335,9 @@ private fun WeatherContent(
 
     // Only show the spinner for a refresh the user pulled, not for automatic background updates.
     var pulled by remember { mutableStateOf(false) }
-    LaunchedEffect(state.loading) { if (!state.loading) pulled = false }
+    // busy: loading – or, for "my location", looking for its position first (its data wait for it)
+    val busy = state.loading || location?.searching == true
+    LaunchedEffect(busy) { if (!busy) pulled = false }
     val refreshState = androidx.compose.material3.pulltorefresh.rememberPullToRefreshState()
     val onLocate: () -> Unit = {
         if (location?.off == true) {
@@ -340,16 +345,18 @@ private fun WeatherContent(
         } else onRefresh()
     }
     if (sideways) {
+        // in the middle of the space below the top bar – beside the cards that begin there
         Box(
-            Modifier.width(cutStart + paneWidth).fillMaxHeight().testTag("header-pane").fullscreenByDoubleTap().padding(start = cutStart),
+            Modifier.width(cutStart + paneWidth).fillMaxHeight().testTag("header-pane").fullscreenByDoubleTap()
+                .padding(start = cutStart, top = statusTop + HeaderTop),
             contentAlignment = Alignment.Center,
         ) {
-            Header(data, { 0f }, statusTop, compact = true, location, onLocate) { }
+            Header(data, { 0f }, statusTop, compact = true, location, onLocate, top = 0.dp) { }
         }
     }
     Box(Modifier.fillMaxSize().padding(start = if (sideways) cutStart + paneWidth else 0.dp)) {
     PullToRefreshBox(
-        isRefreshing = pulled && state.loading,
+        isRefreshing = pulled && busy,
         onRefresh = { pulled = true; onRefresh() },
         modifier = Modifier.fillMaxSize(),
         state = refreshState,
@@ -357,7 +364,7 @@ private fun WeatherContent(
         // top edge it came down into the front camera ("a black snowman"), in full screen too
         indicator = {
             androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator(
-                state = refreshState, isRefreshing = pulled && state.loading,
+                state = refreshState, isRefreshing = pulled && busy,
                 modifier = Modifier.align(Alignment.TopCenter).padding(top = statusTop + RefreshBelow),
             )
         },
@@ -408,7 +415,10 @@ private fun WeatherContent(
 @Composable
 private fun Header(
     data: WeatherData, progress: () -> Float, statusTop: androidx.compose.ui.unit.Dp, compact: Boolean = false,
-    location: LocationMark? = null, onLocate: () -> Unit = {}, onHeight: (Int) -> Unit = {},
+    location: LocationMark? = null, onLocate: () -> Unit = {},
+    /** Space above it: below the status bar and the top bar – none in the header pane (sideways). */
+    top: androidx.compose.ui.unit.Dp = statusTop + HeaderTop,
+    onHeight: (Int) -> Unit = {},
 ) {
     val s = LocalSettings.current
     val c = data.current
@@ -419,7 +429,7 @@ private fun Header(
     val header = dev.nimbus.weather.ui.components.LocalHeaderStyle.current
     val TextShadow = header.shadow
     Column(
-        Modifier.fillMaxWidth().onSizeChanged { onHeight(it.height) }.padding(top = statusTop + HeaderTop, start = 24.dp, end = 24.dp),
+        Modifier.fillMaxWidth().onSizeChanged { onHeight(it.height) }.padding(top = top, start = 24.dp, end = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         val locate = stringResource(R.string.location_locate)
@@ -479,10 +489,12 @@ private fun Header(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         // wrapped onto two lines (a narrow pane, a large font) the ⓘ keeps its room
-                        Text(
-                            stringResource(R.string.measured_at_station, c.stationName, Units.oneDecimal(c.stationDistanceKm)),
-                            Modifier.weight(1f, fill = false),
-                            fontSize = 12.sp, color = Color.White, textAlign = TextAlign.Center,
+                        // the station's name kept together (it moves to the second line as a whole, the
+                        // distance stays with it), the lines close and the pill only as wide as they are
+                        dev.nimbus.weather.ui.components.TightText(
+                            stringResource(R.string.measured_at_station, keptTogether(c.stationName), Units.oneDecimal(c.stationDistanceKm)),
+                            Modifier.weight(1f, fill = false).testTag("station-line"),
+                            androidx.compose.ui.text.TextStyle(fontSize = 12.sp, lineHeight = 16.sp, color = Color.White, textAlign = TextAlign.Center),
                         )
                         Icon(androidx.compose.material.icons.Icons.Outlined.Info, null, tint = Color.White, modifier = Modifier.padding(start = 4.dp).size(12.dp))
                     }
@@ -607,7 +619,8 @@ data class LocationMark(val current: Boolean, val searching: Boolean, val off: B
 
 /** Where the position of "my location" stands at [now] (see [LocationMark]). */
 internal fun locationMark(state: dev.nimbus.weather.ui.UiState, now: Long): LocationMark = LocationMark(
-    current = dev.nimbus.weather.data.repo.Freshness.locationCurrent(state.locationFixedAt, now),
+    // asked for anew (reload, the pin): not current until the answer
+    current = dev.nimbus.weather.data.repo.Freshness.locationCurrent(state.locationFixedAt, now) && !state.locationForced,
     searching = state.locationStatus == dev.nimbus.weather.ui.LocationStatus.LOADING,
     off = state.locationOff,
 )
@@ -665,12 +678,18 @@ internal fun androidx.compose.foundation.layout.RowScope.LocationDot(location: L
 /** Height of the capitals in the app's font (Roboto: 1456 of 2048 units per em). */
 internal const val CAP_HEIGHT = 0.711f
 
+/** [name] that does not break inside (spaces and hyphens kept): it wraps as a whole. */
+internal fun keptTogether(name: String): String = name.replace(' ', '\u00A0').replace('-', '\u2011')
+
 /** A phone held sideways: a low window ([COMPACT_HEIGHT_DP]) wider than high – the header gets a pane of its own. */
 internal fun sideways(widthDp: Int, heightDp: Int): Boolean = heightDp < COMPACT_HEIGHT_DP && widthDp > heightDp
 
-/** The header's pane sideways: about two fifths, enough for "12° max/min" and a long place name. */
+/** The header's pane sideways: about a third – the cards get the room; enough for "12° max/min" and a long place name. */
 internal fun headerPaneWidth(contentWidth: androidx.compose.ui.unit.Dp): androidx.compose.ui.unit.Dp =
-    (contentWidth * 0.4f).coerceIn(260.dp, 400.dp)
+    (contentWidth / 3).coerceIn(280.dp, 360.dp)
+
+/** Beside the header pane two columns of cards from here: each at least 320 dp (the narrowest phone). */
+internal val SidewaysTwoColumns = 320.dp * 2 + 14.dp + 24.dp * 2
 
 /** Status of the card [key] when [stale] parts still show older values. */
 internal fun cardStatus(key: String, stale: Set<dev.nimbus.weather.data.model.DataPart>): CardStatus? =

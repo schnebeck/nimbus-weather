@@ -17,6 +17,7 @@
 
 package dev.nimbus.weather
 
+import kotlinx.coroutines.flow.first
 import android.app.Application
 import dev.nimbus.weather.data.remote.BrightSkySource
 import dev.nimbus.weather.data.remote.CommunitySource
@@ -51,6 +52,14 @@ class NimbusApp : Application() {
         // Decoded radar steps; expired ones are removed in the background
         dev.nimbus.weather.ui.radar.RadarStore.dir = java.io.File(cacheDir, "radarstore")
         Thread { runCatching { dev.nimbus.weather.ui.radar.RadarStore.prune() } }.start()
+        // What nobody needs any more goes (at most once a day; see Housekeeping)
+        Thread {
+            runCatching {
+                val ids = kotlinx.coroutines.runBlocking { container.store.places.first() }.map { it.id } +
+                    dev.nimbus.weather.data.repo.LocationProvider.CURRENT_LOCATION_ID
+                dev.nimbus.weather.data.repo.Housekeeping.runIfDue(this, ids)
+            }
+        }.start()
         MapLibre.getInstance(this)
         // MapLibre stops requesting tiles while Android reports no connection and waits for it to
         // come back. Our HTTP client answers from its cache when offline (StaleFallbackInterceptor),

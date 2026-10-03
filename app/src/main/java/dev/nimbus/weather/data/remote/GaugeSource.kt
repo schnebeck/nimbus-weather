@@ -65,10 +65,13 @@ class GaugeSource(
      */
     suspend fun nearby(lat: Double, lon: Double, now: Long = System.currentTimeMillis()): List<GaugeInfo> = coroutineScope {
         val r = FALLBACK_RADIUS_KM.toDouble()   // candidates up to the fallback; select() narrows to RADIUS_KM
+        val started = System.nanoTime()
+        fun took() = (System.nanoTime() - started) / 1_000_000
         suspend fun <T> safe(name: String, block: suspend () -> List<T>): List<T> =
             runCatching { withTimeoutOrNull(SOURCE_TIMEOUT_MS) { block() }.orEmpty() }
                 .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it; android.util.Log.w("Nimbus", "gauges $name: $it") }
                 .getOrDefault(emptyList())
+                .also { if (dev.nimbus.weather.BuildConfig.DEBUG) android.util.Log.d("NimbusLoad", "gauges $name: ${it.size} after ${took()} ms") }
         val jobs = listOf(
             async { safe("pegelonline") { federalCandidates(lat, lon) } },
             async { safe("nlwkn") { nlwkn?.candidates(lat, lon, r, now).orEmpty() } },
@@ -78,8 +81,12 @@ class GaugeSource(
             async { safe("lhp") { lhp?.candidates(lat, lon, r, now).orEmpty() } },
         )
         val chosen = select(jobs.flatMap { it.await() })
-        chosen.map { g -> async { withTimeoutOrNull(DETAIL_TIMEOUT_MS) { runCatching { details(g, now) }.getOrNull() } ?: g.takeIf { it.hasValues || it.lhpClass != null } } }
-            .mapNotNull { it.await() }
+        chosen.map { g ->
+            async {
+                (withTimeoutOrNull(DETAIL_TIMEOUT_MS) { runCatching { details(g, now) }.getOrNull() } ?: g.takeIf { it.hasValues || it.lhpClass != null })
+                    .also { if (dev.nimbus.weather.BuildConfig.DEBUG) android.util.Log.d("NimbusLoad", "gauge ${g.provider} ${g.name}: details after ${took()} ms") }
+            }
+        }.mapNotNull { it.await() }
     }
 
     /** Values, history and (tide gauges) prediction of a chosen gauge; null drops it. */

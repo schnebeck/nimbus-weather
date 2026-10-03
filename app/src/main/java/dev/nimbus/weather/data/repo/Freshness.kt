@@ -18,6 +18,7 @@
 package dev.nimbus.weather.data.repo
 
 import dev.nimbus.weather.data.model.DataPart
+import dev.nimbus.weather.data.model.WeatherData
 
 /**
  * Every kind of data expires: the app checks when it comes back to the front and then every
@@ -38,6 +39,31 @@ object Freshness {
      * of the current location no longer counts as current (its dots turn yellow).
      */
     const val LOCATION_MS = 5 * 60_000L
+
+    /**
+     * How long a part of the weather counts as current – after that its card turns yellow and the
+     * part is loaded again: the forecast with the station and the citizen sensors report every 10
+     * minutes, the gauges every 15, the flood alerts of the states as their portal asks (10);
+     * air quality is an hourly model, bathing samples change by the hour at most, the pollen
+     * forecast a few times a day.
+     */
+    fun lifeMs(part: DataPart): Long = when (part) {
+        DataPart.FORECAST, DataPart.COMMUNITY, DataPart.FLOOD -> FORECAST_MS
+        DataPart.GAUGES -> 15 * 60_000L
+        DataPart.AIR_QUALITY, DataPart.BATHING -> 60 * 60_000L
+        DataPart.POLLEN -> 3 * 60 * 60_000L
+    }
+
+    /** The parts of [data] past their shelf life at [now]. */
+    fun expiredParts(data: WeatherData, now: Long): Set<DataPart> =
+        DataPart.entries.filterTo(mutableSetOf()) { now - data.fetchedAt(it) >= lifeMs(it) }
+
+    /**
+     * The parts of [data] to load again at [now]: past their shelf life, or older values left
+     * from a source that failed – tried again after [STALE_RETRY_MS].
+     */
+    fun dueParts(data: WeatherData, now: Long): Set<DataPart> =
+        expiredParts(data, now) + (if (now - data.fetchedAt >= STALE_RETRY_MS) data.stale else emptySet())
 
     /** Whether the forecast fetched at [fetchedAt] (with [stale] parts older) should be loaded again at [now]. */
     fun forecastDue(fetchedAt: Long, now: Long, stale: Set<DataPart>): Boolean =

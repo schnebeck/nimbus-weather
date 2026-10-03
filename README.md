@@ -128,12 +128,19 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   beim Öffnen und nach 5 Minuten neu – zuerst per Mobilfunk/WLAN, gibt das nichts (etwa im EDGE-Netz),
   zusätzlich per GPS. Ein Punkt am Standort-Pin zeigt, ob die Position aktuell ist (grün) oder älter
   (gelb, dann auch die Kacheln); bleibt die Suche erfolglos, wartet die nächste länger (2, 5, 10 Minuten).
-  Bei gespeicherten Orten bleibt das GPS aus.
+  Bei gespeicherten Orten bleibt das GPS aus. Neu laden (oder Tipp auf den Pin) fragt erst die
+  Position ab – alles für „Mein Standort“ wartet, bis sie bestätigt oder der neue Ort übernommen ist.
+- **Haltbarkeit**: Jeder Teil der Daten hat seine eigene: Vorhersage, Station, Bürgersensoren und
+  Hochwassermeldungen 10 Minuten, Pegel 15, Luftqualität und Badestellen 60, Pollen 3 Stunden. Ist er
+  abgelaufen, wird sein Punkt gelb und nur er neu geladen; jede Kachel wird grün, sobald ihre Quelle
+  geantwortet hat. Gespeichertes ohne Nutzen wird gelöscht: Momentdaten nach 4 Tagen (so weit reicht
+  der Rückblick), Listen (Pegel, Badestellen, Gezeiten) nach 30 Tagen ohne Nutzung, das Wetter
+  entfernter Orte sofort.
 - **Orte, Einstellungen**: Standort und gespeicherte Orte (lange drücken zum Sortieren und Löschen);
   Vorhersagemodell, Einheiten (beim ersten Start passend zum Land), Stationswerte, Animationen,
   Reihenfolge und Sichtbarkeit der Kacheln.
 - **Tablet, Querformat**: ab 600 dp Breite die Kacheln in zwei Spalten (eine Karte, die allein in ihrer
-  Zeile stünde, über die volle Breite), quer gehaltene Handys mit dem Kopf als eigener Spalte links
+  Zeile stünde, über die volle Breite), quer gehaltene Handys mit dem Kopf als eigener Spalte links (etwa ein Drittel)
   und den Kacheln daneben (nichts unter der Kamera-Aussparung), im Querformat großer Tablets links eine
   Ortsleiste; Einstellungen, Orte, Rückblick und Radar-Bedienung mittig in lesbarer Breite. Unter „Open-Source-Lizenzen“ stehen die Lizenzen
   von Nimbus und aller verwendeten Bibliotheken. Stündliche Aktualisierung im Hintergrund,

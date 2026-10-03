@@ -71,7 +71,7 @@
     <string name="community_sensors_detail">Median of %1$d citizen sensors within %2$s km (Sensor.Community)</string>
     <string name="community_spread">Spread ±%1$s</string>
     <string name="data_sources">Data Sources</string>
-    <string name="measured_at_station">Measured at DWD station %1$s (%2$s km)</string>
+    <string name="measured_at_station">Measured at DWD station %1$s\u00A0(%2$s km)</string>
     <string name="alerts">Weather Warnings</string>
     <string name="alert_valid">%1$s – %2$s</string>
     <string name="alert_until">Until %1$s</string>

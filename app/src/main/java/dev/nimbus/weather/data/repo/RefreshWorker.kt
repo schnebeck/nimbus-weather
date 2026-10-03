@@ -53,6 +53,8 @@ class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorke
                 .onSuccess { store.cacheWeather(it) }
                 .onFailure { failures++ }
         }
+        // what nobody needs any more goes (at most once a day)
+        runCatching { Housekeeping.runIfDue(applicationContext, places.map { it.id } + LocationProvider.CURRENT_LOCATION_ID) }
         return if (failures == places.size && places.isNotEmpty()) Result.retry() else Result.success()
     }
 

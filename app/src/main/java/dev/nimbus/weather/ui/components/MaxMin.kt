@@ -125,3 +125,20 @@ val Hyphenated = TextStyle(
     hyphens = androidx.compose.ui.text.style.Hyphens.Auto,
     lineBreak = androidx.compose.ui.text.style.LineBreak.Paragraph,
 )
+
+/**
+ * Text as wide as its longest line. Wrapped, a [Text] takes all the width it is offered – the
+ * pill around the station line stood wide around a short second line.
+ */
+@Composable
+fun TightText(text: String, modifier: Modifier = Modifier, style: TextStyle = TextStyle.Default) {
+    val merged = androidx.compose.material3.LocalTextStyle.current.merge(style)
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val density = LocalDensity.current
+    androidx.compose.ui.layout.Layout({ Text(text, style = merged) }, modifier) { measurables, c ->
+        val r = measurer.measure(text, merged, constraints = androidx.compose.ui.unit.Constraints(maxWidth = c.maxWidth), density = density)
+        val widest = (0 until r.lineCount).maxOfOrNull { kotlin.math.ceil(r.getLineRight(it) - r.getLineLeft(it)).toInt() } ?: 0
+        val p = measurables.first().measure(c.copy(minWidth = 0, maxWidth = (widest + 1).coerceAtMost(c.maxWidth)))
+        layout(p.width, p.height) { p.place(0, 0) }
+    }
+}

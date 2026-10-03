@@ -63,7 +63,7 @@ class Store(private val context: Context) {
     }
 
     private fun cacheFile(placeId: String) =
-        File(context.filesDir, "weather_cache/" + placeId.replace(Regex("[^A-Za-z0-9_.-]"), "_") + ".json")
+        File(context.filesDir, "$CACHE_DIR/" + cacheFileName(placeId))
 
     suspend fun cachedWeather(placeId: String): WeatherData? = withContext(Dispatchers.IO) {
         val f = cacheFile(placeId)
@@ -79,4 +79,12 @@ class Store(private val context: Context) {
     }
 
     suspend fun deleteCache(placeId: String) = withContext(Dispatchers.IO) { cacheFile(placeId).delete() }
+
+    companion object {
+        /** Folder (in the app's files) of the last weather of each place – shown at once on start, offline too. */
+        const val CACHE_DIR = "weather_cache"
+
+        /** File name of the last weather of [placeId] in [CACHE_DIR]. */
+        fun cacheFileName(placeId: String) = placeId.replace(Regex("[^A-Za-z0-9_.-]"), "_") + ".json"
+    }
 }

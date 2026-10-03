@@ -40,4 +40,12 @@ class TextBreakTest {
         }
         assertTrue(failures.joinToString("\n"), failures.isEmpty())
     }
+
+    /** The station's distance stays with its name: "(3,5 km)" stood alone on the station line's second line. */
+    @Test fun distanceStaysWithTheStation() {
+        for (f in files) {
+            val v = strings(f).getValue("measured_at_station")
+            assertTrue("${f.parentFile.name}: \"$v\"", Regex("""%1\${'$'}s(\\u00A0|\u00A0)\(""").containsMatchIn(v))
+        }
+    }
 }

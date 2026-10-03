@@ -1,0 +1,6 @@
+• Each card turns green as soon as its source answers – not only after the slowest
+• Each part of the data has its shelf life (10 min to 3 h); only what expired is reloaded
+• Reload of "My location": first the position, then the data
+• Look-back radar: temperature and wind of past days without fetching them again
+• Clean-up: data of a moment after 4 days, unused lists after 30 days
+• Phone sideways: header a third wide, page dots over the cards, compact station line

@@ -38,8 +38,8 @@ android {
         applicationId = "dev.nimbus.weather"
         minSdk = 26
         targetSdk = 36
-        versionCode = 74
-        versionName = "1.26.2"
+        versionCode = 75
+        versionName = "1.27.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -91,6 +91,9 @@ android {
         unitTests.isReturnDefaultValues = true
         // Screenshot tests (Robolectric renders the Compose charts on the JVM)
         unitTests.isIncludeAndroidResources = true
+        // RequirementsTest reads docs/REQUIREMENTS.md (kept locally, may be missing): a change
+        // there runs the tests again
+        unitTests.all { it.inputs.files(rootProject.fileTree("docs") { include("REQUIREMENTS.md") }) }
     }
 
     // No Google-encrypted dependency report in the APK signing block (F-Droid inclusion policy).

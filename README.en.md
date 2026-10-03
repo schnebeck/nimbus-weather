@@ -73,9 +73,16 @@ No ads, no account, no Google services. The app speaks English and German.
   and after 5 minutes – by cell/Wi-Fi first, by GPS as well where that gives nothing (e.g. on an EDGE
   network); a dot on the location pin tells whether the position is current (green) or older (yellow,
   then the cards too); searches without result wait longer each time (2, 5, 10 minutes). For saved
-  places the GPS stays off.
+  places the GPS stays off. Pulling to reload (or tapping the pin) asks for the position first –
+  everything for "My location" waits until it is confirmed or the new place is taken.
+- Shelf life: each part of the data has its own – forecast, station, citizen sensors and flood
+  alerts 10 minutes, gauges 15, air quality and bathing waters 60, pollen 3 hours. Past it, its dot
+  turns yellow and only that part is loaded again; each card turns green as soon as its source has
+  answered. Stored data nobody needs is deleted: data of a moment after 4 days (as far as the
+  look-back reaches), lists (gauges, bathing waters, tides) after 30 days without use, the weather
+  of removed places at once.
 - Tablets: two columns of cards from 600 dp, a places sidebar in landscape on large tablets; phones
-  held sideways show the header as a pane of its own beside the cards, clear of the camera cut-out.
+  held sideways show the header as a pane of its own (about a third) beside the cards, clear of the camera cut-out.
 
 ## Data sources
 

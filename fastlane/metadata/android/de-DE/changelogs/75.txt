@@ -1,0 +1,6 @@
+• Jede Kachel wird grün, sobald ihre Quelle antwortet – nicht erst nach der langsamsten
+• Eigene Haltbarkeit je Datenteil (10 Min. bis 3 Std.); nur Abgelaufenes wird neu geladen
+• Neu laden bei „Mein Standort“: erst die Position, dann die Daten
+• Rückblick-Radar: Temperatur und Wind ohne neuen Abruf
+• Aufräumen: Momentdaten nach 4 Tagen, ungenutzte Listen nach 30 Tagen
+• Handy quer: Kopf ein Drittel breit, Seitenpunkte über den Kacheln, Stationszeile kompakt

@@ -44,6 +44,13 @@ class FreshnessTest {
         assertTrue(Freshness.forecastDue(now - 2 * min, now, stale))
     }
 
+    /** Every part its own shelf life (the table agreed on): forecast, sensors, flood alerts 10 min, gauges 15, air quality and bathing 60, pollen 3 h. */
+    @Test fun everyPartHasItsShelfLife() {
+        val life = DataPart.entries.associateWith { Freshness.lifeMs(it) / min }
+        assertEquals(mapOf(DataPart.FORECAST to 10L, DataPart.AIR_QUALITY to 60L, DataPart.POLLEN to 180L, DataPart.COMMUNITY to 10L,
+            DataPart.GAUGES to 15L, DataPart.BATHING to 60L, DataPart.FLOOD to 10L), life)
+    }
+
     /** The case of the screenshot: the look-back of 01:00 still shown at 09:28. */
     @Test fun theLookBackExpires() {
         assertTrue(Freshness.historyDue(now - (8 * 60 + 28) * min, now))

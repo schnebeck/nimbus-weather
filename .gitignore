@@ -22,3 +22,6 @@ build/
 /captures
 /dist/
 /keystore/
+
+# Requirements with their tests: kept locally
+docs/REQUIREMENTS.md

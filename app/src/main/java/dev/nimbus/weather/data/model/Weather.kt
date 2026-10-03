@@ -159,7 +159,17 @@ data class WeatherData(
     val fetchedAt: Long,
     /** Parts still showing older values: being refreshed, or their source failed (cards: yellow dot). */
     val stale: Set<DataPart> = emptySet(),
-)
+    /**
+     * When each part was fetched – each has its own shelf life ([dev.nimbus.weather.data.repo.Freshness.lifeMs]).
+     * The forecast missing here (data stored before) counts as fetched at [fetchedAt]; an extra
+     * missing here is of unknown age: expired (stored before, the background refresh had kept the
+     * extras of an earlier time under a newer [fetchedAt]).
+     */
+    val partsAt: Map<DataPart, Long> = emptyMap(),
+) {
+    /** When [part] was fetched (0: unknown). */
+    fun fetchedAt(part: DataPart): Long = partsAt[part] ?: if (part == DataPart.FORECAST) fetchedAt else 0L
+}
 
 /** The parts of [WeatherData] that come from sources of their own (and can be older than the rest). */
 @Serializable

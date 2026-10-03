@@ -46,14 +46,14 @@ import java.util.Locale
 import kotlin.coroutines.resume
 
 /** Device location without Google Play Services, using the platform LocationManager; place names from the platform geocoder or OpenStreetMap. */
-class LocationProvider(private val context: Context, private val http: okhttp3.OkHttpClient? = null) {
+open class LocationProvider(private val context: Context, private val http: okhttp3.OkHttpClient? = null) {
 
-    fun hasPermission(): Boolean =
+    open fun hasPermission(): Boolean =
         ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
     /** Whether the device's location is switched on at all (no position can come otherwise). */
-    fun enabled(): Boolean {
+    open fun enabled(): Boolean {
         val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
         return runCatching { androidx.core.location.LocationManagerCompat.isLocationEnabled(lm) }.getOrDefault(true)
     }
@@ -64,7 +64,7 @@ class LocationProvider(private val context: Context, private val http: okhttp3.O
      * when there is none at all.
      */
     @SuppressLint("MissingPermission")
-    suspend fun currentLocation(): Locate.Found<Location>? {
+    open suspend fun currentLocation(): Locate.Found<Location>? {
         if (!hasPermission()) return null
         val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
         fun on(p: String) = runCatching { lm.isProviderEnabled(p) }.getOrDefault(false)
@@ -111,7 +111,7 @@ class LocationProvider(private val context: Context, private val http: okhttp3.O
         }.onFailure { if (cont.isActive) cont.resume(null) }
     }
 
-    suspend fun toPlace(location: Location, fallbackName: String): Place {
+    open suspend fun toPlace(location: Location, fallbackName: String): Place {
         val lat = location.latitude
         val lon = location.longitude
         val address = withContext(Dispatchers.IO) {

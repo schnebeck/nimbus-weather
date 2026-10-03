@@ -23,6 +23,8 @@ import androidx.compose.foundation.layout.displayCutout
 import dev.nimbus.weather.ui.components.statusBarsStable
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.BorderStroke
@@ -124,6 +126,11 @@ fun MainScreen(
     // Only with a choice: a single place would just repeat the header next to it
     val sidebar = maxWidth >= 1000.dp && maxWidth > maxHeight && pages.size >= 2
     val contentWidth = if (sidebar) maxWidth - SidebarWidth else maxWidth
+    // a phone held sideways: the cards begin beside the header pane (see WeatherPage)
+    val config = androidx.compose.ui.platform.LocalConfiguration.current
+    val cutStart = WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal).asPaddingValues()
+        .calculateStartPadding(androidx.compose.ui.platform.LocalLayoutDirection.current)
+    val cardsFrom = if (sideways(config.screenWidthDp, config.screenHeightDp)) cutStart + headerPaneWidth(contentWidth) else null
     // "my location" in the sidebar: its position is looked for while it is seen
     androidx.compose.runtime.DisposableEffect(sidebar) {
         onSidebar(sidebar)
@@ -169,6 +176,7 @@ fun MainScreen(
             onRadar = { onOpenRadar(place.id) },
             onMenu = onOpenPlaces,
             modifier = Modifier.align(Alignment.TopCenter),
+            cardsFrom = cardsFrom,
         )
     }
     }
@@ -221,11 +229,43 @@ const val HISTORY_DAYS = 3
 
 /** Menu (places & settings) top left, radar top right, page dots in between. */
 @Composable
-private fun TopBar(count: Int, current: Int, fullscreen: Boolean, button: Boolean, onRadar: () -> Unit, onMenu: () -> Unit, modifier: Modifier) {
+internal fun TopBar(
+    count: Int, current: Int, fullscreen: Boolean, button: Boolean, onRadar: () -> Unit, onMenu: () -> Unit, modifier: Modifier,
+    /** Phone sideways: where the cards begin (beside the header pane) – the page dots stand over their middle. */
+    cardsFrom: androidx.compose.ui.unit.Dp? = null,
+) {
     val update = LocalSettingsUpdater.current
+    Box(modifier.fillMaxWidth()) {
+    TopBarRow(count, current, fullscreen, button, onRadar, onMenu, update, dots = cardsFrom == null)
+    // sideways: the dots over the cards they page – in the middle of the screen they stood over
+    // the gap between header and cards
+    if (cardsFrom != null) {
+        Row(
+            Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBarsStable).padding(start = cardsFrom).height(52.dp).testTag("page-dots"),
+            horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
+        ) { PageDots(count, current) }
+    }
+    }
+}
+
+/** History pages as small dots, "now" as a larger dot on the right. */
+@Composable
+private fun PageDots(count: Int, current: Int) {
+    for (i in 0 until count) {
+        val color = if (i == current) Color.White else Color(0x66FFFFFF)
+        val size = if (i == count - 1) 8.dp else 6.dp
+        Box(Modifier.padding(horizontal = 4.dp).size(size).clip(CircleShape).background(color))
+    }
+}
+
+@Composable
+private fun TopBarRow(
+    count: Int, current: Int, fullscreen: Boolean, button: Boolean, onRadar: () -> Unit, onMenu: () -> Unit,
+    update: ((dev.nimbus.weather.data.model.Settings) -> dev.nimbus.weather.data.model.Settings) -> Unit, dots: Boolean,
+) {
     Row(
         // below the status bar (shown or not) and beside a camera cut-out held sideways
-        modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBarsStable)
+        Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBarsStable)
             .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)).padding(horizontal = 6.dp).height(52.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -240,13 +280,9 @@ private fun TopBar(count: Int, current: Int, fullscreen: Boolean, button: Boolea
                 tint = Color.White, modifier = Modifier.size(24.dp),
             )
         }
-        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.weight(1f).then(if (dots) Modifier.testTag("page-dots") else Modifier), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             // Time position: history pages as small dots, "now" as a larger dot on the right.
-            for (i in 0 until count) {
-                val color = if (i == current) Color.White else Color(0x66FFFFFF)
-                val size = if (i == count - 1) 8.dp else 6.dp
-                Box(Modifier.padding(horizontal = 4.dp).size(size).clip(CircleShape).background(color))
-            }
+            if (dots) PageDots(count, current)
         }
         // A labelled pill – a bare map icon was not recognisable as "rain radar".
         Row(

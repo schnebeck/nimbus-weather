@@ -196,6 +196,25 @@ object WeatherGridStore {
             ?: all.filter { it.overlaps(tile.south, tile.north, tile.west, tile.east) }.maxByOrNull { it.step }
     }
 
+    private const val DAY_MS = 24 * 3_600_000L
+
+    /** Whether [this] grid has values for the whole time from [from] to [to] (the last hour of it at least). */
+    private fun WeatherGrid.holds(from: Long, to: Long): Boolean =
+        times.isNotEmpty() && times.first() <= from && times.last() >= to - 3_600_000L
+
+    /**
+     * A stored grid around [lat0]/[lon0] for the past day starting at [from]: fetched after the
+     * day was over ([java.io.File.lastModified]) and reaching back to its start (`_p<hours>`).
+     */
+    private fun pastDayFile(step: Double, lat0: Double, lon0: Double, from: Long): java.io.File? {
+        val prefix = "grid_${step}_${OpenMeteoSource.fmt(lat0)}_${OpenMeteoSource.fmt(lon0)}_p"
+        return cacheDir?.listFiles { f -> f.name.startsWith(prefix) && f.name.endsWith(".json") }?.firstOrNull { f ->
+            val hours = f.name.removePrefix(prefix).removeSuffix(".json").toLongOrNull() ?: return@firstOrNull false
+            val fetched = f.lastModified()
+            fetched >= from + DAY_MS && fetched - hours * 3_600_000L <= from
+        }
+    }
+
     /** Makes sure a fresh grid covers [lat]/[lon] with some margin; returns it (or null on error). */
     suspend fun ensure(
         http: OkHttpClient, lat: Double, lon: Double, step: Double = WeatherGrid.STEP,
@@ -212,6 +231,18 @@ object WeatherGridStore {
         val (lat0, lon0) = WeatherGrid.origin(lat, lon, step)
         val rows = 2 * WeatherGrid.HALF_ROWS + 1
         val cols = 2 * WeatherGrid.HALF_COLS + 1
+        // A day that is over: its values do not change any more – a grid holding the whole day
+        // serves however old it is (until the day leaves the four days of the look-back); it was
+        // fetched anew every hour when the look-back was browsed
+        if (from != null && from + DAY_MS <= now) {
+            grids.firstOrNull { it.second.step == step && it.second.contains(lat, lon, margin = 2 * step) && it.second.holds(from, from + DAY_MS) }
+                ?.let { return it.second }
+            pastDayFile(step, lat0, lon0, from)?.let { f ->
+                runCatching { WeatherGrid.parse(withContext(Dispatchers.IO) { JsonCodec.parseToJsonElement(f.readText()) }, lat0, lon0, rows, cols, step) }
+                    .getOrNull()?.takeIf { it.holds(from, from + DAY_MS) }
+                    ?.let { g -> grids = (listOf(now to g) + grids).distinctBy { it.second }.take(6); return g }
+            }
+        }
         val lats = StringBuilder()
         val lons = StringBuilder()
         for (r in 0 until rows) for (c in 0 until cols) {

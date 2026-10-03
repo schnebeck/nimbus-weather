@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.width
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -48,6 +49,8 @@ import dev.nimbus.weather.ui.main.WeatherPage
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -92,7 +95,7 @@ class PageLayoutTest {
         }
         compose.waitForIdle()
         val ctx = org.robolectric.RuntimeEnvironment.getApplication()
-        val station = compose.onAllNodesWithText("Hannover-Herrenhause", substring = true).fetchSemanticsNodes().first().boundsInRoot
+        val station = compose.onAllNodesWithText("Herrenhause", substring = true).fetchSemanticsNodes().first().boundsInRoot
         // the card below the header (the list may hold one more, not placed)
         val firstCard = compose.onAllNodesWithText(ctx.getString(R.string.precip_title), ignoreCase = true).fetchSemanticsNodes()
             .map { it.boundsInRoot }.filter { it.width > 0f && it.top > station.top }.minBy { it.top }
@@ -156,7 +159,7 @@ class PageLayoutTest {
         compose.waitForIdle()
         val ctx = org.robolectric.RuntimeEnvironment.getApplication()
         val px = ctx.resources.displayMetrics.density
-        val station = compose.onAllNodesWithText("Hannover-Herrenhause", substring = true).fetchSemanticsNodes().first().boundsInRoot
+        val station = compose.onAllNodesWithText("Herrenhause", substring = true).fetchSemanticsNodes().first().boundsInRoot
         val name = compose.onAllNodesWithText("Garbsen").fetchSemanticsNodes().first().boundsInRoot
         val titles = compose.onAllNodesWithText(ctx.getString(R.string.precip_title), ignoreCase = true).fetchSemanticsNodes()
             .map { it.boundsInRoot }.filter { it.width > 0f }
@@ -164,10 +167,49 @@ class PageLayoutTest {
         assertTrue("header beside the cards: station line ends at ${station.right}, the card begins at ${card.left}", station.right < card.left)
         assertTrue("first card at ${card.top / px} dp of 411 – below the top bar, not below the header", card.top / px < 411 * 0.3f)
         assertTrue("header in the camera's cut-out (name ${name.left}, station line ${station.left} < $cut)", name.left >= cut && station.left >= cut)
+        // the header pane about a third of the width – the cards get the room
+        val pane = compose.onNode(androidx.compose.ui.test.hasTestTag("header-pane"), useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val paneDp = (pane.width - cut) / px
+        assertTrue("header pane $paneDp dp of 914", paneDp in 300f..310f)
+        // the station line: the name kept together (it wraps as a whole), the pill as wide as its longest line
+        val stationText = compose.onAllNodesWithText("Herrenhause", substring = true, useUnmergedTree = true).fetchSemanticsNodes().first()
+        val results = ArrayList<androidx.compose.ui.text.TextLayoutResult>()
+        stationText.config[androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+        val layout = results.first()
+        val text = layout.layoutInput.text.text
+        assertTrue("station line on one line?", layout.lineCount == 2)
+        assertEquals("the second line begins with the station's name: \"$text\"", text.indexOf("Hannover"), layout.getLineStart(1))
+        // the distance stays with the name ("(3,5 km)" stood alone on the second line)
+        assertTrue("distance alone: \"$text\"", text.indexOf("(") > layout.getLineStart(1))
+        // a name with spaces and hyphens does not break inside
+        val kept = dev.nimbus.weather.ui.main.keptTogether("Harzburg, Bad-Neu")
+        assertTrue(kept, ' ' !in kept && '-' !in kept)
+        val widest = (0 until layout.lineCount).maxOf { layout.getLineRight(it) - layout.getLineLeft(it) }
+        val line = compose.onNode(androidx.compose.ui.test.hasTestTag("station-line"), useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertTrue("station line ${line.width} px wide around lines of $widest px", line.width <= widest + 2f)
         // the header stays where it is when the cards scroll
         compose.onAllNodes(androidx.compose.ui.test.hasScrollAction()).onFirst().performTouchInput { swipeUp() }
         compose.waitForIdle()
         assertEquals(name, compose.onAllNodesWithText("Garbsen").fetchSemanticsNodes().first().boundsInRoot)
+    }
+
+    /** Sideways the page dots stand over the middle of the cards – in the middle of the screen they stood over the gap beside the header. */
+    @Test @Config(qualifiers = "de-w914dp-h411dp-xxhdpi") fun pageDotsOverTheCards() {
+        val px = org.robolectric.RuntimeEnvironment.getApplication().resources.displayMetrics.density
+        var from by androidx.compose.runtime.mutableStateOf<androidx.compose.ui.unit.Dp?>(320.dp)
+        compose.setContent {
+            androidx.compose.foundation.layout.Box(Modifier.width(914.dp)) {
+                dev.nimbus.weather.ui.main.TopBar(4, 3, fullscreen = false, button = false, onRadar = {}, onMenu = {}, modifier = Modifier, cardsFrom = from)
+            }
+        }
+        compose.waitForIdle()
+        fun dots() = compose.onNode(androidx.compose.ui.test.hasTestTag("page-dots"), useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val middleOfCards = (320f + 914f) / 2
+        assertEquals("page dots at ${dots().center.x / px} dp", middleOfCards, dots().center.x / px, 4f)
+        // upright (no pane): between menu and radar as before
+        from = null
+        compose.waitForIdle()
+        assertTrue("upright dots at ${dots().center.x / px} dp", dots().center.x / px < 914f * 0.55f)
     }
 
     /** "My location" in the header: the status dot behind the name at the capitals' height, apart from the pin. */

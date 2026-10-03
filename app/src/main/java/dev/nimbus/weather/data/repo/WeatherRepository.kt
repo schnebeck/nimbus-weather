@@ -37,6 +37,8 @@ import dev.nimbus.weather.data.remote.OpenMeteoSource
 import dev.nimbus.weather.data.remote.StationObservation
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
 
 class WeatherRepository(
     private val openMeteo: OpenMeteoSource,
@@ -51,8 +53,9 @@ class WeatherRepository(
 ) {
 
     /**
-     * The weather of [place] in two steps: [onCore] gets the forecast with station and warnings as
-     * soon as they are there – the page shows at once –, the result adds the extras (air quality,
+     * The weather of [place] step by step: [onProgress] gets the forecast with station and warnings as
+     * soon as they are there – the page shows at once –, then again with each extra as it arrives
+     * (its card turns current); the result holds them all: the extras (air quality,
      * pollen, citizen sensors, gauges, bathing waters, flood alerts of the states), the slow
      * sources that kept a new place blank for up to half a minute. Until they arrive, the core
      * carries the extras of [previous] (the same place's last data), so a refresh does not empty
@@ -63,9 +66,14 @@ class WeatherRepository(
     suspend fun load(
         place: Place, settings: Settings, german: Boolean,
         previous: WeatherData? = null,
-        /** False (the hourly background refresh): the core only – the extras keep [previous]'s, marked older. */
+        /** False (the hourly background refresh): the core only – the extras keep [previous]'s with their own times. */
         extras: Boolean = true,
-        onCore: (WeatherData) -> Unit = {},
+        /**
+         * The extras to load anew – the ones past their shelf life ([Freshness.dueParts]); the
+         * others keep [previous]'s values and times, nothing is asked for them.
+         */
+        refresh: Set<DataPart> = DataPart.entries.toSet(),
+        onProgress: (WeatherData) -> Unit = {},
     ): WeatherData = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { coroutineScope {
         val lat = place.latitude
         val lon = place.longitude
@@ -92,28 +100,30 @@ class WeatherRepository(
             if (inDwdArea) runCatching { brightSky.alerts(lat, lon, german) }.getOrDefault(emptyList()) else emptyList()
         }
         // The extras: each an answer (its value may be "nothing here") – or null when it failed or
-        // took too long; then the place's last value stays (a refresh does not empty a card)
-        val aqJob = async { if (!extras) null else fetch(EXTRA_TIMEOUT_MS, "air quality") { openMeteo.airQuality(lat, lon) } }
+        // took too long; then the place's last value stays (a refresh does not empty a card).
+        // Only the ones asked for: a part still current keeps its value and is not asked again.
+        val wanted = if (extras) refresh else emptySet()
+        val aqJob = async { if (DataPart.AIR_QUALITY !in wanted) null else fetch(EXTRA_TIMEOUT_MS, "air quality") { openMeteo.airQuality(lat, lon) } }
         val communityJob = async {
-            if (!extras) null
+            if (DataPart.COMMUNITY !in wanted) null
             else if (!settings.shows(dev.nimbus.weather.data.model.WeatherCard.COMMUNITY)) Fetched(null)
             else fetch(COMMUNITY_TIMEOUT_MS, "citizen sensors") { community.nearby(lat, lon) }
         }
-        val pollenJob = async { if (!extras) null else fetch(EXTRA_TIMEOUT_MS, "pollen") { pollen.forecast(lat, lon, inDwdArea) } }
+        val pollenJob = async { if (DataPart.POLLEN !in wanted) null else fetch(EXTRA_TIMEOUT_MS, "pollen") { pollen.forecast(lat, lon, inDwdArea) } }
         // Water levels and state flood alerts (Germany). Optional – never fail the forecast.
         val gaugeJob = async {
-            if (!extras) null
+            if (DataPart.GAUGES !in wanted) null
             else if (gauges == null || !inDwdArea || !settings.shows(dev.nimbus.weather.data.model.WeatherCard.GAUGES)) Fetched(emptyList())
             else fetch(GAUGE_TIMEOUT_MS, "gauges") { gauges.nearby(lat, lon) }
         }
         // Bathing waters (EEA, Europe-wide) – only when the card is shown; optional like the gauges
         val bathingJob = async {
-            if (!extras) null
+            if (DataPart.BATHING !in wanted) null
             else if (bathing == null || !settings.shows(dev.nimbus.weather.data.model.WeatherCard.BATHING)) Fetched(emptyList())
             else fetch(BATHING_TIMEOUT_MS, "bathing waters") { bathing.nearby(lat, lon, settings.bathingRadiusKm, settings.bathingFavorites) }
         }
         val floodJob = async {
-            if (!extras) null
+            if (DataPart.FLOOD !in wanted) null
             else if (gauges?.lhp == null || !inDwdArea) Fetched(emptyList())
             else fetch(10_000L, "flood alerts") { gauges.lhp.alerts(lat, lon) }
         }
@@ -154,11 +164,12 @@ class WeatherRepository(
         // The core: the page can show
         val extraKinds = setOf(SourceKind.CAMS, SourceKind.DWD_POLLEN, SourceKind.BATHING, SourceKind.GAUGES, SourceKind.LHP_ALERTS, SourceKind.COMMUNITY)
         val keep = previous?.takeIf { it.place.latitude == lat && it.place.longitude == lon }
+        val coreAt = clock()
         fun data(
             aq: dev.nimbus.weather.data.model.AirQuality?, community: dev.nimbus.weather.data.model.CommunityObservation?,
             pollen: dev.nimbus.weather.data.model.PollenForecast?, gauges: List<dev.nimbus.weather.data.model.GaugeInfo>,
             bathing: List<dev.nimbus.weather.data.model.BathingSite>, flood: List<dev.nimbus.weather.data.model.WeatherAlert>,
-            extraSources: List<Source>, stale: Set<DataPart>,
+            extraSources: List<Source>, stale: Set<DataPart>, partsAt: Map<DataPart, Long>,
         ) = WeatherData(
             place = place,
             timezone = forecast.timezone,
@@ -174,40 +185,74 @@ class WeatherRepository(
             gauges = gauges,
             bathing = bathing,
             sources = sources + extraSources,
-            fetchedAt = clock(),
+            fetchedAt = coreAt,
             stale = stale,
+            partsAt = partsAt,
         )
-        onCore(
+        // when each part was fetched: the forecast now, an extra when its answer came – one not
+        // asked for (still current) or without an answer keeps the time of its last value
+        val arrivedAt = mutableMapOf<DataPart, Long>()
+        fun partsAt(): Map<DataPart, Long> = buildMap {
+            put(DataPart.FORECAST, coreAt)
+            for (part in DataPart.entries - DataPart.FORECAST) (arrivedAt[part] ?: keep?.fetchedAt(part))?.let { put(part, it) }
+        }
+        val asked = wanted - DataPart.FORECAST
+        onProgress(
             data(
                 keep?.airQuality, keep?.community, keep?.pollen, keep?.gauges.orEmpty(), keep?.bathing.orEmpty(),
                 keep?.alerts.orEmpty().filter { it.source == LHP }, keep?.sources.orEmpty().filter { it.kind in extraKinds },
-                DataPart.entries.toSet() - DataPart.FORECAST,
+                asked, partsAt(),
             ),
         )
 
-        // The extras – a failed one, or one still out when the time is up, keeps the place's last value
-        val stale = mutableSetOf<DataPart>()
-        suspend fun <T> got(job: kotlinx.coroutines.Deferred<Fetched<T>?>, part: DataPart, last: T): T {
-            val left = extrasDeadlineMs - (System.nanoTime() - started) / 1_000_000
-            val r = if (left <= 0 && !job.isCompleted) null else kotlinx.coroutines.withTimeoutOrNull(left.coerceAtLeast(1)) { job.await() }
-            if (r == null) { job.cancel(); stale += part; return last }
-            return r.value
+        // The extras, each on its own: a card turns current as soon as its source has answered –
+        // waiting for all of them, the cards stayed yellow until the slowest (gauges: up to 40 s).
+        // A failed one, or one still out when the time is up, keeps the place's last value.
+        var aq = keep?.airQuality
+        var pollenForecast = keep?.pollen
+        var gaugeList = keep?.gauges.orEmpty()
+        var bathingList = keep?.bathing.orEmpty()
+        var floodAlerts = keep?.alerts.orEmpty().filter { a -> a.source == LHP }
+        var communityObs = keep?.community
+        val pending = asked.toMutableSet()
+        val failed = mutableSetOf<DataPart>()
+        val lock = kotlinx.coroutines.sync.Mutex()
+        fun snapshot(): WeatherData {
+            val extra = mutableListOf<Source>()
+            if (aq != null) extra += Source(SourceKind.CAMS)
+            if (pollenForecast?.source == dev.nimbus.weather.data.model.PollenSourceKind.DWD) extra += Source(SourceKind.DWD_POLLEN)
+            if (bathingList.isNotEmpty()) extra += Source(SourceKind.BATHING, bathingList.mapNotNull { it.provider }.distinct().joinToString(","))
+            if (gaugeList.isNotEmpty()) extra += Source(SourceKind.GAUGES, gaugeList.map { it.provider }.distinct().joinToString(",") { it.name })
+            if (floodAlerts.isNotEmpty()) extra += Source(SourceKind.LHP_ALERTS)
+            if (communityObs != null) extra += Source(SourceKind.COMMUNITY)
+            // a part without a last value has nothing old to show: not stale, simply not there
+            return data(aq, communityObs, pollenForecast, gaugeList, bathingList, floodAlerts, extra, (pending + failed).filterTo(mutableSetOf()) { keep != null }, partsAt())
         }
-        val extra = mutableListOf<Source>()
-        val aq = got(aqJob, DataPart.AIR_QUALITY, keep?.airQuality)
-        if (aq != null) extra += Source(SourceKind.CAMS)
-        val pollenForecast = got(pollenJob, DataPart.POLLEN, keep?.pollen)
-        if (pollenForecast?.source == dev.nimbus.weather.data.model.PollenSourceKind.DWD) extra += Source(SourceKind.DWD_POLLEN)
-        val gaugeList = got(gaugeJob, DataPart.GAUGES, keep?.gauges.orEmpty())
-        val bathingList = got(bathingJob, DataPart.BATHING, keep?.bathing.orEmpty())
-        if (bathingList.isNotEmpty()) extra += Source(SourceKind.BATHING, bathingList.mapNotNull { it.provider }.distinct().joinToString(","))
-        if (gaugeList.isNotEmpty()) extra += Source(SourceKind.GAUGES, gaugeList.map { it.provider }.distinct().joinToString(",") { it.name })
-        val floodAlerts = got(floodJob, DataPart.FLOOD, keep?.alerts.orEmpty().filter { a -> a.source == LHP })
-        if (floodAlerts.isNotEmpty()) extra += Source(SourceKind.LHP_ALERTS)
-        val communityObs = got(communityJob, DataPart.COMMUNITY, keep?.community)
-        if (communityObs != null) extra += Source(SourceKind.COMMUNITY)
-        // a part without a last value has nothing old to show: not stale, simply not there
-        data(aq, communityObs, pollenForecast, gaugeList, bathingList, floodAlerts, extra, stale.filterTo(mutableSetOf()) { keep != null })
+        coroutineScope {
+            // each extra asked for on its own: its card turns current when its answer is there
+            fun <T> arrive(job: kotlinx.coroutines.Deferred<Fetched<T>?>, part: DataPart, take: (T) -> Unit) {
+                if (part !in asked) return
+                launch {
+                    val left = extrasDeadlineMs - (System.nanoTime() - started) / 1_000_000
+                    val r = kotlinx.coroutines.withTimeoutOrNull(left.coerceAtLeast(1)) { job.await() }
+                    lock.withLock {
+                        if (r == null) { job.cancel(); failed += part } else { take(r.value); arrivedAt[part] = clock() }
+                        pending -= part
+                        if (dev.nimbus.weather.BuildConfig.DEBUG) {
+                            android.util.Log.d("NimbusLoad", "$part ${if (r == null) "old value" else "new"} after ${(System.nanoTime() - started) / 1_000_000} ms")
+                        }
+                        if (extras) onProgress(snapshot())
+                    }
+                }
+            }
+            arrive(aqJob, DataPart.AIR_QUALITY) { aq = it }
+            arrive(pollenJob, DataPart.POLLEN) { pollenForecast = it }
+            arrive(gaugeJob, DataPart.GAUGES) { gaugeList = it }
+            arrive(bathingJob, DataPart.BATHING) { bathingList = it }
+            arrive(floodJob, DataPart.FLOOD) { floodAlerts = it }
+            arrive(communityJob, DataPart.COMMUNITY) { communityObs = it }
+        }
+        snapshot()
     } }
 
     suspend fun modelComparison(place: Place): List<ModelSeries> =

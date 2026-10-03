@@ -130,4 +130,37 @@ class WeatherGridTest {
         }
         assertTrue((RadarPalette.colorFor(9, 0f) ushr 24) < 255)
     }
+
+    /**
+     * A day of the look-back that is over: its values do not change – the grid stored two days
+     * ago, holding that day from start to end, serves without a request (it was fetched anew
+     * every hour while the look-back was browsed).
+     */
+    @Test fun aPastDayKeepsItsGrid() = kotlinx.coroutines.runBlocking {
+        val h = 3_600_000L
+        val now = System.currentTimeMillis()
+        val day = (now / (24 * h) - 3) * 24 * h                         // the day before the day before yesterday
+        val fetched = day + 26 * h                                      // two hours after its end
+        val (lat0, lon0) = WeatherGrid.origin(-33.3, 151.2)
+        val rows = 2 * WeatherGrid.HALF_ROWS + 1
+        val cols = 2 * WeatherGrid.HALF_COLS + 1
+        val times = (0..(97 + 4)).map { (fetched - 97 * h + it * h) / 1000 }
+        val one = """{"hourly":{"time":${times},"temperature_2m":${times.map { 12.5 }},"wind_speed_10m":${times.map { 5 }},"wind_direction_10m":${times.map { 270 }}}}"""
+        val dir = java.nio.file.Files.createTempDirectory("grid").toFile()
+        val file = java.io.File(dir, "grid_${WeatherGrid.STEP}_${dev.nimbus.weather.data.remote.OpenMeteoSource.fmt(lat0)}_${dev.nimbus.weather.data.remote.OpenMeteoSource.fmt(lon0)}_p97.json")
+        file.writeText(List(rows * cols) { one }.joinToString(",", "[", "]"))
+        file.setLastModified(fetched)
+        var asked = 0
+        val offline = okhttp3.OkHttpClient.Builder().addInterceptor { asked++; throw java.io.IOException("offline") }.build()
+        dev.nimbus.weather.ui.radar.WeatherGridStore.cacheDir = dir
+        try {
+            val g = dev.nimbus.weather.ui.radar.WeatherGridStore.ensure(offline, -33.3, 151.2, from = day)
+            assertTrue("no grid for the past day", g != null)
+            assertEquals(0, asked)
+            assertEquals(12.5f, g!!.temperatureAt(-33.3, 151.2, day + 12 * h)!!, 0.01f)
+        } finally {
+            dev.nimbus.weather.ui.radar.WeatherGridStore.cacheDir = null
+            dir.deleteRecursively()
+        }
+    }
 }

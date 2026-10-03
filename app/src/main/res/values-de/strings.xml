@@ -66,7 +66,7 @@
     <string name="community_sensors_detail">Median von %1$d Bürger-Sensoren im Umkreis von %2$s km (Sensor.Community)</string>
     <string name="community_spread">Streuung ±%1$s</string>
     <string name="data_sources">Datenquellen</string>
-    <string name="measured_at_station">Gemessen an DWD-Station %1$s (%2$s km)</string>
+    <string name="measured_at_station">Gemessen an DWD-Station %1$s\u00A0(%2$s km)</string>
     <string name="alerts">Wetterwarnungen</string>
     <string name="alert_valid">%1$s – %2$s</string>
     <string name="alert_until">Bis %1$s</string>

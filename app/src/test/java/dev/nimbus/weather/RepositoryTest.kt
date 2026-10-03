@@ -136,8 +136,9 @@ class RepositoryTest {
         val t0 = System.nanoTime()
         var coreAfterMs = -1L
         var core: dev.nimbus.weather.data.model.WeatherData? = null
+        // the first step is the core; the extras' steps follow
         val data = repo(fixtureNow).load(berlin, Settings(model = ForecastModel.DWD_ICON), german = true) {
-            coreAfterMs = (System.nanoTime() - t0) / 1_000_000; core = it
+            if (core == null) { coreAfterMs = (System.nanoTime() - t0) / 1_000_000; core = it }
         }
         val totalMs = (System.nanoTime() - t0) / 1_000_000
         assertTrue("core after $coreAfterMs ms, all after $totalMs ms", coreAfterMs in 0..1_500 && totalMs >= 2_500)
@@ -156,6 +157,29 @@ class RepositoryTest {
         assertEquals(first.airQuality, core!!.airQuality)
     }
 
+    /**
+     * Each extra turns current as soon as its source has answered: the cards waited for the
+     * slowest (gauges up to 40 s) and then all turned green at once.
+     */
+    @Test
+    fun `each extra is current as soon as it has arrived`() = runTest {
+        val first = repo(fixtureNow).load(berlin, Settings(), german = true)
+        communityDelayMs = 2_000
+        val updates = java.util.Collections.synchronizedList(mutableListOf<Pair<Long, Set<dev.nimbus.weather.data.model.DataPart>>>())
+        val t0 = System.nanoTime()
+        val data = repo(fixtureNow).load(berlin, Settings(), german = true, previous = first) {
+            updates += (System.nanoTime() - t0) / 1_000_000 to it.stale
+        }
+        assertTrue(data.stale.isEmpty())
+        // pollen and air quality current while the citizen sensors were still out
+        val early = updates.firstOrNull { (_, stale) ->
+            dev.nimbus.weather.data.model.DataPart.POLLEN !in stale && dev.nimbus.weather.data.model.DataPart.AIR_QUALITY !in stale &&
+                dev.nimbus.weather.data.model.DataPart.COMMUNITY in stale
+        }
+        assertTrue("no step with pollen and air quality current before the sensors: $updates", early != null)
+        assertTrue("that step came only after ${early!!.first} ms", early.first < 1_500)
+    }
+
     @Test
     fun `an extra too late keeps its last value and is marked older`() = runTest {
         val first = repo(fixtureNow).load(berlin, Settings(), german = true)
@@ -163,7 +187,7 @@ class RepositoryTest {
         communityDelayMs = 3_000
         var core: dev.nimbus.weather.data.model.WeatherData? = null
         val t0 = System.nanoTime()
-        val data = repo(fixtureNow, extrasDeadlineMs = 1_000).load(berlin, Settings(), german = true, previous = first) { core = it }
+        val data = repo(fixtureNow, extrasDeadlineMs = 1_000).load(berlin, Settings(), german = true, previous = first) { if (core == null) core = it }
         // the time for the extras is up after 1 s – not waiting for the 3 s
         assertTrue((System.nanoTime() - t0) / 1_000_000 < 2_500)
         assertEquals(first.community, data.community)
@@ -177,15 +201,50 @@ class RepositoryTest {
     fun `the background refresh asks the forecast only and keeps the extras`() = runTest {
         val first = repo(fixtureNow).load(berlin, Settings(), german = true)
         synchronized(requested) { requested.clear() }
-        val bg = repo(fixtureNow).load(berlin, Settings(), german = true, previous = first, extras = false)
+        val later = fixtureNow + 3_600_000L
+        val bg = repo(later).load(berlin, Settings(), german = true, previous = first, extras = false)
         // forecast, station and warnings – nothing else
         assertTrue(requested.toString(), requested.none { it.startsWith("/airrohr") || it.startsWith("/v1/air-quality") || it.startsWith("/pollen") || it.startsWith("/wms") })
         assertTrue(requested.any { it.startsWith("/v1/forecast") })
-        // the extras are the last ones, marked older
+        // the extras are the last ones, with the time they were fetched: past their shelf life
+        // they count as older (citizen sensors after 10 minutes), the pollen still not (3 hours)
         assertEquals(first.community, bg.community)
         assertEquals(first.pollen, bg.pollen)
-        assertTrue(bg.stale.containsAll(listOf(dev.nimbus.weather.data.model.DataPart.POLLEN, dev.nimbus.weather.data.model.DataPart.COMMUNITY)))
-        assertTrue(dev.nimbus.weather.data.model.DataPart.FORECAST !in bg.stale)
+        assertEquals(first.fetchedAt(dev.nimbus.weather.data.model.DataPart.COMMUNITY), bg.fetchedAt(dev.nimbus.weather.data.model.DataPart.COMMUNITY))
+        val expired = dev.nimbus.weather.data.repo.Freshness.expiredParts(bg, later)
+        assertTrue(expired.toString(), dev.nimbus.weather.data.model.DataPart.COMMUNITY in expired && dev.nimbus.weather.data.model.DataPart.POLLEN !in expired)
+        assertTrue(dev.nimbus.weather.data.model.DataPart.FORECAST !in expired && dev.nimbus.weather.data.model.DataPart.FORECAST !in bg.stale)
+    }
+
+    /**
+     * Each part has its own shelf life: 20 minutes on, the forecast and the citizen sensors are
+     * loaded again – air quality (1 h) and pollen (3 h) are still current and not asked for.
+     */
+    @Test
+    fun `only the parts past their shelf life are asked again`() = runTest {
+        val first = repo(fixtureNow).load(berlin, Settings(), german = true)
+        synchronized(requested) { requested.clear() }
+        val later = fixtureNow + 20 * 60_000L
+        val due = dev.nimbus.weather.data.repo.Freshness.dueParts(first, later)
+        assertEquals(setOf(dev.nimbus.weather.data.model.DataPart.FORECAST, dev.nimbus.weather.data.model.DataPart.COMMUNITY,
+            dev.nimbus.weather.data.model.DataPart.GAUGES, dev.nimbus.weather.data.model.DataPart.FLOOD), due)
+        val data = repo(later).load(berlin, Settings(), german = true, previous = first, refresh = due)
+        assertTrue(requested.toString(), requested.none { it.startsWith("/v1/air-quality") || it.startsWith("/pollen") || it.startsWith("/wms") })
+        assertTrue(requested.toString(), requested.any { it.startsWith("/airrohr") } && requested.any { it.startsWith("/v1/forecast") })
+        // the ones not asked for: their values and times kept, current – nothing yellow
+        assertEquals(first.airQuality, data.airQuality)
+        assertEquals(fixtureNow, data.fetchedAt(dev.nimbus.weather.data.model.DataPart.AIR_QUALITY))
+        assertEquals(later, data.fetchedAt(dev.nimbus.weather.data.model.DataPart.COMMUNITY))
+        assertTrue(data.stale.toString(), data.stale.isEmpty())
+        assertTrue(dev.nimbus.weather.data.repo.Freshness.expiredParts(data, later).isEmpty())
+    }
+
+    /** Data stored by an earlier version: no time per part – the extras count as expired, the forecast has its time. */
+    @Test
+    fun `stored data without times per part`() = runTest {
+        val old = repo(fixtureNow).load(berlin, Settings(), german = true).copy(partsAt = emptyMap())
+        val due = dev.nimbus.weather.data.repo.Freshness.dueParts(old, fixtureNow + 60_000L)
+        assertEquals((dev.nimbus.weather.data.model.DataPart.entries - dev.nimbus.weather.data.model.DataPart.FORECAST).toSet(), due)
     }
 
     @Test

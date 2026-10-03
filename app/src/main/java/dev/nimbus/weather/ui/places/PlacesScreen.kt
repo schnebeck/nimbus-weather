@@ -17,6 +17,7 @@
 
 package dev.nimbus.weather.ui.places
 
+import dev.nimbus.weather.ui.main.LocationDot
 import dev.nimbus.weather.ui.components.statusBarsStable
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -331,9 +332,11 @@ fun PlaceCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         if (place.isCurrentLocation) stringResource(R.string.my_location) else place.name,
+                        Modifier.weight(1f, fill = false).alignByBaseline(),
                         fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
                     if (place.isCurrentLocation) Box(Modifier.padding(start = 6.dp)) { dev.nimbus.weather.ui.main.LocationPin(location, size = 18.dp) }
+                    if (location != null) LocationDot(location, 22.sp)
                 }
                 Text(
                     if (place.isCurrentLocation) place.name else (tf?.time(System.currentTimeMillis()) ?: place.subtitle),

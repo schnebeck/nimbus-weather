@@ -61,4 +61,29 @@ class PlaceListTest {
         assertEquals(1, count(R.string.location_current))
         assertEquals(0, count(R.string.location_not_current))
     }
+
+    /**
+     * The dot stands apart from the pin (on it, it covered half the pin's point) with its centre
+     * at the height of the capitals of the name.
+     */
+    @Test fun theDotBesideThePinAtTheCapitals() {
+        compose.setContent { PlaceCard(here, null, Settings(), location = LocationMark(current = true, searching = false, off = false)) {} }
+        compose.waitForIdle()
+        compose.assertDotBesidePin(org.robolectric.RuntimeEnvironment.getApplication().getString(R.string.my_location), 22f)
+    }
+}
+
+/** The status dot of "my location" beside its pin, centred at the capitals' height of [name] in [sp]. */
+internal fun androidx.compose.ui.test.junit4.ComposeContentTestRule.assertDotBesidePin(name: String, sp: Float) {
+    val pin = onNode(androidx.compose.ui.test.hasTestTag("location-pin"), useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+    val dot = onNode(androidx.compose.ui.test.hasTestTag("location-dot"), useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+    org.junit.Assert.assertTrue("dot $dot on the pin $pin", !pin.overlaps(dot))
+    val text = onNode(androidx.compose.ui.test.hasText(name), useUnmergedTree = true).fetchSemanticsNode()
+    val results = ArrayList<androidx.compose.ui.text.TextLayoutResult>()
+    text.config[androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+    val baseline = text.boundsInRoot.top + results.first().firstBaseline
+    val density = org.robolectric.RuntimeEnvironment.getApplication().resources.displayMetrics.scaledDensity
+    val capTop = baseline - sp * density * dev.nimbus.weather.ui.main.CAP_HEIGHT
+    org.junit.Assert.assertEquals("dot centre (${dot.center.y}) at the capitals' top ($capTop)", capTop, dot.center.y, 1.5f)
+    org.junit.Assert.assertTrue("dot before the name's end", dot.left > text.boundsInRoot.left)
 }

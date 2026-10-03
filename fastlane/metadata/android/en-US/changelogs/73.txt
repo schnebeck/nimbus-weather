@@ -1,0 +1,1 @@
+• The status dot of "My location" now stands behind the name at the height of the capitals (header and list of places), no longer half on the location pin

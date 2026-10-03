@@ -170,6 +170,22 @@ class PageLayoutTest {
         assertEquals(name, compose.onAllNodesWithText("Garbsen").fetchSemanticsNodes().first().boundsInRoot)
     }
 
+    /** "My location" in the header: the status dot behind the name at the capitals' height, apart from the pin. */
+    @Test fun theDotOfMyLocationInTheHeader() {
+        val settings = Settings(hiddenCards = setOf(WeatherCard.RADAR, WeatherCard.MODELS))
+        val here = Place("current-location", "Garbsen", latitude = 52.42, longitude = 9.60, isCurrentLocation = true)
+        compose.setContent {
+            CompositionLocalProvider(LocalContentWidth provides 411.dp) {
+                WeatherPage(
+                    here, PlaceState(data().copy(place = here)), settings, null, false, {}, {}, {},
+                    location = dev.nimbus.weather.ui.main.LocationMark(current = true, searching = false, off = false),
+                )
+            }
+        }
+        compose.waitForIdle()
+        compose.assertDotBesidePin("Garbsen", 32f)
+    }
+
     /** Double-tapping the sky above the cards switches full screen; scrolling stays. */
     @Test fun doubleTapOnTheSkySwitchesFullScreen() {
         var settings = Settings(hiddenCards = setOf(WeatherCard.RADAR, WeatherCard.MODELS))

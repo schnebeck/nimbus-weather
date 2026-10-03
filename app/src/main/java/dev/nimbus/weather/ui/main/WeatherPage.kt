@@ -428,10 +428,14 @@ private fun Header(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (data.place.isCurrentLocation) LocationPin(location)
+            val nameSize = if (compact) 26.sp else 32.sp
             Text(
-                data.place.name, fontSize = if (compact) 26.sp else 32.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                data.place.name, Modifier.weight(1f, fill = false).alignByBaseline(),
+                fontSize = nameSize, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 style = androidx.compose.ui.text.TextStyle(shadow = TextShadow),
             )
+            // the status dot after the name, as on the cards after their title – not on the pin
+            if (location != null) LocationDot(location, nameSize)
         }
         Box(contentAlignment = Alignment.TopCenter) {
             // Collapsed line: "12° | Cloudy"
@@ -616,9 +620,8 @@ internal fun pageStale(stale: Set<dev.nimbus.weather.data.model.DataPart>, locat
     if (location != null && !location.current) dev.nimbus.weather.data.model.DataPart.entries.toSet() else stale
 
 /**
- * The pin of "my location" with the status dot of the cards: green, the position is current;
- * yellow, it is older (the page shows the place last found). While it is looked for the pin
- * breathes; with the device's location off a line below the name offers to switch it on.
+ * The pin of "my location"; while its position is looked for it breathes. Its status
+ * ([LocationDot]) stands apart from it: on the pin the dot covered half the pin's point.
  */
 @Composable
 internal fun LocationPin(location: LocationMark?, size: androidx.compose.ui.unit.Dp = 22.dp) {
@@ -638,19 +641,29 @@ internal fun LocationPin(location: LocationMark?, size: androidx.compose.ui.unit
             else -> R.string.location_not_current
         },
     )
-    Box(Modifier.padding(end = 4.dp).semantics(mergeDescendants = true) { contentDescription = label }) {
-        Icon(
-            Icons.Rounded.LocationOn, null, tint = Color.White,
-            modifier = Modifier.size(size).graphicsLayer { alpha = pulse?.value ?: 1f },
-        )
-        if (location != null) {
-            dev.nimbus.weather.ui.components.StatusDot(
-                if (location.current) CardStatus.FRESH else CardStatus.STALE,
-                Modifier.align(Alignment.BottomEnd).clearAndSetSemantics { },
-            )
-        }
-    }
+    Icon(
+        Icons.Rounded.LocationOn, label, tint = Color.White,
+        modifier = Modifier.padding(end = 4.dp).testTag("location-pin").size(size).graphicsLayer { alpha = pulse?.value ?: 1f },
+    )
 }
+
+/**
+ * The status dot of "my location", the one of the cards: green, the position is current; yellow,
+ * it is older (the page shows the place last found). Behind the name (aligned by its baseline in
+ * a [androidx.compose.foundation.layout.RowScope]) with its centre at the height of the capitals
+ * of [fontSize] – like an index, not on the pin.
+ */
+@Composable
+internal fun androidx.compose.foundation.layout.RowScope.LocationDot(location: LocationMark, fontSize: androidx.compose.ui.unit.TextUnit) {
+    val capPx = with(LocalDensity.current) { fontSize.toPx() * CAP_HEIGHT }
+    dev.nimbus.weather.ui.components.StatusDot(
+        if (location.current) CardStatus.FRESH else CardStatus.STALE,
+        Modifier.padding(start = 6.dp).alignBy { it.measuredHeight / 2 + capPx.toInt() }.testTag("location-dot").clearAndSetSemantics { },
+    )
+}
+
+/** Height of the capitals in the app's font (Roboto: 1456 of 2048 units per em). */
+internal const val CAP_HEIGHT = 0.711f
 
 /** A phone held sideways: a low window ([COMPACT_HEIGHT_DP]) wider than high – the header gets a pane of its own. */
 internal fun sideways(widthDp: Int, heightDp: Int): Boolean = heightDp < COMPACT_HEIGHT_DP && widthDp > heightDp

@@ -146,7 +146,7 @@ fun HourlyCard(data: WeatherData, now: Long) {
             widest(chances, ChanceStyle.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold)) + 6.dp,
         )
     }
-    // The short forecast replaces the title, as in Apple Weather: one card instead of two.
+    // The short forecast replaces the title: one card instead of two.
     GlassCard(title = null) {
         Row(verticalAlignment = Alignment.Top) {
             Text(

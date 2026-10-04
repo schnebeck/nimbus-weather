@@ -188,7 +188,7 @@ fun MainScreen(
 private val SidebarWidth = 340.dp
 
 /**
- * Places as a sidebar (tablet in landscape), like Apple Weather on the iPad: every place as a
+ * Places as a sidebar (tablet in landscape): every place as a
  * small weather card, the shown one outlined; the button on top opens search, editing and settings.
  */
 @Composable

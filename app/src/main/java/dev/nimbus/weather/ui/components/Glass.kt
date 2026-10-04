@@ -61,9 +61,9 @@ private val CardRadius = 18.dp
 
 /**
  * Where the scrolling content of a page ends at the top (in root coordinates, px): the line
- * below the collapsed header. Cards that scroll up to it behave like Apple Weather's – the title
- * stays at the line, the content slides away under it and the card gets shorter, with its round
- * top edge intact; nothing is cut through mid-text. Null: no such line (settings, places …).
+ * below the collapsed header. Cards that scroll up to it keep their title at the line, the
+ * content slides away under it and the card gets shorter, with its round top edge intact;
+ * nothing is cut through mid-text. Null: no such line (settings, places …).
  */
 val LocalPinLine = androidx.compose.runtime.staticCompositionLocalOf<(() -> Float)?> { null }
 
@@ -157,7 +157,7 @@ fun GlassCard(
 /**
  * The glass of the cards for the sky behind them ([dev.nimbus.weather.ui.background.SkyScene.cardFill]):
  * as dark as the brightest thing back there (white clouds, the sun, fog) requires for the text to
- * keep its contrast – like the darker material of Apple Weather on bright backgrounds.
+ * keep its contrast.
  */
 val LocalCardFill = androidx.compose.runtime.compositionLocalOf { NimbusColors.CardFill }
 

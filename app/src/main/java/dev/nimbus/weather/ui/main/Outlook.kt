@@ -122,7 +122,7 @@ data class Outlook(
 
 // ---------------------------------------------------------------------------------------
 
-/** The short text forecast shown at the top of the hourly card (like Apple Weather). */
+/** The short text forecast shown at the top of the hourly card. */
 @androidx.compose.runtime.Composable
 fun outlookText(data: WeatherData, now: Long): String {
     val s = LocalSettings.current

@@ -1,2 +1,2 @@
-• More compact main page as in Apple Weather: the short forecast is at the top of the hourly card
+• More compact main page: the short forecast is at the top of the hourly card
 • One precipitation card instead of two: the 15-minute forecast appears in it only when precipitation is due within the next 3 hours

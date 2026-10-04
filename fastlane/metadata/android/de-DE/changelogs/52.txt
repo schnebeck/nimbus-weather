@@ -1,1 +1,1 @@
-• Scrollen wie bei Apple Wetter: die Überschrift einer Karte bleibt unter dem Kopf stehen, der Inhalt gleitet darunter weg, die Karte wird kürzer – nichts wird mehr mitten im Text abgeschnitten
+• Ruhigeres Scrollen: die Überschrift einer Karte bleibt unter dem Kopf stehen, der Inhalt gleitet darunter weg, die Karte wird kürzer – nichts wird mehr mitten im Text abgeschnitten

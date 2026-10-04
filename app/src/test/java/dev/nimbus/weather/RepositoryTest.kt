@@ -89,6 +89,10 @@ class RepositoryTest {
     }
 
     private val berlin = Place("b", "Berlin", latitude = 52.52, longitude = 13.40)
+
+    /** The parts of [d] past their shelf life at [now] (what their records would say). */
+    private fun expired(d: dev.nimbus.weather.data.model.WeatherData, now: Long) =
+        dev.nimbus.weather.data.model.DataPart.entries.filterTo(mutableSetOf()) { now - d.fetchedAt(it) >= dev.nimbus.weather.data.repo.Freshness.lifeMs(it) }
     private val paris = Place("p", "Paris", latitude = 48.85, longitude = 2.35)
 
     // Fixture timestamp of the Bright Sky observation is 2026-09-28T20:30Z.
@@ -211,7 +215,7 @@ class RepositoryTest {
         assertEquals(first.community, bg.community)
         assertEquals(first.pollen, bg.pollen)
         assertEquals(first.fetchedAt(dev.nimbus.weather.data.model.DataPart.COMMUNITY), bg.fetchedAt(dev.nimbus.weather.data.model.DataPart.COMMUNITY))
-        val expired = dev.nimbus.weather.data.repo.Freshness.expiredParts(bg, later)
+        val expired = expired(bg, later)
         assertTrue(expired.toString(), dev.nimbus.weather.data.model.DataPart.COMMUNITY in expired && dev.nimbus.weather.data.model.DataPart.POLLEN !in expired)
         assertTrue(dev.nimbus.weather.data.model.DataPart.FORECAST !in expired && dev.nimbus.weather.data.model.DataPart.FORECAST !in bg.stale)
     }
@@ -225,7 +229,7 @@ class RepositoryTest {
         val first = repo(fixtureNow).load(berlin, Settings(), german = true)
         synchronized(requested) { requested.clear() }
         val later = fixtureNow + 20 * 60_000L
-        val due = dev.nimbus.weather.data.repo.Freshness.dueParts(first, later)
+        val due = expired(first, later)
         assertEquals(setOf(dev.nimbus.weather.data.model.DataPart.FORECAST, dev.nimbus.weather.data.model.DataPart.COMMUNITY,
             dev.nimbus.weather.data.model.DataPart.GAUGES, dev.nimbus.weather.data.model.DataPart.FLOOD), due)
         val data = repo(later).load(berlin, Settings(), german = true, previous = first, refresh = due)
@@ -236,14 +240,14 @@ class RepositoryTest {
         assertEquals(fixtureNow, data.fetchedAt(dev.nimbus.weather.data.model.DataPart.AIR_QUALITY))
         assertEquals(later, data.fetchedAt(dev.nimbus.weather.data.model.DataPart.COMMUNITY))
         assertTrue(data.stale.toString(), data.stale.isEmpty())
-        assertTrue(dev.nimbus.weather.data.repo.Freshness.expiredParts(data, later).isEmpty())
+        assertTrue(expired(data, later).isEmpty())
     }
 
     /** Data stored by an earlier version: no time per part – the extras count as expired, the forecast has its time. */
     @Test
     fun `stored data without times per part`() = runTest {
         val old = repo(fixtureNow).load(berlin, Settings(), german = true).copy(partsAt = emptyMap())
-        val due = dev.nimbus.weather.data.repo.Freshness.dueParts(old, fixtureNow + 60_000L)
+        val due = expired(old, fixtureNow + 60_000L)
         assertEquals((dev.nimbus.weather.data.model.DataPart.entries - dev.nimbus.weather.data.model.DataPart.FORECAST).toSet(), due)
     }
 

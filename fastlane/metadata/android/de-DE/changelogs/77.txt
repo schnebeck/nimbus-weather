@@ -1,0 +1,5 @@
+• Jeder Datensatz meldet selbst, wenn er veraltet: seine Kachel wird sofort gelb, ohne Verzögerung
+• Standort veraltet oder neu laden: alle Kacheln von „Mein Standort“ werden gelb, bis ihre Daten neu da sind
+• Neu laden bei „Mein Standort“ verlangt eine Ortung von jetzt
+• Handy quer: drei gleich breite Spalten – Kopf und zwei Kachelspalten
+• Standort-Punkt auch im Rückblick

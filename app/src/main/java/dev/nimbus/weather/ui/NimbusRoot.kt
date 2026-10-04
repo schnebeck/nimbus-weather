@@ -59,7 +59,10 @@ fun NimbusRoot(viewModel: MainViewModel) {
     BackHandler(enabled = state.backStack.size > 1) { viewModel.back() }
 
     ExplainHost {
-    CompositionLocalProvider(dev.nimbus.weather.ui.main.LocalSettingsUpdater provides viewModel::updateSettings) {
+    CompositionLocalProvider(
+        dev.nimbus.weather.ui.main.LocalSettingsUpdater provides viewModel::updateSettings,
+        dev.nimbus.weather.ui.main.LocalShelf provides viewModel.shelf,
+    ) {
     // Full screen (setting), or – with button navigation – the app ending above the buttons on
     // this dark ground; with gesture navigation the sky goes on under the handle
     dev.nimbus.weather.ui.components.SystemBarsVisibility(state.settings.fullscreen)

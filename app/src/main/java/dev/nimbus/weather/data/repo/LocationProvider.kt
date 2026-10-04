@@ -81,8 +81,8 @@ open class LocationProvider(private val context: Context, private val http: okht
         val coarse = buildList {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && on(LocationManager.FUSED_PROVIDER)) add(LocationManager.FUSED_PROVIDER)
             if (LocationManager.NETWORK_PROVIDER in providers) add(LocationManager.NETWORK_PROVIDER)
-        }.map { p -> suspend { singleFix(lm, p) } }
-        val gps = if (LocationManager.GPS_PROVIDER in providers) suspend { singleFix(lm, LocationManager.GPS_PROVIDER) } else null
+        }.map { p -> suspend { fix(lm, p, fresh) } }
+        val gps = if (LocationManager.GPS_PROVIDER in providers) suspend { fix(lm, LocationManager.GPS_PROVIDER, fresh) } else null
         return Locate.best(lastKnown, now, coarse, gps, recentMs = if (fresh) 0L else Locate.RECENT_MS) { System.currentTimeMillis() }
     }
 
@@ -90,15 +90,25 @@ open class LocationProvider(private val context: Context, private val http: okht
     private fun ageMs(l: Location): Long =
         ((android.os.SystemClock.elapsedRealtimeNanos() - l.elapsedRealtimeNanos) / 1_000_000L).coerceAtLeast(0L)
 
+    /**
+     * A fix from [provider]; asked for anew ([fresh]) only one of now: the system answers with one it
+     * took up to half a minute ago – that made the reload's check a matter of milliseconds.
+     */
+    private suspend fun fix(lm: LocationManager, provider: String, fresh: Boolean): Location? =
+        singleFix(lm, provider, fresh)?.takeIf { !fresh || ageMs(it) < FRESH_FIX_MS }
+
     @SuppressLint("MissingPermission")
-    private suspend fun singleFix(lm: LocationManager, provider: String): Location? = suspendCancellableCoroutine { cont ->
+    private suspend fun singleFix(lm: LocationManager, provider: String, fresh: Boolean): Location? = suspendCancellableCoroutine { cont ->
         runCatching {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && provider != LocationManager.GPS_PROVIDER) {
-                // Balanced accuracy: Wi-Fi and cell towers, the GPS stays off.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                // Balanced accuracy: Wi-Fi and cell towers, the GPS stays off – the GPS itself at its best
                 val signal = CancellationSignal()
                 cont.invokeOnCancellation { signal.cancel() }
                 val request = android.location.LocationRequest.Builder(0L)
-                    .setQuality(android.location.LocationRequest.QUALITY_BALANCED_POWER_ACCURACY)
+                    .setQuality(
+                        if (provider == LocationManager.GPS_PROVIDER) android.location.LocationRequest.QUALITY_HIGH_ACCURACY
+                        else android.location.LocationRequest.QUALITY_BALANCED_POWER_ACCURACY,
+                    )
                     .build()
                 lm.getCurrentLocation(provider, request, signal, ContextCompat.getMainExecutor(context)) { if (cont.isActive) cont.resume(it) }
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -167,6 +177,9 @@ open class LocationProvider(private val context: Context, private val http: okht
     }
 
     companion object {
+        /** Asked for anew (reload): a fix at most this old counts. */
+        const val FRESH_FIX_MS = 10_000L
+
         /** Place from a Nominatim reverse answer: town, city or village, else the county. */
         fun parseNominatim(root: kotlinx.serialization.json.JsonElement, lat: Double, lon: Double): Place? {
             val o = root.obj() ?: return null

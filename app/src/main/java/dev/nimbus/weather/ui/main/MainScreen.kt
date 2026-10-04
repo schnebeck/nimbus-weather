@@ -113,7 +113,8 @@ fun MainScreen(
     val placeState = state.states[place.id]
     // "my location": whether its position is current – part of whether its page is
     val now = rememberNow()
-    val location = if (place.isCurrentLocation) locationMark(state, now) else null
+    val shelf = LocalShelf.current
+    val location = if (place.isCurrentLocation) locationMark(state, shelf) else null
 
     // Load the history as soon as the user starts swiping back.
     LaunchedEffect(pagerState, place.id) {
@@ -164,7 +165,7 @@ fun MainScreen(
                     isActive = pagerState.currentPage == page,
                     onRetry = { onRequestHistory(place.id) },
                     onOpenRadarDay = { day -> onOpenRadarDay(place.id, day) },
-                    locationCurrent = location?.current != false,
+                    location = location,
                 )
             }
         }
@@ -217,7 +218,7 @@ private fun PlacesSidebar(state: UiState, selectedId: String, onSelect: (String)
             ) {
                 dev.nimbus.weather.ui.places.PlaceCard(
                     p, state.states[p.id], state.settings,
-                    location = if (p.isCurrentLocation) locationMark(state, now) else null,
+                    location = if (p.isCurrentLocation) locationMark(state, LocalShelf.current) else null,
                 ) { onSelect(p.id) }
             }
         }

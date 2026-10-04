@@ -159,6 +159,16 @@ class MainViewModel(
     private val historyWaiting = HashSet<String>()
     /** The places shown beside the weather (tablet sideways): "my location" among them. */
     private var sidebar = false
+    /** The app in front: only then does an out-of-date record fetch anew (see [onDue]). */
+    private var resumed = false
+    /** Places whose records went out of date while a load ran for them: loaded again after it. */
+    private val dueAfter = HashSet<String>()
+
+    /**
+     * The model of what is current: every record of data tells its card when it goes out of date
+     * – and this controller, which fetches it anew ([onDue]).
+     */
+    val shelf = dev.nimbus.weather.data.repo.Shelf(viewModelScope, onDue = ::onDue)
     private var lastSettings: Settings? = null
 
     init {
@@ -189,6 +199,7 @@ class MainViewModel(
                         states = it.states + (cachedCurrent.place.id to PlaceState(cachedCurrent)),
                     )
                 }
+                shelf.take(cachedCurrent)
             }
             combine(store.settings, store.places) { s, p -> s to p }.collect { (settings, places) ->
                 dev.nimbus.weather.ui.radar.RadarPalette.scheme = settings.radarColors
@@ -206,6 +217,7 @@ class MainViewModel(
                         selectedPlaceId = st.selectedPlaceId ?: st.pages.firstOrNull()?.id ?: places.firstOrNull()?.id,
                     )
                 }
+                cached.forEach { (_, ps) -> ps.data?.let(shelf::take) }
                 val needsReload = prev != null && (prev.model != settings.model ||
                     prev.useStationObservations != settings.useStationObservations)
                 if (first) {
@@ -225,14 +237,29 @@ class MainViewModel(
 
     /** Refreshes the radar cache of the shown place while the app is open (Wi-Fi only). */
     private var radarTicker: kotlinx.coroutines.Job? = null
-    private var freshTicker: kotlinx.coroutines.Job? = null
 
     /**
-     * Loads what has expired ([dev.nimbus.weather.data.repo.Freshness]): every place's forecast and
-     * the look-back already loaded – brought back from the background the app does not show old
-     * data as if it were current.
+     * A record went out of date (its time was up, or a failed one is to be asked again): fetched
+     * anew – while the app is in front; brought back, [onResume] fetches what went out of date.
+     */
+    private fun onDue(record: dev.nimbus.weather.data.repo.DataRecord) {
+        if (!resumed || !_state.value.initialized) return
+        when (val key = record.key) {
+            dev.nimbus.weather.data.repo.RecordKey.Position -> locateIfDue()
+            is dev.nimbus.weather.data.repo.RecordKey.Part ->
+                _state.value.pages.firstOrNull { it.id == key.placeId }?.let { load(it, force = false) }
+            is dev.nimbus.weather.data.repo.RecordKey.LookBack ->
+                if (_state.value.states[key.placeId]?.history != null) loadHistory(key.placeId)
+        }
+    }
+
+    /**
+     * Brought back from the background: the records against the clock (no timer ran while the
+     * device slept) – then what is out of date is fetched: the position, every place's weather,
+     * the look-backs already loaded.
      */
     private fun refreshExpired() {
+        shelf.checkAll()
         locateIfDue()
         val st = _state.value
         // "my location" while its position is looked for: loaded for the place found (or, without one, for the old place) afterwards
@@ -241,13 +268,13 @@ class MainViewModel(
     }
 
     fun onPause() {
+        resumed = false
         radarTicker?.cancel()
         radarTicker = null
-        freshTicker?.cancel()
-        freshTicker = null
     }
 
     fun onResume() {
+        resumed = true
         radarTicker?.cancel()
         radarTicker = viewModelScope.launch {
             while (true) {
@@ -257,21 +284,18 @@ class MainViewModel(
                 maybePrefetchRadar(place, st.settings)
             }
         }
-        // while the app is in front: whatever expires meanwhile (from the first start on)
-        freshTicker?.cancel()
-        freshTicker = viewModelScope.launch {
-            while (true) {
-                kotlinx.coroutines.delay(dev.nimbus.weather.data.repo.Freshness.CHECK_EVERY_MS)
-                if (_state.value.initialized) refreshExpired()
-            }
-        }
         if (!_state.value.initialized) return
+        // what went out of date while the app was away: at once, before anything is fetched
+        shelf.checkAll()
         viewModelScope.launch {
             // Take over what the hourly background refresh stored in the meantime.
             _state.value.pages.forEach { p ->
                 val cached = store.cachedWeather(p.id) ?: return@forEach
                 val current = _state.value.states[p.id]?.data
-                if (current == null || cached.fetchedAt > current.fetchedAt) updatePlace(p.id) { it.copy(data = cached) }
+                if (current == null || cached.fetchedAt > current.fetchedAt) {
+                    updatePlace(p.id) { it.copy(data = cached) }
+                    shelf.take(cached)
+                }
             }
             // the position only while "my location" is shown (the first one always: it makes the place)
             if (_state.value.currentPlace == null || locationWanted(_state.value, sidebar)) refreshLocation()
@@ -279,11 +303,14 @@ class MainViewModel(
         }
     }
 
-    /** Looks for the position when it has expired – and "my location" is on screen. */
+    /**
+     * Looks for the position when its record is out of date – and "my location" is on screen;
+     * after searches without result not before their pause.
+     */
     private fun locateIfDue() {
         val st = _state.value
-        if (locationWanted(st, sidebar) &&
-            dev.nimbus.weather.data.repo.Freshness.locationDue(st.locationFixedAt, st.locationTriedAt, System.currentTimeMillis(), st.locationMisses)
+        if (locationWanted(st, sidebar) && shelf.position.state == dev.nimbus.weather.data.repo.RecordState.STALE &&
+            dev.nimbus.weather.data.repo.Freshness.locationRetryDue(st.locationTriedAt, System.currentTimeMillis(), st.locationMisses)
         ) refreshLocation()
     }
 
@@ -308,6 +335,8 @@ class MainViewModel(
             // for the place shown gives way, its cards turn yellow at once
             _state.value.currentPlace?.let { jobs[it.id]?.cancel() }
             _state.update { it.copy(locationForced = true) }
+            // the position out of date – and with it every record of "my location"
+            shelf.position.stale()
         }
         if (_state.value.locationStatus == LocationStatus.LOADING) return
         _state.update { it.copy(locationStatus = LocationStatus.LOADING) }
@@ -336,6 +365,9 @@ class MainViewModel(
                         locationForced = false,
                     )
                 }
+                // the position: confirmed (the same, still current) – or out of date, asked again after the pause
+                if (missed) shelf.position.stale(retryMs = dev.nimbus.weather.data.repo.Freshness.locationPauseMs(_state.value.locationMisses))
+                else found?.let { shelf.position.arrived(it.at) }
                 // the place stays: its data now (asked for anew: anew), the look-back waiting too
                 _state.value.currentPlace?.let { p ->
                     load(p, force = forced)
@@ -356,24 +388,29 @@ class MainViewModel(
                     distanceKm(old.latitude, old.longitude, loc.latitude, loc.longitude) < 5.0
                 ) found.copy(name = old.name, region = old.region, country = old.country, countryCode = old.countryCode) else found
             } else old
+            // an older position (the system's last one) is no success: the pause keeps growing
+            val current = !dev.nimbus.weather.data.repo.Freshness.locationMissed(found.at, System.currentTimeMillis())
             _state.update { st ->
                 st.copy(
                     currentPlace = place,
                     locationStatus = LocationStatus.AVAILABLE,
                     locationFixedAt = found.at,
-                    locationTriedAt = if (dev.nimbus.weather.data.repo.Freshness.locationCurrent(found.at, System.currentTimeMillis())) 0L else System.currentTimeMillis(),
-                    // an older position (the system's last one) is no success: the pause keeps growing
-                    locationMisses = if (dev.nimbus.weather.data.repo.Freshness.locationCurrent(found.at, System.currentTimeMillis())) 0 else st.locationMisses + 1,
+                    locationTriedAt = if (current) 0L else System.currentTimeMillis(),
+                    locationMisses = if (current) 0 else st.locationMisses + 1,
                     locationOff = off,
                     locationForced = false,
                     selectedPlaceId = if (st.selectedPlaceId == null || old == null && st.savedPlaces.isEmpty()) place.id else st.selectedPlaceId,
                 )
             }
+            // the position's record: current (its dot green) – an older one out of date, asked again after the pause
+            if (current) shelf.position.arrived(found.at)
+            else shelf.position.stale(retryMs = dev.nimbus.weather.data.repo.Freshness.locationPauseMs(_state.value.locationMisses))
             // Only the name changed (it was missing before): show it right away, no reload needed.
             if (!moved && old != null && place.name != old.name) {
                 val renamed = _state.value.states[place.id]?.data?.copy(place = place)
                 if (renamed != null) {
                     updatePlace(place.id) { it.copy(data = renamed) }
+                    shelf.take(renamed)
                     runCatching { store.cacheWeather(renamed) }
                 }
             }
@@ -396,23 +433,23 @@ class MainViewModel(
         val current = _state.value.states[place.id]
         val data = current?.data
         // What to load: everything (asked for anew, a new spot, nothing there yet) – else the parts
-        // past their shelf life (Freshness); none: the data are current. The forecast comes along
+        // whose records are out of date; none: the data are current. The forecast comes along
         // whenever anything is loaded (its life is the shortest).
         val all = dev.nimbus.weather.data.model.DataPart.entries.toSet()
-        val due = if (force || data == null || !sameSpot(data.place, place)) all
-            else dev.nimbus.weather.data.repo.Freshness.dueParts(data, System.currentTimeMillis())
+        val due = if (force || data == null || !sameSpot(data.place, place)) all else shelf.due(place.id)
         if (due.isEmpty()) return
-        // a load already running for the same spot is enough; one for the spot left behind ("my
-        // location" moved meanwhile) gives way
+        // a load already running for the same spot is enough (what went out of date meanwhile is
+        // loaded after it); one for the spot left behind ("my location" moved meanwhile) gives way
         if (jobs[place.id]?.isActive == true) {
-            if (sameSpot(jobSpots[place.id], place)) return
+            if (sameSpot(jobSpots[place.id], place)) { dueAfter += place.id; return }
             jobs[place.id]?.cancel()
         }
         jobSpots[place.id] = place
         jobs[place.id] = viewModelScope.launch {
-            // what is shown now is the last data: the cards being loaded yellow until their part is new
-            val loading = due + dev.nimbus.weather.data.model.DataPart.FORECAST
-            updatePlace(place.id) { it.copy(loading = true, error = false, data = it.data?.copy(stale = it.data.stale + loading)) }
+            // what is shown now is the last data: the records being loaded out of date (their cards
+            // yellow) until their part is new
+            (due + dev.nimbus.weather.data.model.DataPart.FORECAST).forEach { shelf.part(place.id, it).stale() }
+            updatePlace(place.id) { it.copy(loading = true, error = false) }
             val settings = store.settings.first()
             // The forecast shows as soon as it is there, each extra's card as soon as its source has
             // answered – but only while this load is still the one for the place: "my location" moved
@@ -421,13 +458,22 @@ class MainViewModel(
             if (showYellowMs > 0) kotlinx.coroutines.delay(showYellowMs)
             val result = runCatching {
                 repo.load(place, settings, german, previous = data, refresh = due, fresh = force) { step ->
-                    updatePlace(place.id) { if (me.isActive) it.copy(data = step) else it }
+                    // each step to its records on the main thread: each card as its part arrives
+                    viewModelScope.launch {
+                        if (me.isActive) {
+                            updatePlace(place.id) { it.copy(data = step) }
+                            shelf.take(step)
+                        }
+                    }
                 }
             }
             // given way to a load for another spot: neither its data nor an error over the new one's
             if (!kotlinx.coroutines.currentCoroutineContext().isActive) return@launch
             result.onSuccess { d ->
                 updatePlace(place.id) { it.copy(data = d, loading = false, error = false, models = null) }
+                shelf.take(d)
+                // no new answer (failed, too late, a stored one standing in): asked again after a while
+                d.stale.forEach { shelf.part(place.id, it).stale(retryMs = dev.nimbus.weather.data.repo.Freshness.STALE_RETRY_MS) }
                 runCatching { store.cacheWeather(d) }
                 maybePrefetchRadar(place, settings)
                 // Radar preview of this place, so switching to it shows a picture at once
@@ -443,7 +489,11 @@ class MainViewModel(
                 }
             }.onFailure {
                 updatePlace(place.id) { it.copy(loading = false, error = true) }
+                // the forecast failed: everything stays out of date, asked again after a while
+                shelf.part(place.id, dev.nimbus.weather.data.model.DataPart.FORECAST).stale(retryMs = dev.nimbus.weather.data.repo.Freshness.STALE_RETRY_MS)
             }
+            // went out of date while this load ran: now
+            if (dueAfter.remove(place.id)) load(place, force = false)
         }
     }
 
@@ -471,8 +521,10 @@ class MainViewModel(
         // "my location" while its position is looked for: after the answer
         if (waitsForLocation(place, _state.value)) { historyWaiting += placeId; return }
         val h = st.history
-        if (!force && (st.historyLoading || (h != null && !dev.nimbus.weather.data.repo.Freshness.historyDue(h.fetchedAt, System.currentTimeMillis())))) return
+        val record = shelf.lookBack(placeId)
+        if (!force && (st.historyLoading || (h != null && record.state == dev.nimbus.weather.data.repo.RecordState.CURRENT))) return
         viewModelScope.launch {
+            record.stale()
             updatePlace(placeId) { it.copy(historyLoading = true, historyError = false) }
             val model = _state.value.settings.model.openMeteoId
             // Station data is always loaded for the look back, independent of the "use station
@@ -483,6 +535,8 @@ class MainViewModel(
             updatePlace(placeId) {
                 it.copy(history = result.getOrNull() ?: it.history, historyLoading = false, historyError = result.isFailure)
             }
+            // the look-back's record: current – or, failed, out of date and asked again after a while
+            result.getOrNull()?.let { record.arrived(it.fetchedAt) } ?: record.stale(retryMs = dev.nimbus.weather.data.repo.Freshness.STALE_RETRY_MS)
         }
     }
 
@@ -524,6 +578,7 @@ class MainViewModel(
         viewModelScope.launch {
             store.updatePlaces { list -> list.filterNot { it.id == place.id } }
             store.deleteCache(place.id)
+            shelf.forget(place.id)
             _state.update { st ->
                 st.copy(
                     states = st.states - place.id,

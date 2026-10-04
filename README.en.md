@@ -78,13 +78,14 @@ No ads, no account, no Google services. The app speaks English and German.
   then the cards turn green one by one. A reload fetches everything anew (no cache, station lists and
   tides too); if a request fails, the old data stay, yellow, and are tried again next time.
 - Shelf life: each part of the data has its own – forecast, station, citizen sensors and flood
-  alerts 10 minutes, gauges 15, air quality and bathing waters 60, pollen 3 hours. Past it, its dot
-  turns yellow and only that part is loaded again; each card turns green as soon as its source has
-  answered. Stored data nobody needs is deleted: data of a moment after 4 days (as far as the
+  alerts 10 minutes, gauges 15, air quality and bathing waters 60, pollen 3 hours. Past it, the
+  part tells so itself – its dot turns yellow that very moment (no timer redrawing the page) – and
+  only that part is loaded again; each card turns green as soon as its source has answered. With
+  the position out of date, so are all data of "My location". Stored data nobody needs is deleted: data of a moment after 4 days (as far as the
   look-back reaches), lists (gauges, bathing waters, tides) after 30 days without use, the weather
   of removed places at once.
 - Tablets: two columns of cards from 600 dp, a places sidebar in landscape on large tablets; phones
-  held sideways show the header as a pane of its own (about a third) beside the cards, clear of the camera cut-out.
+  held sideways show three equal columns: the header on the left, the cards in the other two, clear of the camera cut-out.
 
 ## Data sources
 

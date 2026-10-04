@@ -235,7 +235,7 @@ fun PlacesScreen(
                 PlaceCard(
                     place, state.states[place.id], state.settings,
                     onLongClick = if (place.isCurrentLocation) null else ({ editing = true }),
-                    location = if (place.isCurrentLocation) dev.nimbus.weather.ui.main.locationMark(state, now) else null,
+                    location = if (place.isCurrentLocation) dev.nimbus.weather.ui.main.locationMark(state, dev.nimbus.weather.ui.main.LocalShelf.current) else null,
                 ) { onOpen(place.id) }
             }
             if (saved.isNotEmpty()) item(key = "edit-hint") {

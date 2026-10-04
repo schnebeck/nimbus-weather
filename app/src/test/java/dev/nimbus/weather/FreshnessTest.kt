@@ -32,18 +32,6 @@ class FreshnessTest {
     private val min = 60_000L
     private val now = 1_790_900_000_000L
 
-    @Test fun theForecastExpiresAfterTenMinutes() {
-        assertFalse(Freshness.forecastDue(now - 5 * min, now, emptySet()))
-        assertTrue(Freshness.forecastDue(now - 10 * min, now, emptySet()))
-    }
-
-    @Test fun olderPartsAreTriedAgainSoon() {
-        // the background refresh's extras, a source that failed: again after 2 minutes, not 10
-        val stale = setOf(DataPart.POLLEN)
-        assertFalse(Freshness.forecastDue(now - 1 * min, now, stale))
-        assertTrue(Freshness.forecastDue(now - 2 * min, now, stale))
-    }
-
     /** Every part its own shelf life (the table agreed on): forecast, sensors, flood alerts 10 min, gauges 15, air quality and bathing 60, pollen 3 h. */
     @Test fun everyPartHasItsShelfLife() {
         val life = DataPart.entries.associateWith { Freshness.lifeMs(it) / min }
@@ -51,11 +39,10 @@ class FreshnessTest {
             DataPart.GAUGES to 15L, DataPart.BATHING to 60L, DataPart.FLOOD to 10L), life)
     }
 
-    /** The case of the screenshot: the look-back of 01:00 still shown at 09:28. */
-    @Test fun theLookBackExpires() {
-        assertTrue(Freshness.historyDue(now - (8 * 60 + 28) * min, now))
-        assertFalse(Freshness.historyDue(now - 10 * min, now))
-        assertTrue(Freshness.historyDue(now - 15 * min, now))
+    /** The look-back keeps 15 minutes (its record goes out of date then, see RecordsTest), the position 5. */
+    @Test fun theLookBackAndThePositionKeep() {
+        assertEquals(15 * min, Freshness.HISTORY_MS)
+        assertEquals(5 * min, Freshness.LOCATION_MS)
     }
 
     /**

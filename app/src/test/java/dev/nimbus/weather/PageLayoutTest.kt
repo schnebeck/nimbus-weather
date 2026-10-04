@@ -32,6 +32,7 @@ import androidx.compose.ui.test.doubleClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.test.swipeDown
 import org.junit.Assert.assertEquals
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -170,7 +171,7 @@ class PageLayoutTest {
         // the header pane about a third of the width – the cards get the room
         val pane = compose.onNode(androidx.compose.ui.test.hasTestTag("header-pane"), useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
         val paneDp = (pane.width - cut) / px
-        assertTrue("header pane $paneDp dp of 914", paneDp in 300f..310f)
+        assertTrue("header pane $paneDp dp of 914 – a third", paneDp in 300f..310f)
         // the station line: the name kept together (it wraps as a whole), the pill as wide as its longest line
         val stationText = compose.onAllNodesWithText("Herrenhause", substring = true, useUnmergedTree = true).fetchSemanticsNodes().first()
         val results = ArrayList<androidx.compose.ui.text.TextLayoutResult>()
@@ -187,6 +188,21 @@ class PageLayoutTest {
         val widest = (0 until layout.lineCount).maxOf { layout.getLineRight(it) - layout.getLineLeft(it) }
         val line = compose.onNode(androidx.compose.ui.test.hasTestTag("station-line"), useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
         assertTrue("station line ${line.width} px wide around lines of $widest px", line.width <= widest + 2f)
+        // three fixed columns: no text cut off with "…" anywhere down the cards (the small tiles'
+        // titles were, two to a narrow column: "GEF…", "LUF…")
+        repeat(8) {
+            val cut = compose.onAllNodes(androidx.compose.ui.test.hasAnyChild(androidx.compose.ui.test.isRoot()).not(), useUnmergedTree = true)
+                .fetchSemanticsNodes().mapNotNull { n ->
+                    val results = ArrayList<androidx.compose.ui.text.TextLayoutResult>()
+                    n.config.getOrNull(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
+                    results.firstOrNull()?.takeIf { it.lineCount > 0 && it.isLineEllipsized(it.lineCount - 1) }?.layoutInput?.text?.text
+                }
+            assertTrue("cut off: $cut", cut.isEmpty())
+            compose.onAllNodes(androidx.compose.ui.test.hasScrollAction()).onFirst().performTouchInput { swipeUp() }
+            compose.waitForIdle()
+        }
+        compose.onAllNodes(androidx.compose.ui.test.hasScrollAction()).onFirst().performTouchInput { repeat(8) { swipeDown() } }
+        compose.waitForIdle()
         // the header stays where it is when the cards scroll
         compose.onAllNodes(androidx.compose.ui.test.hasScrollAction()).onFirst().performTouchInput { swipeUp() }
         compose.waitForIdle()

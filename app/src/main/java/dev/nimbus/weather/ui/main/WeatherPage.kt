@@ -260,8 +260,8 @@ private fun WeatherContent(
     // Phone: one column. Tablet (from 600 dp): the cards flow in two columns, three from 1150 dp.
     val listWidth = LocalContentWidth.current - paneWidth
     val columns = when {
-        // beside the header pane: two only where each gets at least a narrow phone's width
-        sideways -> if (listWidth >= SidewaysTwoColumns) 2 else 1
+        // beside the header pane: two columns of cards – three fixed columns in all
+        sideways -> 2
         listWidth >= 1150.dp -> 3
         listWidth >= 600.dp -> 2
         else -> 1
@@ -291,8 +291,6 @@ private fun WeatherContent(
     val tfToday = LocalTimeFormat.current
     val todayMeasured = remember(state.history, now / 600_000L) { TodayMeasured.of(state.history, tfToday.zoned(now).toLocalDate()) }
     val stale = state.error && now - data.fetchedAt > 30 * 60_000L
-    // yellow: a part being loaded or left from a failed source – or past its shelf life
-    val pageStale = pageStale(data.stale + dev.nimbus.weather.data.repo.Freshness.expiredParts(data, now), location)
 
     // A dry day hides the precipitation card (setting) – worked out once per minute, not per frame
     val dryToday = remember(data, now / 60_000L, raining, todayMeasured) {
@@ -314,7 +312,8 @@ private fun WeatherContent(
                 WeatherCard.PRECIPITATION -> if (cards.showDryPrecipitation || !dryToday)
                     add(PageItem("precip") { PrecipitationCard(data, now, raining, todayMeasured) })
                 WeatherCard.RADAR -> add(PageItem("radar") { RadarPreviewCard(data, onOpenRadar) })
-                WeatherCard.TILES -> if (cards.orderedTiles().any(cards::shows)) add(PageItem("tiles") { DetailTiles(data, now) })
+                // sideways (two narrow columns) over both: the small tiles side by side with room for their titles
+                WeatherCard.TILES -> if (cards.orderedTiles().any(cards::shows)) add(PageItem("tiles", fullSpan = sideways) { DetailTiles(data, now) })
                 WeatherCard.SUN -> add(PageItem("sun") { SunCard(data, now) })
                 WeatherCard.PRESSURE_CHART -> add(PageItem("pressure-chart") { PressureCard(data, now, todayMeasured) })
                 WeatherCard.MOON -> add(PageItem("moon") { MoonCard(data, now) })
@@ -389,7 +388,7 @@ private fun WeatherContent(
                 contentPadding = PaddingValues(start = start, end = end, bottom = navBottom + 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                items(items.size, key = { items[it].key }) { Card(items[it], arrivals, pageStale) }
+                items(items.size, key = { items[it].key }) { Card(items[it], arrivals, data.place.id) }
             }
         } else {
             androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid(
@@ -402,7 +401,7 @@ private fun WeatherContent(
                 items(
                     items.size, key = { items[it].key },
                     span = { if (items[it].fullSpan) androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan.FullLine else androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan.SingleLane },
-                ) { Card(items[it], arrivals, pageStale) }
+                ) { Card(items[it], arrivals, data.place.id) }
             }
         }
         }
@@ -552,7 +551,7 @@ private fun LoadingOrError(place: Place, state: PlaceState?, onRetry: () -> Unit
 }
 
 /** One card of the weather page; [fullSpan] cards span all columns on a tablet. */
-private class PageItem(val key: String, val fullSpan: Boolean = false, val content: @Composable () -> Unit)
+internal class PageItem(val key: String, val fullSpan: Boolean = false, val content: @Composable () -> Unit)
 
 /** Double-tap: full screen on, double-tap again: off – on the sky above the cards (taps only: scrolling and swiping stay). */
 @Composable
@@ -618,19 +617,12 @@ internal fun cardParts(key: String): Set<dev.nimbus.weather.data.model.DataPart>
 data class LocationMark(val current: Boolean, val searching: Boolean, val off: Boolean)
 
 /** Where the position of "my location" stands at [now] (see [LocationMark]). */
-internal fun locationMark(state: dev.nimbus.weather.ui.UiState, now: Long): LocationMark = LocationMark(
-    // asked for anew (reload, the pin): not current until the answer
-    current = dev.nimbus.weather.data.repo.Freshness.locationCurrent(state.locationFixedAt, now) && !state.locationForced,
+internal fun locationMark(state: dev.nimbus.weather.ui.UiState, shelf: dev.nimbus.weather.data.repo.Shelf): LocationMark = LocationMark(
+    // the position's record: out of date when its time is up or it is asked for anew
+    current = shelf.position.state == dev.nimbus.weather.data.repo.RecordState.CURRENT,
     searching = state.locationStatus == dev.nimbus.weather.ui.LocationStatus.LOADING,
     off = state.locationOff,
 )
-
-/**
- * The parts of the page showing older values: with the position of "my location" not current,
- * all of them – fresh data of the place one has left are not the weather where one is.
- */
-internal fun pageStale(stale: Set<dev.nimbus.weather.data.model.DataPart>, location: LocationMark?): Set<dev.nimbus.weather.data.model.DataPart> =
-    if (location != null && !location.current) dev.nimbus.weather.data.model.DataPart.entries.toSet() else stale
 
 /**
  * The pin of "my location"; while its position is looked for it breathes. Its status
@@ -684,23 +676,35 @@ internal fun keptTogether(name: String): String = name.replace(' ', '\u00A0').re
 /** A phone held sideways: a low window ([COMPACT_HEIGHT_DP]) wider than high – the header gets a pane of its own. */
 internal fun sideways(widthDp: Int, heightDp: Int): Boolean = heightDp < COMPACT_HEIGHT_DP && widthDp > heightDp
 
-/** The header's pane sideways: about a third – the cards get the room; enough for "12° max/min" and a long place name. */
-internal fun headerPaneWidth(contentWidth: androidx.compose.ui.unit.Dp): androidx.compose.ui.unit.Dp =
-    (contentWidth / 3).coerceIn(280.dp, 360.dp)
+/**
+ * The header's pane sideways: the first of three fixed columns ([HEADER_SHARE] of the width), the
+ * cards in the other two.
+ */
+internal fun headerPaneWidth(contentWidth: androidx.compose.ui.unit.Dp): androidx.compose.ui.unit.Dp = contentWidth * HEADER_SHARE
 
-/** Beside the header pane two columns of cards from here: each at least 320 dp (the narrowest phone). */
-internal val SidewaysTwoColumns = 320.dp * 2 + 14.dp + 24.dp * 2
+/** The header's share of the width sideways. */
+internal const val HEADER_SHARE = 1f / 3
 
 /** Status of the card [key] when [stale] parts still show older values. */
 internal fun cardStatus(key: String, stale: Set<dev.nimbus.weather.data.model.DataPart>): CardStatus? =
     cardParts(key)?.let { parts -> if (parts.any { it in stale }) CardStatus.STALE else CardStatus.FRESH }
 
-/** One card of the page: popping in when it arrived, with its status dot. */
+/**
+ * One card of the page: popping in when it arrived, with its status dot – read from the records of
+ * its parts: when one of them goes out of date or arrives, this card alone is drawn anew.
+ */
 @Composable
-private fun Card(item: PageItem, arrivals: Arrivals, stale: Set<dev.nimbus.weather.data.model.DataPart>) {
+internal fun Card(item: PageItem, arrivals: Arrivals, placeId: String) {
+    val shelf = LocalShelf.current
+    val stale = cardParts(item.key)?.filterTo(mutableSetOf()) { shelf.stateOf(placeId, it) != dev.nimbus.weather.data.repo.RecordState.CURRENT }.orEmpty()
     PopIn(arrivals.fresh(item.key)) {
         CompositionLocalProvider(LocalCardStatus provides cardStatus(item.key, stale)) { item.content() }
     }
+}
+
+/** The model of what is current ([dev.nimbus.weather.data.repo.Shelf]) – provided by the app's root. */
+val LocalShelf = androidx.compose.runtime.staticCompositionLocalOf {
+    dev.nimbus.weather.data.repo.Shelf(kotlinx.coroutines.MainScope())
 }
 
 /** Overshoots a little before it settles – the "pop". */

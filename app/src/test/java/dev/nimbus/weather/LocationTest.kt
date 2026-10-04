@@ -26,10 +26,6 @@ import dev.nimbus.weather.ui.locationWanted
 import dev.nimbus.weather.ui.sameSpot
 import dev.nimbus.weather.data.repo.Freshness
 import dev.nimbus.weather.data.repo.Locate
-import dev.nimbus.weather.ui.components.CardStatus
-import dev.nimbus.weather.ui.main.LocationMark
-import dev.nimbus.weather.ui.main.cardStatus
-import dev.nimbus.weather.ui.main.pageStale
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.currentTime
@@ -88,39 +84,26 @@ class LocationTest {
         val found = Locate.best(hannover, now, listOf(edge), gps = { awaitCancellation() }) { now + currentTime }
         assertEquals(hannover, found)
         assertEquals(Locate.TIMEOUT_MS, currentTime)
-        assertFalse(Freshness.locationCurrent(found!!.at, now + currentTime))
+        assertTrue(Freshness.locationMissed(found!!.at, now + currentTime))
     }
 
+    /** A position older than 5 minutes is no current one; after a search without result the next waits. */
     @Test fun thePositionExpires() {
-        assertTrue(Freshness.locationCurrent(now - 4 * min, now))
-        assertFalse(Freshness.locationCurrent(now - 5 * min, now))
-        // looked for again when expired – after a search without result not every minute
-        assertTrue(Freshness.locationDue(now - 6 * min, triedAt = 0L, now))
-        assertFalse(Freshness.locationDue(now - 6 * min, triedAt = now - 1 * min, now))
-        assertTrue(Freshness.locationDue(now - 6 * min, triedAt = now - 2 * min, now))
+        assertFalse(Freshness.locationMissed(now - 4 * min, now))
+        assertTrue(Freshness.locationMissed(now - 5 * min, now))
+        assertTrue(Freshness.locationRetryDue(triedAt = 0L, now, misses = 0))
+        assertFalse(Freshness.locationRetryDue(triedAt = now - 1 * min, now, misses = 1))
+        assertTrue(Freshness.locationRetryDue(triedAt = now - 2 * min, now, misses = 1))
     }
 
     /** Indoors without network location every search ends empty: the pause grows – 2, 5, 10 minutes – instead of the GPS running half the time. */
     @Test fun searchesWithoutResultWaitLonger() {
-        val old = now - 30 * min
-        assertTrue(Freshness.locationDue(old, triedAt = now - 2 * min, now, misses = 1))
-        assertFalse(Freshness.locationDue(old, triedAt = now - 4 * min, now, misses = 2))
-        assertTrue(Freshness.locationDue(old, triedAt = now - 5 * min, now, misses = 2))
-        assertFalse(Freshness.locationDue(old, triedAt = now - 9 * min, now, misses = 3))
-        assertFalse(Freshness.locationDue(old, triedAt = now - 9 * min, now, misses = 7))
-        assertTrue(Freshness.locationDue(old, triedAt = now - 10 * min, now, misses = 7))
-    }
-
-    /** Fresh data of Hannover in Bad Harzburg are not current: the cards of "my location" turn yellow. */
-    @Test fun thePlaceIsPartOfWhatIsCurrent() {
-        val notHere = LocationMark(current = false, searching = true, off = false)
-        assertEquals(CardStatus.STALE, cardStatus("hourly", pageStale(emptySet(), notHere)))
-        assertEquals(CardStatus.STALE, cardStatus("pollen", pageStale(emptySet(), notHere)))
-        val here = notHere.copy(current = true, searching = false)
-        assertEquals(CardStatus.FRESH, cardStatus("hourly", pageStale(emptySet(), here)))
-        assertEquals(CardStatus.STALE, cardStatus("pollen", pageStale(setOf(DataPart.POLLEN), here)))
-        // a saved place has no position to confirm
-        assertEquals(CardStatus.FRESH, cardStatus("hourly", pageStale(emptySet(), null)))
+        assertTrue(Freshness.locationRetryDue(triedAt = now - 2 * min, now, misses = 1))
+        assertFalse(Freshness.locationRetryDue(triedAt = now - 4 * min, now, misses = 2))
+        assertTrue(Freshness.locationRetryDue(triedAt = now - 5 * min, now, misses = 2))
+        assertFalse(Freshness.locationRetryDue(triedAt = now - 9 * min, now, misses = 3))
+        assertFalse(Freshness.locationRetryDue(triedAt = now - 9 * min, now, misses = 7))
+        assertTrue(Freshness.locationRetryDue(triedAt = now - 10 * min, now, misses = 7))
     }
 
     /**

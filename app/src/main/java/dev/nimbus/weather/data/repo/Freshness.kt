@@ -18,22 +18,19 @@
 package dev.nimbus.weather.data.repo
 
 import dev.nimbus.weather.data.model.DataPart
-import dev.nimbus.weather.data.model.WeatherData
 
 /**
- * Every kind of data expires: the app checks when it comes back to the front and then every
- * minute while it is seen, and loads what has expired – the page never shows last night's data
- * without saying so (it showed the look-back of 01:00 at 09:28).
+ * The rules of what is current: how long each kind of data keeps, and how long to wait before
+ * asking again after a request without result. The records ([DataRecord]) keep to them – they
+ * tell their cards when they go out of date; nothing in the app looks at the clock for that.
  */
 object Freshness {
     /** The forecast with station readings: the station reports every 10 minutes. */
     const val FORECAST_MS = 10 * 60_000L
-    /** Parts still showing older values (a source that failed, the background refresh's extras): tried again after this long. */
+    /** A part without a new answer (a source that failed, one standing in): asked again after this long. */
     const val STALE_RETRY_MS = 2 * 60_000L
     /** The look-back: today so far grows with every station report. */
     const val HISTORY_MS = 15 * 60_000L
-    /** How often the app looks while it is in front. */
-    const val CHECK_EVERY_MS = 60_000L
     /**
      * The position of "my location": on the road 5 minutes are a few kilometres. Older, the page
      * of the current location no longer counts as current (its dots turn yellow).
@@ -54,45 +51,22 @@ object Freshness {
         DataPart.POLLEN -> 3 * 60 * 60_000L
     }
 
-    /** The parts of [data] past their shelf life at [now]. */
-    fun expiredParts(data: WeatherData, now: Long): Set<DataPart> =
-        DataPart.entries.filterTo(mutableSetOf()) { now - data.fetchedAt(it) >= lifeMs(it) }
-
     /**
-     * The parts of [data] to load again at [now]: past their shelf life, or older values left
-     * from a source that failed – tried again after [STALE_RETRY_MS].
+     * The pause after [misses] searches for the position in a row without result: 2, 5, then 10
+     * minutes – indoors without network location the GPS ran half the time.
      */
-    fun dueParts(data: WeatherData, now: Long): Set<DataPart> =
-        expiredParts(data, now) + (if (now - data.fetchedAt >= STALE_RETRY_MS) data.stale else emptySet())
-
-    /** Whether the forecast fetched at [fetchedAt] (with [stale] parts older) should be loaded again at [now]. */
-    fun forecastDue(fetchedAt: Long, now: Long, stale: Set<DataPart>): Boolean =
-        now - fetchedAt >= FORECAST_MS || (stale.isNotEmpty() && now - fetchedAt >= STALE_RETRY_MS)
-
-    /**
-     * Whether the position found at [fixedAt] should be looked for again at [now] – after
-     * [misses] searches in a row without result (the last at [triedAt]) only after a growing
-     * pause ([locationPauseMs]): indoors without network location the GPS ran half the time.
-     */
-    fun locationDue(fixedAt: Long, triedAt: Long, now: Long, misses: Int = 1): Boolean =
-        now - fixedAt >= LOCATION_MS && now - triedAt >= locationPauseMs(misses)
-
-    /** The pause after [misses] searches in a row without result: 2, 5, then 10 minutes. */
     fun locationPauseMs(misses: Int): Long = when {
         misses <= 1 -> STALE_RETRY_MS
         misses == 2 -> 5 * 60_000L
         else -> 10 * 60_000L
     }
 
+    /** Whether, after [misses] searches without result (the last at [triedAt]), a search may start at [now]. */
+    fun locationRetryDue(triedAt: Long, now: Long, misses: Int): Boolean = misses == 0 || now - triedAt >= locationPauseMs(misses)
+
     /**
      * Whether a search that brought the position found at [foundAt] (null: none) came back
-     * empty-handed at [now]: nothing, or only an older position – not the same current one again.
+     * empty-handed at [now]: nothing, or only an older position – not a current one.
      */
-    fun locationMissed(foundAt: Long?, now: Long): Boolean = foundAt == null || !locationCurrent(foundAt, now)
-
-    /** Whether the position found at [fixedAt] is still the current one at [now]. */
-    fun locationCurrent(fixedAt: Long, now: Long): Boolean = now - fixedAt < LOCATION_MS
-
-    /** Whether the look-back fetched at [fetchedAt] should be loaded again at [now]. */
-    fun historyDue(fetchedAt: Long, now: Long): Boolean = now - fetchedAt >= HISTORY_MS
+    fun locationMissed(foundAt: Long?, now: Long): Boolean = foundAt == null || now - foundAt >= LOCATION_MS
 }

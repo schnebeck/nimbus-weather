@@ -1,0 +1,5 @@
+• Each record of data tells when it goes out of date: its card turns yellow at once, without delay
+• Position out of date or reload: all cards of "My location" turn yellow until their data are new
+• Reload of "My location" asks for a fix of now
+• Phone sideways: three equal columns – header and two columns of cards
+• Location dot in the look-back too

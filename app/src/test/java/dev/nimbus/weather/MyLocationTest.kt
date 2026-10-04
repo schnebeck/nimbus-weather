@@ -157,7 +157,7 @@ class MyLocationTest {
         vm.refresh(hannover.id)
         // looking for the position: not current, and no request for the place's data
         until("searching") { vm.state.value.locationStatus == LocationStatus.LOADING }
-        assertFalse("shown as current while asked for anew", locationMark(vm.state.value, System.currentTimeMillis()).current)
+        assertFalse("shown as current while asked for anew", locationMark(vm.state.value, vm.shelf).current)
         repeat(20) { shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(20)); Thread.sleep(20) }
         assertTrue("loaded while the position was looked for: $asked", asked.isEmpty())
 
@@ -165,7 +165,7 @@ class MyLocationTest {
         phone.answer.complete(at(51.88, 10.56, System.currentTimeMillis()))
         until("Bad Harzburg loaded") { vm.state.value.states[hannover.id]?.data?.place?.name == "Bad Harzburg" && vm.state.value.states[hannover.id]?.loading == false }
         assertTrue("requests: $asked", asked.isNotEmpty() && asked.all { it == 51.88 })
-        assertTrue(locationMark(vm.state.value, System.currentTimeMillis()).current)
+        assertTrue(locationMark(vm.state.value, vm.shelf).current)
     }
 
     /** The same place confirmed: its data load anew all the same (pulled to reload). */
@@ -199,12 +199,11 @@ class MyLocationTest {
         phone.answer.complete(at(52.37, 9.73, System.currentTimeMillis()))
         until("Hannover loaded") { vm.state.value.locationStatus == LocationStatus.AVAILABLE && vm.state.value.states[hannover.id]?.loading == false }
         assertEquals("the start may take the system's recent position", false, phone.askedFresh)
-        fun yellow(): Set<dev.nimbus.weather.data.model.DataPart> {
-            val st = vm.state.value
-            val data = st.states[hannover.id]!!.data!!
-            val now = System.currentTimeMillis()
-            return dev.nimbus.weather.ui.main.pageStale(data.stale + dev.nimbus.weather.data.repo.Freshness.expiredParts(data, now), locationMark(st, now))
-        }
+        // what the cards show: the records of the place's parts
+        fun yellow(): Set<dev.nimbus.weather.data.model.DataPart> =
+            dev.nimbus.weather.data.model.DataPart.entries.filterTo(mutableSetOf()) {
+                vm.shelf.stateOf(hannover.id, it) != dev.nimbus.weather.data.repo.RecordState.CURRENT
+            }
         assertTrue("not all green before: ${yellow()}", yellow().isEmpty())
 
         forecastDelayMs = 1_500
@@ -213,12 +212,12 @@ class MyLocationTest {
         // 1. everything yellow, the position being asked for – anew
         until("searching") { vm.state.value.locationStatus == LocationStatus.LOADING }
         assertEquals(dev.nimbus.weather.data.model.DataPart.entries.toSet(), yellow())
-        assertFalse(locationMark(vm.state.value, System.currentTimeMillis()).current)
+        assertFalse(locationMark(vm.state.value, vm.shelf).current)
         // 2. the position confirmed: the place's dot green, the cards still yellow (their data on the way)
         phone.answer.complete(at(52.37, 9.73, System.currentTimeMillis()))
         until("position confirmed") { vm.state.value.locationStatus == LocationStatus.AVAILABLE }
         assertEquals("the position was not asked for anew", true, phone.askedFresh)
-        assertTrue(locationMark(vm.state.value, System.currentTimeMillis()).current)
+        assertTrue(locationMark(vm.state.value, vm.shelf).current)
         assertTrue("cards green before their data: ${yellow()}", dev.nimbus.weather.data.model.DataPart.FORECAST in yellow())
         // 3. the data there: green
         until("loaded anew") { vm.state.value.states[hannover.id]?.loading == false }

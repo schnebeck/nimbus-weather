@@ -117,7 +117,8 @@ fun modelName(m: ForecastModel) = when (m) {
 fun HistoryPage(
     place: Place, state: PlaceState?, settings: Settings, dayIndex: Int, isActive: Boolean, onRetry: () -> Unit,
     onOpenRadarDay: (Long) -> Unit = {},
-    locationCurrent: Boolean = true,
+    /** For "my location": where its position stands – the dot behind the name, as on the weather page. */
+    location: LocationMark? = null,
 ) {
     val context = LocalContext.current
     val history = state?.history
@@ -177,7 +178,8 @@ fun HistoryPage(
         }
         // the look-back's cards say whether they are current: yellow while loading or expired
         // and, for "my location", while its position is not current
-        val status = if (!locationCurrent || state?.historyLoading == true || (history != null && dev.nimbus.weather.data.repo.Freshness.historyDue(history.fetchedAt, System.currentTimeMillis())))
+        // the look-back's record (out of date while loading, past its time, or "my location" not confirmed)
+        val status = if (LocalShelf.current.lookBackState(place.id) != dev.nimbus.weather.data.repo.RecordState.CURRENT)
             dev.nimbus.weather.ui.components.CardStatus.STALE else dev.nimbus.weather.ui.components.CardStatus.FRESH
         CompositionLocalProvider(
             LocalSettings provides settings, LocalTimeFormat provides tf,
@@ -201,7 +203,7 @@ fun HistoryPage(
                     Modifier.width(cutStart + paneWidth).fillMaxHeight().fullscreenByDoubleTap()
                         .padding(start = cutStart + 16.dp, end = 16.dp, top = statusTop + HeaderTop),
                     contentAlignment = Alignment.Center,
-                ) { HistoryHeader(place, title, day, summary, tf, emptyList(), shown) }
+                ) { HistoryHeader(place, title, day, summary, tf, emptyList(), shown, location) }
             }
             // Cards keep their title at the line below the top bar and slide away under it (GlassCard)
             val listTop = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
@@ -214,7 +216,7 @@ fun HistoryPage(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = statusTop + HeaderTop, bottom = navBottom + 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                if (!sideways) item(key = "header") { Box(Modifier.fullscreenByDoubleTap()) { HistoryHeader(place, title, day, summary, tf, parts, shown) } }
+                if (!sideways) item(key = "header") { Box(Modifier.fullscreenByDoubleTap()) { HistoryHeader(place, title, day, summary, tf, parts, shown, location) } }
                 else if (parts.isNotEmpty()) item(key = "parts") {
                     DayPartsTable(parts, shown, androidx.compose.ui.text.TextStyle(shadow = dev.nimbus.weather.ui.components.LocalHeaderStyle.current.shadow))
                 }
@@ -249,14 +251,20 @@ fun HistoryPage(
 private fun HistoryHeader(
     place: Place, title: String, day: HistoryDay?, summary: DaySummary?, tf: TimeFormat,
     parts: List<dev.nimbus.weather.data.remote.DayPartWeather>, shown: Int,
+    location: LocationMark? = null,
 ) {
     val s = LocalSettings.current
     // On the open sky: white with a dark halo, as the weather page's header
     val halo = androidx.compose.ui.text.TextStyle(shadow = dev.nimbus.weather.ui.components.LocalHeaderStyle.current.shadow)
     Column(Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            if (place.isCurrentLocation) Icon(Icons.Rounded.LocationOn, null, tint = Color.White, modifier = Modifier.size(20.dp))
-            Text(place.name, fontSize = 26.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis, style = halo)
+            if (place.isCurrentLocation) LocationPin(location, size = 20.dp)
+            Text(
+                place.name, Modifier.weight(1f, fill = false).alignByBaseline(),
+                fontSize = 26.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis, style = halo,
+            )
+            // "my location": whether its position is current – as on the weather page
+            if (location != null) LocationDot(location, 26.sp)
         }
         // a low window (a phone held sideways): a smaller title, the cards get the height
         val compact = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp < 500

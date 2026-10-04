@@ -44,16 +44,18 @@ class LhpSource(
     private var alerts: Pair<Long, JsonElement>? = null
 
     suspend fun candidates(lat: Double, lon: Double, radiusKm: Double, now: Long = System.currentTimeMillis()): List<GaugeInfo> {
+        val renew = freshData()
         val root = mutex.withLock {
-            stations?.takeIf { now - it.first < MAX_AGE_MS }?.second
+            stations?.takeIf { !renew && now - it.first < MAX_AGE_MS }?.second
                 ?: http.getJson("$baseUrl/data/stations?format=json&lang=de").also { stations = now to it }
         }
         return parseStations(root, lat, lon).filter { it.distanceKm <= radiusKm }
     }
 
     suspend fun alerts(lat: Double, lon: Double, now: Long = System.currentTimeMillis()): List<WeatherAlert> {
+        val renew = freshData()
         val root = mutex.withLock {
-            alerts?.takeIf { now - it.first < MAX_AGE_MS }?.second
+            alerts?.takeIf { !renew && now - it.first < MAX_AGE_MS }?.second
                 ?: http.getJson("$baseUrl/data/alerts?format=json&lang=de").also { alerts = now to it }
         }
         return parseAlerts(root, lat, lon)

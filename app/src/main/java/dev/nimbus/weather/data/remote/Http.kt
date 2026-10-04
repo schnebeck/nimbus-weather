@@ -70,6 +70,7 @@ suspend fun Call.await(): Response = suspendCancellableCoroutine { cont ->
 suspend fun OkHttpClient.getJson(url: String, headers: Map<String, String> = emptyMap()): JsonElement {
     val req = Request.Builder().url(url).header("User-Agent", USER_AGENT).apply {
         headers.forEach { (k, v) -> header(k, v) }
+        if (freshData()) cacheControl(AskAgain)
     }.build()
     return withContext(Dispatchers.IO) {
         newCall(req).await().use { resp ->
@@ -81,9 +82,40 @@ suspend fun OkHttpClient.getJson(url: String, headers: Map<String, String> = emp
 }
 
 /** Body as text, read on the IO dispatcher (see [getJson]). */
-suspend fun OkHttpClient.getText(req: Request): String = withContext(Dispatchers.IO) {
-    newCall(req).await().use { it.body.string() }
+suspend fun OkHttpClient.getText(req: Request): String {
+    val r = if (freshData()) req.newBuilder().cacheControl(AskAgain).build() else req
+    return withContext(Dispatchers.IO) { newCall(r).await().use { it.body.string() } }
 }
+
+/**
+ * Data asked for anew (the forced reload): in a coroutine with this element no answer comes from a
+ * store – the HTTP cache asks the server again ([AskAgain]), the sources skip their own stores,
+ * data of a moment and lists alike (stations, bathing waters, the tide fit); a stored one only
+ * stands in where the new answer fails.
+ */
+object FreshData : kotlin.coroutines.CoroutineContext.Element {
+    object Key : kotlin.coroutines.CoroutineContext.Key<FreshData>
+    override val key: kotlin.coroutines.CoroutineContext.Key<*> get() = Key
+}
+
+/** Whether the data are asked for anew here ([FreshData]). */
+suspend fun freshData(): Boolean = kotlin.coroutines.coroutineContext[FreshData.Key] != null
+
+/**
+ * Notes for one extra source whether its answer holds a stored value standing in for a new one
+ * that failed ([standIn]) – its card then stays yellow and is tried again, not shown as current.
+ */
+class StandIns : kotlin.coroutines.CoroutineContext.Element {
+    @Volatile var used = false
+    object Key : kotlin.coroutines.CoroutineContext.Key<StandIns>
+    override val key: kotlin.coroutines.CoroutineContext.Key<*> get() = Key
+}
+
+/** A source answers with a stored value in place of a new one that failed (see [StandIns]). */
+suspend fun standIn() { kotlin.coroutines.coroutineContext[StandIns.Key]?.used = true }
+
+/** The server asked again – a stored answer only if it says it is still the same. */
+val AskAgain: okhttp3.CacheControl = okhttp3.CacheControl.Builder().noCache().build()
 
 // ---- tolerant JSON accessors -------------------------------------------------
 

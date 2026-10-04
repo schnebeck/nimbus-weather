@@ -73,8 +73,12 @@ class WeatherRepository(
          * others keep [previous]'s values and times, nothing is asked for them.
          */
         refresh: Set<DataPart> = DataPart.entries.toSet(),
+        /** Asked for anew (forced reload): nothing from a store – see [dev.nimbus.weather.data.remote.FreshData]. */
+        fresh: Boolean = false,
         onProgress: (WeatherData) -> Unit = {},
-    ): WeatherData = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { coroutineScope {
+    ): WeatherData = kotlinx.coroutines.withContext(
+        kotlinx.coroutines.Dispatchers.Default + (if (fresh) dev.nimbus.weather.data.remote.FreshData else kotlin.coroutines.EmptyCoroutineContext),
+    ) { coroutineScope {
         val lat = place.latitude
         val lon = place.longitude
         val primaryModel = settings.model.openMeteoId
@@ -216,6 +220,8 @@ class WeatherRepository(
         var communityObs = keep?.community
         val pending = asked.toMutableSet()
         val failed = mutableSetOf<DataPart>()
+        // answered with a stored value standing in: shown – so yellow even without an earlier value
+        val stoodIn = mutableSetOf<DataPart>()
         val lock = kotlinx.coroutines.sync.Mutex()
         fun snapshot(): WeatherData {
             val extra = mutableListOf<Source>()
@@ -226,7 +232,7 @@ class WeatherRepository(
             if (floodAlerts.isNotEmpty()) extra += Source(SourceKind.LHP_ALERTS)
             if (communityObs != null) extra += Source(SourceKind.COMMUNITY)
             // a part without a last value has nothing old to show: not stale, simply not there
-            return data(aq, communityObs, pollenForecast, gaugeList, bathingList, floodAlerts, extra, (pending + failed).filterTo(mutableSetOf()) { keep != null }, partsAt())
+            return data(aq, communityObs, pollenForecast, gaugeList, bathingList, floodAlerts, extra, (pending + failed).filterTo(mutableSetOf()) { keep != null } + stoodIn, partsAt())
         }
         coroutineScope {
             // each extra asked for on its own: its card turns current when its answer is there
@@ -236,7 +242,10 @@ class WeatherRepository(
                     val left = extrasDeadlineMs - (System.nanoTime() - started) / 1_000_000
                     val r = kotlinx.coroutines.withTimeoutOrNull(left.coerceAtLeast(1)) { job.await() }
                     lock.withLock {
-                        if (r == null) { job.cancel(); failed += part } else { take(r.value); arrivedAt[part] = clock() }
+                        // no answer: the last value stays; a stored value standing in: shown, but yellow
+                        // like one without answer – and tried again
+                        if (r == null) { job.cancel(); failed += part }
+                        else { take(r.value); if (r.standIn) stoodIn += part else arrivedAt[part] = clock() }
                         pending -= part
                         if (dev.nimbus.weather.BuildConfig.DEBUG) {
                             android.util.Log.d("NimbusLoad", "$part ${if (r == null) "old value" else "new"} after ${(System.nanoTime() - started) / 1_000_000} ms")
@@ -260,13 +269,17 @@ class WeatherRepository(
 
     suspend fun search(query: String, language: String): List<Place> = openMeteo.searchPlaces(query, language)
 
-    /** An extra source's answer; [value] may be "nothing here" (null, empty). */
-    private class Fetched<out T>(val value: T)
+    /**
+     * An extra source's answer; [value] may be "nothing here" (null, empty). [standIn]: it holds a
+     * stored value in place of a new one that failed – shown, but not as current.
+     */
+    private class Fetched<out T>(val value: T, val standIn: Boolean = false)
 
     /** [f]'s answer, or null when it failed or took longer than [timeoutMs] (logged as [what]). */
     private suspend fun <T> fetch(timeoutMs: Long, what: String, f: suspend () -> T): Fetched<T>? =
         kotlinx.coroutines.withTimeoutOrNull(timeoutMs) {
-            runCatching { Fetched(f()) }
+            val notes = dev.nimbus.weather.data.remote.StandIns()
+            runCatching { kotlinx.coroutines.withContext(notes) { f() }.let { Fetched(it, notes.used) } }
                 .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it; android.util.Log.w("Nimbus", "$what unavailable: $it") }
                 .getOrNull()
         }.also { if (it == null) android.util.Log.w("Nimbus", "$what: no answer, the last one stays") }

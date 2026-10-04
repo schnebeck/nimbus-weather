@@ -115,13 +115,13 @@ class RadarFieldTest {
     }
 
     @Test fun fieldCutFromTheGridAtThePlace() {
-        // One wet grid cell at Garbsen (52.42 N, 9.60 E), the view around it
+        // One wet grid cell in Hannover (52.38 N, 9.73 E), the view around it
         val grid = ByteArray(DwdGrid.W * DwdGrid.H)
-        val r = ((DwdGrid.LAT1 - 52.42) / DwdGrid.STEP).toInt(); val c = ((9.60 - DwdGrid.LON0) / DwdGrid.STEP).toInt()
+        val r = ((DwdGrid.LAT1 - 52.3759) / DwdGrid.STEP).toInt(); val c = ((9.7320 - DwdGrid.LON0) / DwdGrid.STEP).toInt()
         for (dy in -2..2) for (dx in -3..3) grid[(r + dy) * DwdGrid.W + c + dx] = 35
         val geo = FieldGeo.forView(52.2, 52.6, 9.3, 9.9, maxSide = 300, margin = 0.0)
         val f = RadarField.extract(geo, grid, null, null)
-        val my = FieldGeo.mercY(52.42); val mx = FieldGeo.R * Math.toRadians(9.60)
+        val my = FieldGeo.mercY(52.3759); val mx = FieldGeo.R * Math.toRadians(9.7320)
         val px = ((mx - geo.minX) / geo.pxM).toInt(); val py = ((geo.maxY - my) / geo.pxM).toInt()
         val i = py * geo.w + px
         assertTrue((f.wet[i].toInt() and 0xFF) > 200)

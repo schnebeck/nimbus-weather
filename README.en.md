@@ -74,7 +74,9 @@ No ads, no account, no Google services. The app speaks English and German.
   network); a dot on the location pin tells whether the position is current (green) or older (yellow,
   then the cards too); searches without result wait longer each time (2, 5, 10 minutes). For saved
   places the GPS stays off. Pulling to reload (or tapping the pin) asks for the position first –
-  everything for "My location" waits until it is confirmed or the new place is taken.
+  everything for "My location" is yellow and waits until it is confirmed or the new place is taken;
+  then the cards turn green one by one. A reload fetches everything anew (no cache, station lists and
+  tides too); if a request fails, the old data stay, yellow, and are tried again next time.
 - Shelf life: each part of the data has its own – forecast, station, citizen sensors and flood
   alerts 10 minutes, gauges 15, air quality and bathing waters 60, pollen 3 hours. Past it, its dot
   turns yellow and only that part is loaded again; each card turns green as soon as its source has

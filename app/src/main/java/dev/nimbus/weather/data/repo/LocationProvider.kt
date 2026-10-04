@@ -64,7 +64,10 @@ open class LocationProvider(private val context: Context, private val http: okht
      * when there is none at all.
      */
     @SuppressLint("MissingPermission")
-    open suspend fun currentLocation(): Locate.Found<Location>? {
+    open suspend fun currentLocation(
+        /** Asked for anew (reload): a new position only – not the system's last one, however recent. */
+        fresh: Boolean = false,
+    ): Locate.Found<Location>? {
         if (!hasPermission()) return null
         val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
         fun on(p: String) = runCatching { lm.isProviderEnabled(p) }.getOrDefault(false)
@@ -80,7 +83,7 @@ open class LocationProvider(private val context: Context, private val http: okht
             if (LocationManager.NETWORK_PROVIDER in providers) add(LocationManager.NETWORK_PROVIDER)
         }.map { p -> suspend { singleFix(lm, p) } }
         val gps = if (LocationManager.GPS_PROVIDER in providers) suspend { singleFix(lm, LocationManager.GPS_PROVIDER) } else null
-        return Locate.best(lastKnown, now, coarse, gps) { System.currentTimeMillis() }
+        return Locate.best(lastKnown, now, coarse, gps, recentMs = if (fresh) 0L else Locate.RECENT_MS) { System.currentTimeMillis() }
     }
 
     /** How old [l] is – by the device's uptime clock, the GPS' wall clock time may be off. */
@@ -203,9 +206,11 @@ object Locate {
         now: Long,
         coarse: List<suspend () -> T?>,
         gps: (suspend () -> T?)?,
+        /** A position the system knows from this long ago is taken as it is (0: always ask anew). */
+        recentMs: Long = RECENT_MS,
         clock: () -> Long,
     ): Found<T>? {
-        if (last != null && now - last.at < RECENT_MS) return last
+        if (last != null && now - last.at < recentMs) return last
         val fresh = withTimeoutOrNull(TIMEOUT_MS) {
             channelFlow {
                 val asked = coarse.map { f -> launch { f()?.let { send(it) } } }

@@ -28,14 +28,14 @@ import org.junit.Test
 
 class GaugeSourceTest {
     @Test fun riverGaugeInsteadOfTheNearerCanal() {
-        // Garbsen: Lohnde on the Mittellandkanal is nearer, but canals are skipped.
-        val g = GaugeSource.pickStation(Fixtures.json("pegel_stations_garbsen.json"), 52.42, 9.60)
+        // Hannover: "Hann. List" on the Mittellandkanal is nearer, but canals are skipped.
+        val g = GaugeSource.pickStation(Fixtures.json("pegel_stations_hannover.json"), 52.3759, 9.7320)
         assertNotNull(g)
         assertEquals("HERRENHAUSEN", g!!.name)
         assertEquals("LEINE", g.water)
         assertFalse(g.tidal)
         assertTrue("MW" in g.marks)
-        assertEquals(6.3, g.distanceKm, 0.3)
+        assertEquals(4.0, g.distanceKm, 0.3)
     }
 
     @Test fun tideGaugeInHamburg() {

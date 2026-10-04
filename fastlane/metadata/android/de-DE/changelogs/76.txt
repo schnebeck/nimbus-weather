@@ -1,0 +1,3 @@
+• Neu laden bei „Mein Standort“: sofort alles gelb, dann wird die Position wirklich neu bestimmt (Punkt wird grün), danach werden die Kacheln nacheinander grün
+• Neu laden holt alles frisch: kein Cache, auch Stationslisten und Gezeiten neu
+• Scheitert ein Abruf, werden die Altdaten gezeigt – gelb – und beim nächsten Mal erneut versucht

@@ -73,7 +73,7 @@ class PageLayoutTest {
             now, 11.0, 13.0, Condition.FOG, true, 97.0, 10.0, 1032.0, 3.0, 6.0, 40.0, 100.0, 12000.0, 0.0, 0.0,
             stationName = "Hannover-Herrenhause", stationDistanceKm = 5.0,          // as the DWD writes it
         )
-        return WeatherData(Place("p", "Garbsen", latitude = 52.42, longitude = 9.60), "Europe/Berlin", 7200, cur, hourly, daily, sources = emptyList(), fetchedAt = now)
+        return WeatherData(Place("p", "Hannover", latitude = 52.3759, longitude = 9.7320), "Europe/Berlin", 7200, cur, hourly, daily, sources = emptyList(), fetchedAt = now)
     }
 
     /** The page at [widthDp] dp wide and [fontScale]: the header's bottom above the first card, max/min inside the screen. */
@@ -89,7 +89,7 @@ class PageLayoutTest {
             CompositionLocalProvider(LocalDensity provides Density(d.density, fontScale), LocalContentWidth provides widthDp.dp) {
                 // tall enough that the list composes the cards down to the 10-day forecast at 200 %
                 Box(Modifier.requiredSize(widthDp.dp, heightDp.dp)) {
-                    WeatherPage(Place("p", "Garbsen", latitude = 52.42, longitude = 9.60), PlaceState(data()), settings, null, false, {}, {}, {})
+                    WeatherPage(Place("p", "Hannover", latitude = 52.3759, longitude = 9.7320), PlaceState(data()), settings, null, false, {}, {}, {})
                 }
             }
         }
@@ -146,7 +146,7 @@ class PageLayoutTest {
         val cut = 136
         compose.setContent {
             CompositionLocalProvider(LocalContentWidth provides 914.dp) {
-                WeatherPage(Place("p", "Garbsen", latitude = 52.42, longitude = 9.60), PlaceState(data()), settings, null, false, {}, {}, {})
+                WeatherPage(Place("p", "Hannover", latitude = 52.3759, longitude = 9.7320), PlaceState(data()), settings, null, false, {}, {}, {})
             }
         }
         compose.runOnUiThread {
@@ -160,7 +160,7 @@ class PageLayoutTest {
         val ctx = org.robolectric.RuntimeEnvironment.getApplication()
         val px = ctx.resources.displayMetrics.density
         val station = compose.onAllNodesWithText("Herrenhause", substring = true).fetchSemanticsNodes().first().boundsInRoot
-        val name = compose.onAllNodesWithText("Garbsen").fetchSemanticsNodes().first().boundsInRoot
+        val name = compose.onAllNodesWithText("Hannover").fetchSemanticsNodes().first().boundsInRoot
         val titles = compose.onAllNodesWithText(ctx.getString(R.string.precip_title), ignoreCase = true).fetchSemanticsNodes()
             .map { it.boundsInRoot }.filter { it.width > 0f }
         val card = titles.minBy { it.top }
@@ -190,7 +190,7 @@ class PageLayoutTest {
         // the header stays where it is when the cards scroll
         compose.onAllNodes(androidx.compose.ui.test.hasScrollAction()).onFirst().performTouchInput { swipeUp() }
         compose.waitForIdle()
-        assertEquals(name, compose.onAllNodesWithText("Garbsen").fetchSemanticsNodes().first().boundsInRoot)
+        assertEquals(name, compose.onAllNodesWithText("Hannover").fetchSemanticsNodes().first().boundsInRoot)
     }
 
     /** Sideways the page dots stand over the middle of the cards – in the middle of the screen they stood over the gap beside the header. */
@@ -215,7 +215,7 @@ class PageLayoutTest {
     /** "My location" in the header: the status dot behind the name at the capitals' height, apart from the pin. */
     @Test fun theDotOfMyLocationInTheHeader() {
         val settings = Settings(hiddenCards = setOf(WeatherCard.RADAR, WeatherCard.MODELS))
-        val here = Place("current-location", "Garbsen", latitude = 52.42, longitude = 9.60, isCurrentLocation = true)
+        val here = Place("current-location", "Hannover", latitude = 52.3759, longitude = 9.7320, isCurrentLocation = true)
         compose.setContent {
             CompositionLocalProvider(LocalContentWidth provides 411.dp) {
                 WeatherPage(
@@ -225,7 +225,7 @@ class PageLayoutTest {
             }
         }
         compose.waitForIdle()
-        compose.assertDotBesidePin("Garbsen", 32f)
+        compose.assertDotBesidePin("Hannover", 32f)
     }
 
     /** Double-tapping the sky above the cards switches full screen; scrolling stays. */
@@ -236,12 +236,12 @@ class PageLayoutTest {
                 LocalContentWidth provides 411.dp,
                 dev.nimbus.weather.ui.main.LocalSettingsUpdater provides { f -> settings = f(settings) },
             ) {
-                WeatherPage(Place("p", "Garbsen", latitude = 52.42, longitude = 9.60), PlaceState(data()), settings, null, false, {}, {}, {})
+                WeatherPage(Place("p", "Hannover", latitude = 52.3759, longitude = 9.7320), PlaceState(data()), settings, null, false, {}, {}, {})
             }
         }
         compose.waitForIdle()
         // the place name in the header: the sky above the cards
-        val name = compose.onAllNodesWithText("Garbsen").fetchSemanticsNodes().first().boundsInRoot
+        val name = compose.onAllNodesWithText("Hannover").fetchSemanticsNodes().first().boundsInRoot
         compose.onRoot().performTouchInput { doubleClick(androidx.compose.ui.geometry.Offset(name.center.x, name.bottom + 40f)) }
         compose.waitForIdle()
         assertTrue("full screen not switched on", settings.fullscreen)

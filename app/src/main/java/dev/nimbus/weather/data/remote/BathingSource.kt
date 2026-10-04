@@ -127,11 +127,13 @@ class BathingSource(
     /** EEA data change once a year: kept on disk for a week. */
     private suspend fun cachedJson(key: String, url: String, now: Long): JsonElement {
         val file = cacheDir?.let { File(it, "$key.json") }
-        file?.takeIf { it.exists() && now - it.lastModified() < EEA_MAX_AGE_MS }?.let { f ->
+        // asked for anew (forced reload): the list again – the stored one only if that fails
+        file?.takeIf { !freshData() && it.exists() && now - it.lastModified() < EEA_MAX_AGE_MS }?.let { f ->
             withContext(Dispatchers.IO) { runCatching { JsonCodec.parseToJsonElement(f.readText()) }.getOrNull() }?.let { return it }
         }
         val json = runCatching { http.getJson(url) }.getOrElse { e ->
-            file?.takeIf { it.exists() }?.let { f -> withContext(Dispatchers.IO) { JsonCodec.parseToJsonElement(f.readText()) } } ?: throw e
+            file?.takeIf { it.exists() }?.let { f -> withContext(Dispatchers.IO) { JsonCodec.parseToJsonElement(f.readText()) } }
+                ?.also { standIn() } ?: throw e
         }
         if (json.obj()?.a("features") != null) file?.let { f -> withContext(Dispatchers.IO) { runCatching { f.parentFile?.mkdirs(); f.writeText(json.toString()) } } }
         return json
@@ -140,7 +142,7 @@ class BathingSource(
     // --- Berlin ----------------------------------------------------------------------------
 
     private suspend fun berlinSamples(now: Long): List<StateSample> = mutex.withLock {
-        berlin?.takeIf { now - it.first < STATE_MAX_AGE_MS }?.second?.let { return it }
+        berlin?.takeIf { !freshData() && now - it.first < STATE_MAX_AGE_MS }?.second?.let { return it }
         val text = http.getText(Request.Builder().url(BERLIN_URL).header("User-Agent", USER_AGENT).build())
         parseBerlin(text).also { berlin = now to it }
     }
@@ -148,20 +150,22 @@ class BathingSource(
     // --- Schleswig-Holstein ----------------------------------------------------------------
 
     private suspend fun shSamples(now: Long): Map<String, StateSample> = mutex.withLock {
-        sh?.takeIf { now - it.first < SH_MAX_AGE_MS }?.second?.let { return it }
+        // asked for anew: the samples again – on Wi-Fi only (a large file), on mobile data the last ones
+        val renew = freshData() && unmetered()
+        sh?.takeIf { !renew && now - it.first < SH_MAX_AGE_MS }?.second?.let { return it }
         val file = cacheDir?.let { File(it, "sh_proben.csv") }
-        val fresh = file?.takeIf { it.exists() && now - it.lastModified() < SH_MAX_AGE_MS }
+        val fresh = file?.takeIf { !renew && it.exists() && now - it.lastModified() < SH_MAX_AGE_MS }
         val bytes: ByteArray? = when {
             fresh != null -> withContext(Dispatchers.IO) { fresh.readBytes() }
             unmetered() -> withContext(Dispatchers.IO) {
                 runCatching {
-                    http.newCall(Request.Builder().url(SH_URL).header("User-Agent", USER_AGENT).build()).execute().use { r ->
+                    http.newCall(Request.Builder().url(SH_URL).header("User-Agent", USER_AGENT).apply { if (renew) cacheControl(AskAgain) }.build()).execute().use { r ->
                         if (r.isSuccessful) r.body.bytes() else null
                     }
                 }.getOrNull()?.also { b -> file?.let { runCatching { it.parentFile?.mkdirs(); it.writeBytes(b) } } }
             }
             // On mobile data: yesterday's file is better than nothing
-            else -> file?.takeIf { it.exists() }?.let { withContext(Dispatchers.IO) { it.readBytes() } }
+            else -> file?.takeIf { it.exists() }?.let { withContext(Dispatchers.IO) { it.readBytes() } }?.also { standIn() }
         }
         val map = bytes?.let { parseSh(String(it, Charsets.ISO_8859_1)) }.orEmpty()
         if (map.isNotEmpty()) sh = now to map

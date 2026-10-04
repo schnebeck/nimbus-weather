@@ -67,9 +67,10 @@ class PollenSource(
 
     private suspend fun dwd(lat: Double, lon: Double): Pair<String, List<PollenDay>>? {
         val (regionId, regionName) = region(lat, lon) ?: return null
+        val renew = freshData()
         val json = mutex.withLock {
             val now = System.currentTimeMillis()
-            index?.takeIf { now - it.first < 60 * 60_000L }?.second
+            index?.takeIf { !renew && now - it.first < 60 * 60_000L }?.second
                 ?: http.getJson(dwdIndexUrl).also { index = now to it }
         }
         return parseDwd(json, regionId)?.let { regionName to it }
@@ -77,7 +78,8 @@ class PollenSource(
 
     private suspend fun region(lat: Double, lon: Double): Pair<Int, String>? {
         val key = "%.2f,%.2f".format(Locale.US, lat, lon)
-        mutex.withLock { if (regions.containsKey(key)) return regions[key] }
+        // asked for anew (forced reload): the region looked up again
+        if (!freshData()) mutex.withLock { if (regions.containsKey(key)) return regions[key] }
         val bbox = String.format(Locale.US, "%.4f,%.4f,%.4f,%.4f", lat - 0.01, lon - 0.01, lat + 0.01, lon + 0.01)
         val url = "$dwdWmsUrl?service=WMS&version=1.3.0&request=GetFeatureInfo&layers=dwd:Pollenfluggebiete" +
             "&query_layers=dwd:Pollenfluggebiete&crs=EPSG:4326&bbox=$bbox&width=3&height=3&i=1&j=1&info_format=application/json"

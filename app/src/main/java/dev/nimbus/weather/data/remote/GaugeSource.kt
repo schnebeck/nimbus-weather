@@ -148,11 +148,13 @@ class GaugeSource(
         val cached = file?.takeIf { it.exists() }?.let { f ->
             withContext(Dispatchers.IO) { runCatching { JsonCodec.decodeFromString(Tides.Model.serializer(), f.readText()) }.getOrNull() }
         }
-        if (cached != null && now - cached.fittedAt < TIDE_REFIT_MS) return cached
+        // asked for anew (forced reload): fitted again – the stored model meanwhile, if the fit takes longer
+        if (!freshData() && cached != null && now - cached.fittedAt < TIDE_REFIT_MS) return cached
         val job = fits.getOrPut(uuid) {
             fitScope.async { runCatching { fitNew(uuid, now, file) }.getOrNull().also { fits.remove(uuid) } }
         }
-        return withTimeoutOrNull(TIDE_WAIT_MS) { job.await() } ?: cached
+        // the new fit not ready in time: the stored model stands in (the card stays yellow)
+        return withTimeoutOrNull(TIDE_WAIT_MS) { job.await() } ?: cached?.also { standIn() }
     }
 
     private suspend fun fitNew(uuid: String, now: Long, file: File?): Tides.Model? {

@@ -277,7 +277,7 @@ class LookTest {
         val daily = (0..2).map { dev.nimbus.weather.data.model.DailyPoint(day + it * 24 * h, Condition.RAIN, 18.0, 8.0, precipitationSum = 5.4, precipitationProbability = 60.0) }
         val cur = dev.nimbus.weather.data.model.CurrentWeather(day + 10 * h, 15.0, 14.0, Condition.CLOUDY, true, 60.0, 8.0, 1020.0, 10.0, 20.0, 240.0, 80.0, 30000.0, 2.0, 0.0)
         return dev.nimbus.weather.data.model.WeatherData(
-            dev.nimbus.weather.data.model.Place("p", "Garbsen", latitude = 52.42, longitude = 9.60), "UTC", 0, cur, hourly, daily,
+            dev.nimbus.weather.data.model.Place("p", "Hannover", latitude = 52.3759, longitude = 9.7320), "UTC", 0, cur, hourly, daily,
             sources = emptyList(), fetchedAt = day + 10 * h,
         )
     }
@@ -392,11 +392,11 @@ class LookTest {
 
     private fun ctx(): android.content.Context = org.robolectric.RuntimeEnvironment.getApplication()
 
-    /** Garbsen, the test day (UTC): night until about 05:20, from about 17:00, and in the 24 column. */
-    private val garbsenNights = dev.nimbus.weather.ui.main.nights(day, day + 25 * h, 52.42, 9.60)
+    /** Hannover, the test day (UTC): night until about 05:20, from about 17:00, and in the 24 column. */
+    private val hannoverNights = dev.nimbus.weather.ui.main.nights(day, day + 25 * h, 52.3759, 9.7320)
 
     @Test fun nightShadingCoversThe00And24Columns() {
-        compose.setContent { Card { Meteogram(forecastDay(), day, day + 24 * h, garbsenNights, day + 30 * h) } }
+        compose.setContent { Card { Meteogram(forecastDay(), day, day + 24 * h, hannoverNights, day + 30 * h) } }
         compose.waitForIdle()
         val img = bitmap()
         fun lum(x: Int, y: Int) = img.rgb(x, y).let { (r, g, b) -> 0.2126 * r + 0.7152 * g + 0.0722 * b }

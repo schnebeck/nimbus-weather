@@ -68,12 +68,14 @@ class NlwknSource(
     private suspend fun stations(now: Long): List<Station> {
         val file = cacheDir?.let { File(it, "nlwkn_stations.json") }
         val serializer = ListSerializer(Station.serializer())
-        file?.takeIf { it.exists() && now - it.lastModified() < STATIONS_MAX_AGE_MS }?.let { f ->
+        // asked for anew (forced reload): the list again – the stored one only if that fails
+        file?.takeIf { !freshData() && it.exists() && now - it.lastModified() < STATIONS_MAX_AGE_MS }?.let { f ->
             withContext(Dispatchers.IO) { runCatching { JsonCodec.decodeFromString(serializer, f.readText()) }.getOrNull() }?.let { return it }
         }
         val list = runCatching { parseStations(http.getJson("$baseUrl/stammdaten/stationen/All?key=$key")) }.getOrElse { e ->
             // Offline: an older list is still fine, stations rarely move.
-            file?.takeIf { it.exists() }?.let { f -> withContext(Dispatchers.IO) { JsonCodec.decodeFromString(serializer, f.readText()) } } ?: throw e
+            file?.takeIf { it.exists() }?.let { f -> withContext(Dispatchers.IO) { JsonCodec.decodeFromString(serializer, f.readText()) } }
+                ?.also { standIn() } ?: throw e
         }
         file?.let { f -> withContext(Dispatchers.IO) { f.parentFile?.mkdirs(); f.writeText(JsonCodec.encodeToString(serializer, list)) } }
         return list

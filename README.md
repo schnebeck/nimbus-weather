@@ -129,7 +129,10 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   zusätzlich per GPS. Ein Punkt am Standort-Pin zeigt, ob die Position aktuell ist (grün) oder älter
   (gelb, dann auch die Kacheln); bleibt die Suche erfolglos, wartet die nächste länger (2, 5, 10 Minuten).
   Bei gespeicherten Orten bleibt das GPS aus. Neu laden (oder Tipp auf den Pin) fragt erst die
-  Position ab – alles für „Mein Standort“ wartet, bis sie bestätigt oder der neue Ort übernommen ist.
+  Position wirklich neu ab – alles für „Mein Standort“ ist gelb und wartet, bis sie bestätigt oder der
+  neue Ort übernommen ist; dann werden die Kacheln nacheinander grün. Neu laden holt alles frisch
+  (ohne Cache, auch Stationslisten und Gezeiten); scheitert ein Abruf, stehen die Altdaten gelb da
+  und werden beim nächsten Mal erneut versucht.
 - **Haltbarkeit**: Jeder Teil der Daten hat seine eigene: Vorhersage, Station, Bürgersensoren und
   Hochwassermeldungen 10 Minuten, Pegel 15, Luftqualität und Badestellen 60, Pollen 3 Stunden. Ist er
   abgelaufen, wird sein Punkt gelb und nur er neu geladen; jede Kachel wird grün, sobald ihre Quelle

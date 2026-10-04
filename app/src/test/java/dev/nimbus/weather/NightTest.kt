@@ -36,10 +36,10 @@ class NightTest {
     private fun isNight(n: List<LongRange>, t: Long) = n.any { t in it }
 
     @Test fun sunriseAndSunsetToTheMinuteAsOnTheSunCard() {
-        // Garbsen, 1 October 2026
+        // Hannover, 1 October 2026
         val start = dayStart("2026-10-01")
-        val n = nights(start, HourAxis.dayAxisEnd(start + 24 * h), 52.42, 9.60)
-        val (rise, set) = Moon.sunTimes(start, 52.42, 9.60)
+        val n = nights(start, HourAxis.dayAxisEnd(start + 24 * h), 52.3759, 9.7320)
+        val (rise, set) = Moon.sunTimes(start, 52.3759, 9.7320)
         // night until sunrise, day until sunset, night after it
         assertEquals(2, n.size)
         assertEquals(start, n[0].first)
@@ -52,7 +52,7 @@ class NightTest {
 
     @Test fun the24ColumnIsNightAfterAnAutumnDay() {
         val start = dayStart("2026-10-01")
-        val n = nights(start, HourAxis.dayAxisEnd(start + 24 * h), 52.42, 9.60)
+        val n = nights(start, HourAxis.dayAxisEnd(start + 24 * h), 52.3759, 9.7320)
         // 24:00 … 01:00 (the 24 column) dark to its very end, like the 00 column
         assertTrue(isNight(n, start + 24 * h + 30 * min))
         assertEquals(start + 25 * h, n.last().last + 1)
@@ -71,7 +71,7 @@ class NightTest {
     @Test fun nightNotOnFullHours() {
         // the old shading from hourly flags started and ended on full hours only
         val start = dayStart("2026-10-01")
-        val n = nights(start, start + 25 * h, 52.42, 9.60)
+        val n = nights(start, start + 25 * h, 52.3759, 9.7320)
         assertTrue(n.drop(1).any { it.first % h != 0L } || n.any { (it.last + 1) % h != 0L && it.last + 1 != start + 25 * h })
     }
 

@@ -69,6 +69,14 @@ class LocationTest {
         assertEquals("Bad Harzburg", found?.value)
     }
 
+    /** Asked for anew (forced reload): even a position of a minute ago is not taken – the search runs. */
+    @Test fun aForcedSearchAsksAnew() = runTest {
+        val recent = Locate.Found("Hannover", now - 1 * min)
+        val found = Locate.best(recent, now, listOf(suspend { delay(2_000); "Hannover-Mitte" }), gps = null, recentMs = 0L) { now + currentTime }
+        assertEquals("Hannover-Mitte", found?.value)
+        assertEquals(now + 2_000, found?.at)
+    }
+
     @Test fun aRecentPositionIsTakenAsItIs() = runTest {
         val recent = Locate.Found("Hannover", now - 1 * min)
         assertEquals(recent, Locate.best(recent, now, listOf(edge), gps = { "never asked" }) { now + currentTime })

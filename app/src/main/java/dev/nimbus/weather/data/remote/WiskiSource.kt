@@ -97,11 +97,13 @@ class WiskiSource(
     private suspend fun stations(now: Long): List<Station> {
         val file = cacheDir?.let { File(it, "wiski_${config.provider.name.lowercase()}.json") }
         val serializer = ListSerializer(Station.serializer())
-        file?.takeIf { it.exists() && now - it.lastModified() < STATIONS_MAX_AGE_MS }?.let { f ->
+        // asked for anew (forced reload): the list again – the stored one only if that fails
+        file?.takeIf { !freshData() && it.exists() && now - it.lastModified() < STATIONS_MAX_AGE_MS }?.let { f ->
             withContext(Dispatchers.IO) { runCatching { JsonCodec.decodeFromString(serializer, f.readText()) }.getOrNull() }?.let { return it }
         }
         val list = runCatching { parseStations(http.getJson("${config.baseUrl}/internet/stations/stations.json")) }.getOrElse { e ->
-            file?.takeIf { it.exists() }?.let { f -> withContext(Dispatchers.IO) { JsonCodec.decodeFromString(serializer, f.readText()) } } ?: throw e
+            file?.takeIf { it.exists() }?.let { f -> withContext(Dispatchers.IO) { JsonCodec.decodeFromString(serializer, f.readText()) } }
+                ?.also { standIn() } ?: throw e
         }
         file?.let { f -> withContext(Dispatchers.IO) { f.parentFile?.mkdirs(); f.writeText(JsonCodec.encodeToString(serializer, list)) } }
         return list

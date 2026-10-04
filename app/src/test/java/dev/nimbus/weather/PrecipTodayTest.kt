@@ -56,7 +56,7 @@ class PrecipTodayTest {
         val daily = (0..2).map { DailyPoint(day + it * 24 * h, Condition.CLEAR, 18.0, 8.0, precipitationSum = if (it == 0) daySum else 0.0) }
         val minutely = (0..12).map { MinutelyPoint(now - 15 * 60_000L + it * 15 * 60_000L, minutelyMm, 15.0) }
         val cur = CurrentWeather(now, 15.0, 14.0, condition, true, 60.0, 8.0, 1020.0, 10.0, 20.0, 240.0, 10.0, 30000.0, 3.0, 0.0)
-        return WeatherData(Place("p", "Garbsen", latitude = 52.42, longitude = 9.60), "UTC", 0, cur, hourly, daily, minutely, sources = emptyList(), fetchedAt = now)
+        return WeatherData(Place("p", "Hannover", latitude = 52.3759, longitude = 9.7320), "UTC", 0, cur, hourly, daily, minutely, sources = emptyList(), fetchedAt = now)
     }
 
     private fun of(d: WeatherData, raining: Boolean = false) = PrecipToday.of(d, now, raining, null, tf)!!

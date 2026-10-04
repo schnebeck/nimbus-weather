@@ -1,0 +1,3 @@
+• Reload of "My location": all yellow at once, then the position is really found anew (its dot turns green), then the cards turn green one by one
+• Reload fetches everything anew: no cache, station lists and tides too
+• If a request fails, the old data are shown – yellow – and tried again next time

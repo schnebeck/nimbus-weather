@@ -58,6 +58,8 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35], application = android.app.Application::class)
 class MyLocationTest {
     private val server = MockWebServer()
+    /** The forecast answers this late (ms): its cards stay yellow meanwhile. */
+    @Volatile private var forecastDelayMs = 0L
     /** Latitudes of the forecast requests, in order. */
     private val asked = java.util.Collections.synchronizedList(mutableListOf<Double>())
 
@@ -66,9 +68,10 @@ class MyLocationTest {
     /** The phone's position: answers when the test says so. */
     private class Phone(app: Application) : LocationProvider(app) {
         var answer = CompletableDeferred<Locate.Found<Location>?>()
+        var askedFresh: Boolean? = null
         override fun hasPermission() = true
         override fun enabled() = true
-        override suspend fun currentLocation() = answer.await()
+        override suspend fun currentLocation(fresh: Boolean) = answer.await().also { askedFresh = fresh }
         override suspend fun toPlace(location: Location, fallbackName: String) =
             Place(CURRENT_LOCATION_ID, if (location.latitude < 52.0) "Bad Harzburg" else "Hannover", latitude = location.latitude, longitude = location.longitude, isCurrentLocation = true)
     }
@@ -86,7 +89,9 @@ class MyLocationTest {
                         if (url.queryParameter("models") == null || url.queryParameter("models") == "icon_seamless") {
                             url.queryParameter("latitude")?.toDouble()?.let { asked += it }
                         }
-                        if (url.queryParameter("models") == "icon_seamless") ok("openmeteo_icon.json") else ok("openmeteo_best.json")
+                        val body = if (url.queryParameter("models") == "icon_seamless") "openmeteo_icon.json" else "openmeteo_best.json"
+                        MockResponse.Builder().code(200).body(Fixtures.text(body))
+                            .headersDelay(forecastDelayMs, java.util.concurrent.TimeUnit.MILLISECONDS).build()
                     }
                     url.encodedPath == "/v1/air-quality" -> ok("openmeteo_aq.json")
                     url.encodedPath == "/current_weather" -> ok("brightsky_current.json")
@@ -104,11 +109,11 @@ class MyLocationTest {
     @After
     fun tearDown() = server.close()
 
-    /** Runs the main thread until [done] or 10 s. */
+    /** Runs the main thread – its clock with it (the delays of the view model) – until [done] or 10 s. */
     private fun until(what: String, done: () -> Boolean) {
         val end = System.currentTimeMillis() + 10_000
         while (!done()) {
-            shadowOf(android.os.Looper.getMainLooper()).idle()
+            shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(20))
             if (System.currentTimeMillis() > end) throw AssertionError("not reached: $what")
             Thread.sleep(20)
         }
@@ -153,7 +158,7 @@ class MyLocationTest {
         // looking for the position: not current, and no request for the place's data
         until("searching") { vm.state.value.locationStatus == LocationStatus.LOADING }
         assertFalse("shown as current while asked for anew", locationMark(vm.state.value, System.currentTimeMillis()).current)
-        repeat(20) { shadowOf(android.os.Looper.getMainLooper()).idle(); Thread.sleep(20) }
+        repeat(20) { shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(20)); Thread.sleep(20) }
         assertTrue("loaded while the position was looked for: $asked", asked.isEmpty())
 
         // the answer: Bad Harzburg – its data, and only its
@@ -179,5 +184,44 @@ class MyLocationTest {
         until("Hannover loaded anew") { asked.isNotEmpty() && vm.state.value.states[hannover.id]?.loading == false }
         assertEquals("Hannover", vm.state.value.states[hannover.id]?.data?.place?.name)
         assertTrue(asked.all { it == 52.37 })
+    }
+
+    /**
+     * A forced reload with "my location" active, step by step: everything yellow at once; the
+     * position asked for anew (not the system's last one); the place's dot green when it is
+     * confirmed, the cards still yellow; then the cards green when their data are there.
+     */
+    @Test fun aForcedReloadShowsEachStep() {
+        val app = RuntimeEnvironment.getApplication()
+        val phone = Phone(app)
+        val vm = model(app, phone)
+        until("the start's search") { vm.state.value.locationStatus == LocationStatus.LOADING }
+        phone.answer.complete(at(52.37, 9.73, System.currentTimeMillis()))
+        until("Hannover loaded") { vm.state.value.locationStatus == LocationStatus.AVAILABLE && vm.state.value.states[hannover.id]?.loading == false }
+        assertEquals("the start may take the system's recent position", false, phone.askedFresh)
+        fun yellow(): Set<dev.nimbus.weather.data.model.DataPart> {
+            val st = vm.state.value
+            val data = st.states[hannover.id]!!.data!!
+            val now = System.currentTimeMillis()
+            return dev.nimbus.weather.ui.main.pageStale(data.stale + dev.nimbus.weather.data.repo.Freshness.expiredParts(data, now), locationMark(st, now))
+        }
+        assertTrue("not all green before: ${yellow()}", yellow().isEmpty())
+
+        forecastDelayMs = 1_500
+        phone.answer = CompletableDeferred()
+        vm.refresh(hannover.id)
+        // 1. everything yellow, the position being asked for – anew
+        until("searching") { vm.state.value.locationStatus == LocationStatus.LOADING }
+        assertEquals(dev.nimbus.weather.data.model.DataPart.entries.toSet(), yellow())
+        assertFalse(locationMark(vm.state.value, System.currentTimeMillis()).current)
+        // 2. the position confirmed: the place's dot green, the cards still yellow (their data on the way)
+        phone.answer.complete(at(52.37, 9.73, System.currentTimeMillis()))
+        until("position confirmed") { vm.state.value.locationStatus == LocationStatus.AVAILABLE }
+        assertEquals("the position was not asked for anew", true, phone.askedFresh)
+        assertTrue(locationMark(vm.state.value, System.currentTimeMillis()).current)
+        assertTrue("cards green before their data: ${yellow()}", dev.nimbus.weather.data.model.DataPart.FORECAST in yellow())
+        // 3. the data there: green
+        until("loaded anew") { vm.state.value.states[hannover.id]?.loading == false }
+        assertTrue("still yellow: ${yellow()}", yellow().isEmpty())
     }
 }

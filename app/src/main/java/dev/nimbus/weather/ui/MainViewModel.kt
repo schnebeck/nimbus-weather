@@ -138,6 +138,9 @@ class ViewModelDeps(
     }
 }
 
+/** A forced reload shows "all yellow" at least this long – a fast answer made it invisible. */
+internal const val FORCED_YELLOW_MS = 500L
+
 class MainViewModel(
     app: Application,
     private val container: ViewModelDeps = ViewModelDeps.of((app as NimbusApp).container),
@@ -309,8 +312,13 @@ class MainViewModel(
         if (_state.value.locationStatus == LocationStatus.LOADING) return
         _state.update { it.copy(locationStatus = LocationStatus.LOADING) }
         viewModelScope.launch {
-            val found = runCatching { location.currentLocation() }.getOrNull()
+            // asked for anew (reload, the pin): a new position – the system's last one, even
+            // a minute old, made the check a matter of milliseconds and nothing was seen of it
+            val asked = System.currentTimeMillis()
+            val found = runCatching { location.currentLocation(fresh = _state.value.locationForced) }.getOrNull()
             val forced = _state.value.locationForced
+            // asked for anew: "all yellow" stays at least this long, however fast the position is there
+            if (forced) kotlinx.coroutines.delay((FORCED_YELLOW_MS - (System.currentTimeMillis() - asked)).coerceAtLeast(0L))
             val off = !location.enabled()
             val known = _state.value.locationFixedAt
             val now = System.currentTimeMillis()
@@ -377,7 +385,12 @@ class MainViewModel(
         }
     }
 
-    fun load(place: Place, force: Boolean) {
+    /**
+     * Loads [place]'s weather: the parts past their shelf life – or everything, fresh from the
+     * sources ([force]: reload, a new spot). [showYellowMs]: the cards stay yellow at least this long
+     * (a forced reload: "all yellow" is seen, however fast the answers are).
+     */
+    fun load(place: Place, force: Boolean, showYellowMs: Long = 0L) {
         // "my location" while its position is looked for: nothing yet, the search loads it after
         if (waitsForLocation(place, _state.value)) return
         val current = _state.value.states[place.id]
@@ -405,8 +418,9 @@ class MainViewModel(
             // answered – but only while this load is still the one for the place: "my location" moved
             // meanwhile, a load for the spot left behind writes none of its steps over the new one's
             val me = coroutineContext.job
+            if (showYellowMs > 0) kotlinx.coroutines.delay(showYellowMs)
             val result = runCatching {
-                repo.load(place, settings, german, previous = data, refresh = due) { step ->
+                repo.load(place, settings, german, previous = data, refresh = due, fresh = force) { step ->
                     updatePlace(place.id) { if (me.isActive) it.copy(data = step) else it }
                 }
             }
@@ -446,7 +460,7 @@ class MainViewModel(
     fun refresh(placeId: String) {
         val place = _state.value.pages.firstOrNull { it.id == placeId } ?: return
         // "my location": first the position (everything for it waits), then its data
-        if (place.isCurrentLocation) refreshLocation(force = true) else load(place, force = true)
+        if (place.isCurrentLocation) refreshLocation(force = true) else load(place, force = true, showYellowMs = FORCED_YELLOW_MS)
     }
 
     /** Past 48 h for the place, fetched on demand when the user swipes back; kept for 30 min. */

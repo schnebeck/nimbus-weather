@@ -25,13 +25,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ReverseGeocodeTest {
-    @Test fun townFromNominatim() {
-        val p = LocationProvider.parseNominatim(JsonCodec.parseToJsonElement(Fixtures.text("nominatim_reverse.json")), 52.4256, 9.6177)!!
-        assertEquals("Garbsen", p.name)
+    @Test fun cityFromNominatim() {
+        val p = LocationProvider.parseNominatim(JsonCodec.parseToJsonElement(Fixtures.text("nominatim_reverse.json")), 52.3759, 9.7320)!!
+        assertEquals("Hannover", p.name)
         assertEquals("Niedersachsen", p.region)
         assertEquals("DE", p.countryCode)
         assertTrue(p.isCurrentLocation)
-        assertEquals(52.4256, p.latitude, 0.0)
+        assertEquals(52.3759, p.latitude, 0.0)
     }
 
     @Test fun villageAndCountyFallbacks() {

@@ -95,7 +95,42 @@ open class LocationProvider(private val context: Context, private val http: okht
      * took up to half a minute ago – that made the reload's check a matter of milliseconds.
      */
     private suspend fun fix(lm: LocationManager, provider: String, fresh: Boolean): Location? =
-        singleFix(lm, provider, fresh)?.takeIf { !fresh || ageMs(it) < FRESH_FIX_MS }
+        if (fresh) freshFix(lm, provider) else singleFix(lm, provider, fresh)
+
+    /**
+     * Asked for anew (reload): the provider runs until a fix of now arrives, then it stops. Asking
+     * for "the current location" instead got the same stored one for half a minute – passed over
+     * as too old, asked again and again: a repeated reload waited 30–40 s.
+     */
+    @SuppressLint("MissingPermission")
+    private suspend fun freshFix(lm: LocationManager, provider: String): Location? = suspendCancellableCoroutine { cont ->
+        val listener = object : android.location.LocationListener {
+            override fun onLocationChanged(location: Location) {
+                if (ageMs(location) < FRESH_FIX_MS && cont.isActive) { lm.removeUpdates(this); cont.resume(location) }
+            }
+            override fun onProviderDisabled(provider: String) {
+                if (cont.isActive) { lm.removeUpdates(this); cont.resume(null) }
+            }
+            override fun onProviderEnabled(provider: String) {}
+            @Deprecated("only called before Android 10")
+            @Suppress("DEPRECATION")
+            override fun onStatusChanged(provider: String?, status: Int, extras: android.os.Bundle?) {}
+        }
+        cont.invokeOnCancellation { lm.removeUpdates(listener) }
+        runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val request = android.location.LocationRequest.Builder(0L)
+                    .setQuality(
+                        if (provider == LocationManager.GPS_PROVIDER) android.location.LocationRequest.QUALITY_HIGH_ACCURACY
+                        else android.location.LocationRequest.QUALITY_BALANCED_POWER_ACCURACY,
+                    )
+                    .build()
+                lm.requestLocationUpdates(provider, request, ContextCompat.getMainExecutor(context), listener)
+            } else {
+                lm.requestLocationUpdates(provider, 0L, 0f, listener, context.mainLooper)
+            }
+        }.onFailure { if (cont.isActive) cont.resume(null) }
+    }
 
     @SuppressLint("MissingPermission")
     private suspend fun singleFix(lm: LocationManager, provider: String, fresh: Boolean): Location? = suspendCancellableCoroutine { cont ->

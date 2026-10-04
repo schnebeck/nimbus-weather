@@ -1,0 +1,2 @@
+• Reload of "My location" several times in a row: the location search takes the next new fix at once instead of waiting up to 40 s over an old stored position
+• Screenshots with Hannover

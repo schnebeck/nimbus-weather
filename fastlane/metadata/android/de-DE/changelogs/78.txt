@@ -1,0 +1,2 @@
+• Neu laden bei „Mein Standort“ mehrmals hintereinander: die Ortung nimmt den nächsten neuen Fix sofort, statt bis zu 40 s auf eine alte zwischengespeicherte Position zu warten
+• Screenshots mit Hannover

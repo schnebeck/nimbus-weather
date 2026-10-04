@@ -1,0 +1,4 @@
+• Measurements only from the height of the place (±300 m): on the Zugspitze the temperature of Garmisch was shown. Also for the look-back and citizen sensors
+• Temperature curve and "now" line at their time, matching labels and slider; the "now" line in "Today So Far" too
+• Reload: 2 minutes per source, the spinner ends with the forecast, cards turn green one by one; no more swallowed reloads
+• 48 minutes of sun are no foggy hour

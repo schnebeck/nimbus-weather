@@ -53,10 +53,14 @@ class RepositoryTest {
                 val url = request.url
                 synchronized(requested) { requested += url.encodedPath + "?" + (url.queryParameter("models") ?: "") }
                 fun ok(name: String) = MockResponse.Builder().code(200).body(Fixtures.text(name)).build()
+                // the forecasts were recorded in Munich (524 m): here they stand for Berlin, 34 m –
+                // the height the Berlin station and the sensors are measured against
+                fun forecast(name: String) = MockResponse.Builder().code(200)
+                    .body(Fixtures.text(name).replace("\"elevation\":524.0", "\"elevation\":34.0")).build()
                 return when {
                     url.encodedPath == "/v1/forecast" && failForecast -> MockResponse.Builder().code(500).build()
-                    url.encodedPath == "/v1/forecast" && url.queryParameter("models") == "icon_seamless" -> ok("openmeteo_icon.json")
-                    url.encodedPath == "/v1/forecast" -> ok("openmeteo_best.json")
+                    url.encodedPath == "/v1/forecast" && url.queryParameter("models") == "icon_seamless" -> forecast("openmeteo_icon.json")
+                    url.encodedPath == "/v1/forecast" -> forecast("openmeteo_best.json")
                     url.encodedPath == "/v1/air-quality" -> ok("openmeteo_aq.json")
                     url.encodedPath == "/current_weather" -> ok("brightsky_current.json")
                     url.encodedPath == "/alerts" -> MockResponse.Builder().code(200).body("""{"alerts":[]}""").build()

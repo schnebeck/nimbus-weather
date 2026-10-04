@@ -29,6 +29,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -185,17 +187,17 @@ class LookTest {
     }
 
     /**
-     * The "now" line meets the temperature curve at the temperature of now: the line is placed
-     * like the curve's points (an hourly value in the middle of the hour before its time) – it
-     * stood half an hour off. 10° until 12:00, 20° from 13:00: at the line (12:00) the curve is
-     * on the 10° level. [fine]: 15-minute points, 10° until 11:45, 20° from 12:00 – at 12:00 on 20°.
+     * The "now" line meets the temperature curve at the temperature of now: line and curve points
+     * stand at their time on the labels' clock. 10° until 12:00, 20° from 13:00: at the line
+     * (12:00) the curve is on the 10° level. [fine]: 15-minute points, 10° until 11:30, 20° from
+     * 11:45 – at 12:00 on 20°.
      */
     private fun nowLineMeetsTheCurve(fine: Boolean) {
         val q = 15 * 60_000L
         val step = (0..25).map { k ->
             MeteoPoint(day + k * h, if (k <= 12) 10.0 else 20.0, Condition.CLOUDY, k in 7..19, 0.0, windSpeed = 10.0, windDirection = 200.0)
         }
-        val curve = if (!fine) null else (0..100).map { i -> CurvePoint(day + i * q, if (i <= 47) 10.0 else 20.0, q) }
+        val curve = if (!fine) null else (0..100).map { i -> CurvePoint(day + i * q, if (i <= 46) 10.0 else 20.0, q) }
         compose.setContent { Card { Meteogram(step, day, day + 24 * h, emptyList(), day + 12 * h, showNow = true, curve = curve) } }
         compose.waitForIdle()
         val img = bitmap()
@@ -203,10 +205,7 @@ class LookTest {
         val plot = 0 until img.height * 60 / 100
         // the curve's height in a column (mean of its pixels)
         fun curveY(x: Int): Double? = plot.filter { vivid(x, it) }.takeIf { it.isNotEmpty() }?.average()
-        // the "now" line: the column with the most light grey pixels
-        val nowX = (img.width / 10 until img.width * 9 / 10).maxBy { x ->
-            plot.count { y -> img.rgb(x, y).let { (r, g, b) -> r > 170 && g > 170 && b > 170 && maxOf(r, g, b) - minOf(r, g, b) < 30 } }
-        }
+        val nowX = img.nowX()
         val low = curveY(img.width / 5)!!; val high = curveY(img.width * 17 / 20)!!
         val atNow = (nowX - 3..nowX + 3).mapNotNull { curveY(it) }.average()
         val want = if (fine) high else low
@@ -216,6 +215,43 @@ class LookTest {
     @Test fun nowLineMeetsTheHourlyCurveAtNow() = nowLineMeetsTheCurve(fine = false)
 
     @Test fun nowLineMeetsTheFineCurveAtNow() = nowLineMeetsTheCurve(fine = true)
+
+    /** The "now" line: the column of the plot with the most light grey pixels. */
+    private fun Bitmap.nowX(): Int {
+        val plot = 0 until height * 60 / 100
+        return (width / 10 until width * 9 / 10).maxBy { x ->
+            plot.count { y -> rgb(x, y).let { (r, g, b) -> r > 170 && g > 170 && b > 170 && maxOf(r, g, b) - minOf(r, g, b) < 30 } }
+        }
+    }
+
+    /**
+     * "Die Stundenzeitanzeige (oben, 00.00 - 24.00) und der Slider stehen auf der vollen Stunden …
+     * Also sollte die aktuelle Zeitanzeige auch zur Uhrzeit oben und zum Slider passen": the bar of
+     * 12–13 stands under the 12 (11:30–12:30 on the clock), the slider of that hour on its middle –
+     * at 12:00 the "now" line stands there too (it stood an hour early, on the bar of 11–12), at
+     * 12:30 half way to the next bar.
+     */
+    @Test fun nowLineStandsOnTheClock() {
+        var shown by mutableStateOf(false)
+        var now by mutableLongStateOf(day + 12 * h)
+        // rain in the hour 12–13 only: its bar (time stamp 13:00) is the only one
+        val points = forecastDay().mapIndexed { k, p -> p.copy(precipitation = if (k == 13) 1.0 else 0.0) }
+        compose.setContent { Card { Meteogram(points, day, day + 24 * h, emptyList(), now, showNow = shown) } }
+        compose.waitForIdle()
+        // (narrower than a column: not the legend's swatch)
+        val runs = bitmap().let { img -> img.barRuns(img.barRow()).filter { it.last - it.first < img.width / 25 } }
+        val bar = runs.singleOrNull() ?: throw AssertionError("bars $runs")
+        val centre = (bar.first + bar.last) / 2f
+        val column = (bar.last - bar.first + 1) / dev.nimbus.weather.ui.main.HourAxis.BAR_SHARE
+        shown = true
+        compose.waitForIdle()
+        val at12 = bitmap().nowX()
+        assertTrue("12:00 at x=$at12, the bar of 12–13 at $centre", abs(at12 - centre) <= 3f)
+        now = day + 12 * h + 30 * 60_000L
+        compose.waitForIdle()
+        val at1230 = bitmap().nowX()
+        assertTrue("12:30 at x=$at1230, half a column right of the bar of 12–13 at $centre", abs(at1230 - (centre + column / 2)) <= 3f)
+    }
 
     /** Rows where at least [share] of the width is near-white: the chance line (60 % all day). */
     private fun Bitmap.whiteRows(share: Float = 0.5f): List<Int> = (0 until height).filter { y ->

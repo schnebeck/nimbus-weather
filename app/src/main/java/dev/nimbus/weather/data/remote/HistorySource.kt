@@ -18,6 +18,7 @@
 package dev.nimbus.weather.data.remote
 
 import dev.nimbus.weather.data.model.Condition
+import dev.nimbus.weather.data.model.Representative
 import dev.nimbus.weather.data.model.WeatherCodes
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -114,7 +115,8 @@ class HistorySource(
         val modelRoot = modelJob.await()
         val obsRoot = obsJob.await()
         // 10-minute reports of the station that reports now (the hourly values lag 1–2 hours behind)
-        val synop = obsRoot?.let { root -> synopStation(root) }?.let { station ->
+        val elevation = modelRoot.obj()?.d("elevation")
+        val synop = obsRoot?.let { root -> synopStation(root, elevation) }?.let { station ->
             runCatching {
                 val from = Instant.ofEpochMilli(now).atZone(ZoneId.of("Europe/Berlin")).toLocalDate().minusDays(1)
                     .atStartOfDay(ZoneId.of("Europe/Berlin")).toInstant()
@@ -174,8 +176,8 @@ class HistorySource(
         }
 
         /** DWD id of the station reporting now (the "current" source of the hourly answer). */
-        fun synopStation(root: JsonElement): String? = root.obj()?.a("sources")?.mapNotNull { it as? JsonObject }
-            ?.filter { it.s("observation_type") == "current" }?.minByOrNull { it.d("distance") ?: Double.MAX_VALUE }?.s("dwd_station_id")
+        fun synopStation(root: JsonElement, elevationM: Double? = null): String? = root.obj()?.a("sources")?.mapNotNull { it as? JsonObject }
+            ?.filter { it.s("observation_type") == "current" && Representative.height(it.d("height"), elevationM) }?.minByOrNull { it.d("distance") ?: Double.MAX_VALUE }?.s("dwd_station_id")
 
         fun parseSynop(root: JsonElement): List<SynopReport> = root.obj()?.a("weather")?.mapNotNull { e ->
             val w = e as? JsonObject ?: return@mapNotNull null
@@ -204,25 +206,43 @@ class HistorySource(
             )
         }
 
-        /** Hourly observations; entries from forecast sources (MOSMIX) are dropped. */
-        fun parseObservations(root: JsonElement): Observations {
+        /**
+         * Hourly observations; entries from forecast sources (MOSMIX) are dropped, and so is each
+         * value whose station (Bright Sky fills gaps from other stations) is not at the height of
+         * the place at [elevationM] metres ([Representative.height]; the sea-level pressure holds at
+         * any height).
+         */
+        fun parseObservations(root: JsonElement, elevationM: Double? = null): Observations {
             val o = root.obj() ?: return Observations(emptyMap(), null, null)
             val sources = o.a("sources")?.mapNotNull { it as? JsonObject }.orEmpty()
             val forecastIds = sources.filter { it.s("observation_type") == "forecast" }.mapNotNull { it.l("id") }.toSet()
-            val main = sources.filter { it.l("id") !in forecastIds }.minByOrNull { it.d("distance") ?: Double.MAX_VALUE }
+            val heights = sources.associate { (it.l("id") ?: -1L) to it.d("height") }
+            val main = sources.filter { it.l("id") !in forecastIds && Representative.height(it.d("height"), elevationM) }
+                .minByOrNull { it.d("distance") ?: Double.MAX_VALUE }
             val map = o.a("weather")?.mapNotNull { e ->
                 val w = e as? JsonObject ?: return@mapNotNull null
                 if (w.l("source_id") in forecastIds) return@mapNotNull null
                 val time = runCatching { java.time.OffsetDateTime.parse(w.s("timestamp")).toInstant().toEpochMilli() }.getOrNull()
                     ?: return@mapNotNull null
+                val filled = w.o("fallback_source_ids")
+                /** The station behind [key]: an observation, at the place's height (pressure: any height). */
+                fun fits(key: String): Boolean {
+                    val id = filled?.l(key) ?: w.l("source_id")
+                    return id !in forecastIds && (key == "pressure_msl" || Representative.height(heights[id], elevationM))
+                }
+                fun v(key: String) = w.d(key)?.takeIf { fits(key) }
+                val precipitation = v("precipitation")
+                val sunshine = v("sunshine")
+                // Bright Sky's icon follows the condition and the cloud cover: both from the place's height
+                val icon = w.s("icon")?.takeIf { fits("condition") && fits("cloud_cover") }
                 // Like Open-Meteo, sums (precipitation, sunshine) refer to the hour before the timestamp.
                 time to HistoryHour.Measured(
-                    temperature = w.d("temperature"), precipitation = w.d("precipitation"), windSpeed = w.d("wind_speed"),
-                    windGust = w.d("wind_gust_speed"), windDirection = w.d("wind_direction"), sunshineMinutes = w.d("sunshine"),
-                    cloudCover = w.d("cloud_cover"),
+                    temperature = v("temperature"), precipitation = precipitation, windSpeed = v("wind_speed"),
+                    windGust = v("wind_gust_speed"), windDirection = v("wind_direction"), sunshineMinutes = sunshine,
+                    cloudCover = v("cloud_cover"),
                     // Bright Sky's icon follows the cloud cover only: the measured sunshine corrects it
-                    condition = condition(w.s("condition"), w.s("icon"), w.d("precipitation"))?.let { WeatherCodes.withSunshine(it, w.d("sunshine")) },
-                    pressure = w.d("pressure_msl"),
+                    condition = condition(w.s("condition")?.takeIf { fits("condition") }, icon, precipitation)?.let { WeatherCodes.withSunshine(it, sunshine) },
+                    pressure = v("pressure_msl"),
                 )
             }?.toMap().orEmpty()
             return Observations(map, main?.s("station_name"), main?.d("distance")?.div(1000.0))
@@ -246,12 +266,16 @@ class HistorySource(
 
         fun combine(modelRoot: JsonElement, obsRoot: JsonElement?, model: String, now: Long, synop: List<SynopReport> = emptyList()): History {
             val (zone, modelled) = parseModel(modelRoot)
-            val hourly = obsRoot?.let { parseObservations(it) } ?: Observations(emptyMap(), null, null)
+            val hourly = obsRoot?.let { parseObservations(it, modelRoot.obj()?.d("elevation")) } ?: Observations(emptyMap(), null, null)
             // Hours the hourly values do not have yet, from the 10-minute reports
             val reports = synop.associateBy { it.time }
             val filled = reports.keys.filter { it % 3_600_000L == 0L && it !in hourly.byTime && it <= now }
                 .mapNotNull { t -> hourFromSynop(reports, t)?.let { t to it } }
-            val obs = hourly.copy(byTime = hourly.byTime + filled)
+            // a measured temperature far off the model's belongs to somewhere else (Representative.temperature)
+            val obs = hourly.copy(byTime = (hourly.byTime + filled).mapValues { (t, m) ->
+                val model = modelled[t]?.temperature
+                if (m.temperature != null && !Representative.temperature(m.temperature, model)) m.copy(temperature = null) else m
+            })
             val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
             // Past hours, and for today the forecast up to midnight (drawn dashed, not counted in the summary)
             val times = (modelled.keys + obs.byTime.keys).filter { t ->

@@ -39,6 +39,8 @@ data class ModelForecast(
     val hourly: List<HourlyPoint>,
     val daily: List<DailyPoint>,
     val minutely: List<MinutelyPoint>,
+    /** Height of the place in metres (Open-Meteo's terrain model) – the model values hold for it. */
+    val elevation: Double? = null,
 ) {
     /** Fills gaps (null fields, missing hours/days) of this forecast with values from [other]. */
     fun mergedWith(other: ModelForecast?): ModelForecast {
@@ -101,6 +103,7 @@ data class ModelForecast(
             hourly = mergedHours,
             daily = mergedDays,
             minutely = minutely.ifEmpty { other.minutely },
+            elevation = elevation ?: other.elevation,
         )
     }
 }
@@ -341,6 +344,7 @@ class OpenMeteoSource(
                 hourly = hourly,
                 daily = daily,
                 minutely = minutely,
+                elevation = o.d("elevation"),
             )
         }
 

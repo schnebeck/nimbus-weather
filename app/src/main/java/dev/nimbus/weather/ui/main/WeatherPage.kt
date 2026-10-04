@@ -697,6 +697,8 @@ internal fun cardStatus(key: String, stale: Set<dev.nimbus.weather.data.model.Da
 internal fun Card(item: PageItem, arrivals: Arrivals, placeId: String) {
     val shelf = LocalShelf.current
     val stale = cardParts(item.key)?.filterTo(mutableSetOf()) { shelf.stateOf(placeId, it) != dev.nimbus.weather.data.repo.RecordState.CURRENT }.orEmpty()
+    // the protocol of the view (debug builds): each card drawn, with the parts it shows out of date
+    if (dev.nimbus.weather.BuildConfig.DEBUG) android.util.Log.d("NimbusCard", "$placeId ${item.key} stale=$stale")
     PopIn(arrivals.fresh(item.key)) {
         CompositionLocalProvider(LocalCardStatus provides cardStatus(item.key, stale)) { item.content() }
     }

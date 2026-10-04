@@ -39,10 +39,28 @@ class SunnySkyTest {
         assertEquals(Condition.CLOUDY, WeatherCodes.withSunshine(Condition.CLOUDY, null))
     }
 
-    @Test fun precipitationFogAndThunderStay() {
-        for (c in listOf(Condition.RAIN, Condition.SHOWERS, Condition.DRIZZLE, Condition.FOG, Condition.THUNDERSTORM, Condition.SNOW)) {
+    @Test fun precipitationAndThunderStay() {
+        for (c in listOf(Condition.RAIN, Condition.SHOWERS, Condition.DRIZZLE, Condition.THUNDERSTORM, Condition.SNOW)) {
             assertEquals(c, WeatherCodes.withSunshine(c, 60.0))
         }
+    }
+
+    /** Fog gives way to the sun: 48 minutes of sunshine are no foggy hour. */
+    @Test fun fogGivesWayToTheSun() {
+        assertEquals(Condition.CLEAR, WeatherCodes.withSunshine(Condition.FOG, 48.0))
+        assertEquals(Condition.PARTLY_CLOUDY, WeatherCodes.withSunshine(Condition.FOG, 20.0))
+        assertEquals(Condition.FOG, WeatherCodes.withSunshine(Condition.FOG, 10.0))
+        assertEquals(Condition.FOG, WeatherCodes.withSunshine(Condition.FOG, null))
+    }
+
+    /** The hour of the history's marker: the station reports fog, and 48 minutes of sun. */
+    @Test fun aFoggyStationHourWithSunIsSunny() {
+        val json = Json.parseToJsonElement(
+            """{"weather":[
+                {"timestamp":"2026-10-04T11:00:00+02:00","source_id":1,"temperature":12.0,"cloud_cover":90,"sunshine":48.0,"precipitation":0.0,"condition":"fog","icon":"fog"}
+               ],"sources":[{"id":1,"observation_type":"historical","station_name":"Hannover","distance":3500}]}""",
+        )
+        assertEquals(Condition.CLEAR, HistorySource.parseObservations(json).byTime.values.single().condition)
     }
 
     /** The hour of the screenshot: Hannover-Kirchrode, 30 Sept. 13:00 – 87 % cloud, 60 min sun, icon "cloudy". */

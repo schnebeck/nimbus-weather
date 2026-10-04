@@ -61,12 +61,14 @@ object WeatherCodes {
     /** … and as partly cloudy. */
     const val PARTLY_SUNNY_MINUTES = 15.0
 
-    private val bySky = listOf(Condition.CLEAR, Condition.MOSTLY_CLEAR, Condition.PARTLY_CLOUDY, Condition.CLOUDY)
+    /** From the sunniest to the darkest sky: fog is the darkest (the sun does not get through). */
+    private val bySky = listOf(Condition.CLEAR, Condition.MOSTLY_CLEAR, Condition.PARTLY_CLOUDY, Condition.CLOUDY, Condition.FOG)
 
     /**
      * [c] (from the cloud cover) with the hour's [sunshineMinutes]: the cloud cover counts every
      * cloud, thin high cirrus too – an hour of full sun under a veil read "cloudy". The sunshine
-     * makes the sky sunnier, never darker; precipitation, fog and thunder stay as they are.
+     * makes the sky sunnier, never darker; fog too gives way to it (fog that the sun shone through
+     * for 48 minutes was not the hour's weather). Precipitation and thunder stay as they are.
      */
     fun withSunshine(c: Condition, sunshineMinutes: Double?): Condition {
         val sun = sunshineMinutes ?: return c

@@ -49,7 +49,7 @@ class WeatherRepository(
     private val clock: () -> Long = System::currentTimeMillis,
     private val bathing: dev.nimbus.weather.data.remote.BathingSource? = null,
     /** The extras get this long in all (from the start of the load); later ones keep their last values. */
-    private val extrasDeadlineMs: Long = 60_000L,
+    private val extrasDeadlineMs: Long = SOURCE_TIMEOUT_MS,
 ) {
 
     /**
@@ -107,29 +107,33 @@ class WeatherRepository(
         // took too long; then the place's last value stays (a refresh does not empty a card).
         // Only the ones asked for: a part still current keeps its value and is not asked again.
         val wanted = if (extras) refresh else emptySet()
-        val aqJob = async { if (DataPart.AIR_QUALITY !in wanted) null else fetch(EXTRA_TIMEOUT_MS, "air quality") { openMeteo.airQuality(lat, lon) } }
+        val aqJob = async { if (DataPart.AIR_QUALITY !in wanted) null else fetch(SOURCE_TIMEOUT_MS, "air quality") { openMeteo.airQuality(lat, lon) } }
         val communityJob = async {
             if (DataPart.COMMUNITY !in wanted) null
             else if (!settings.shows(dev.nimbus.weather.data.model.WeatherCard.COMMUNITY)) Fetched(null)
-            else fetch(COMMUNITY_TIMEOUT_MS, "citizen sensors") { community.nearby(lat, lon) }
+            else {
+                // the sensors at the place's height: the forecast knows it
+                val elevation = primaryJob.await().getOrNull()?.elevation ?: fillJob.await()?.elevation
+                fetch(SOURCE_TIMEOUT_MS, "citizen sensors") { community.nearby(lat, lon, elevation) }
+            }
         }
-        val pollenJob = async { if (DataPart.POLLEN !in wanted) null else fetch(EXTRA_TIMEOUT_MS, "pollen") { pollen.forecast(lat, lon, inDwdArea) } }
+        val pollenJob = async { if (DataPart.POLLEN !in wanted) null else fetch(SOURCE_TIMEOUT_MS, "pollen") { pollen.forecast(lat, lon, inDwdArea) } }
         // Water levels and state flood alerts (Germany). Optional – never fail the forecast.
         val gaugeJob = async {
             if (DataPart.GAUGES !in wanted) null
             else if (gauges == null || !inDwdArea || !settings.shows(dev.nimbus.weather.data.model.WeatherCard.GAUGES)) Fetched(emptyList())
-            else fetch(GAUGE_TIMEOUT_MS, "gauges") { gauges.nearby(lat, lon) }
+            else fetch(SOURCE_TIMEOUT_MS, "gauges") { gauges.nearby(lat, lon) }
         }
         // Bathing waters (EEA, Europe-wide) – only when the card is shown; optional like the gauges
         val bathingJob = async {
             if (DataPart.BATHING !in wanted) null
             else if (bathing == null || !settings.shows(dev.nimbus.weather.data.model.WeatherCard.BATHING)) Fetched(emptyList())
-            else fetch(BATHING_TIMEOUT_MS, "bathing waters") { bathing.nearby(lat, lon, settings.bathingRadiusKm, settings.bathingFavorites) }
+            else fetch(SOURCE_TIMEOUT_MS, "bathing waters") { bathing.nearby(lat, lon, settings.bathingRadiusKm, settings.bathingFavorites) }
         }
         val floodJob = async {
             if (DataPart.FLOOD !in wanted) null
             else if (gauges?.lhp == null || !inDwdArea) Fetched(emptyList())
-            else fetch(10_000L, "flood alerts") { gauges.lhp.alerts(lat, lon) }
+            else fetch(SOURCE_TIMEOUT_MS, "flood alerts") { gauges.lhp.alerts(lat, lon) }
         }
 
         val d2Chance = d2ChanceJob.await()
@@ -159,9 +163,11 @@ class WeatherRepository(
             CurrentWeather(h.time, h.temperature, h.apparentTemperature, h.condition, h.isDay, h.humidity, null, h.pressure,
                 h.windSpeed, h.windGust, h.windDirection, h.cloudCover, h.visibility, h.uvIndex, h.precipitation)
         } ?: throw IllegalStateException("No current weather")
-        if (obs != null && clock() - obs.time < 2 * 3600_000L) {
-            current = mergeObservation(current, obs)
-            sources += Source(SourceKind.DWD_STATION, obs.stationName)
+        // only the measured values that stand for the place (its height, near the model)
+        val measured = obs?.takeIf { clock() - it.time < 2 * 3600_000L }?.forPlace(forecast.elevation, current.temperature)
+        if (measured != null) {
+            current = mergeObservation(current, measured)
+            sources += Source(SourceKind.DWD_STATION, measured.stationName)
         }
         val alerts = alertsJob.await()
         if (inDwdArea) sources += Source(SourceKind.DWD_WARNINGS)
@@ -285,20 +291,20 @@ class WeatherRepository(
         }.also { if (it == null) android.util.Log.w("Nimbus", "$what: no answer, the last one stays") }
 
     companion object {
-        /** The first tide fit downloads ~3 MB; later loads take a fraction of a second. */
-        private const val GAUGE_TIMEOUT_MS = 40_000L
-        /** Air quality and pollen: small requests, but the page must not wait forever for them. */
-        private const val EXTRA_TIMEOUT_MS = 20_000L
-        /** sensor.community is often slow; two areas are asked one after the other. */
-        private const val COMMUNITY_TIMEOUT_MS = 15_000L
+        /**
+         * How long each extra source may take: two minutes, on any network. The page does not wait
+         * for them (each card turns current when its answer is there); an answer cut off is lost
+         * and fetched once more – so a longer wait saves data. A forced reload renews the stored
+         * lists too (gauges, tide fit ~3 MB): on a slow network they took longer than 10–40 s.
+         */
+        const val SOURCE_TIMEOUT_MS = 120_000L
         /** [WeatherAlert.source] of the states' flood alerts. */
         private const val LHP = "LHP"
-        private const val BATHING_TIMEOUT_MS = 30_000L
 
         /** Rough bounding box of the DWD station network / warning area. */
         fun isInDwdArea(lat: Double, lon: Double) = lat in 47.2..55.1 && lon in 5.8..15.1
 
-        /** Measured values from a nearby DWD station beat modelled ones. */
+        /** Measured values from a nearby DWD station beat modelled ones ([obs] already [StationObservation.forPlace]). */
         fun mergeObservation(model: CurrentWeather, obs: StationObservation): CurrentWeather {
             val t = obs.temperature ?: model.temperature
             val delta = t - model.temperature

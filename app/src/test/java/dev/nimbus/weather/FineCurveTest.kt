@@ -43,13 +43,14 @@ class FineCurveTest {
     private val start = 1_790_800_000_000L / h * h
     private val axis = HourAxis(start, start + 24 * h, 0f, 2400f)      // 100 px per hour
 
-    @Test fun everyPointInTheMiddleOfItsInterval() {
-        // hourly value of 06:00 at 05:30, the 15-minute one of 06:00 at 05:52:30, the 10-minute at 05:55
-        assertEquals(550f, axis.point(start + 6 * h), 0.01f)
-        assertEquals(587.5f, axis.point(start + 6 * h, q), 0.01f)
-        assertEquals(591.67f, axis.point(start + 6 * h, ten), 0.01f)
-        // an hourly point is in its bar's column, under the cursor
-        assertEquals(axis.cursor(start + 6 * h), axis.point(start + 6 * h), 0.01f)
+    @Test fun everyPointAtItsTime() {
+        // the temperature of 06:00 under the label "06" – hourly, 15-minute and 10-minute alike
+        assertEquals(650f, axis.clock(start + 6 * h), 0.01f)
+        assertEquals(axis.label(start + 6 * h), axis.clock(start + 6 * h), 0.01f)
+        // 06:15 a quarter of an hour right of it
+        assertEquals(675f, axis.clock(start + 6 * h + q), 0.01f)
+        // the slider of 06–07 on it
+        assertEquals(axis.cursor(start + 7 * h), axis.clock(start + 6 * h), 0.01f)
     }
 
     @Test fun gapsSplitTheCurveFineStepsDoNot() {
@@ -65,8 +66,8 @@ class FineCurveTest {
 
     @Test fun valueAtTheCursorLiesOnTheCurve() {
         val pts = listOf(CurvePoint(start + h, 10.0), CurvePoint(start + 2 * h, 14.0))
-        assertEquals(10.0, Curve.at(pts, start + h / 2)!!, 1e-9)                       // on the point
-        assertEquals(12.0, Curve.at(pts, start + h)!!, 1e-9)                           // halfway
+        assertEquals(10.0, Curve.at(pts, start + h)!!, 1e-9)                           // on the point
+        assertEquals(12.0, Curve.at(pts, start + h + h / 2)!!, 1e-9)                   // halfway
         assertNull(Curve.at(pts, start + 5 * h))
     }
 
@@ -75,7 +76,7 @@ class FineCurveTest {
         val coarse = (0..5).map { CurvePoint(start + it * h, 9.0) }
         val m = Curve.merge(fine, coarse)
         assertEquals(9 + 3, m.size)                                                     // 03, 04, 05 hourly
-        assertTrue(m.zipWithNext().all { (a, b) -> a.at <= b.at })
+        assertTrue(m.zipWithNext().all { (a, b) -> a.time <= b.time })
     }
 
     @Test fun todayReadingsRunIntoTheForecastWithoutAGap() {
@@ -112,8 +113,8 @@ class FineCurveTest {
         val c = Curve.joined(readings, forecast)
         val last = readings.last()
         // right after the last reading the curve is near it, not 3 K higher
-        assertEquals(11.0, Curve.at(c, last.at + 30 * 60_000L)!!, 0.6)
-        assertEquals(14.0, Curve.at(c, last.at + Curve.JOIN_MS + h)!!, 1e-9)
+        assertEquals(11.0, Curve.at(c, last.time + 30 * 60_000L)!!, 0.6)
+        assertEquals(14.0, Curve.at(c, last.time + Curve.JOIN_MS + h)!!, 1e-9)
         // without readings the forecast is as it is
         assertEquals(forecast, Curve.joined(emptyList(), forecast))
     }

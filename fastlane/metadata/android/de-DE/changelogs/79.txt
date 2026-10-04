@@ -1,0 +1,4 @@
+• Messwerte nur aus der Höhe des Ortes (±300 m): auf der Zugspitze stand die Temperatur von Garmisch. Gilt auch für Historie und Bürgersensoren
+• Temperaturkurve und Jetzt-Linie auf ihrer Uhrzeit, passend zu Beschriftung und Schieber; Jetzt-Linie auch in „Heute bisher“
+• Neu laden: 2 Minuten je Quelle, der Kreisel endet mit der Vorhersage, Karten werden einzeln grün; kein verschlucktes Neuladen mehr
+• 48 Minuten Sonne sind keine Nebelstunde

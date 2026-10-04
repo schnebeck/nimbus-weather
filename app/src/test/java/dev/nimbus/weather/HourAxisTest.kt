@@ -31,12 +31,29 @@ class HourAxisTest {
     private val times = (0..24).map { start + it * h }
     private val axis = HourAxis(start, end, 40f, 1000f)
 
-    @Test fun barCurvePointAndCursorOfAnHourAreOneColumn() {
+    @Test fun barAndCursorOfAnHourAreOneColumn() {
         for (t in times.drop(1)) {
             val centre = axis.barLeft(t) + axis.barWidth() / 2
             assertEquals("bar of ${(t - start) / h}:00", axis.cursor(t), centre, 0.01f)
-            assertEquals("curve point of ${(t - start) / h}:00", axis.cursor(t), axis.point(t), 0.01f)
+            // the slider of the hour stands on its full hour – the temperature there on the curve
+            assertEquals("curve point of ${(t - h - start) / h}:00", axis.cursor(t), axis.clock(t - h), 0.01f)
         }
+    }
+
+    /**
+     * The labels are a clock: "12" at 12:00. A moment stands at its time on it – the temperature
+     * of 13:00 under the 13, "now" at 12:09 just right of the 12 (it stood an hour early, just
+     * right of the 11); the bar of 12–13 under the 12, from 11:30 to 12:30 on the clock.
+     */
+    @Test fun momentsStandOnTheClockOfTheLabels() {
+        val noon = start + 12 * h
+        val col = axis.hourWidth
+        assertEquals(axis.label(noon), axis.clock(noon), 0.01f)
+        assertEquals("the 13:00 temperature", axis.label(noon + h), axis.clock(noon + h), 0.01f)
+        assertEquals("12:09", axis.label(noon) + col * 9 / 60, axis.clock(noon + 9 * 60_000L), 0.01f)
+        // the bar of 12–13 (time stamp 13:00) from 11:30 to 12:30 on the clock
+        assertEquals(axis.clock(noon - h / 2), axis.cursor(noon + h) - col / 2, 0.01f)
+        assertEquals(axis.label(noon), axis.cursor(noon + h), 0.01f)
     }
 
     @Test fun barsStandOnTheirHourInsideThePlot() {
@@ -76,7 +93,8 @@ class HourAxisTest {
             assertTrue("$name: bars from HourAxis", src.contains("barLeft(") && src.contains("barWidth()"))
             assertTrue("$name: cursor from HourAxis", src.contains(".cursor("))
             assertTrue("$name: touch from HourAxis", src.contains(".indexAt("))
-            assertTrue("$name: curve points from HourAxis", src.contains("axis.point("))
+            assertTrue("$name: curve points from HourAxis", src.contains("axis.clock(c.time)"))
+            assertTrue("$name: \"now\" from HourAxis", src.contains("val xn = axis.clock(now)"))
             // no hand-made bar geometry, no curve points on the bare time stamp
             assertTrue("$name: own bar offset", !Regex("""hour[Ww] \* 0\.3|bw \* 0\.3""").containsMatchIn(src))
             assertTrue("$name: curve point on the time stamp", !Regex("""(moveTo|lineTo)\(x\(""").containsMatchIn(src))
@@ -89,7 +107,7 @@ class HourAxisTest {
             val bar = axis.barLeft(t) + axis.barWidth() / 2
             assertEquals("label ${(hs - start) / h}", axis.cursor(t), axis.label(hs), 0.01f)
             assertEquals(axis.label(hs), bar, 0.01f)
-            assertEquals(axis.label(hs), axis.point(t), 0.01f)
+            assertEquals("the curve point of the full hour", axis.label(hs), axis.clock(hs), 0.01f)
         }
         // 00, 03 … 21 – no "24": no hour starts there
         assertEquals((0 until 24 step 3).map { start + it * h }, axis.labelHours())

@@ -18,6 +18,7 @@
 package dev.nimbus.weather.data.remote
 
 import dev.nimbus.weather.data.model.CommunityObservation
+import dev.nimbus.weather.data.model.Representative
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import okhttp3.OkHttpClient
@@ -31,23 +32,26 @@ import java.util.Locale
  */
 class CommunitySource(private val http: OkHttpClient, private val baseUrl: String = "https://data.sensor.community") {
 
-    suspend fun nearby(lat: Double, lon: Double): CommunityObservation? {
+    /** The sensors around the place at [elevationM] metres (null: unknown) – only those at its height. */
+    suspend fun nearby(lat: Double, lon: Double, elevationM: Double? = null): CommunityObservation? {
         for (radius in listOf(4.0, 12.0)) {
             val url = String.format(Locale.US, "%s/airrohr/v1/filter/area=%.4f,%.4f,%.0f", baseUrl, lat, lon, radius)
-            val result = aggregate(http.getJson(url), radius)
+            val result = aggregate(http.getJson(url), radius, elevationM)
             if (result != null && result.sensorCount >= 3) return result
         }
         return null
     }
 
     companion object {
-        fun aggregate(root: JsonElement, radiusKm: Double): CommunityObservation? {
+        fun aggregate(root: JsonElement, radiusKm: Double, elevationM: Double? = null): CommunityObservation? {
             val entries = root.arr()?.mapNotNull { it as? JsonObject } ?: return null
             // Latest reading per sensor location, outdoor only.
             val byLocation = LinkedHashMap<String, JsonObject>()
             entries.forEach { e ->
                 val loc = e.o("location") ?: return@forEach
                 if (loc.s("indoor") == "1" || loc["indoor"].dbl() == 1.0) return@forEach
+                // a sensor up the mountain or down in the valley measures another place
+                if (!Representative.height(loc["altitude"].dbl() ?: loc.s("altitude")?.toDoubleOrNull(), elevationM)) return@forEach
                 val key = (loc.l("id") ?: return@forEach).toString() + "/" + (e.o("sensor")?.l("id") ?: 0)
                 val prev = byLocation[key]
                 if (prev == null || (e.s("timestamp") ?: "") > (prev.s("timestamp") ?: "")) byLocation[key] = e

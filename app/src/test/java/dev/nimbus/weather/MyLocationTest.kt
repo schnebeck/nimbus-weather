@@ -60,6 +60,8 @@ class MyLocationTest {
     private val server = MockWebServer()
     /** The forecast answers this late (ms): its cards stay yellow meanwhile. */
     @Volatile private var forecastDelayMs = 0L
+    /** The air quality answers this late (ms). */
+    @Volatile private var airDelayMs = 0L
     /** Latitudes of the forecast requests, in order. */
     private val asked = java.util.Collections.synchronizedList(mutableListOf<Double>())
 
@@ -93,7 +95,8 @@ class MyLocationTest {
                         MockResponse.Builder().code(200).body(Fixtures.text(body))
                             .headersDelay(forecastDelayMs, java.util.concurrent.TimeUnit.MILLISECONDS).build()
                     }
-                    url.encodedPath == "/v1/air-quality" -> ok("openmeteo_aq.json")
+                    url.encodedPath == "/v1/air-quality" -> MockResponse.Builder().code(200).body(Fixtures.text("openmeteo_aq.json"))
+                        .headersDelay(airDelayMs, java.util.concurrent.TimeUnit.MILLISECONDS).build()
                     url.encodedPath == "/current_weather" -> ok("brightsky_current.json")
                     url.encodedPath == "/alerts" -> MockResponse.Builder().code(200).body("""{"alerts":[]}""").build()
                     url.encodedPath.startsWith("/airrohr") -> ok("sensor_community.json")
@@ -204,7 +207,8 @@ class MyLocationTest {
             dev.nimbus.weather.data.model.DataPart.entries.filterTo(mutableSetOf()) {
                 vm.shelf.stateOf(hannover.id, it) != dev.nimbus.weather.data.repo.RecordState.CURRENT
             }
-        assertTrue("not all green before: ${yellow()}", yellow().isEmpty())
+        // the extras come after the spinner: until their cards are green
+        until("all green before: ${yellow()}") { yellow().isEmpty() }
 
         forecastDelayMs = 1_500
         phone.answer = CompletableDeferred()
@@ -221,6 +225,69 @@ class MyLocationTest {
         assertTrue("cards green before their data: ${yellow()}", dev.nimbus.weather.data.model.DataPart.FORECAST in yellow())
         // 3. the data there: green
         until("loaded anew") { vm.state.value.states[hannover.id]?.loading == false }
-        assertTrue("still yellow: ${yellow()}", yellow().isEmpty())
+        until("still yellow: ${yellow()}") { yellow().isEmpty() }
+    }
+
+    /**
+     * A saved place, pulled to reload while a load of its own runs (a part tried again): the reload
+     * is not swallowed by it – everything yellow, everything asked for anew, then green.
+     */
+    @Test fun aReloadIsNotSwallowedByARunningLoad() {
+        val app = RuntimeEnvironment.getApplication()
+        val phone = Phone(app)
+        val vm = model(app, phone)
+        until("the start's search") { vm.state.value.locationStatus == LocationStatus.LOADING }
+        phone.answer.complete(at(52.37, 9.73, System.currentTimeMillis()))
+        val berlin = Place("b", "Berlin", latitude = 52.52, longitude = 13.40)
+        vm.addPlace(berlin)
+        until("Berlin loaded") { vm.state.value.states[berlin.id]?.data != null && vm.state.value.states[berlin.id]?.loading == false }
+        // (its load's tail: the data stored)
+        repeat(10) { shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(20)); Thread.sleep(20) }
+        fun yellow(): Set<dev.nimbus.weather.data.model.DataPart> =
+            dev.nimbus.weather.data.model.DataPart.entries.filterTo(mutableSetOf()) {
+                vm.shelf.stateOf(berlin.id, it) != dev.nimbus.weather.data.repo.RecordState.CURRENT
+            }
+        val green = dev.nimbus.weather.data.model.DataPart.entries.toSet() - yellow()
+        assertTrue("nothing green after the first load", dev.nimbus.weather.data.model.DataPart.POLLEN in green)
+
+        // a part out of date: its load runs (the air quality slow)
+        airDelayMs = 1_500
+        vm.shelf.part(berlin.id, dev.nimbus.weather.data.model.DataPart.AIR_QUALITY).stale()
+        vm.load(berlin, force = false)
+        until("the part's load runs") { vm.state.value.states[berlin.id]?.loading == true }
+        // pulled meanwhile: all yellow – the pollen too, which the running load does not ask for
+        vm.refresh(berlin.id)
+        repeat(5) { shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(20)); Thread.sleep(20) }
+        assertTrue("the reload was swallowed: still green ${green - yellow()}", (green - yellow()).isEmpty())
+        // and then green again: the reload's data
+        until("loaded anew") { vm.state.value.states[berlin.id]?.loading == false && yellow().isEmpty() }
+    }
+
+    /**
+     * The spinner ends with the forecast: a slow source does not keep it turning – its card stays
+     * yellow until its answer is there, then turns green on its own.
+     */
+    @Test fun theSpinnerEndsWithTheForecast() {
+        val app = RuntimeEnvironment.getApplication()
+        val phone = Phone(app)
+        val vm = model(app, phone)
+        until("the start's search") { vm.state.value.locationStatus == LocationStatus.LOADING }
+        phone.answer.complete(at(52.37, 9.73, System.currentTimeMillis()))
+        val berlin = Place("b", "Berlin", latitude = 52.52, longitude = 13.40)
+        vm.addPlace(berlin)
+        until("Berlin loaded") { vm.state.value.states[berlin.id]?.data != null && vm.state.value.states[berlin.id]?.loading == false }
+        repeat(10) { shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(20)); Thread.sleep(20) }
+        fun state(part: dev.nimbus.weather.data.model.DataPart) = vm.shelf.stateOf(berlin.id, part)
+
+        airDelayMs = 2_000
+        vm.refresh(berlin.id)
+        until("the spinner ends") { vm.state.value.states[berlin.id]?.loading == false && state(dev.nimbus.weather.data.model.DataPart.FORECAST) == dev.nimbus.weather.data.repo.RecordState.CURRENT }
+        assertEquals("the spinner waited for the slowest source", dev.nimbus.weather.data.repo.RecordState.STALE, state(dev.nimbus.weather.data.model.DataPart.AIR_QUALITY))
+        until("the air quality's card green") { state(dev.nimbus.weather.data.model.DataPart.AIR_QUALITY) == dev.nimbus.weather.data.repo.RecordState.CURRENT }
+    }
+
+    /** "Kacheln mit 120s Timeout": each extra source may take two minutes, on any network. */
+    @Test fun eachSourceHasTwoMinutes() {
+        assertEquals(120_000L, WeatherRepository.SOURCE_TIMEOUT_MS)
     }
 }

@@ -47,6 +47,7 @@ import java.util.Locale
 
 data class PlaceState(
     val data: WeatherData? = null,
+    /** The forecast being fetched (the page's spinner); the extras after it show theirs by their cards' dots. */
     val loading: Boolean = false,
     val error: Boolean = false,
     val models: List<ModelSeries>? = null,
@@ -439,9 +440,10 @@ class MainViewModel(
         val due = if (force || data == null || !sameSpot(data.place, place)) all else shelf.due(place.id)
         if (due.isEmpty()) return
         // a load already running for the same spot is enough (what went out of date meanwhile is
-        // loaded after it); one for the spot left behind ("my location" moved meanwhile) gives way
+        // loaded after it); one for the spot left behind ("my location" moved meanwhile) gives way –
+        // and so does any one to a reload asked for: everything anew, not the rest of the old one
         if (jobs[place.id]?.isActive == true) {
-            if (sameSpot(jobSpots[place.id], place)) { dueAfter += place.id; return }
+            if (!force && sameSpot(jobSpots[place.id], place)) { dueAfter += place.id; return }
             jobs[place.id]?.cancel()
         }
         jobSpots[place.id] = place
@@ -458,10 +460,12 @@ class MainViewModel(
             if (showYellowMs > 0) kotlinx.coroutines.delay(showYellowMs)
             val result = runCatching {
                 repo.load(place, settings, german, previous = data, refresh = due, fresh = force) { step ->
-                    // each step to its records on the main thread: each card as its part arrives
+                    // each step to its records on the main thread: each card as its part arrives –
+                    // the page's spinner ends with the first (the forecast); the extras still on
+                    // the way show it by their cards' dots, however long their sources take
                     viewModelScope.launch {
                         if (me.isActive) {
-                            updatePlace(place.id) { it.copy(data = step) }
+                            updatePlace(place.id) { it.copy(data = step, loading = false) }
                             shelf.take(step)
                         }
                     }

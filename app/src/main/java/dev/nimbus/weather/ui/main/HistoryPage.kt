@@ -526,6 +526,8 @@ private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, 
             remember(start) { nights(start, HourAxis.dayAxisEnd(start + 24 * 3_600_000L), place.latitude, place.longitude) }, System.currentTimeMillis(),
             Modifier.fillMaxWidth().bleed(CARD_BLEED),
             curve = curves.first, forecastCurve = curves.second,
+            // "today so far": the line at the time now (the other days do not hold it)
+            showNow = true,
             // precipitation in the same card: in the temperature chart or as a chart of its own
             separatePrecip = settings.separatePrecipitation,
             // the result first, then what the lines and bars mean; the press hint ends the card

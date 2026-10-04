@@ -217,8 +217,8 @@ fun Meteogram(
     if (pts.size < 2) return
     val compare = pts.any { it.forecastTemperature != null || it.compare != null }
     val span = (axisEnd - start).toFloat()
-    /** The curves end in the middle of the 24 column, as they begin in the middle of the 00 column. */
-    val curveEnd = end + 1_800_000L
+    /** The curves end at 24:00 (under the 24), as they begin at 00:00 (under the 00). */
+    val curveEnd = end
     // The cursor stands on an hour (the value of the hour before its time stamp): today the hour
     // running now, else midday
     var selected by remember(start) {
@@ -236,15 +236,13 @@ fun Meteogram(
     // The curves (°C): as given, else one point per hour (hours still to come in the look-back
     // of today have no measured curve)
     val mainCurve = remember(curve, pts) {
-        (curve ?: pts.filter { !it.forecastOnly }.map { CurvePoint(it.time, it.temperature) }).filter { it.time >= start - 3_600_000L && it.at <= curveEnd }
+        (curve ?: pts.filter { !it.forecastOnly }.map { CurvePoint(it.time, it.temperature) }).filter { it.time >= start - 3_600_000L && it.time <= curveEnd }
     }
-    // The curve's resolution at "now" – the "now" line is placed like its points
-    val nowInterval = remember(mainCurve, now) { mainCurve.minByOrNull { kotlin.math.abs(it.time - now) }?.interval ?: HourAxis.HOUR }
     // drawn: the station's 10-minute reports as a 30-minute mean; the readout keeps the readings
     val drawnCurve = remember(mainCurve) { Curve.smoothed(mainCurve) }
     val dashCurve = remember(forecastCurve, pts) {
         if (!compare) emptyList()
-        else (forecastCurve ?: pts.mapNotNull { p -> p.forecastTemperature?.let { CurvePoint(p.time, it) } }).filter { it.time >= start - 3_600_000L && it.at <= curveEnd }
+        else (forecastCurve ?: pts.mapNotNull { p -> p.forecastTemperature?.let { CurvePoint(p.time, it) } }).filter { it.time >= start - 3_600_000L && it.time <= curveEnd }
     }
     val allT = temps + fTemps.filterNotNull() + (mainCurve + dashCurve).map { Units.temperature(it.value, s.temperatureUnit) }
     val tLo = floor(allT.min() - 1).toInt()
@@ -434,25 +432,25 @@ fun Meteogram(
                         drawPath(line, ChanceLine, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
                     }
                 }
-                // Curves: one point per hour, in the column of its bar and cursor; clipped to the
-                // plot (the 00:00 point lies half an hour left of it)
+                // Curves: each point at its time on the labels' clock; clipped to the plot (the
+                // point of the hour before 00:00 lies left of it)
                 clipRect(left = l, right = r) {
                     fun yC(c: Double) = yT(Units.temperature(c, s.temperatureUnit))
                     // Forecast (comparison mode): dashed
                     if (compare) {
                         val fp = Path()
                         Curve.segments(dashCurve).forEach { seg ->
-                            seg.forEachIndexed { k, c -> val o = axis.point(c.time, c.interval); if (k == 0) fp.moveTo(o, yC(c.value)) else fp.lineTo(o, yC(c.value)) }
+                            seg.forEachIndexed { k, c -> val o = axis.clock(c.time); if (k == 0) fp.moveTo(o, yC(c.value)) else fp.lineTo(o, yC(c.value)) }
                         }
                         drawPath(fp, ForecastLine, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 7f))))
                     }
                     // Temperature curve in the temperature colours (in comparison mode the measured one);
-                    // every point in the middle of the interval it stands for
+                    // every point at its time
                     val path = Path()
                     val single = mutableListOf<Offset>()
                     Curve.segments(drawnCurve).forEach { seg ->
-                        if (seg.size == 1) single += Offset(axis.point(seg[0].time, seg[0].interval), yC(seg[0].value))
-                        else seg.forEachIndexed { k, c -> val o = axis.point(c.time, c.interval); if (k == 0) path.moveTo(o, yC(c.value)) else path.lineTo(o, yC(c.value)) }
+                        if (seg.size == 1) single += Offset(axis.clock(seg[0].time), yC(seg[0].value))
+                        else seg.forEachIndexed { k, c -> val o = axis.clock(c.time); if (k == 0) path.moveTo(o, yC(c.value)) else path.lineTo(o, yC(c.value)) }
                     }
                     val brush = Brush.verticalGradient(
                         listOf(Insights.temperatureColor(pts.maxOf { it.temperature }), Insights.temperatureColor(pts.minOf { it.temperature })),
@@ -491,20 +489,19 @@ fun Meteogram(
                 }
                 // Current time: thin dashed line with a dot on top (the cursor is a solid line)
                 if (showNow && now in start..end) {
-                    // placed like the curve's points (in the middle of the interval before their
-                    // time): an hourly curve half an hour back, a 15-minute one 7½ minutes – the
-                    // line meets the curve at the value of now
-                    val xn = axis.point(now, nowInterval)
+                    // on the labels' clock (12:09 just right of the 12) – where the curve has the
+                    // value of now
+                    val xn = axis.clock(now)
                     drawLine(NowMark, Offset(xn, top), Offset(xn, rows + below), 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())))
                     drawCircle(NowMark, 2.5.dp.toPx(), Offset(xn, top))
                 }
                 // Cursor (long press)
                 if (cursorAlpha > 0f) {
                     val i = selected.coerceIn(1, pts.lastIndex)
-                    // in the middle of the hour's bar; the dot on the curve there
+                    // in the middle of the hour's bar, on its full hour; the dot on the curve there
                     val xs = axis.cursor(pts[i].time)
-                    // on the curve at the cursor (the measured one, else the forecast)
-                    val tc = pts[i].time - 1_800_000L
+                    // on the curve at the cursor (the measured one, else the forecast): the hour's start
+                    val tc = pts[i].time - HourAxis.HOUR
                     val yc = (Curve.at(drawnCurve, tc) ?: Curve.at(dashCurve, tc))?.let { yT(Units.temperature(it, s.temperatureUnit)) } ?: yT(temps[i])
                     drawLine(Color.White.copy(alpha = 0.85f * cursorAlpha), Offset(xs, top - 2.dp.toPx()), Offset(xs, rows + below), 1.5.dp.toPx())
                     drawCircle(Color(0xFF1A2A40).copy(alpha = cursorAlpha), 5.5.dp.toPx(), Offset(xs, yc))
@@ -524,9 +521,9 @@ fun Meteogram(
         // The plot reaches into the card's padding (callers use bleed); the text keeps it, so it
         // does not run up to the card's edge
         Column(Modifier.padding(horizontal = CARD_BLEED)) {
-            // The temperatures where the cursor meets the curves (the middle of the hour)
+            // The temperatures where the cursor meets the curves (the hour's full hour)
             val sel = pts[selected.coerceIn(1, pts.lastIndex)]
-            val tc = sel.time - 1_800_000L
+            val tc = sel.time - HourAxis.HOUR
             val tm = Curve.at(mainCurve, tc)
             val tfc = Curve.at(dashCurve, tc)
             val shown = sel.copy(

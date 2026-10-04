@@ -52,8 +52,14 @@ sealed interface RecordKey {
  * Used on the main thread.
  */
 class DataRecord internal constructor(val key: RecordKey, private val lifeMs: Long, private val shelf: Shelf) {
-    var state: RecordState by mutableStateOf(RecordState.STALE)
-        private set
+    private var _state: RecordState by mutableStateOf(RecordState.STALE)
+    var state: RecordState
+        get() = _state
+        private set(value) {
+            // the protocol of the model (debug builds): each change of a record, to hold the cards' against
+            if (dev.nimbus.weather.BuildConfig.DEBUG && value != _state) android.util.Log.d("NimbusRecord", "$key $value")
+            _state = value
+        }
 
     /** When the data now shown were fetched (0: none or of unknown age). */
     var fetchedAt: Long = 0L
@@ -160,12 +166,14 @@ class Shelf(
 
     /**
      * What the card of [part] of [placeId] shows – read in a card, the card alone is drawn anew
-     * when it changes. No record yet (no data taken): out of date.
+     * when it changes. No record yet (no data taken): it is made now, out of date – so the card
+     * reads the record itself and hears of it when its data come (reading "no record" it heard of
+     * nothing and stayed yellow).
      */
-    fun stateOf(placeId: String, part: DataPart): RecordState = records[RecordKey.Part(placeId, part)]?.state ?: RecordState.STALE
+    fun stateOf(placeId: String, part: DataPart): RecordState = part(placeId, part).state
 
     /** What the look-back of [placeId] shows (see [stateOf]). */
-    fun lookBackState(placeId: String): RecordState = records[RecordKey.LookBack(placeId)]?.state ?: RecordState.STALE
+    fun lookBackState(placeId: String): RecordState = lookBack(placeId).state
 
     /** The parts of [placeId]'s weather out of date: to be fetched anew. */
     fun due(placeId: String): Set<DataPart> =

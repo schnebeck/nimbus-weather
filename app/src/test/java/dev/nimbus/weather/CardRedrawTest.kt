@@ -87,4 +87,19 @@ class CardRedrawTest {
         assertEquals(CardStatus.FRESH, shown["pollen"])
         assertEquals(before.getValue("hourly"), drawn.getValue("hourly"))
     }
+
+    /** A card drawn before its record exists (its data not taken yet): it turns green when they come. */
+    @Test fun aCardBeforeItsRecordHearsOfIt() {
+        val shelf = Shelf(kotlinx.coroutines.MainScope())
+        val shown = mutableMapOf<String, CardStatus?>()
+        val pollen = PageItem("pollen") { val status = LocalCardStatus.current; SideEffect { shown["pollen"] = status } }
+        compose.setContent {
+            CompositionLocalProvider(LocalShelf provides shelf) { Card(pollen, Arrivals(), "new") }
+        }
+        compose.waitForIdle()
+        assertEquals(CardStatus.STALE, shown["pollen"])
+        compose.runOnUiThread { shelf.part("new", DataPart.POLLEN).arrived(System.currentTimeMillis()) }
+        compose.waitForIdle()
+        assertEquals("the card did not hear of its record", CardStatus.FRESH, shown["pollen"])
+    }
 }

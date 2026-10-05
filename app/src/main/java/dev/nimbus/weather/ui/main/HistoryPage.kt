@@ -102,11 +102,11 @@ import dev.nimbus.weather.util.TimeFormat
 import dev.nimbus.weather.util.Units
 
 
-fun modelName(m: ForecastModel) = when (m) {
+fun modelName(m: ForecastModel) = m.part?.name ?: when (m) {
     ForecastModel.DWD_ICON -> "DWD ICON"
-    ForecastModel.BEST_MATCH -> "Open-Meteo"
     ForecastModel.ECMWF -> "ECMWF IFS"
     ForecastModel.METEO_FRANCE -> "Météo-France"
+    else -> "Open-Meteo"
 }
 
 /**
@@ -434,12 +434,14 @@ private fun SummaryCard(sum: DaySummary, history: History, settings: Settings, t
             )
         }
         Spacer(Modifier.height(8.dp))
+        // the model the look-back came from (outside its area a regional one gives way to the best match)
+        val model = modelName(ForecastModel.entries.firstOrNull { it.openMeteoId == history.modelId } ?: settings.model)
         Text(
             if (history.stationName != null && sum.measured) stringResource(
                 R.string.history_source_station, history.stationName,
-                Units.oneDecimal(history.stationDistanceKm ?: 0.0), modelName(settings.model),
-            ) else if (history.stationName != null) stringResource(R.string.history_source_pending, history.stationName, modelName(settings.model))
-            else stringResource(R.string.history_source_model, modelName(settings.model)),
+                Units.oneDecimal(history.stationDistanceKm ?: 0.0), model,
+            ) else if (history.stationName != null) stringResource(R.string.history_source_pending, history.stationName, model)
+            else stringResource(R.string.history_source_model, model),
             fontSize = 11.sp, color = NimbusColors.Tertiary, lineHeight = 14.sp,
         )
     }

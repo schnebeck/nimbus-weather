@@ -1,0 +1,4 @@
+• Regional models of 1–2.5 km: MET Nordic, KNMI Harmonie, DMI Harmonie, UK Met Office, MeteoSwiss, GeoSphere AROME, ItaliaMeteo; outside their area and after 2–5 days the best match
+• A model per place: long press in the list of places
+• The default is now "Automatic (best match)"; the data sources name its model with the grid
+• Day the model changes: high/low match the curve

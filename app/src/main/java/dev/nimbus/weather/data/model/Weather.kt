@@ -42,6 +42,8 @@ data class Place(
     val latitude: Double,
     val longitude: Double,
     val isCurrentLocation: Boolean = false,
+    /** The forecast model chosen for this place; null: the one of the settings (always for "my location"). */
+    val model: ForecastModel? = null,
 ) {
     val subtitle: String get() = listOfNotNull(region, country).distinct().joinToString(", ")
 }
@@ -217,10 +219,17 @@ data class BathingSite(
 
 /** A data source that contributed to a forecast; rendered localized in the UI. */
 @Serializable
-enum class SourceKind { MODEL_DWD_ICON, MODEL_ECMWF, MODEL_METEO_FRANCE, MODEL_BEST_MATCH, GAP_FILL, DWD_STATION, DWD_WARNINGS, CAMS, COMMUNITY, DWD_POLLEN, PEGELONLINE, NLWKN, GAUGES, LHP_ALERTS, BATHING }
+enum class SourceKind { MODEL_DWD_ICON, MODEL_ECMWF, MODEL_METEO_FRANCE, MODEL_REGIONAL, MODEL_BEST_MATCH, GAP_FILL, DWD_STATION, DWD_WARNINGS, CAMS, COMMUNITY, DWD_POLLEN, PEGELONLINE, NLWKN, GAUGES, LHP_ALERTS, BATHING }
 
 @Serializable
-data class Source(val kind: SourceKind, val detail: String? = null)
+data class Source(
+    val kind: SourceKind,
+    val detail: String? = null,
+    /** From when on it gives the forecast (the gap fill after the chosen model's last hour). */
+    val since: Long? = null,
+    /** The single model behind it (Open-Meteo's best match: which one, with its grid). */
+    val part: ModelPart? = null,
+)
 
 /** Pollen types covered by the DWD index and/or CAMS; [key] is used for texts and colours. */
 @Serializable

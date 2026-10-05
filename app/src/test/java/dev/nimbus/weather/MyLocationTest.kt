@@ -62,6 +62,8 @@ class MyLocationTest {
     @Volatile private var forecastDelayMs = 0L
     /** The air quality answers this late (ms). */
     @Volatile private var airDelayMs = 0L
+    /** Latitude and model of every forecast request, in order. */
+    private val askedModels = java.util.Collections.synchronizedList(mutableListOf<Pair<Double, String?>>())
     /** Latitudes of the forecast requests, in order. */
     private val asked = java.util.Collections.synchronizedList(mutableListOf<Double>())
 
@@ -88,7 +90,9 @@ class MyLocationTest {
                 fun ok(name: String) = MockResponse.Builder().code(200).body(Fixtures.text(name)).build()
                 return when {
                     url.encodedPath == "/v1/forecast" -> {
-                        if (url.queryParameter("models") == null || url.queryParameter("models") == "icon_seamless") {
+                        url.queryParameter("latitude")?.toDouble()?.let { askedModels += it to url.queryParameter("models") }
+                        // the forecast itself (the settings' model: by default the best match)
+                        if (url.queryParameter("models") in setOf(null, "icon_seamless", "best_match")) {
                             url.queryParameter("latitude")?.toDouble()?.let { asked += it }
                         }
                         val body = if (url.queryParameter("models") == "icon_seamless") "openmeteo_icon.json" else "openmeteo_best.json"
@@ -289,5 +293,35 @@ class MyLocationTest {
     /** "Kacheln mit 120s Timeout": each extra source may take two minutes, on any network. */
     @Test fun eachSourceHasTwoMinutes() {
         assertEquals(120_000L, WeatherRepository.SOURCE_TIMEOUT_MS)
+    }
+
+    /**
+     * A saved place on a model of its own: loaded with it at once; a change of the settings' model
+     * reloads the places following it ("my location"), not this one.
+     */
+    @Test fun aPlaceKeepsItsOwnModel() {
+        val app = RuntimeEnvironment.getApplication()
+        val phone = Phone(app)
+        val vm = model(app, phone)
+        until("the start's search") { vm.state.value.locationStatus == LocationStatus.LOADING }
+        phone.answer.complete(at(52.37, 9.73, System.currentTimeMillis()))
+        val berlin = Place("b", "Berlin", latitude = 52.52, longitude = 13.40)
+        vm.addPlace(berlin)
+        until("Berlin loaded") { vm.state.value.states[berlin.id]?.data != null && vm.state.value.states[berlin.id]?.loading == false }
+        repeat(10) { shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(20)); Thread.sleep(20) }
+
+        askedModels.clear()
+        vm.setPlaceModel(berlin.id, dev.nimbus.weather.data.model.ForecastModel.MET_NORWAY)
+        until("Berlin asked with MET Nordic: $askedModels") { 52.52 to "metno_nordic" in askedModels }
+        assertEquals(dev.nimbus.weather.data.model.ForecastModel.MET_NORWAY, vm.state.value.savedPlaces.single { it.id == berlin.id }.model)
+        until("loaded") { vm.state.value.states[berlin.id]?.loading == false }
+        repeat(10) { shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(20)); Thread.sleep(20) }
+
+        // the settings' model changes: "my location" anew with it, Berlin keeps its own
+        askedModels.clear()
+        vm.updateSettings { it.copy(model = dev.nimbus.weather.data.model.ForecastModel.ECMWF) }
+        until("Hannover asked with ECMWF: $askedModels") { 52.37 to "ecmwf_ifs025" in askedModels }
+        repeat(20) { shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(20)); Thread.sleep(20) }
+        assertTrue("Berlin loaded anew: $askedModels", askedModels.none { it.first == 52.52 })
     }
 }

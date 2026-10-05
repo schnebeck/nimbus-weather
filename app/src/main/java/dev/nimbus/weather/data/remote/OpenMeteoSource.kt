@@ -31,6 +31,8 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import java.util.Locale
 
+private const val HOUR_MS = 3_600_000L
+
 /** One model forecast from Open-Meteo, already mapped to domain types. */
 data class ModelForecast(
     val timezone: String,
@@ -42,7 +44,10 @@ data class ModelForecast(
     /** Height of the place in metres (Open-Meteo's terrain model) – the model values hold for it. */
     val elevation: Double? = null,
 ) {
-    /** Fills gaps (null fields, missing hours/days) of this forecast with values from [other]. */
+    /**
+     * Fills gaps (null fields, missing hours/days) of this forecast with values from [other]; the
+     * day in which this forecast's hours end gets its highest and lowest from the hours shown.
+     */
     fun mergedWith(other: ModelForecast?): ModelForecast {
         if (other == null) return this
         val otherHours = other.hourly.associateBy { it.time }
@@ -80,7 +85,17 @@ data class ModelForecast(
             )
         }
         val lastDay = days.lastOrNull()?.date ?: Long.MIN_VALUE
-        val mergedDays = days + other.daily.filter { it.date > lastDay }
+        // The day this forecast's hours end in: its hours up to there, [other]'s after – its highest
+        // and lowest from these hours, as its chart shows them (Norden, 7 Oct.: the other model's
+        // day said 20.6°, the curve – MET Nordic until 18:00 – reached 19.3°)
+        val mergedDays = (days + other.daily.filter { it.date > lastDay }).let { all ->
+            all.mapIndexed { i, d ->
+                val end = all.getOrNull(i + 1)?.date ?: (d.date + 24 * HOUR_MS)
+                if (lastHour < d.date || lastHour >= end - HOUR_MS) return@mapIndexed d
+                val temps = mergedHours.filter { it.time >= d.date && it.time < end }.map { it.temperature }
+                if (temps.isEmpty()) d else d.copy(tempMax = temps.max(), tempMin = temps.min())
+            }
+        }
 
         val cur = current?.let { c ->
             val o = other.current ?: return@let c
@@ -157,6 +172,23 @@ class OpenMeteoSource(
         return parseChance(http.getJson(url.toString()))
     }
 
+    /**
+     * Which single model Open-Meteo's best match takes, hour by hour – the answer does not say:
+     * the best match's temperatures side by side with those of [BestMatchParts]; see [bestMatchParts].
+     */
+    suspend fun bestMatchModels(lat: Double, lon: Double): Map<Long, dev.nimbus.weather.data.model.ModelPart> {
+        val url = "$baseUrl/v1/forecast".toHttpUrl().newBuilder()
+            .addQueryParameter("latitude", fmt(lat))
+            .addQueryParameter("longitude", fmt(lon))
+            .addQueryParameter("models", (listOf("best_match") + dev.nimbus.weather.data.model.BestMatchParts.map { it.id }).joinToString(","))
+            .addQueryParameter("timeformat", "unixtime")
+            .addQueryParameter("past_hours", "24")
+            .addQueryParameter("forecast_hours", "240")
+            .addQueryParameter("hourly", "temperature_2m")
+            .build()
+        return bestMatchParts(http.getJson(url.toString()))
+    }
+
     suspend fun airQuality(lat: Double, lon: Double): AirQuality {
         val url = "$airQualityUrl/v1/air-quality".toHttpUrl().newBuilder()
             .addQueryParameter("latitude", fmt(lat))
@@ -225,6 +257,37 @@ class OpenMeteoSource(
                 }
             }
             return f.copy(hourly = hourly, daily = daily)
+        }
+
+        /** Hours in a row that must agree before a single model counts as the best match's. */
+        const val PART_WINDOW = 6
+
+        /**
+         * Per hour the single model whose temperatures are the best match's: equal at that hour, in
+         * an unbroken run of at least [PART_WINDOW] equal hours – one equal value may be chance, six
+         * in a row are not. The finest first ([BestMatchParts]). Where the best match passes from one
+         * model to the next, Open-Meteo blends them for a few hours: those hours have no entry.
+         */
+        fun bestMatchParts(root: JsonElement): Map<Long, dev.nimbus.weather.data.model.ModelPart> {
+            val h = root.obj()?.o("hourly") ?: return emptyMap()
+            val t = h.longs("time")
+            val best = h.doubles("temperature_2m_best_match")
+            if (best.isEmpty()) return emptyMap()
+            val parts = dev.nimbus.weather.data.model.BestMatchParts.map { it to h.doubles("temperature_2m_${it.id}") }
+            val out = LinkedHashMap<Long, dev.nimbus.weather.data.model.ModelPart>()
+            for (i in t.indices) {
+                val time = t[i] ?: continue
+                if (best.at(i) == null) continue
+                fun same(v: List<Double?>, j: Int) = best.at(j) != null && v.at(j) == best.at(j)
+                val part = parts.firstOrNull { (_, v) ->
+                    if (!same(v, i)) return@firstOrNull false
+                    var from = i; while (from > 0 && same(v, from - 1)) from--
+                    var to = i; while (to < t.lastIndex && same(v, to + 1)) to++
+                    to - from + 1 >= PART_WINDOW
+                }?.first ?: continue
+                out[time * 1000] = part
+            }
+            return out
         }
 
         fun parseForecast(root: JsonElement): ModelForecast {

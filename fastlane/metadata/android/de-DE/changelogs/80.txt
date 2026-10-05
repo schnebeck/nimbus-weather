@@ -1,0 +1,4 @@
+• Regionale Modelle mit 1–2,5 km: MET Nordic, KNMI Harmonie, DMI Harmonie, UK Met Office, MeteoSwiss, GeoSphere AROME, ItaliaMeteo; außerhalb ihres Gebiets und nach 2–5 Tagen die beste Auswahl
+• Modell pro Ort: langer Druck in der Ortsliste
+• Standard ist jetzt „Automatisch (beste Auswahl)“; die Datenquellen nennen das Modell mit Auflösung
+• Tag des Modellwechsels: Höchst-/Tiefstwert passen zur Kurve

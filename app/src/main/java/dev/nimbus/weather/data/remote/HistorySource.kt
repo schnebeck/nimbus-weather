@@ -96,7 +96,7 @@ class HistorySource(
 ) {
     suspend fun load(lat: Double, lon: Double, model: String, inGermany: Boolean, now: Long = System.currentTimeMillis()): History =
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { coroutineScope {
-        val modelJob = async { http.getJson(modelUrl(lat, lon, model)) }
+        val modelJob = async { runCatching { http.getJson(modelUrl(lat, lon, model)) } }
         val obsJob = async {
             if (!inGermany) null else runCatching {
                 // Zone is not known before the model answer; Germany is always Europe/Berlin.
@@ -112,7 +112,11 @@ class HistorySource(
                 http.getJson(url.toString())
             }.getOrNull()
         }
-        val modelRoot = modelJob.await()
+        // a regional model (MET Nordic) has nothing outside its area: there Open-Meteo's best match
+        val (modelRoot, used) = modelJob.await().map { it to model }.getOrElse { e ->
+            if (model == BEST_MATCH || e is kotlinx.coroutines.CancellationException) throw e
+            http.getJson(modelUrl(lat, lon, BEST_MATCH)) to BEST_MATCH
+        }
         val obsRoot = obsJob.await()
         // 10-minute reports of the station that reports now (the hourly values lag 1–2 hours behind)
         val elevation = modelRoot.obj()?.d("elevation")
@@ -128,7 +132,7 @@ class HistorySource(
                 parseSynop(http.getJson(url.toString()))
             }.getOrNull()
         }.orEmpty()
-        combine(modelRoot, obsRoot, model, now, synop)
+        combine(modelRoot, obsRoot, used, now, synop)
     } }
 
     private fun modelUrl(lat: Double, lon: Double, model: String) = "$openMeteoUrl/v1/forecast".toHttpUrl().newBuilder()
@@ -145,6 +149,9 @@ class HistorySource(
         .build().toString()
 
     companion object {
+        /** Open-Meteo's best match: the model where the chosen one has no answer. */
+        const val BEST_MATCH = "best_match"
+
         data class Observations(val byTime: Map<Long, HistoryHour.Measured>, val station: String?, val distanceKm: Double?)
 
         fun parseModel(root: JsonElement): Pair<ZoneId, Map<Long, HistoryHour.Modelled>> {

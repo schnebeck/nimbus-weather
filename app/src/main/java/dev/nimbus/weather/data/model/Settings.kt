@@ -20,11 +20,33 @@ package dev.nimbus.weather.data.model
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class ForecastModel(val openMeteoId: String) {
+enum class ForecastModel(
+    val openMeteoId: String,
+    /**
+     * A regional model of a single grid: its name and grid. It has data only for its area and its
+     * first two or three days – elsewhere and after them the gap fill (Open-Meteo's best match).
+     */
+    val part: ModelPart? = null,
+) {
     DWD_ICON("icon_seamless"),
     BEST_MATCH("best_match"),
     ECMWF("ecmwf_ifs025"),
     METEO_FRANCE("meteofrance_seamless"),
+    /** MET Nordic (MET Norway): Scandinavia and northern Germany. */
+    MET_NORWAY("metno_nordic", ModelPart("metno_nordic", "MET Nordic", 1.0)),
+    /** KNMI Harmonie (Netherlands): the Netherlands and north-western Germany. */
+    KNMI("knmi_harmonie_arome_netherlands", ModelPart("knmi_harmonie_arome_netherlands", "KNMI Harmonie", 2.0)),
+    /** DMI Harmonie (Denmark): much of northern, western and central Europe. */
+    DMI("dmi_harmonie_arome_europe", ModelPart("dmi_harmonie_arome_europe", "DMI Harmonie", 2.0)),
+    /** UK Met Office (UKV): the British Isles and around them. */
+    UKMO("ukmo_uk_deterministic_2km", ModelPart("ukmo_uk_deterministic_2km", "UK Met Office", 2.0)),
+    /** MeteoSwiss ICON-CH1 and -CH2: Switzerland and the Alps. */
+    METEOSWISS_CH1("meteoswiss_icon_ch1", ModelPart("meteoswiss_icon_ch1", "MeteoSwiss ICON-CH1", 1.0)),
+    METEOSWISS_CH2("meteoswiss_icon_ch2", ModelPart("meteoswiss_icon_ch2", "MeteoSwiss ICON-CH2", 2.0)),
+    /** GeoSphere Austria AROME: Austria and the Alps. */
+    GEOSPHERE("geosphere_arome_austria", ModelPart("geosphere_arome_austria", "GeoSphere AROME", 2.5)),
+    /** ItaliaMeteo ICON-2I: Italy and the Alps. */
+    ITALIA("italia_meteo_arpae_icon_2i", ModelPart("italia_meteo_arpae_icon_2i", "ItaliaMeteo ICON-2I", 2.2)),
 }
 
 @Serializable
@@ -60,7 +82,8 @@ enum class RadarColors { CONTRAST, BLUE }
 
 @Serializable
 data class Settings(
-    val model: ForecastModel = ForecastModel.DWD_ICON,
+    /** Open-Meteo's best match unless chosen otherwise: it takes the finest model for each place. */
+    val model: ForecastModel = ForecastModel.BEST_MATCH,
     val temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS,
     val windUnit: WindUnit = WindUnit.KMH,
     val precipitationUnit: PrecipitationUnit = PrecipitationUnit.MM,
@@ -132,6 +155,41 @@ data class Settings(
         }
     }
 }
+
+/**
+ * The forecast model for [place]: its own, else the one of the settings – "my location" moves, it
+ * always takes the settings' one.
+ */
+fun Settings.modelFor(place: Place): ForecastModel = place.model?.takeIf { !place.isCurrentLocation } ?: model
+
+/** A single model of Open-Meteo: its id, its name, the width of its grid in km. */
+@Serializable
+data class ModelPart(val id: String, val name: String, val km: Double)
+
+/**
+ * The single models Open-Meteo's best match is made of in Europe, finest first: where two give the
+ * very same values (a regional model and its European version), the finer is named.
+ */
+val BestMatchParts = listOf(
+    ModelPart("metno_nordic", "MET Nordic", 1.0),
+    ModelPart("meteoswiss_icon_ch1", "MeteoSwiss ICON-CH1", 1.0),
+    ModelPart("meteofrance_arome_france_hd", "Météo-France AROME HD", 1.5),
+    ModelPart("icon_d2", "DWD ICON-D2", 2.0),
+    ModelPart("meteoswiss_icon_ch2", "MeteoSwiss ICON-CH2", 2.0),
+    ModelPart("knmi_harmonie_arome_netherlands", "KNMI Harmonie", 2.0),
+    ModelPart("dmi_harmonie_arome_europe", "DMI Harmonie", 2.0),
+    ModelPart("ukmo_uk_deterministic_2km", "UK Met Office", 2.0),
+    ModelPart("italia_meteo_arpae_icon_2i", "ItaliaMeteo ICON-2I", 2.2),
+    ModelPart("meteofrance_arome_france", "Météo-France AROME", 2.5),
+    ModelPart("geosphere_arome_austria", "GeoSphere AROME", 2.5),
+    ModelPart("knmi_harmonie_arome_europe", "KNMI Harmonie Europe", 5.5),
+    ModelPart("icon_eu", "DWD ICON-EU", 7.0),
+    ModelPart("ecmwf_ifs", "ECMWF IFS", 9.0),
+    ModelPart("ukmo_global_deterministic_10km", "UK Met Office Global", 10.0),
+    ModelPart("meteofrance_arpege_europe", "Météo-France ARPEGE", 11.0),
+    ModelPart("icon_global", "DWD ICON", 13.0),
+    ModelPart("ecmwf_ifs025", "ECMWF IFS", 25.0),
+)
 
 /** Models shown in the model comparison chart (Open-Meteo ids and display names). */
 val ComparisonModels = listOf(

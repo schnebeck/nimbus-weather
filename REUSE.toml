@@ -19,6 +19,7 @@ path = [
 ]
 SPDX-FileCopyrightText = [
     "Weather data by Open-Meteo.com",
+    "Weather data by MET Norway (MET Nordic), via Open-Meteo.com",
     "Contains modified Copernicus Atmosphere Monitoring Service information 2026",
     "Place names from GeoNames.org",
 ]

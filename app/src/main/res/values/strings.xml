@@ -174,12 +174,28 @@
     <string name="settings_forecast_source">Forecast source</string>
     <string name="model_dwd_icon">DWD ICON (ICON-D2 / ICON-EU)</string>
     <string name="model_dwd_icon_desc">German Weather Service, 2.2 km resolution for Germany</string>
-    <string name="model_best_match">Best match</string>
-    <string name="model_best_match_desc">Open-Meteo picks the best model for the location</string>
+    <string name="model_best_match">Automatic (best match)</string>
+    <string name="model_best_match_desc">Open-Meteo takes the finest fitting model for each place and time; the data sources name it</string>
     <string name="model_ecmwf">ECMWF IFS</string>
     <string name="model_ecmwf_desc">European Centre for Medium-Range Weather Forecasts</string>
     <string name="model_meteofrance">Météo-France AROME / ARPEGE</string>
     <string name="model_meteofrance_desc">High resolution for France and Western Europe</string>
+    <string name="model_metno">MET Nordic (1 km)</string>
+    <string name="model_metno_desc">MET Norway: Scandinavia and northern Germany, 2½ days; elsewhere and after that the best match of Open-Meteo</string>
+    <string name="model_knmi">KNMI Harmonie (2 km)</string>
+    <string name="model_knmi_desc">KNMI: the Netherlands and north-western Germany, almost 3 days; elsewhere and after that the best match</string>
+    <string name="model_dmi">DMI Harmonie (2 km)</string>
+    <string name="model_dmi_desc">DMI: much of northern, western and central Europe, almost 3 days; after that the best match</string>
+    <string name="model_ukmo">UK Met Office (2 km)</string>
+    <string name="model_ukmo_desc">The British Isles and around them, about 2½ days; elsewhere and after that the best match</string>
+    <string name="model_ch1">MeteoSwiss ICON-CH1 (1 km)</string>
+    <string name="model_ch1_desc">Switzerland and the Alps, 1½ days; elsewhere and after that the best match</string>
+    <string name="model_ch2">MeteoSwiss ICON-CH2 (2 km)</string>
+    <string name="model_ch2_desc">Switzerland and the Alps, 5 days; elsewhere and after that the best match</string>
+    <string name="model_geosphere">GeoSphere AROME (2.5 km)</string>
+    <string name="model_geosphere_desc">GeoSphere Austria: Austria and the Alps, almost 3 days; elsewhere and after that the best match</string>
+    <string name="model_italia">ItaliaMeteo ICON-2I (2.2 km)</string>
+    <string name="model_italia_desc">Italy and the Alps, 3 days; elsewhere and after that the best match</string>
     <string name="settings_units">Units</string>
     <string name="settings_temperature">Temperature</string>
     <string name="settings_wind">Wind speed</string>
@@ -191,7 +207,7 @@
     <string name="settings_language">Language</string>
     <string name="settings_language_desc">Follows the system language (English or German). On Android 13+ you can pick it per app in the system settings.</string>
     <string name="settings_about">About</string>
-    <string name="settings_about_text">Nimbus is a free weather app without ads or tracking. Data: Deutscher Wetterdienst (DWD) via Open-Meteo and Bright Sky, ECMWF, Météo-France and other national weather services via Open-Meteo, CAMS air quality, RainViewer, EUMETSAT (Meteosat), Sensor.Community. Maps © OpenFreeMap, OpenMapTiles, OpenStreetMap contributors.</string>
+    <string name="settings_about_text">Nimbus is a free weather app without ads or tracking. Data: Deutscher Wetterdienst (DWD) via Open-Meteo and Bright Sky, ECMWF, Météo-France, MET Norway, KNMI, DMI, UK Met Office, MeteoSwiss, GeoSphere Austria, ItaliaMeteo and other national weather services via Open-Meteo, CAMS air quality, RainViewer, EUMETSAT (Meteosat), Sensor.Community. Maps © OpenFreeMap, OpenMapTiles, OpenStreetMap contributors.</string>
     <string name="version">Version %1$s</string>
 
     <!-- Directions -->
@@ -236,8 +252,12 @@
     <string name="src_dwd_icon">Forecast: DWD ICON-D2/EU (Open-Meteo)</string>
     <string name="src_ecmwf">Forecast: ECMWF IFS (Open-Meteo)</string>
     <string name="src_meteofrance">Forecast: Météo-France (Open-Meteo)</string>
+    <string name="src_regional">Forecast: %1$s (Open-Meteo)</string>
     <string name="src_best_match">Forecast: Open-Meteo best match</string>
-    <string name="src_gap_fill">UV and days 9–⁠10: Open-Meteo best match</string>
+    <string name="src_gap_fill">Missing values: Open-Meteo best match</string>
+    <string name="src_gap_fill_from">Missing values and from %1$s on: Open-Meteo best match</string>
+    <string name="src_part">%1$s, %2$s km</string>
+    <string name="src_part_now">now %1$s</string>
     <string name="src_station">Measurements: DWD station %1$s (Bright Sky)</string>
     <string name="src_warnings">Warnings: DWD (Bright Sky)</string>
     <string name="src_cams">Air quality &amp; pollen: CAMS Europe</string>
@@ -381,7 +401,7 @@
     <string name="term_radar_title">Precipitation Radar</string>
     <string name="term_radar_body">Weather radar sends out microwave pulses and measures how strongly raindrops, snowflakes and hail reflect them (reflectivity in dBZ). Stronger echoes mean heavier precipitation.\n\nGermany: DWD radar composite in 5-minute steps plus a nowcast that extrapolates the movement of the precipitation for the next two hours. Rest of Europe: RainViewer (past two hours only).\n\nBoth sources are shown in one colour scale. Radar sees precipitation in the air: light drizzle or snow close to the ground may be missing, and near mountains or radar sites artefacts can occur.</string>
     <string name="term_models_title">Weather Models</string>
-    <string name="term_models_body">Weather models are computer simulations that calculate the future state of the atmosphere on a three-dimensional grid. Finer grids resolve local effects such as thunderstorms, valleys and coasts better.\n\n• ICON-D2 (DWD): 2.2 km, Germany &amp; neighbours, 2 days\n• ICON-EU (DWD): 7 km, Europe, 5 days\n• ECMWF IFS: 9–⁠25 km, global, one of the best global models\n• AROME/ARPEGE (Météo-France), UK Met Office, KNMI Harmonie, MET Norway, NOAA GFS\n\nIf the lines lie close together, the forecast is fairly certain. If they diverge, the weather situation is uncertain – typical for thunderstorms or several days ahead. Tap a model to highlight it.</string>
+    <string name="term_models_body">Weather models are computer simulations that calculate the future state of the atmosphere on a three-dimensional grid. Finer grids resolve local effects such as thunderstorms, valleys and coasts better.\n\n• ICON-D2 (DWD): 2.2 km, Germany &amp; neighbours, 2 days\n• ICON-EU (DWD): 7 km, Europe, 5 days\n• ECMWF IFS: 9–⁠25 km, global, one of the best global models\n• MET Nordic (MET Norway): 1 km, Scandinavia &amp; northern Germany, 2½ days\n• AROME/ARPEGE (Météo-France), UK Met Office, KNMI Harmonie, MET Norway, NOAA GFS\n\nIf the lines lie close together, the forecast is fairly certain. If they diverge, the weather situation is uncertain – typical for thunderstorms or several days ahead. Tap a model to highlight it.</string>
     <string name="term_community_title">Community Sensors</string>
     <string name="term_community_body">Sensor.Community is an open network of thousands of self-built sensors run by citizens – similar to OpenStreetMap, but for measurements. The data is freely available.\n\nPrivate sensors are not calibrated and are often mounted on balconies or house walls, sometimes in the sun. The app therefore shows the median of all outdoor sensors nearby and removes outliers. The spread shows how much the sensors disagree.\n\nUse these values as an additional local impression; the official DWD station is more reliable.</string>
     <string name="term_station_title">Measured or Forecast?</string>
@@ -492,8 +512,12 @@
     <string name="settings_cards">Cards</string>
     <string name="settings_cards_desc">Hold ≡ and drag to sort, the switch hides a card. The small tiles are one block on the page – expand it to sort them among themselves.</string>
     <string name="places_edit_done">Done</string>
-    <string name="places_edit_hint">Hold and drag ≡ to sort, ⊖ to delete</string>
-    <string name="places_long_press_hint">Long press a place to sort or delete</string>
+    <string name="places_edit_hint">Hold and drag ≡ to sort, ⊖ to delete, tap the model to change it</string>
+    <string name="places_long_press_hint">Long press a place to sort, delete or choose its forecast model</string>
+    <string name="places_model">Model: %1$s</string>
+    <string name="places_model_default">Default (%1$s)</string>
+    <string name="places_model_default_desc">The model of the settings – it follows when they change</string>
+    <string name="places_model_title">Forecast model for %1$s</string>
     <string name="places_drag">Move</string>
     <string name="pn_rain_light">Light rain</string>
     <string name="pn_rain_moderate">Moderate rain</string>

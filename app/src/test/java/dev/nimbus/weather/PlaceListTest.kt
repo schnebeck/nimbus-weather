@@ -20,7 +20,15 @@ package dev.nimbus.weather
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
+import dev.nimbus.weather.data.model.ForecastModel
+import dev.nimbus.weather.ui.UiState
+import dev.nimbus.weather.ui.places.PlacesScreen
 import dev.nimbus.weather.data.model.Place
 import dev.nimbus.weather.data.model.Settings
 import dev.nimbus.weather.ui.main.LocationMark
@@ -70,6 +78,36 @@ class PlaceListTest {
         compose.setContent { PlaceCard(here, null, Settings(), location = LocationMark(current = true, searching = false, off = false)) {} }
         compose.waitForIdle()
         compose.assertDotBesidePin(org.robolectric.RuntimeEnvironment.getApplication().getString(R.string.my_location), 22f)
+    }
+
+    private fun places(saved: List<Place>, onSetModel: (Place, ForecastModel?) -> Unit = { _, _ -> }) = compose.setContent {
+        PlacesScreen(
+            UiState(initialized = true, savedPlaces = saved, selectedPlaceId = saved.first().id), search = { emptyList() },
+            onAdd = {}, onRemove = {}, onReorder = {}, onSetModel = onSetModel, onOpen = {}, onSettings = {}, onRequestLocation = {}, onBack = {},
+        )
+    }
+
+    /**
+     * "Jeder gespeicherte Ort bekommt optional ein eigenes Modell, z. B. per langem Druck auf den Ort
+     * in der Ortsliste": in the edit mode under its name, tapped – the choice.
+     */
+    @Test fun aPlaceGetsAModelOfItsOwn() {
+        var chosen: Pair<String, ForecastModel?>? = null
+        places(listOf(berlin)) { p, m -> chosen = p.id to m }
+        compose.onNodeWithText("Berlin").performTouchInput { longClick() }
+        compose.onNodeWithText("Modell: Standard (Open-Meteo)").performClick()
+        compose.onNodeWithText("MET Nordic (1 km)").performScrollTo().performClick()
+        assertEquals("berlin" to ForecastModel.MET_NORWAY, chosen)
+    }
+
+    /** A place with its own model says which; back to the settings' one by "Standard". */
+    @Test fun aPlaceSaysItsOwnModel() {
+        var chosen: Pair<String, ForecastModel?>? = "none" to null
+        places(listOf(berlin.copy(model = ForecastModel.MET_NORWAY))) { p, m -> chosen = p.id to m }
+        compose.onNodeWithText("Berlin").performTouchInput { longClick() }
+        compose.onNodeWithText("Modell: MET Nordic").performClick()
+        compose.onNodeWithText("Standard (Open-Meteo)").performClick()
+        assertEquals("berlin" to null, chosen)
     }
 }
 

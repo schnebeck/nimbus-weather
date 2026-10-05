@@ -112,26 +112,8 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
         ) {
             item {
                 Section(stringResource(R.string.settings_forecast_source)) {
-                    val models = listOf(
-                        Triple(ForecastModel.DWD_ICON, R.string.model_dwd_icon, R.string.model_dwd_icon_desc),
-                        Triple(ForecastModel.BEST_MATCH, R.string.model_best_match, R.string.model_best_match_desc),
-                        Triple(ForecastModel.ECMWF, R.string.model_ecmwf, R.string.model_ecmwf_desc),
-                        Triple(ForecastModel.METEO_FRANCE, R.string.model_meteofrance, R.string.model_meteofrance_desc),
-                    )
-                    models.forEach { (m, title, desc) ->
-                        Row(
-                            Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { onChange { it.copy(model = m) } }.padding(vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            RadioButton(
-                                selected = settings.model == m, onClick = { onChange { it.copy(model = m) } },
-                                colors = RadioButtonDefaults.colors(selectedColor = Color.White, unselectedColor = NimbusColors.Tertiary),
-                            )
-                            Column(Modifier.weight(1f)) {
-                                Text(stringResource(title), fontSize = 16.sp, color = Color.White)
-                                Text(stringResource(desc), fontSize = 13.sp, color = NimbusColors.Secondary)
-                            }
-                        }
+                    ModelChoices.forEach { (m, title, desc) ->
+                        ModelChoice(settings.model == m, stringResource(title), stringResource(desc)) { onChange { it.copy(model = m) } }
                     }
                 }
             }
@@ -502,5 +484,39 @@ private fun ToggleRow(title: String, desc: String, value: Boolean, onChange: (Bo
             checked = value, onCheckedChange = onChange,
             colors = SwitchDefaults.colors(checkedTrackColor = Color(0xFF3D8BFF), checkedThumbColor = Color.White),
         )
+    }
+}
+
+/** The forecast models to choose from: model, name, what it is good for. */
+internal val ModelChoices = listOf(
+    Triple(ForecastModel.BEST_MATCH, R.string.model_best_match, R.string.model_best_match_desc),
+    Triple(ForecastModel.DWD_ICON, R.string.model_dwd_icon, R.string.model_dwd_icon_desc),
+    Triple(ForecastModel.ECMWF, R.string.model_ecmwf, R.string.model_ecmwf_desc),
+    Triple(ForecastModel.METEO_FRANCE, R.string.model_meteofrance, R.string.model_meteofrance_desc),
+    Triple(ForecastModel.MET_NORWAY, R.string.model_metno, R.string.model_metno_desc),
+    Triple(ForecastModel.KNMI, R.string.model_knmi, R.string.model_knmi_desc),
+    Triple(ForecastModel.DMI, R.string.model_dmi, R.string.model_dmi_desc),
+    Triple(ForecastModel.UKMO, R.string.model_ukmo, R.string.model_ukmo_desc),
+    Triple(ForecastModel.METEOSWISS_CH1, R.string.model_ch1, R.string.model_ch1_desc),
+    Triple(ForecastModel.METEOSWISS_CH2, R.string.model_ch2, R.string.model_ch2_desc),
+    Triple(ForecastModel.GEOSPHERE, R.string.model_geosphere, R.string.model_geosphere_desc),
+    Triple(ForecastModel.ITALIA, R.string.model_italia, R.string.model_italia_desc),
+)
+
+/** One forecast model to choose (the settings' one, a place's own): a radio button, name and description. */
+@Composable
+internal fun ModelChoice(selected: Boolean, title: String, description: String, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable(onClick = onClick).padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(
+            selected = selected, onClick = onClick,
+            colors = RadioButtonDefaults.colors(selectedColor = Color.White, unselectedColor = NimbusColors.Tertiary),
+        )
+        Column(Modifier.weight(1f)) {
+            Text(title, fontSize = 16.sp, color = Color.White)
+            Text(description, fontSize = 13.sp, color = NimbusColors.Secondary)
+        }
     }
 }

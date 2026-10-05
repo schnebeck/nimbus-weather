@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -104,6 +105,8 @@ fun PlacesScreen(
     onAdd: (Place) -> Unit,
     onRemove: (Place) -> Unit,
     onReorder: (List<String>) -> Unit,
+    /** A saved place's own forecast model (null: the one of the settings). */
+    onSetModel: (Place, dev.nimbus.weather.data.model.ForecastModel?) -> Unit,
     onOpen: (String) -> Unit,
     onSettings: () -> Unit,
     onRequestLocation: () -> Unit,
@@ -165,7 +168,7 @@ fun PlacesScreen(
                 stringResource(R.string.places_edit_hint), Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
                 fontSize = 13.sp, color = NimbusColors.Secondary,
             )
-            EditList(saved, state, reorder, onRemove, Modifier.padding(top = 8.dp), navBottom)
+            EditList(saved, state, reorder, onRemove, onSetModel, Modifier.padding(top = 8.dp), navBottom)
             return@Column
         }
         TextField(
@@ -255,14 +258,18 @@ private val EditRowGap = 10.dp
 
 /**
  * Saved places in edit mode: the handle on the right drags a row to a new position (stored on
- * release), the button on the left asks once more before deleting. "My location" is not listed.
+ * release), the button on the left asks once more before deleting, the model line under the name
+ * chooses the place's forecast model. "My location" is not listed (it takes the settings' model).
  */
 @Composable
 private fun EditList(
     places: List<Place>, state: UiState, onReorder: (List<String>) -> Unit, onRemove: (Place) -> Unit,
+    onSetModel: (Place, dev.nimbus.weather.data.model.ForecastModel?) -> Unit,
     modifier: Modifier, navBottom: androidx.compose.ui.unit.Dp,
 ) {
     var confirmId by remember { mutableStateOf<String?>(null) }
+    var choosing by remember { mutableStateOf<Place?>(null) }
+    choosing?.let { p -> ModelSheet(p, state.settings.model, { m -> onSetModel(p, m); choosing = null }) { choosing = null } }
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = navBottom + 16.dp)) {
         dev.nimbus.weather.ui.components.ReorderableColumn(
             places, key = { it.id }, gap = EditRowGap,
@@ -293,12 +300,56 @@ private fun EditList(
                 }
                 Column(Modifier.weight(1f).padding(start = 4.dp).clickable(enabled = confirmId == id) { confirmId = null }) {
                     Text(place.name, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    if (place.subtitle.isNotEmpty()) Text(place.subtitle, fontSize = 12.sp, color = NimbusColors.Secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    // the place's forecast model: tapped, the choice
+                    val model = place.model?.let { dev.nimbus.weather.ui.main.modelName(it) }
+                        ?: stringResource(R.string.places_model_default, dev.nimbus.weather.ui.main.modelName(state.settings.model))
+                    Text(
+                        stringResource(R.string.places_model, model),
+                        Modifier.clip(RoundedCornerShape(6.dp)).clickable(enabled = confirmId != id) { choosing = place }
+                            .padding(vertical = 2.dp).testTag("model-${place.id}"),
+                        fontSize = 13.sp, color = Color.White.copy(alpha = 0.85f), textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
+                    )
                 }
                 Icon(
                     Icons.Rounded.DragHandle, stringResource(R.string.places_drag), tint = Color.White,
                     modifier = handle.size(56.dp).padding(16.dp),
                 )
+            }
+        }
+    }
+}
+
+/**
+ * The forecast model of [place]: the settings' one ([default], followed when the settings change)
+ * or one of its own.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun ModelSheet(
+    place: Place, default: dev.nimbus.weather.data.model.ForecastModel,
+    onChoose: (dev.nimbus.weather.data.model.ForecastModel?) -> Unit, onDismiss: () -> Unit,
+) {
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = Color(0xFF16233A), contentColor = Color.White, scrimColor = Color(0x99000000),
+    ) {
+        val navBottom = dev.nimbus.weather.ui.components.navBarBottom()
+        Column(
+            Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+                .padding(start = 16.dp, end = 24.dp, bottom = navBottom + 24.dp).testTag("model-sheet"),
+        ) {
+            Text(
+                stringResource(R.string.places_model_title, place.name), Modifier.padding(start = 8.dp, bottom = 8.dp),
+                fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color.White,
+            )
+            dev.nimbus.weather.ui.settings.ModelChoice(
+                place.model == null,
+                stringResource(R.string.places_model_default, dev.nimbus.weather.ui.main.modelName(default)),
+                stringResource(R.string.places_model_default_desc),
+            ) { onChoose(null) }
+            dev.nimbus.weather.ui.settings.ModelChoices.forEach { (m, title, desc) ->
+                dev.nimbus.weather.ui.settings.ModelChoice(place.model == m, stringResource(title), stringResource(desc)) { onChoose(m) }
             }
         }
     }

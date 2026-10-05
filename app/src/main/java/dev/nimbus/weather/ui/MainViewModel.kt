@@ -27,6 +27,8 @@ import dev.nimbus.weather.NimbusApp
 import dev.nimbus.weather.BuildConfig
 import dev.nimbus.weather.R
 import dev.nimbus.weather.data.model.Condition
+import dev.nimbus.weather.data.model.ForecastModel
+import dev.nimbus.weather.data.model.modelFor
 import dev.nimbus.weather.data.model.ModelSeries
 import dev.nimbus.weather.data.model.Place
 import dev.nimbus.weather.data.model.Settings
@@ -219,13 +221,15 @@ class MainViewModel(
                     )
                 }
                 cached.forEach { (_, ps) -> ps.data?.let(shelf::take) }
-                val needsReload = prev != null && (prev.model != settings.model ||
-                    prev.useStationObservations != settings.useStationObservations)
+                // anew: the places whose model changed (the settings' one – not for a place with its
+                // own), all of them when the station measurements are switched
+                val stations = prev != null && prev.useStationObservations != settings.useStationObservations
+                val changed = if (prev == null) emptyList() else _state.value.pages.filter { stations || prev.modelFor(it) != settings.modelFor(it) }
                 if (first) {
                     if (_state.value.currentPlace == null || locationWanted(_state.value, sidebar)) refreshLocation()
                     _state.value.pages.forEach { load(it, force = false) }
-                } else if (needsReload) {
-                    _state.value.pages.forEach { load(it, force = true) }
+                } else if (changed.isNotEmpty()) {
+                    changed.forEach { load(it, force = true) }
                 } else {
                     places.forEach { if (_state.value.states[it.id]?.data == null) load(it, force = false) }
                 }
@@ -530,7 +534,7 @@ class MainViewModel(
         viewModelScope.launch {
             record.stale()
             updatePlace(placeId) { it.copy(historyLoading = true, historyError = false) }
-            val model = _state.value.settings.model.openMeteoId
+            val model = _state.value.settings.modelFor(place).openMeteoId
             // Station data is always loaded for the look back, independent of the "use station
             // measurements" setting (that only decides what the current conditions show): the
             // comparison measurement vs. forecast is the point of the history.
@@ -575,6 +579,20 @@ class MainViewModel(
     fun reorderPlaces(ids: List<String>) {
         viewModelScope.launch {
             store.updatePlaces { list -> ids.mapNotNull { id -> list.firstOrNull { it.id == id } } + list.filter { it.id !in ids } }
+        }
+    }
+
+    /**
+     * The forecast model of the saved place [placeId]: [model], or null for the one of the
+     * settings. Its weather and its look-back are loaded anew with it.
+     */
+    fun setPlaceModel(placeId: String, model: ForecastModel?) {
+        viewModelScope.launch {
+            store.updatePlaces { list -> list.map { if (it.id == placeId) it.copy(model = model) else it } }
+            _state.update { st -> st.copy(savedPlaces = st.savedPlaces.map { if (it.id == placeId) it.copy(model = model) else it }) }
+            val place = _state.value.pages.firstOrNull { it.id == placeId } ?: return@launch
+            load(place, force = true)
+            if (_state.value.states[placeId]?.history != null) loadHistory(placeId, force = true)
         }
     }
 

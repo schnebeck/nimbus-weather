@@ -375,13 +375,21 @@ fun SourcesFooter(data: WeatherData) {
             Text(stringResource(R.string.data_sources), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = NimbusColors.Secondary)
         }
         Spacer(Modifier.height(4.dp))
+        // a single model with its grid: "KNMI Harmonie, 2 km"
+        @Composable
+        fun part(p: dev.nimbus.weather.data.model.ModelPart) =
+            stringResource(R.string.src_part, p.name, if (p.km % 1.0 == 0.0) p.km.toInt().toString() else Units.oneDecimal(p.km))
         val labels = data.sources.map { src ->
             when (src.kind) {
                 SourceKind.MODEL_DWD_ICON -> stringResource(R.string.src_dwd_icon)
                 SourceKind.MODEL_ECMWF -> stringResource(R.string.src_ecmwf)
                 SourceKind.MODEL_METEO_FRANCE -> stringResource(R.string.src_meteofrance)
-                SourceKind.MODEL_BEST_MATCH -> stringResource(R.string.src_best_match)
-                SourceKind.GAP_FILL -> stringResource(R.string.src_gap_fill)
+                SourceKind.MODEL_REGIONAL -> src.part?.let { stringResource(R.string.src_regional, part(it)) } ?: stringResource(R.string.src_best_match)
+                SourceKind.MODEL_BEST_MATCH -> stringResource(R.string.src_best_match) +
+                    (src.part?.let { " (" + stringResource(R.string.src_part_now, part(it)) + ")" } ?: "")
+                // filling what the chosen model lacks – and from its last hour on, everything
+                SourceKind.GAP_FILL -> (src.since?.let { stringResource(R.string.src_gap_fill_from, tf.weekdayShort(it) + " " + tf.time(it)) }
+                    ?: stringResource(R.string.src_gap_fill)) + (src.part?.let { " (" + part(it) + ")" } ?: "")
                 SourceKind.DWD_STATION -> stringResource(R.string.src_station, src.detail ?: "")
                 SourceKind.DWD_WARNINGS -> stringResource(R.string.src_warnings)
                 SourceKind.CAMS -> stringResource(R.string.src_cams)

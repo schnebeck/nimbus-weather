@@ -21,6 +21,7 @@ import dev.nimbus.weather.data.model.Condition
 import dev.nimbus.weather.data.model.CurrentWeather
 import dev.nimbus.weather.data.model.DataPart
 import dev.nimbus.weather.data.model.ForecastModel
+import dev.nimbus.weather.data.model.modelFor
 import dev.nimbus.weather.data.model.ModelSeries
 import dev.nimbus.weather.data.model.Place
 import dev.nimbus.weather.data.model.Settings
@@ -81,7 +82,9 @@ class WeatherRepository(
     ) { coroutineScope {
         val lat = place.latitude
         val lon = place.longitude
-        val primaryModel = settings.model.openMeteoId
+        // the place's own model, else the one of the settings
+        val model = settings.modelFor(place)
+        val primaryModel = model.openMeteoId
         val inDwdArea = isInDwdArea(lat, lon)
 
         val started = System.nanoTime()
@@ -90,13 +93,16 @@ class WeatherRepository(
         }
         // DWD ICON: chance of precipitation that matches the ICON-D2 amounts (see iconD2Chance)
         val d2ChanceJob = async {
-            if (settings.model != ForecastModel.DWD_ICON) emptyMap()
+            if (model != ForecastModel.DWD_ICON) emptyMap()
             else runCatching { openMeteo.iconD2Chance(lat, lon) }.getOrDefault(emptyMap())
         }
         val fillJob = async {
             if (primaryModel == ForecastModel.BEST_MATCH.openMeteoId) null
             else runCatching { openMeteo.forecast(lat, lon, ForecastModel.BEST_MATCH.openMeteoId) }.getOrNull()
         }
+        // which single model Open-Meteo's best match takes, hour by hour (for the sources: named
+        // with its grid) – it fills the chosen model's gaps, or it is the chosen one
+        val partsJob = async { runCatching { openMeteo.bestMatchModels(lat, lon) }.getOrDefault(emptyMap()) }
         val obsJob = async {
             if (settings.useStationObservations && inDwdArea) runCatching { brightSky.currentObservation(lat, lon) }.getOrNull() else null
         }
@@ -140,21 +146,31 @@ class WeatherRepository(
         val primaryResult = primaryJob.await().map { dev.nimbus.weather.data.remote.OpenMeteoSource.withChance(it, d2Chance) }
         val fill = fillJob.await()
         val primary = primaryResult.getOrNull()
+        // the best match's single models: not worth holding the forecast back for long
+        val parts = kotlinx.coroutines.withTimeoutOrNull(PARTS_WAIT_MS) { partsJob.await() } ?: emptyMap<Long, dev.nimbus.weather.data.model.ModelPart>().also { partsJob.cancel() }
+        val nowHour = clock() / HOUR_MS * HOUR_MS
+        // the single model at [t] – in the hours where the best match blends two, the next one
+        fun partAt(t: Long) = parts.entries.firstOrNull { it.key >= t && it.key < t + DAY_MS }?.value
         val sources = mutableListOf<Source>()
         val forecast: ModelForecast = when {
             primary != null -> {
-                sources += Source(
-                    when (settings.model) {
-                        ForecastModel.DWD_ICON -> SourceKind.MODEL_DWD_ICON
-                        ForecastModel.ECMWF -> SourceKind.MODEL_ECMWF
-                        ForecastModel.METEO_FRANCE -> SourceKind.MODEL_METEO_FRANCE
-                        ForecastModel.BEST_MATCH -> SourceKind.MODEL_BEST_MATCH
-                    },
-                )
-                if (fill != null) sources += Source(SourceKind.GAP_FILL)
+                val kind = when {
+                    model.part != null -> SourceKind.MODEL_REGIONAL
+                    model == ForecastModel.DWD_ICON -> SourceKind.MODEL_DWD_ICON
+                    model == ForecastModel.ECMWF -> SourceKind.MODEL_ECMWF
+                    model == ForecastModel.METEO_FRANCE -> SourceKind.MODEL_METEO_FRANCE
+                    else -> SourceKind.MODEL_BEST_MATCH
+                }
+                sources += Source(kind, part = if (kind == SourceKind.MODEL_BEST_MATCH) partAt(nowHour) else model.part)
+                if (fill != null) {
+                    // from when on the best match gives the forecast: after the chosen model's last hour
+                    val last = primary.hourly.lastOrNull()?.time
+                    val since = last?.let { l -> fill.hourly.firstOrNull { it.time > l }?.time }
+                    sources += Source(SourceKind.GAP_FILL, since = since, part = since?.let(::partAt))
+                }
                 primary.mergedWith(fill)
             }
-            fill != null -> { sources += Source(SourceKind.MODEL_BEST_MATCH); fill }
+            fill != null -> { sources += Source(SourceKind.MODEL_BEST_MATCH, part = partAt(nowHour)); fill }
             else -> throw primaryResult.exceptionOrNull() ?: IllegalStateException("No forecast available")
         }
 
@@ -300,6 +316,10 @@ class WeatherRepository(
         const val SOURCE_TIMEOUT_MS = 120_000L
         /** [WeatherAlert.source] of the states' flood alerts. */
         private const val LHP = "LHP"
+        private const val HOUR_MS = 3_600_000L
+        private const val DAY_MS = 24 * HOUR_MS
+        /** How long the forecast waits for the best match's single models (they only name a source). */
+        private const val PARTS_WAIT_MS = 3_000L
 
         /** Rough bounding box of the DWD station network / warning area. */
         fun isInDwdArea(lat: Double, lon: Double) = lat in 47.2..55.1 && lon in 5.8..15.1

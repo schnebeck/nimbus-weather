@@ -1,0 +1,3 @@
+• Radar-Vorschau auf der Hauptseite überall wie das große Radar gezeichnet, mit KNMI und RainViewer
+• Für Orte in den Niederlanden richtet sich die Radar-Zeitachse nach dem KNMI
+• Interner Umbau: Radarquellen von der Verarbeitung getrennt, weniger und kürzere Dateien

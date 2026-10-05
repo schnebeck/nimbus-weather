@@ -73,3 +73,38 @@ class StaleFallbackInterceptor(private val hosts: Set<String>) : Interceptor {
         return cached
     }
 }
+
+/**
+ * Application interceptor: DWD's WMS occasionally fails under load and MapLibre does not retry
+ * failed tiles, which would leave holes in single animation frames. One retry fixes that.
+ */
+class RetryInterceptor(private val hosts: Set<String>) : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+        if (request.url.host !in hosts) return chain.proceed(request)
+        val first = try {
+            chain.proceed(request)
+        } catch (e: java.io.IOException) {
+            if (chain.call().isCanceled()) throw e
+            return chain.proceed(request)
+        }
+        if (first.code < 500) return first
+        first.close()
+        return chain.proceed(request)
+    }
+}
+
+/**
+ * Network interceptor: the DWD's warning layer (no time in its URL) changes every few minutes –
+ * kept five minutes, so panning the map does not ask for every tile again.
+ */
+class MapCacheInterceptor : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val response = chain.proceed(chain.request())
+        if (!response.isSuccessful || chain.request().url.host != "maps.dwd.de") return response
+        return response.newBuilder()
+            .header("Cache-Control", "public, max-age=300")
+            .removeHeader("Pragma").removeHeader("Expires")
+            .build()
+    }
+}

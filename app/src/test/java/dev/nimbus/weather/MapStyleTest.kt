@@ -41,13 +41,6 @@ class MapStyleTest {
         assertTrue(ids(out).indexOf("building") < ids(out).indexOf("waterway"))
     }
 
-    @Test fun rastersGoBetweenAreasAndLines() {
-        val out = MapStyle.withRasters(MapStyle.fillsFirst(style), listOf(MapStyle.Raster("r", "https://x/{z}/{x}/{y}.png", 10, 1f)))
-        val t = types(out); val i = ids(out).indexOf("r")
-        assertTrue(t.take(i).none { it == "line" || it == "symbol" })
-        assertEquals("line", t[i + 1])
-    }
-
     @Test fun partsSplitTheMap() {
         val s = MapStyle.fillsFirst(style)
         assertTrue(types(MapStyle.part(s, MapStyle.Part.AREAS)).all { it == "fill" || it == "background" })

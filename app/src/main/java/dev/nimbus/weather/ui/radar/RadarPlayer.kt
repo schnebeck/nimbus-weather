@@ -25,8 +25,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import org.maplibre.android.geometry.LatLng
@@ -36,9 +34,6 @@ import org.maplibre.android.style.layers.RasterLayer
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.sources.ImageSource
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.math.floor
-import kotlin.math.ln
-import kotlin.math.roundToInt
 
 /**
  * The radar on the map is one picture of the view (a MapLibre image source), computed from the
@@ -55,10 +50,11 @@ class RadarPlayer(
     private var style: Style? = null
     private var timeline: RadarTimeline? = null
     @Volatile private var geo: FieldGeo? = null
-    /** Frames of the current picture area by store key (survive a refreshed time line). */
+    /** Frames of the current picture area by step ([RadarFrame.id]; they survive a refreshed time line). */
     private val frames = ConcurrentHashMap<String, ViewFrame>()
     private val flows = ConcurrentHashMap<String, Flow>()
-    private var inDwd: BooleanArray? = null
+    /** Per composite reaching into the picture: the pixels it covers. */
+    private var covered: Map<RadarComposite, BooleanArray>? = null
     private var generation = 0
     private var downloader: Job? = null
     private var extractor: Job? = null
@@ -117,7 +113,7 @@ class RadarPlayer(
         scope.launch(Dispatchers.Default) { for (r in renders) renderNow() }
     }
 
-    private fun key(tl: RadarTimeline, i: Int) = RadarStore.dwdKey(tl.frames[i])
+    private fun key(tl: RadarTimeline, i: Int) = tl.frames[i].id
     private fun extracted(tl: RadarTimeline, i: Int) = frames.containsKey(key(tl, i))
 
     /** Frame [i] is ready to show (not only approximated between others). */
@@ -147,7 +143,7 @@ class RadarPlayer(
             FieldGeo.mercY(south) >= g.minY && FieldGeo.mercY(north) <= g.maxY
         if (g != null && inside && ratio in 0.6..1.6) return
         geo = want
-        inDwd = null
+        covered = null
         frames.clear()
         flows.clear()
         restartExtractor()
@@ -166,7 +162,9 @@ class RadarPlayer(
         downloader?.cancel()
         failed.clear()
         downloader = scope.launch(Dispatchers.Default) {
-            withContext(Dispatchers.IO) { tl.frames.forEach { f -> RadarStore.dwdKey(f).let { k -> if (RadarStore.has(k)) stored += k } } }
+            withContext(Dispatchers.IO) {
+                tl.frames.forEach { f -> geo?.let { g -> RadarPicture.composites(f, g) }?.takeIf { it.isNotEmpty() && it.all { c -> RadarStore.has(c.key(f)) } }?.let { stored += f.id } }
+            }
             countStored(tl)
             wake.trySend(Unit)
             // A long live loop plays between steps 20–30 minutes apart: those belong to the overview
@@ -182,12 +180,13 @@ class RadarPlayer(
                     launch {
                         for (i in queue) {
                             val f = tl.frames[i]
-                            val k = RadarStore.dwdKey(f)
-                            if (f.dwdTime == null || k in stored) continue
-                            if (geo?.let { overlapsDwd(it) } == false) continue
-                            // the Dutch composite beside it, where the picture reaches it (its failing keeps nothing back)
-                            if (geo?.let { overlapsKnmi(it) } == true) RadarStore.knmi(http, f)
-                            if (RadarStore.dwd(http, f) != null) {
+                            val k = f.id
+                            if (k in stored) continue
+                            val needed = geo?.let { RadarPicture.composites(f, it) }.orEmpty()
+                            if (needed.isEmpty()) continue
+                            // all composites of the step, then it counts – stored if any of them could be had
+                            val got = needed.map { c -> RadarStore.grid(http, c, f) }
+                            if (got.any { it != null }) {
                                 stored += k
                                 wake.trySend(Unit)
                             } else failed += k
@@ -200,7 +199,8 @@ class RadarPlayer(
     }
 
     private fun countStored(tl: RadarTimeline) {
-        _loaded.value = tl.frames.count { f -> f.dwdTime == null || RadarStore.dwdKey(f).let { it in stored || it in failed } }
+        val g = geo
+        _loaded.value = tl.frames.count { f -> g == null || RadarPicture.composites(f, g).isEmpty() || f.id.let { it in stored || it in failed } }
     }
 
     /**
@@ -213,7 +213,7 @@ class RadarPlayer(
         extractor?.cancel()
         val gen = ++generation
         extractor = scope.launch(Dispatchers.Default) {
-            if (inDwd == null) inDwd = coverage(g)
+            if (covered == null) covered = RadarPicture.coverage(g)
             wake.trySend(Unit)
             val strides = Progressive.strides(stepMinutes(tl))
             for (w in wake) {
@@ -238,16 +238,17 @@ class RadarPlayer(
                     if (gen != generation) return@launch
                     if (i !in lo..hi && i !in keepSteps) continue
                     val f = tl.frames[i]
-                    val k = RadarStore.dwdKey(f)
+                    val k = f.id
                     if (frames.containsKey(k)) continue
-                    val needDwd = f.dwdTime != null && overlapsDwd(g)
-                    val dwd = if (needDwd) withContext(Dispatchers.IO) { if (k in stored || RadarStore.has(k)) RadarStore.peek(k) else null } else null
-                    if (needDwd && dwd == null) continue                 // not downloaded yet: a later pass
-                    val rv = f.rainViewerPath?.takeIf { needsRainViewer(g) }?.let { mosaic(tl, it, g) }
-                    if (!needDwd && rv == null) continue
+                    val needed = RadarPicture.composites(f, g)
+                    val layers = withContext(Dispatchers.IO) {
+                        needed.mapNotNull { c -> RadarStore.peek(c.key(f))?.let { RadarLayer(c, it, covered?.get(c)) } }
+                    }
+                    if (needed.isNotEmpty() && layers.isEmpty()) continue        // not downloaded yet: a later pass
+                    val rv = f.rainViewerPath?.takeIf { covered?.let { c -> RadarPicture.needsRainViewer(c, g.w * g.h) } ?: true }?.let { RadarPicture.mosaic(http, tl.rainViewerHost, it, g) }
+                    if (needed.isEmpty() && rv == null) continue
                     val t0 = System.nanoTime()
-                    val knmi = if (overlapsKnmi(g)) withContext(Dispatchers.IO) { RadarStore.peek(RadarStore.knmiKey(f)) } else null
-                    val vf = RadarField.extract(g, dwd, rv, inDwd, knmi)
+                    val vf = RadarField.extract(g, layers, rv)
                     if (dev.nimbus.weather.BuildConfig.DEBUG) android.util.Log.d("NimbusPlayer", "frame $i ${g.w}x${g.h} extract ${(System.nanoTime() - t0) / 1_000_000} ms")
                     if (gen != generation) return@launch
                     frames[k] = vf
@@ -260,63 +261,7 @@ class RadarPlayer(
         }
     }
 
-    private suspend fun mosaic(tl: RadarTimeline, path: String, g: FieldGeo): RvMosaic {
-        // RainViewer zoom whose pixels match the picture's, at most 7 (their finest)
-        val z = (ln(2 * Math.PI * FieldGeo.R / (512 * g.pxM)) / ln(2.0)).roundToInt().coerceIn(3, 7)
-        val size = 2 * O / (1 shl z)
-        val x0 = floor((g.minX + O) / size).toInt(); val x1 = floor((g.maxX + O) / size).toInt()
-        val y0 = floor((O - g.maxY) / size).toInt(); val y1 = floor((O - g.minY) / size).toInt()
-        val tiles = HashMap<Long, ByteArray>()
-        for (y in y0..y1) for (x in x0..x1) {
-            if (x !in 0 until (1 shl z) || y !in 0 until (1 shl z)) continue
-            RadarStore.rvTile(http, tl.rainViewerHost, path, z, x, y)?.let { tiles[RvMosaic.key(x, y)] = it }
-        }
-        return RvMosaic(z, tiles)
-    }
-
-    private fun overlapsKnmi(g: FieldGeo) = KnmiRadar.overlaps(g.west, g.east, g.south, g.north)
-
-    private fun overlapsDwd(g: FieldGeo) = g.east > DwdGrid.LON0 && g.west < DwdGrid.LON1 && g.north > DwdGrid.LAT0 && g.south < DwdGrid.LAT1
-
-    /** Does the picture reach beyond the DWD radar area (where RainViewer fills in)? */
-    private fun needsRainViewer(g: FieldGeo): Boolean = inDwd?.any { !it } ?: true
-
-    /** Field pixels inside the DWD radar area; without the area mask: inside the DWD grid. */
-    private fun coverage(g: FieldGeo): BooleanArray {
-        val out = BooleanArray(g.w * g.h)
-        val lat = DoubleArray(g.h) { g.lat(g.my(it.toDouble())) }
-        val lon = DoubleArray(g.w) { g.lon(g.mx(it.toDouble())) }
-        val mask = DwdCoverage.ready
-        for (y in 0 until g.h) for (x in 0 until g.w) {
-            out[y * g.w + x] = if (mask) DwdCoverage.covers(lat[y], lon[x])
-            else lat[y] in DwdGrid.LAT0..DwdGrid.LAT1 && lon[x] in DwdGrid.LON0..DwdGrid.LON1
-        }
-        return out
-    }
-
     fun requestRender() { renders.trySend(Unit) }
-
-    /** Snow share from the 2 m temperature for every pixel, per hour of the grid. */
-    private val snowCache = HashMap<String, FloatArray?>()
-
-    private fun snowAt(g: FieldGeo, time: Long): FloatArray? {
-        val grid = WeatherGridStore.gridOverlapping(TileGeo(g.minX, g.minY, g.maxX, g.maxY), time) ?: return null
-        val hour = grid.hourIndex(time)
-        val key = "${System.identityHashCode(grid)}_${hour}_${g.minX}_${g.maxY}_${g.w}"
-        return snowCache.getOrPut(key) {
-            if (snowCache.size > 24) snowCache.clear()
-            val field = grid.temp[hour]
-            val lat = DoubleArray(g.h) { g.lat(g.my(it.toDouble())) }
-            val lon = DoubleArray(g.w) { g.lon(g.mx(it.toDouble())) }
-            // the grid is coarse: sample every 4th pixel and spread, fine enough for rain/snow
-            val out = FloatArray(g.w * g.h)
-            for (y in 0 until g.h step 4) for (x in 0 until g.w step 4) {
-                val s = grid.sampleNear(field, lat[y], lon[x])?.let { RadarPalette.snowFraction(it) } ?: 0f
-                for (yy in y until minOf(y + 4, g.h)) for (xx in x until minOf(x + 4, g.w)) out[yy * g.w + xx] = s
-            }
-            out.takeIf { a -> a.any { it > 0f } }
-        }
-    }
 
     private suspend fun renderNow() {
         val tl = timeline ?: return
@@ -326,16 +271,16 @@ class RadarPlayer(
         // they may be hours apart
         val (ia, ib) = Progressive.bracket(p, tl.frames.size) { extracted(tl, it) } ?: return
         val fa = tl.frames[ia]
-        val a = frames[RadarStore.dwdKey(fa)] ?: return
+        val a = frames[fa.id] ?: return
         val fb = if (ib != ia) tl.frames[ib] else null
-        val b = fb?.let { frames[RadarStore.dwdKey(it)] }
+        val b = fb?.let { frames[it.id] }
         val tSpan = if (b != null) ((p - ia) / (ib - ia)).coerceIn(0f, 1f) else 0f
         // Moving the rain only across short gaps; wider ones (finer steps still loading) are
         // blended in place – a motion guessed over an hour shifted showers to wrong places
         val (move, t) = if (fb != null) Progressive.blend(fb.time - fa.time, tSpan) else (true to 0f)
         val flow = if (b != null && fb != null && t > 0.002f && !move) Flow.still()
         else if (b != null && fb != null && t > 0.002f) {
-            val k = RadarStore.dwdKey(fa) + ">" + RadarStore.dwdKey(fb)
+            val k = fa.id + ">" + fb.id
             flows.getOrPut(k) {
                 // fast showers move up to ~150 km/h
                 val hours = (fb.time - fa.time) / 3_600_000.0
@@ -347,7 +292,7 @@ class RadarPlayer(
         val ow = (g.w + step - 1) / step; val oh = (g.h + step - 1) / step
         val out = IntArray(ow * oh)
         val t0 = System.nanoTime()
-        RadarField.render(a, if (flow != null) b else null, flow, t, g.w, g.h, snowAt(g, fa.time), out, step)
+        RadarField.render(a, if (flow != null) b else null, flow, t, g.w, g.h, RadarPicture.snowAt(g, fa.time), out, step)
         if (dev.nimbus.weather.BuildConfig.DEBUG && renderCount++ % 30 == 0) android.util.Log.d("NimbusPlayer", "render ${ow}x$oh ${(System.nanoTime() - t0) / 1_000_000} ms")
         val slot = flip * 2 + step - 1
         val bmp = bitmaps[slot]?.takeIf { it.width == ow && it.height == oh }
@@ -389,6 +334,5 @@ class RadarPlayer(
         /** A long live loop: the 5-minute steps ahead of the position (the rest are the kept ones). */
         private const val LIVE_WINDOW_AHEAD = 12
         private const val WINDOW_SLIDE = 12f
-        private const val O = 20037508.342789244
     }
 }

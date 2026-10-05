@@ -27,8 +27,7 @@ import dev.nimbus.weather.data.remote.USER_AGENT
 import dev.nimbus.weather.data.repo.LocationProvider
 import dev.nimbus.weather.data.repo.Store
 import dev.nimbus.weather.data.repo.WeatherRepository
-import dev.nimbus.weather.ui.radar.RadarCacheInterceptor
-import dev.nimbus.weather.ui.radar.RadarTileInterceptor
+import dev.nimbus.weather.ui.radar.MapCacheInterceptor
 import dev.nimbus.weather.ui.radar.RetryInterceptor
 import dev.nimbus.weather.ui.radar.StaleFallbackInterceptor
 import okhttp3.Cache
@@ -46,9 +45,9 @@ class NimbusApp : Application() {
         super.onCreate()
         container = AppContainer(this)
         dev.nimbus.weather.ui.radar.WeatherGridStore.cacheDir = java.io.File(cacheDir, "grid")
-        dev.nimbus.weather.ui.radar.RadarSources.stateDir = java.io.File(cacheDir, "radar")
+        dev.nimbus.weather.ui.radar.RadarLatest.dir = java.io.File(cacheDir, "radar")
         dev.nimbus.weather.ui.radar.RadarPreview.dir = java.io.File(cacheDir, "previews")
-        dev.nimbus.weather.ui.radar.DwdCoverage.dir = java.io.File(cacheDir, "radar")
+        dev.nimbus.weather.ui.radar.RadarComposites.dir = java.io.File(cacheDir, "radar")
         // Decoded radar steps; expired ones are removed in the background
         dev.nimbus.weather.ui.radar.RadarStore.dir = java.io.File(cacheDir, "radarstore")
         Thread { runCatching { dev.nimbus.weather.ui.radar.RadarStore.prune() } }.start()
@@ -79,7 +78,7 @@ class AppContainer(app: Application) {
         .retryOnConnectionFailure(true)
         .build()
 
-    /** Client used by MapLibre for map and radar tiles; recolors radar images on the fly. */
+    /** Client used by MapLibre: the base map, the DWD's warnings, the satellite picture (the radar comes from [dev.nimbus.weather.ui.radar.RadarStore]). */
     val mapHttp: OkHttpClient = http.newBuilder()
         // Map tiles come from few hosts; OkHttp's default of 5 parallel requests per host is too low.
         .dispatcher(okhttp3.Dispatcher().apply { maxRequests = 32; maxRequestsPerHost = 12 })
@@ -88,15 +87,14 @@ class AppContainer(app: Application) {
         .connectTimeout(8, TimeUnit.SECONDS)
         .readTimeout(12, TimeUnit.SECONDS)
         .callTimeout(25, TimeUnit.SECONDS)
-        // Base map, three radar ranges and their nowcasts; the OS may trim it when storage is low.
+        // Base map and overlay tiles; the OS may trim it when storage is low.
         .cache(Cache(File(app.cacheDir, "maptiles"), 150L * 1024 * 1024))
         .addInterceptor { chain ->
             chain.proceed(chain.request().newBuilder().header("User-Agent", USER_AGENT).build())
         }
-        .addInterceptor(RadarTileInterceptor())
-        .addInterceptor(StaleFallbackInterceptor(setOf("maps.dwd.de", "tilecache.rainviewer.com", "api.rainviewer.com", "tiles.openfreemap.org")))
-        .addInterceptor(RetryInterceptor(setOf("maps.dwd.de", "tilecache.rainviewer.com")))
-        .addNetworkInterceptor(RadarCacheInterceptor())
+        .addInterceptor(StaleFallbackInterceptor(setOf("maps.dwd.de", "tiles.openfreemap.org")))
+        .addInterceptor(RetryInterceptor(setOf("maps.dwd.de")))
+        .addNetworkInterceptor(MapCacheInterceptor())
         .build()
 
     val store = Store(app)

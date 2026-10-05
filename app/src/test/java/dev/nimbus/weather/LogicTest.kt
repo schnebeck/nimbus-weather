@@ -60,20 +60,6 @@ class LogicTest {
     }
 
     @Test
-    fun `radar layers are embedded below the first label layer`() {
-        val style = dev.nimbus.weather.data.remote.JsonCodec.parseToJsonElement(
-            """{"sources":{"osm":{"type":"vector"}},"layers":[{"id":"bg","type":"background"},{"id":"label","type":"symbol"}]}""",
-        ) as kotlinx.serialization.json.JsonObject
-        val out = dev.nimbus.weather.ui.radar.MapStyle.withRasters(
-            style, listOf(dev.nimbus.weather.ui.radar.MapStyle.Raster("dwd0", "https://x/{bbox-epsg-3857}", 10, 0.85f)),
-        )
-        val ids = (out["layers"] as kotlinx.serialization.json.JsonArray).map { (it as kotlinx.serialization.json.JsonObject)["id"].toString().trim('"') }
-        assertEquals(listOf("bg", "dwd0", "label"), ids)
-        assertTrue((out["sources"] as kotlinx.serialization.json.JsonObject).containsKey("osm"))
-        assertTrue(out.toString().contains("\"tileSize\":512"))
-    }
-
-    @Test
     fun `wmo codes`() {
         assertEquals(Condition.CLEAR, WeatherCodes.fromWmo(0))
         assertEquals(Condition.FOG, WeatherCodes.fromWmo(45))

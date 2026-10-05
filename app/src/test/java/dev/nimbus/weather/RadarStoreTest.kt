@@ -17,7 +17,7 @@
 
 package dev.nimbus.weather
 
-import dev.nimbus.weather.ui.radar.DwdGrid
+import dev.nimbus.weather.ui.radar.DwdRadar
 import dev.nimbus.weather.ui.radar.RadarFrame
 import dev.nimbus.weather.ui.radar.RadarStore
 import org.junit.Assert.assertArrayEquals
@@ -33,8 +33,8 @@ class RadarStoreTest {
 
     @Test fun packedLosslesslyAndSmall() {
         // A composite with a band of rain: mostly dry, like the real thing
-        val grid = ByteArray(DwdGrid.W * DwdGrid.H)
-        for (y in 300 until 500) for (x in 200 until 900) grid[y * DwdGrid.W + x] = (8 + (x + y) % 40).toByte()
+        val grid = ByteArray(DwdRadar.W * DwdRadar.H)
+        for (y in 300 until 500) for (x in 200 until 900) grid[y * DwdRadar.W + x] = (8 + (x + y) % 40).toByte()
         val packed = RadarStore.pack(grid)
         assertArrayEquals(grid, RadarStore.unpack(packed))
         assertTrue("packed ${packed.size} bytes", packed.size < grid.size / 10)
@@ -42,9 +42,9 @@ class RadarStoreTest {
     }
 
     @Test fun nowcastStepsCarryTheirAnalysis() {
-        val f = RadarFrame(now + 30 * min, true, "x", null)
-        assertEquals("dwd_${(now + 30 * min) / min}_n${now / min}", RadarStore.dwdKey(f, now))
-        assertEquals("dwd_${now / min}", RadarStore.dwdKey(RadarFrame(now, false, "x", null), now))
+        val f = RadarFrame(now + 30 * min, true, now, null)
+        assertEquals("dwd_${(now + 30 * min) / min}_n${now / min}", DwdRadar.key(f, now))
+        assertEquals("dwd_${now / min}", DwdRadar.key(RadarFrame(now, false, null, null), now))
     }
 
     @Test fun expiry() {
@@ -60,5 +60,8 @@ class RadarStoreTest {
         assertFalse(RadarStore.expired("rv_v2-radar-abc_6_33_21.nrd", now - 2 * 60 * min, now, now))
         assertTrue(RadarStore.expired("rv_v2-radar-abc_6_33_21.nrd", now - 4 * 60 * min, now, now))
         assertTrue(RadarStore.expired("something.nrd", now, now, now))
+        // the KNMI's steps: as long as the DWD's analyses
+        assertFalse(RadarStore.expired("knmi_${(now - 3 * 24 * 60 * min) / min}.nrd", now, now, now))
+        assertTrue(RadarStore.expired("knmi_${(now - 5 * 24 * 60 * min) / min}.nrd", now, now, now))
     }
 }

@@ -176,7 +176,7 @@ class MainViewModel(
 
     init {
         // DWD radar area for the RainViewer tiles (from disk after the first time)
-        viewModelScope.launch { runCatching { dev.nimbus.weather.ui.radar.DwdCoverage.ensure(container.http) } }
+        viewModelScope.launch { dev.nimbus.weather.ui.radar.RadarComposites.prepare(container.http) }
         // Once the preview card has its size: prepare the radar previews of all places, so that
         // switching places shows a picture at once (base maps only on Wi-Fi, see RadarPreview).
         viewModelScope.launch {

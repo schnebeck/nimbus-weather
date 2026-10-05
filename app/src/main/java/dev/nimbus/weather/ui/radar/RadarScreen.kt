@@ -332,6 +332,9 @@ fun RadarScreen(
         }
     }
 
+    // The time line follows the composite the place lies in (the DWD's in Germany, the KNMI's beyond it)
+    val anchor = remember(place) { RadarComposites.anchorFor(place?.latitude ?: 51.1, place?.longitude ?: 10.4) }
+
     // (Re)load the frames for the selected history range.
     LaunchedEffect(range, styleReady, reloadKey) {
         // The temperature grid is needed before the tiles: their colouring tells rain from snow.
@@ -340,11 +343,11 @@ fun RadarScreen(
         RadarNetStatus.reset()
         // Grid and time line in parallel; neither may hold up the other.
         val gridJob = async { WeatherGridStore.ensure(container.http, lat, lon, from = archiveDay) }
-        // The DWD area mask before the first RainViewer tiles are coloured (from disk after the first time)
-        val coverageJob = async { kotlinx.coroutines.withTimeoutOrNull(5_000L) { DwdCoverage.ensure(container.http) } }
+        // What the composites need before their first picture – the DWD's area mask (from disk after the first time)
+        val coverageJob = async { kotlinx.coroutines.withTimeoutOrNull(5_000L) { RadarComposites.prepare(container.http) } }
         val tl = runCatching {
-            if (archiveDay != null) RadarSources.dayTimeline(container.http, archiveDay)
-            else RadarSources.timeline(container.http, range, force = reloadKey > 0)
+            if (archiveDay != null) RadarSources.dayTimeline(container.http, archiveDay, anchor = anchor)
+            else RadarSources.timeline(container.http, range, force = reloadKey > 0, anchor = anchor)
         }.getOrNull()
         if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "timeline after ${System.currentTimeMillis() - openedAt} ms")
         val grid = gridJob.await()
@@ -373,12 +376,12 @@ fun RadarScreen(
             delay(RADAR_REFRESH_CHECK_MS)
             if (!lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) continue
             val tl = timeline ?: continue
-            val latest = RadarSources.checkLatest(container.http) ?: continue
+            val latest = RadarLatest.check(container.http, anchor) ?: continue
             val shown = tl.frames[tl.nowIndex].time
             if (latest / HistoryRange.STEP_MS > shown / HistoryRange.STEP_MS) {
                 if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "new analysis ${RadarSources.isoTime(latest)}, refreshing")
                 val atNow = frame == tl.nowIndex
-                val fresh = runCatching { RadarSources.timeline(container.http, range, force = true) }.getOrNull() ?: continue
+                val fresh = runCatching { RadarSources.timeline(container.http, range, force = true, anchor = anchor) }.getOrNull() ?: continue
                 timeline = fresh
                 // Stay on "now" if the user was there; otherwise keep the same moment in time
                 frame = if (atNow) fresh.nowIndex

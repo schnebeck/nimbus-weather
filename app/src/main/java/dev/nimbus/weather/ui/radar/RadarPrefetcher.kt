@@ -84,13 +84,14 @@ object RadarPrefetcher {
         if (!background) withTimeoutOrNull(30_000L) { previewReady.await() }
         if (paused) return
         WeatherGridStore.ensure(http, place.latitude, place.longitude)
-        val tl = runCatching { RadarSources.timeline(http, HistoryRange.H2) }.getOrNull() ?: return
+        val anchor = RadarComposites.anchorFor(place.latitude, place.longitude)
+        val tl = runCatching { RadarSources.timeline(http, HistoryRange.H2, anchor = anchor) }.getOrNull() ?: return
         // The radar steps: raw images through the plain client (the map client recolours them)
         val raw = (context.applicationContext as dev.nimbus.weather.NimbusApp).container.http
         kotlinx.coroutines.coroutineScope {
-            // a place within the Dutch composite: its steps too
-            val knmi = KnmiRadar.overlaps(place.longitude, place.longitude, place.latitude, place.latitude)
-            val steps = tl.frames.map { f -> this.async { RadarStore.dwd(raw, f); if (knmi) RadarStore.knmi(raw, f) } }
+            // the steps of every composite the place lies in
+            val here = RadarComposites.all.filter { it.covers(place.latitude, place.longitude) }
+            val steps = tl.frames.flatMap { f -> here.filter { !f.isForecast || it.hasNowcast }.map { c -> this.async { RadarStore.grid(raw, c, f) } } }
             steps.forEach { it.await() }
         }
         withContext(Dispatchers.IO) { RadarStore.prune() }
@@ -99,7 +100,7 @@ object RadarPrefetcher {
         // at most every 12 hours per place (a MapLibre snapshot every 15 minutes cost GPU and battery)
         if (background && !dev.nimbus.weather.data.repo.AppUse.baseMapDue(context, key)) return
         // The base map of the radar view (no radar layers: the radar comes from the store)
-        val style = MapStyle.builder(http, context.resources.configuration.locales[0].language, emptyList())
+        val style = MapStyle.builder(http, context.resources.configuration.locales[0].language)
         withContext(Dispatchers.Main) {
             val dm = context.resources.displayMetrics
             val options = MapSnapshotter.Options((dm.widthPixels / dm.density).toInt(), (dm.heightPixels / dm.density).toInt())

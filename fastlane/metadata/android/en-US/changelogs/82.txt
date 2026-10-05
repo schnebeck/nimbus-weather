@@ -1,0 +1,3 @@
+• The radar preview on the main page drawn everywhere as the big radar, with KNMI and RainViewer
+• For places in the Netherlands the radar's time line follows the KNMI
+• Internal rework: radar sources separate from the processing, fewer and shorter files

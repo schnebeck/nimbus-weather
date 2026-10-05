@@ -19,47 +19,65 @@
 
 package dev.nimbus.weather.ui.radar
 
+import dev.nimbus.weather.data.remote.USER_AGENT
+import dev.nimbus.weather.data.remote.getText
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.time.Instant
-import kotlin.math.floor
+import java.util.Locale
 import kotlin.math.roundToInt
 
 /**
- * The KNMI composite as the app keeps it: one byte per cell of 0.01° – dBZ (8–95), 0 where it is
- * dry, [NO_DATA] where no radar reaches. Its cells are the DWD grid's ([DwdGrid]: the same west
- * edge and step), so both are drawn alike – the same smoothing, colours and motion.
+ * The KNMI composite: its raw reflectivity (no colours to read back) on cells of 0.01° – the DWD
+ * grid's ([DwdRadar]: the same west edge and step). Past steps only; the cells beyond its radars
+ * say so ([RadarComposite.NO_DATA]), so it covers its rectangle.
  */
-object KnmiRadar {
+object KnmiRadar : RadarComposite {
     private const val WCS = "https://geoservices.knmi.nl/adagucserver?dataset=RADAR&service=WCS&version=1.0.0&request=GetCoverage"
-    const val LON0 = 1.4
-    const val LAT1 = 55.97
+    private const val WMS_CAPABILITIES = "https://geoservices.knmi.nl/adagucserver?dataset=RADAR&service=WMS&request=GetCapabilities"
     const val W = 944
     const val H = 707
-    const val STEP = 0.01
-    val LON1 = LON0 + W * STEP
-    val LAT0 = LAT1 - H * STEP
+    override val id = "knmi"
+    override val lon0 = 1.4
+    override val lat1 = 55.97
+    override val w = W
+    override val h = H
+    override val hasNowcast = false
+    override val exactCoverage = false
 
-    /** A cell no radar reaches – not dry: there RainViewer shows. */
-    const val NO_DATA = 0xFF
+    private const val KEEP_MS = 4L * 24 * 3_600_000L
     /** Below this reflectivity a cell counts as dry (as the DWD's). */
     private const val WET_DBZ = 8
+
+    override fun covers(lat: Double, lon: Double) = lat in lat0..lat1 && lon in lon0..lon1
+
+    override fun key(frame: RadarFrame) = "knmi_${frame.time / 60_000L}"
+
+    /** The newest composite: the default time of its map service (about 3 kB compressed). */
+    override suspend fun latest(http: OkHttpClient): Long? {
+        val body = http.getText(Request.Builder().url(WMS_CAPABILITIES).header("User-Agent", USER_AGENT).build())
+        val m = Regex("""<Dimension name="time"[^>]*default="([^"]+)"""").find(body) ?: return null
+        return runCatching { Instant.parse(m.groupValues[1]).toEpochMilli() }.getOrNull()
+    }
 
     /**
      * The composite at [time] as a grid of numbers (a few hundred kB, about 20 kB compressed –
      * mostly "-32", no echo). Width and height given: so the cells are exactly 0.01°.
      */
     fun url(time: Long): String =
-        "$WCS&coverage=Reflectivity&crs=EPSG:4326&format=aaigrid&bbox=$LON0,${"%.2f".format(java.util.Locale.ROOT, LAT0)}," +
-            "${"%.2f".format(java.util.Locale.ROOT, LON1)},$LAT1&width=$W&height=$H&time=${Instant.ofEpochMilli(time)}"
+        "$WCS&coverage=Reflectivity&crs=EPSG:4326&format=aaigrid&bbox=$lon0,${"%.2f".format(Locale.ROOT, lat0)}," +
+            "${"%.2f".format(Locale.ROOT, lon1)},$lat1&width=$W&height=$H&time=${Instant.ofEpochMilli(time)}"
 
-    fun overlaps(west: Double, east: Double, south: Double, north: Double) = east > LON0 && west < LON1 && north > LAT0 && south < LAT1
+    override suspend fun fetch(http: OkHttpClient, frame: RadarFrame): ByteArray? {
+        if (frame.isForecast) return null
+        val text = RadarDecode.text(http, url(frame.time)) ?: return null
+        return withContext(RadarDecode.decoding) { parse(text) }
+    }
 
-    /** The code at a position: dBZ, 0 dry, [NO_DATA] outside the radars' reach or the grid. */
-    fun at(codes: ByteArray?, lat: Double, lon: Double): Int {
-        if (codes == null) return NO_DATA
-        val r = floor((LAT1 - lat) / STEP).toInt()
-        val c = floor((lon - LON0) / STEP).toInt()
-        if (r !in 0 until H || c !in 0 until W) return NO_DATA
-        return codes[r * W + c].toInt() and 0xFF
+    override fun expired(base: String, modified: Long, now: Long, latestIssue: Long?): Boolean? {
+        if (!base.startsWith("knmi_")) return null
+        return base.removePrefix("knmi_").toLongOrNull()?.let { now - it * 60_000L > KEEP_MS } ?: true
     }
 
     /**
@@ -83,7 +101,7 @@ object KnmiRadar {
         for (i in out.indices) {
             val v = numbers.next() ?: return null
             out[i] = when {
-                noData != null && v == noData -> NO_DATA
+                noData != null && v == noData -> RadarComposite.NO_DATA
                 v < WET_DBZ -> 0
                 else -> v.roundToInt().coerceIn(WET_DBZ, 95)
             }.toByte()

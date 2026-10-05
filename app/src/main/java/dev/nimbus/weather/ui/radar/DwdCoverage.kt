@@ -33,7 +33,7 @@ import java.io.File
  * only). The area the DWD composite covers is read once from a DWD image (its "no data" grey
  * surrounds it) and kept on disk; inside it RainViewer pixels are dropped.
  */
-object DwdCoverage {
+internal object DwdCoverage {
     // Lat/lon grid over the DWD bounds, 0.025° per pixel
     const val W = 696
     const val H = 428
@@ -44,7 +44,6 @@ object DwdCoverage {
     private const val MAX_AGE_MS = 30L * 24 * 3_600_000L
 
     @Volatile private var mask: BooleanArray? = null
-    @Volatile var dir: File? = null
     private val mutex = Mutex()
 
     /** Inside the DWD radar area (false while the mask is not loaded). */
@@ -61,13 +60,13 @@ object DwdCoverage {
     /** Loads the mask from disk or, at most once a month, from one DWD image (~20 kB). */
     suspend fun ensure(http: OkHttpClient) = mutex.withLock {
         if (mask != null) return@withLock
-        val file = dir?.let { File(it, "dwd_coverage.png") }
+        val file = RadarComposites.dir?.let { File(it, "dwd_coverage.png") }
         val now = System.currentTimeMillis()
         val bytes = withContext(Dispatchers.IO) {
             file?.takeIf { it.exists() && now - it.lastModified() < MAX_AGE_MS }?.readBytes()
         } ?: run {
-            val time = RadarSources.latestAnalysis ?: RadarSources.checkLatest(http) ?: return@withLock
-            val url = RadarSources.DWD_WMS + "?service=WMS&version=1.1.1&request=GetMap&layers=${RadarSources.DWD_LAYER}" +
+            val time = RadarLatest.known(DwdRadar) ?: RadarLatest.check(http, DwdRadar) ?: return@withLock
+            val url = DwdRadar.WMS + "?service=WMS&version=1.1.1&request=GetMap&layers=${DwdRadar.LAYER}" +
                 "&styles=&format=image/png&transparent=true&srs=EPSG:4326&bbox=$LON0,$LAT0,$LON1,$LAT1" +
                 "&width=$W&height=$H&time=${RadarSources.isoTime(time)}"
             withContext(Dispatchers.IO) {

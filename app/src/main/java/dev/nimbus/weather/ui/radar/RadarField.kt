@@ -31,21 +31,6 @@ import kotlin.math.sinh
 import kotlin.math.tan
 
 /**
- * The stored DWD composite: one byte per cell on a 0.01° grid over the DWD area (about 0.7 km
- * east–west and 1.1 km north–south, close to the radar's own 1 km): the reflectivity in dBZ,
- * 0 where it is dry or there is no data. Row 0 is the north edge.
- */
-object DwdGrid {
-    const val W = 1740
-    const val H = 1070
-    const val LON0 = 1.4
-    const val LAT1 = 56.3
-    const val STEP = 0.01
-    val LON1 = LON0 + W * STEP
-    val LAT0 = LAT1 - H * STEP
-}
-
-/**
  * RainViewer cells (Europe): one 512 × 512 tile per entry, keyed by [key], one byte per pixel –
  * dBZ, plus [SNOW] where the source marks snow, 0 where dry. Missing tiles count as dry.
  */
@@ -162,38 +147,43 @@ object RadarField {
     fun smoothRadius(pxKm: Double): Int = if (pxKm <= 0.0) 0 else (1.0 / pxKm / 2 + 0.3).toInt().coerceIn(0, 32)
 
     /**
-     * The frame for [geo] from the DWD grid (null: none) – outside the DWD area ([inDwd] marks the
-     * field pixels inside it) from the KNMI grid where its radars reach, else from RainViewer.
-     * Cells smaller than a pixel are averaged, cells larger than a pixel are smoothed (two
-     * dimensions, on the reflectivity – no blocks).
+     * The frame for [geo] from the composites' [layers] – at each pixel the first that covers it
+     * and has a value there – else from RainViewer. Cells smaller than a pixel are averaged, cells
+     * larger than a pixel are smoothed (two dimensions, on the reflectivity – no blocks).
      */
-    fun extract(geo: FieldGeo, dwd: ByteArray?, rv: RvMosaic?, inDwd: BooleanArray?, knmi: ByteArray? = null): ViewFrame {
+    fun extract(geo: FieldGeo, layers: List<RadarLayer>, rv: RvMosaic?): ViewFrame {
         val w = geo.w; val h = geo.h; val n = w * h
         val dbz = FloatArray(n); val wet = FloatArray(n)
         var snow: FloatArray? = null
         // Sub-samples per pixel (each axis) so zoomed-out pixels average their grid cells
         val degPx = Math.toDegrees(geo.pxM / FieldGeo.R)
-        val k = ceil(degPx / DwdGrid.STEP).toInt().coerceIn(1, 3)
+        val k = ceil(degPx / RadarComposite.STEP).toInt().coerceIn(1, 3)
         val colLon = Array(k) { s -> DoubleArray(w) { x -> geo.lon(geo.minX + (x + (s + 0.5) / k) * geo.pxM) } }
         val rowLat = Array(k) { s -> DoubleArray(h) { y -> geo.lat(geo.maxY - (y + (s + 0.5) / k) * geo.pxM) } }
         val colMx = Array(k) { s -> DoubleArray(w) { x -> geo.minX + (x + (s + 0.5) / k) * geo.pxM } }
         val rowMy = Array(k) { s -> DoubleArray(h) { y -> geo.maxY - (y + (s + 0.5) / k) * geo.pxM } }
-        val dCol = Array(k) { s -> IntArray(w) { x -> floor((colLon[s][x] - DwdGrid.LON0) / DwdGrid.STEP).toInt() } }
-        val dRow = Array(k) { s -> IntArray(h) { y -> floor((DwdGrid.LAT1 - rowLat[s][y]) / DwdGrid.STEP).toInt() } }
+        // each layer's cell of every sub-sample column and row (-1: outside its grid)
+        val cols = layers.map { l -> Array(k) { s -> IntArray(w) { x -> floor((colLon[s][x] - l.composite.lon0) / RadarComposite.STEP).toInt().takeIf { it in 0 until l.composite.w } ?: -1 } } }
+        val rows = layers.map { l -> Array(k) { s -> IntArray(h) { y -> floor((l.composite.lat1 - rowLat[s][y]) / RadarComposite.STEP).toInt().takeIf { it in 0 until l.composite.h } ?: -1 } } }
         val kk = (k * k).toFloat()
         for (y in 0 until h) {
             for (x in 0 until w) {
                 val i = y * w + x
-                val dwdHere = dwd != null && (inDwd == null || inDwd[i])
                 var sum = 0f; var cnt = 0; var sn = 0
                 for (sy in 0 until k) for (sx in 0 until k) {
-                    val code = if (dwdHere) {
-                        val r = dRow[sy][y]; val c = dCol[sx][x]
-                        if (r in 0 until DwdGrid.H && c in 0 until DwdGrid.W) dwd!![r * DwdGrid.W + c].toInt() and 0xFF else 0
-                    } else KnmiRadar.at(knmi, rowLat[sy][y], colLon[sx][x]).takeIf { it != KnmiRadar.NO_DATA }
-                        ?: rv?.at(colMx[sx][x], rowMy[sy][y])?.coerceAtLeast(0) ?: 0
+                    var code = -1
+                    for (li in layers.indices) {
+                        val l = layers[li]
+                        if (l.inside != null && !l.inside[i]) continue
+                        val r = rows[li][sy][y]; val c = cols[li][sx][x]
+                        val v = if (r < 0 || c < 0) RadarComposite.NO_DATA else l.codes[r * l.composite.w + c].toInt() and 0xFF
+                        if (v != RadarComposite.NO_DATA) { code = v; break }
+                    }
+                    // beyond the composites: RainViewer – the only one that marks snow
+                    val fromRv = code < 0
+                    if (fromRv) code = rv?.at(colMx[sx][x], rowMy[sy][y])?.coerceAtLeast(0) ?: 0
                     val d = code and 0x7F
-                    if (d >= 8) { sum += d; cnt++; if (!dwdHere && code and RvMosaic.SNOW != 0) sn++ }
+                    if (d >= 8) { sum += d; cnt++; if (fromRv && code and RvMosaic.SNOW != 0) sn++ }
                 }
                 if (cnt > 0) {
                     dbz[i] = sum / cnt * (cnt / kk)          // weighted by wet share, as the smoothing expects

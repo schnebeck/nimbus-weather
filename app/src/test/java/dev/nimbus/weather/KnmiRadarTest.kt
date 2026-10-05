@@ -18,7 +18,10 @@
 
 package dev.nimbus.weather
 
-import dev.nimbus.weather.ui.radar.DwdGrid
+import dev.nimbus.weather.ui.radar.DwdRadar
+import dev.nimbus.weather.ui.radar.RadarComposite
+import dev.nimbus.weather.ui.radar.RadarLayer
+import dev.nimbus.weather.ui.radar.codeAt
 import dev.nimbus.weather.ui.radar.FieldGeo
 import dev.nimbus.weather.ui.radar.KnmiRadar
 import dev.nimbus.weather.ui.radar.RadarField
@@ -39,20 +42,19 @@ class KnmiRadarTest {
     /** "KNMI-Radar integrieren": the grid read – rain, dry, beyond the radars. */
     @Test fun theCompositeRead() {
         assertEquals(KnmiRadar.W * KnmiRadar.H, codes.size)
-        assertEquals(41, KnmiRadar.at(codes, 50.315, 6.725))                 // the strongest echo
-        assertEquals(33, KnmiRadar.at(codes, 50.165, 1.985))
-        assertEquals(KnmiRadar.NO_DATA, KnmiRadar.at(codes, 52.425, 10.165)) // east of the radars' reach
-        assertEquals(KnmiRadar.NO_DATA, KnmiRadar.at(codes, 40.0, 5.0))      // outside the grid
+        assertEquals(41, KnmiRadar.codeAt(codes, 50.315, 6.725))                 // the strongest echo
+        assertEquals(33, KnmiRadar.codeAt(codes, 50.165, 1.985))
+        assertEquals(RadarComposite.NO_DATA, KnmiRadar.codeAt(codes, 52.425, 10.165)) // east of the radars' reach
+        assertEquals(RadarComposite.NO_DATA, KnmiRadar.codeAt(codes, 40.0, 5.0))      // outside the grid
         assertTrue("no dry cell", (0 until codes.size).any { codes[it].toInt() == 0 })
     }
 
     /** "passt da unsere bisherige visuelle Dateninterpolation zu?": its cells are the DWD grid's. */
     @Test fun itsCellsAreTheDwdGrids() {
-        assertEquals(DwdGrid.LON0, KnmiRadar.LON0, 1e-9)
-        assertEquals(DwdGrid.STEP, KnmiRadar.STEP, 1e-9)
-        for (lat in listOf(49.125, 51.505, 53.005, 55.905)) {           // cell centres
-            val dwdRow = floor((DwdGrid.LAT1 - lat) / DwdGrid.STEP).toInt()
-            val knmiRow = floor((KnmiRadar.LAT1 - lat) / KnmiRadar.STEP).toInt()
+        assertEquals(DwdRadar.lon0, KnmiRadar.lon0, 1e-9)
+                for (lat in listOf(49.125, 51.505, 53.005, 55.905)) {           // cell centres
+            val dwdRow = floor((DwdRadar.lat1 - lat) / RadarComposite.STEP).toInt()
+            val knmiRow = floor((KnmiRadar.lat1 - lat) / RadarComposite.STEP).toInt()
             assertEquals("row at $lat", 33, dwdRow - knmiRow)
         }
     }
@@ -72,12 +74,34 @@ class KnmiRadarTest {
     /** Where the DWD's radars do not reach, the picture shows the KNMI's rain – beyond both, none. */
     @Test fun thePictureTakesTheDutchRain() {
         val here = geo(50.315, 6.725)
-        val withKnmi = RadarField.extract(here, dwd = null, rv = null, inDwd = null, knmi = codes)
-        val without = RadarField.extract(here, dwd = null, rv = null, inDwd = null, knmi = null)
+        val withKnmi = RadarField.extract(here, listOf(RadarLayer(KnmiRadar, codes, null)), rv = null)
+        val without = RadarField.extract(here, emptyList(), rv = null)
         assertTrue("no rain from the KNMI grid", withKnmi.wet.any { it.toInt() and 0xFF > 0 })
         assertTrue(without.wet.all { it.toInt() == 0 })
         // beyond the radars' reach: nothing (RainViewer would fill in)
-        val beyond = RadarField.extract(geo(52.425, 10.165), dwd = null, rv = null, inDwd = null, knmi = codes)
+        val beyond = RadarField.extract(geo(52.425, 10.165), listOf(RadarLayer(KnmiRadar, codes, null)), rv = null)
         assertTrue(beyond.wet.all { it.toInt() == 0 })
+    }
+
+    /**
+     * "die DWD-Radardaten von der Radardatenverarbeitung entkoppeln": the processing takes the
+     * composites in order – where the first covers a spot it shows it, dry or not; where it does
+     * not cover it, the next one.
+     */
+    @Test fun theFirstCompositeCoveringASpotShowsIt() {
+        val here = geo(50.315, 6.725)
+        val n = here.w * here.h
+        val dryDwd = ByteArray(DwdRadar.W * DwdRadar.H)
+        val dwdCovers = RadarField.extract(here, listOf(RadarLayer(DwdRadar, dryDwd, BooleanArray(n) { true }), RadarLayer(KnmiRadar, codes, null)), null)
+        assertTrue("the DWD's dry spot shown wet", dwdCovers.wet.all { it.toInt() == 0 })
+        val dwdNot = RadarField.extract(here, listOf(RadarLayer(DwdRadar, dryDwd, BooleanArray(n) { false }), RadarLayer(KnmiRadar, codes, null)), null)
+        assertTrue("the KNMI's rain not shown beyond the DWD's area", dwdNot.wet.any { it.toInt() and 0xFF > 0 })
+    }
+
+    /** Both composites known to the processing, the DWD's first; KNMI past steps only. */
+    @Test fun theCompositesInOrder() {
+        assertEquals(listOf("dwd", "knmi"), dev.nimbus.weather.ui.radar.RadarComposites.all.map { it.id })
+        assertTrue(DwdRadar.hasNowcast && DwdRadar.exactCoverage)
+        assertTrue(!KnmiRadar.hasNowcast && !KnmiRadar.exactCoverage)
     }
 }

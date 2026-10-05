@@ -20,13 +20,11 @@ package dev.nimbus.weather.ui.radar
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import dev.nimbus.weather.data.remote.USER_AGENT
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.withLock
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import java.io.File
 import java.util.Locale
 import kotlin.coroutines.resume
@@ -37,10 +35,10 @@ import kotlin.math.tan
 /**
  * The preview used to render the whole map (roads, labels, radar) off-screen for every new radar
  * frame – 3 to 12 seconds per place. Now the base map is rendered once per place and size and
- * kept on disk (it never changes); the radar is one WMS image of exactly the preview area (a few
- * kB, recoloured by [RadarTileInterceptor]), refreshed when a new analysis is out. Both are shown
- * from disk at once, so switching places shows the last picture immediately. DWD area only; other
- * places keep the full snapshot.
+ * kept on disk (it never changes); the radar picture of exactly the preview area is drawn as in
+ * the radar loop ([RadarPicture.still]: the composites, RainViewer beyond them), refreshed when a
+ * new step is out. Both are shown from disk at once, so switching places shows the last picture
+ * immediately – anywhere.
  */
 object RadarPreview {
     const val ZOOM = 6.4
@@ -70,27 +68,32 @@ object RadarPreview {
         withBase: Boolean = RadarPrefetcher.isUnmetered(context),
     ) {
         val (w, h) = cardSize ?: return
-        if (!dev.nimbus.weather.data.repo.WeatherRepository.isInDwdArea(lat, lon)) return
         val key = key(lat, lon, w, h)
         if (withBase && storedBase(key, lang) == null) renderBase(context, mapHttp, lat, lon, w, h, density, lang)
-        val timeline = runCatching { RadarSources.timeline(http) }.getOrNull() ?: return
-        timeline.frames.getOrNull(timeline.nowIndex)?.let { fetchOverlay(mapHttp, it, lat, lon, w, h) }
+        val timeline = runCatching { RadarSources.timeline(http, anchor = RadarComposites.anchorFor(lat, lon)) }.getOrNull() ?: return
+        timeline.frames.getOrNull(timeline.nowIndex)?.let { fetchOverlay(http, timeline, it, lat, lon, w, h) }
     }
 
     private const val OVERLAY_SCALE = 2
+    /** Bumped when the radar picture is drawn differently (9: from the composites' grids). */
+    private const val PICTURE_VERSION = 9
 
     /** Same place and size share the pictures; a moving location gets new ones every ~100 m. */
     fun key(lat: Double, lon: Double, wDp: Int, hDp: Int) =
         String.format(Locale.ROOT, "%.3f_%.3f_%dx%d", lat, lon, wDp, hDp)
 
-    /** EPSG:3857 box of a [wDp] × [hDp] view at [ZOOM] around the place (MapLibre: 512 dp tiles). */
-    fun bbox(lat: Double, lon: Double, wDp: Int, hDp: Int, zoom: Double = ZOOM): String {
+    /**
+     * The area of a [wDp] × [hDp] view at [ZOOM] around the place (MapLibre: 512 dp tiles), at
+     * [OVERLAY_SCALE] pixels per dp: enough pixels per radar cell for the smoothing (at 1 px per dp
+     * the cells stayed blocks, scaled up on the screen).
+     */
+    fun geo(lat: Double, lon: Double, wDp: Int, hDp: Int, zoom: Double = ZOOM): FieldGeo {
         val metersPerDp = 2 * PI * R / (512.0 * Math.pow(2.0, zoom))
         val x = R * Math.toRadians(lon)
         val y = R * ln(tan(PI / 4 + Math.toRadians(lat) / 2))
         val hw = wDp * metersPerDp / 2
         val hh = hDp * metersPerDp / 2
-        return String.format(Locale.ROOT, "%.1f,%.1f,%.1f,%.1f", x - hw, y - hh, x + hw, y + hh)
+        return FieldGeo(x - hw, y - hh, x + hw, y + hh, wDp * OVERLAY_SCALE, hDp * OVERLAY_SCALE)
     }
 
     // v2: areas only; the lines and names are kept apart and drawn above the radar
@@ -102,7 +105,7 @@ object RadarPreview {
         linesFile(key, lang)?.takeIf { it.exists() }?.let { runCatching { BitmapFactory.decodeFile(it.path) }.getOrNull() }
     }
     // The radar picture depends on the colour scale (setting): kept per scale
-    private fun ok(key: String) = "${key}_c${RadarPalette.scheme.ordinal}_v${RadarSources.TILE_VERSION}_s$OVERLAY_SCALE"
+    private fun ok(key: String) = "${key}_c${RadarPalette.scheme.ordinal}_v${PICTURE_VERSION}_s$OVERLAY_SCALE"
     private fun overlayFile(key: String) = dir?.let { File(it, "radar_${ok(key)}.png") }
     private fun overlayTimeFile(key: String) = dir?.let { File(it, "radar_${ok(key)}.time") }
 
@@ -146,32 +149,17 @@ object RadarPreview {
     }
 
     /**
-     * Radar picture of the latest analysis for the preview area: one WMS request through the map
-     * client (cached and recoloured like the tiles). Null on errors; an overlay without bitmap
-     * means "no precipitation".
+     * The radar picture of step [frame] for the preview area ([RadarPicture.still]). Null on
+     * errors; an overlay without bitmap means "no precipitation".
      */
-    suspend fun fetchOverlay(mapHttp: OkHttpClient, frame: RadarFrame, lat: Double, lon: Double, wDp: Int, hDp: Int): Overlay? {
+    suspend fun fetchOverlay(http: OkHttpClient, tl: RadarTimeline, frame: RadarFrame, lat: Double, lon: Double, wDp: Int, hDp: Int): Overlay? {
         val key = key(lat, lon, wDp, hDp)
         overlays[ok(key)]?.takeIf { it.time == frame.time }?.let { return it }
-        val t = frame.dwdTime ?: return null
-        val url = RadarSources.DWD_WMS + "?service=WMS&version=1.1.1&request=GetMap&layers=${RadarSources.DWD_LAYER}" +
-            "&styles=&format=image/png&transparent=true&srs=EPSG:3857&bbox=${bbox(lat, lon, wDp, hDp)}" +
-            // twice the dp size: enough pixels per radar cell for the smoothing (at 1 px per dp
-            // the cells stayed blocks, scaled up on the screen)
-            "&width=${wDp * OVERLAY_SCALE}&height=${hDp * OVERLAY_SCALE}&time=$t&v=${RadarSources.TILE_VERSION}&c=${RadarPalette.scheme.ordinal}"
         val started = System.currentTimeMillis()
-        val bmp = withContext(Dispatchers.IO) {
-            runCatching {
-                mapHttp.newCall(Request.Builder().url(url).header("User-Agent", USER_AGENT).build()).execute().use { r ->
-                    when {
-                        r.code == 204 -> Result.success<Bitmap?>(null)   // recoloured to "no precipitation"
-                        !r.isSuccessful -> Result.failure(IllegalStateException("HTTP ${r.code}"))
-                        else -> Result.success(r.body.bytes().let { BitmapFactory.decodeByteArray(it, 0, it.size) })
-                    }
-                }
-            }.getOrElse { Result.failure(it) }
-        }.getOrElse { return null }
-        if (dev.nimbus.weather.BuildConfig.DEBUG) android.util.Log.d("NimbusPreview", "radar request ${System.currentTimeMillis() - started} ms, time $t")
+        val picture = runCatching { RadarPicture.still(http, tl, frame, geo(lat, lon, wDp, hDp)) }.getOrNull() ?: return null
+        // nothing falls: no picture to keep
+        val bmp = picture.takeIf { p -> IntArray(p.width * p.height).also { p.getPixels(it, 0, p.width, 0, 0, p.width, p.height) }.any { it ushr 24 != 0 } }
+        if (dev.nimbus.weather.BuildConfig.DEBUG) android.util.Log.d("NimbusPreview", "radar picture ${System.currentTimeMillis() - started} ms, step ${RadarSources.isoTime(frame.time)}")
         val overlay = Overlay(frame.time, bmp)
         overlays[ok(key)] = overlay
         withContext(Dispatchers.IO) {

@@ -72,7 +72,7 @@ object KnmiRadar : RadarComposite {
     override suspend fun fetch(http: OkHttpClient, frame: RadarFrame, window: GridWindow): ByteArray? {
         if (frame.isForecast) return null
         val text = RadarDecode.text(http, url(frame.time, window)) ?: return null
-        return withContext(RadarDecode.decoding) { parse(text, window.w, window.h) }
+        return withContext(RadarDecode.lane(window.size)) { parse(text, window.w, window.h) }
     }
 
     override fun expired(base: String, modified: Long, now: Long, latestIssue: Long?): Boolean? {

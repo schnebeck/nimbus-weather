@@ -21,6 +21,7 @@ package dev.nimbus.weather.ui.radar
 import android.graphics.BitmapFactory
 import dev.nimbus.weather.data.remote.USER_AGENT
 import dev.nimbus.weather.data.remote.await
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -34,14 +35,22 @@ object RadarDecode {
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val decoding = Dispatchers.Default.limitedParallelism(maxOf(1, Runtime.getRuntime().availableProcessors() / 2))
 
+    /** Up to this many cells a picture is small (the preview's area: about 50,000). */
+    private const val SMALL_CELLS = 100_000
+
+    /** A small picture is decoded at once – never behind a queue of whole grids; a big one on [decoding]. */
+    fun lane(cells: Int): CoroutineDispatcher = if (cells <= SMALL_CELLS) Dispatchers.Default else decoding
+
     /** A coloured radar image of [w] × [h] pixels as codes, null if it is not one. */
-    suspend fun png(http: OkHttpClient, url: String, w: Int, h: Int, source: RadarPalette.Source): ByteArray? {
+    suspend fun png(
+        http: OkHttpClient, url: String, w: Int, h: Int, source: RadarPalette.Source, on: CoroutineDispatcher = lane(w * h),
+    ): ByteArray? {
         val bytes = withContext(Dispatchers.IO) {
             http.newCall(Request.Builder().url(url).header("User-Agent", USER_AGENT).build()).await().use { r ->
                 if (!r.isSuccessful || r.header("Content-Type")?.startsWith("image/png") != true) null else r.body.bytes()
             }
         } ?: return null
-        return withContext(decoding) {
+        return withContext(on) {
             val opts = BitmapFactory.Options().apply { inPremultiplied = false }
             val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts) ?: return@withContext null
             if (bmp.width != w || bmp.height != h) { bmp.recycle(); return@withContext null }

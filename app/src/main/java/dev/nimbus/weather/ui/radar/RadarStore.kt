@@ -53,8 +53,13 @@ object RadarStore {
         }
     }
     private val inflight = InFlight<String, ByteArray?>()
-    /** A service answers one big image at a time quickly; several in parallel keep the line busy. */
-    private val downloads = Semaphore(6)
+    /**
+     * A service answers one big image at a time quickly; several in parallel keep the line busy.
+     * Fewer than OkHttp's 5 per host: one stays free for the preview's small requests.
+     */
+    private val downloads = Semaphore(4)
+    /** The preview's small requests: a lane of their own, never behind a queue of whole grids. */
+    private val small = Semaphore(4)
 
     fun rvKey(path: String, z: Int, x: Int, y: Int) = "rv_${path.trim('/').replace('/', '-')}_${z}_${x}_$y"
 
@@ -65,7 +70,7 @@ object RadarStore {
 
     /** The step [frame] of [composite] (one byte per cell of its grid), null if it cannot be had. */
     suspend fun grid(http: OkHttpClient, composite: RadarComposite, frame: RadarFrame): ByteArray? =
-        get(composite.key(frame), composite.w * composite.h) { composite.fetch(http, frame) }
+        get(composite.key(frame), composite.w * composite.h, downloads) { composite.fetch(http, frame) }
             ?: composite.stalePrefix(frame)?.let { newest(it) }
 
     /**
@@ -75,13 +80,16 @@ object RadarStore {
      */
     suspend fun window(http: OkHttpClient, composite: RadarComposite, frame: RadarFrame, window: GridWindow): ByteArray? {
         withContext(Dispatchers.IO) { peek(composite.key(frame)) }?.let { return composite.cut(it, window) }
-        return downloads.withPermit { runCatching { composite.fetch(http, frame, window) }.getOrNull() }?.takeIf { it.size == window.size }
+        return small.withPermit { runCatching { composite.fetch(http, frame, window) }.getOrNull() }?.takeIf { it.size == window.size }
     }
 
-    /** A RainViewer tile (512 × 512 bytes), null if it cannot be had. */
-    suspend fun rvTile(http: OkHttpClient, host: String, path: String, z: Int, x: Int, y: Int): ByteArray? =
-        get(rvKey(path, z, x, y), 512 * 512) {
-            RadarDecode.png(http, "$host$path/512/$z/$x/$y/2/1_1.png", 512, 512, RadarPalette.Source.RAINVIEWER)
+    /** A RainViewer tile (512 × 512 bytes), null if it cannot be had; [preview]: in the small requests' lane. */
+    suspend fun rvTile(http: OkHttpClient, host: String, path: String, z: Int, x: Int, y: Int, preview: Boolean = false): ByteArray? =
+        get(rvKey(path, z, x, y), 512 * 512, if (preview) small else downloads) {
+            RadarDecode.png(
+                http, "$host$path/512/$z/$x/$y/2/1_1.png", 512, 512, RadarPalette.Source.RAINVIEWER,
+                if (preview) Dispatchers.Default else RadarDecode.decoding,
+            )
         }
 
     /** The newest stored step whose name begins with [prefix] (its suffix: the issue it came from). */
@@ -90,11 +98,11 @@ object RadarStore {
         return f?.let { read(it.name.removeSuffix(".nrd")) }
     }
 
-    private suspend fun get(key: String, size: Int, fetch: suspend () -> ByteArray?): ByteArray? {
+    private suspend fun get(key: String, size: Int, lane: Semaphore, fetch: suspend () -> ByteArray?): ByteArray? {
         memory.get(key)?.let { return it }
         withContext(Dispatchers.IO) { read(key) }?.let { memory.put(key, it); return it }
         return inflight.get(key) {
-            val data = downloads.withPermit { runCatching { fetch() }.getOrNull() }
+            val data = lane.withPermit { runCatching { fetch() }.getOrNull() }
             data?.takeIf { it.size == size }?.also {
                 memory.put(key, it)
                 withContext(Dispatchers.IO) { write(key, it) }

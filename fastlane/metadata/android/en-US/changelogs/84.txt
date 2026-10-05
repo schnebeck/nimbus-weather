@@ -1,0 +1,1 @@
+• The other places' radar previews no longer wait behind loading the whole radar loop: small areas have a lane of their own

@@ -26,6 +26,8 @@ import dev.nimbus.weather.ui.radar.RadarFrame
 import dev.nimbus.weather.ui.radar.RadarPicture
 import dev.nimbus.weather.ui.radar.RadarPreview
 import dev.nimbus.weather.ui.radar.RadarSources
+import dev.nimbus.weather.ui.radar.RadarStore
+import dev.nimbus.weather.ui.radar.window
 import dev.nimbus.weather.ui.radar.RadarTimeline
 import dev.nimbus.weather.ui.radar.whole
 import kotlinx.coroutines.Dispatchers
@@ -137,4 +139,23 @@ class RadarPreviewSpeedTest {
         assertEquals(2, net.most.get())
     }
 
+    /**
+     * "Sichtbare Karte zuerst": while the radar loop's whole grids load (12 steps, 1.5 s each), the
+     * preview's area is fetched at once – not after them.
+     */
+    @Test fun thePreviewDoesNotQueueBehindWholeGrids() = runBlocking {
+        val http = OkHttpClient.Builder().addInterceptor { chain ->
+            Thread.sleep(if ("width=${DwdRadar.W}" in chain.request().url.toString()) 1500 else 100)
+            throw java.io.IOException("offline in the test")
+        }.build()
+        val bulk = (0 until 12).map { i ->
+            async(Dispatchers.Default) { RadarStore.grid(http, DwdRadar, RadarFrame(1_700_000_000_000L + i * 300_000L, false, null, null)) }
+        }
+        kotlinx.coroutines.delay(300)
+        val started = System.nanoTime()
+        RadarStore.window(http, DwdRadar, frame, DwdRadar.window(hannover.west, hannover.east, hannover.south, hannover.north)!!)
+        val ms = (System.nanoTime() - started) / 1_000_000
+        bulk.awaitAll()
+        assertTrue("the preview waited $ms ms", ms < 1000)
+    }
 }

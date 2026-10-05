@@ -70,8 +70,8 @@ object RadarPicture {
     fun rvZoom(g: FieldGeo, maxZoom: Int = 7): Int =
         (ln(2 * Math.PI * FieldGeo.R / (512 * g.pxM)) / ln(2.0)).roundToInt().coerceIn(3, maxZoom)
 
-    /** RainViewer's tiles of the area at [rvZoom]. */
-    suspend fun mosaic(http: OkHttpClient, host: String, path: String, g: FieldGeo, maxZoom: Int = 7): RvMosaic {
+    /** RainViewer's tiles of the area at [rvZoom]; [preview]: in the small requests' lane ([RadarStore.rvTile]). */
+    suspend fun mosaic(http: OkHttpClient, host: String, path: String, g: FieldGeo, maxZoom: Int = 7, preview: Boolean = false): RvMosaic {
         val z = rvZoom(g, maxZoom)
         val size = 2 * O / (1 shl z)
         val x0 = floor((g.minX + O) / size).toInt(); val x1 = floor((g.maxX + O) / size).toInt()
@@ -79,7 +79,7 @@ object RadarPicture {
         val tiles = HashMap<Long, ByteArray>()
         for (y in y0..y1) for (x in x0..x1) {
             if (x !in 0 until (1 shl z) || y !in 0 until (1 shl z)) continue
-            RadarStore.rvTile(http, host, path, z, x, y)?.let { tiles[RvMosaic.key(x, y)] = it }
+            RadarStore.rvTile(http, host, path, z, x, y, preview)?.let { tiles[RvMosaic.key(x, y)] = it }
         }
         return RvMosaic(z, tiles)
     }
@@ -130,7 +130,7 @@ object RadarPicture {
             c.window(g.west, g.east, g.south, g.north)?.let { w -> async { load(c, w)?.let { RadarLayer(c, it, covered[c], w) } } }
         }
         val rv = f.rainViewerPath?.takeIf { needsRainViewer(covered, g.w * g.h) }
-            ?.let { async { mosaic(http, tl.rainViewerHost, it, g, STILL_RV_ZOOM) } }
+            ?.let { async { mosaic(http, tl.rainViewerHost, it, g, STILL_RV_ZOOM, preview = true) } }
         val shown = layers.mapNotNull { it.await() }
         val mosaic = rv?.await()
         if (shown.isEmpty() && mosaic == null) return@coroutineScope null

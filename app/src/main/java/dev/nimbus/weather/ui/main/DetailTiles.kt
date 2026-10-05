@@ -88,13 +88,16 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
+/**
+ * The small tiles shown, in the user's order (settings) – hidden ones and those without data left
+ * out – each with its card ([WeatherCard]) and drawn into a modifier giving its size.
+ */
 @Composable
-fun DetailTiles(data: WeatherData, now: Long) {
+fun detailTiles(data: WeatherData, now: Long): List<Pair<WeatherCard, @Composable (Modifier) -> Unit>> {
     val hours = remember(data, now) { Insights.upcomingHours(data, now) }
     val c = data.current
     val cards = LocalSettings.current
-    // In the user's order (settings), hidden ones and those without data left out
-    val tiles = cards.orderedTiles().filter { cards.shows(it) }.mapNotNull { t ->
+    return cards.orderedTiles().filter { cards.shows(it) }.mapNotNull { t ->
         when (t) {
             WeatherCard.FEELS_LIKE -> @Composable { m: Modifier -> FeelsLikeTile(data, m) }
             WeatherCard.UV_INDEX -> @Composable { m: Modifier -> UvTile(data, hours, m) }
@@ -103,8 +106,14 @@ fun DetailTiles(data: WeatherData, now: Long) {
             WeatherCard.VISIBILITY -> if (c.visibility != null) @Composable { m: Modifier -> VisibilityTile(data, m) } else null
             WeatherCard.PRESSURE -> if (c.pressure != null) @Composable { m: Modifier -> PressureTile(data, hours, m) } else null
             else -> null
-        }
+        }?.let { t to it }
     }
+}
+
+/** The small tiles in one column of cards: two side by side, square. */
+@Composable
+fun DetailTiles(data: WeatherData, now: Long) {
+    val tiles = detailTiles(data, now).map { it.second }
     if (tiles.isEmpty()) return
     androidx.compose.foundation.layout.BoxWithConstraints {
     val side = (maxWidth - 12.dp) / 2
@@ -120,6 +129,18 @@ fun DetailTiles(data: WeatherData, now: Long) {
             }
         }
     }
+    }
+}
+
+/**
+ * A small tile as a card of its own in the columns of a tablet or a phone sideways: the width of
+ * its column, half as high (as a single tile below the others) – so the tiles fill whichever
+ * column is shorter, their titles with room.
+ */
+@Composable
+fun LaneTile(tile: @Composable (Modifier) -> Unit) {
+    androidx.compose.foundation.layout.BoxWithConstraints {
+        tile(Modifier.fillMaxWidth().heightIn(min = maxWidth / 2))
     }
 }
 
@@ -613,7 +634,8 @@ private fun SunChart(
             val xm = x(mark)
             drawLine(Color(0x1FFFFFFF), Offset(xm, top), Offset(xm, bottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
             val lt = measurer.measure(if (mark == end) tf.hourEnd(mark) else tf.hour(mark), labelStyle)
-            drawText(lt, topLeft = Offset(xm - lt.size.width / 2f, bottom + 4.dp.toPx()))
+            // inside the chart: "12 AM" is wider than the "24" the margins are made for (it was cut off)
+            drawText(lt, topLeft = Offset(axisLabelLeft(xm, lt.size.width, size.width), bottom + 4.dp.toPx()))
             mark += 6 * 3_600_000L
         }
         // Daylight under the arc

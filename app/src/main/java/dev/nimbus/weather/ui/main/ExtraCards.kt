@@ -177,7 +177,7 @@ fun ModelComparisonCard(models: List<ModelSeries>?, now: Long, onRequest: () -> 
                     if (b - a < 4) return@forEach
                     val layout = measurer.measure(tf.weekdayShort(times[a] + 3_600_000L), TextStyle(fontSize = 11.sp, color = NimbusColors.Tertiary))
                     val cx = ((a + b) / 2f - start) * dx
-                    drawText(layout, topLeft = Offset((cx - layout.size.width / 2f).coerceIn(0f, size.width - layout.size.width), plotH + 4.dp.toPx()))
+                    drawText(layout, topLeft = Offset(axisLabelLeft(cx, layout.size.width, size.width), plotH + 4.dp.toPx()))
                 }
                 // now marker
                 val nowX = ((now - times[start]) / 3600_000f) * dx

@@ -1,0 +1,3 @@
+• Querformat und Tablet: Die Karten füllen die kürzere Spalte – keine Lücke mehr neben einem aufgeklappten Tag; die kleinen Kacheln stehen einzeln in den Spalten
+• Sonnenbogen auf Englisch: „12 AM“ an den Rändern nicht mehr abgeschnitten
+• Kurzvorhersage: kein „Kein Niederschlag in Sicht“ mehr, wenn eine Stunde Niesel zeigt – dann mit seiner geringen Wahrscheinlichkeit

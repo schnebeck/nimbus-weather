@@ -51,6 +51,11 @@ data class Outlook(
         data class Likely(val condition: Condition, val from: Long, val chance: Int?) : Precip
         /** Chance 30–59 %. */
         data class Possible(val condition: Condition, val at: Long, val chance: Int) : Precip
+        /**
+         * An hour whose symbol shows precipitation (or a measurable amount) at a chance below 30 %:
+         * not "dry" – the hourly row below the text shows it, and the change may name it.
+         */
+        data class Unlikely(val condition: Condition, val at: Long, val chance: String?) : Precip
         data class Ongoing(val endsAt: Long?) : Precip
     }
 
@@ -108,6 +113,10 @@ data class Outlook(
             if (possible != null) {
                 return Precip.Possible(precipCondition(possible), possible.time, Insights.chanceLabel(possible.precipitationProbability) ?: 30)
             }
+            val shown = hours.firstOrNull { it.condition.isPrecipitation || (it.precipitation ?: 0.0) >= Insights.MEASURABLE_MM }
+            if (shown != null) {
+                return Precip.Unlikely(precipCondition(shown), shown.time, Insights.chanceText(shown.precipitationProbability, shown.precipitation))
+            }
             return Precip.Dry
         }
 
@@ -151,14 +160,20 @@ fun outlookText(data: WeatherData, now: Long): String {
         val p0 = o.precipitation
         // "Cloudy at first, rain from around 03:00." already says it – no second sentence.
         val announced = p0 is Outlook.Precip.Likely && o.change?.let { (c, t) -> c.isPrecipitation && kotlin.math.abs(t - p0.from) <= 3_600_000L } == true
+        // "… drizzle from around 22:00." named it already: how likely it is
+        val unlikelyNamed = p0 is Outlook.Precip.Unlikely && o.change?.let { (c, t) -> c.isPrecipitation && kotlin.math.abs(t - p0.at) <= 3_600_000L } == true
         if (announced) {
             (p0 as Outlook.Precip.Likely).chance?.let { add(str(dev.nimbus.weather.R.string.outlook_precip_chance, it)) }
+        } else if (unlikelyNamed) {
+            (p0 as Outlook.Precip.Unlikely).chance?.let { add(str(dev.nimbus.weather.R.string.outlook_precip_unlikely_named, it)) }
         } else add(
             when (val p = p0) {
                 Outlook.Precip.Dry -> str(dev.nimbus.weather.R.string.outlook_dry)
                 is Outlook.Precip.Likely -> if (p.chance != null) str(dev.nimbus.weather.R.string.outlook_precip_likely, phrase(p.condition), tf.time(p.from), p.chance)
                 else str(dev.nimbus.weather.R.string.outlook_precip_likely_nochance, phrase(p.condition), tf.time(p.from))
                 is Outlook.Precip.Possible -> str(dev.nimbus.weather.R.string.outlook_precip_possible, phrase(p.condition), tf.time(p.at), p.chance)
+                is Outlook.Precip.Unlikely -> if (p.chance != null) str(dev.nimbus.weather.R.string.outlook_precip_unlikely, phrase(p.condition), tf.time(p.at), p.chance)
+                else str(dev.nimbus.weather.R.string.outlook_precip_unlikely_nochance, phrase(p.condition), tf.time(p.at))
                 is Outlook.Precip.Ongoing -> p.endsAt?.let { str(dev.nimbus.weather.R.string.outlook_precip_ends, tf.time(it)) }
                     ?: str(dev.nimbus.weather.R.string.outlook_precip_continues)
             },

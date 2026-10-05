@@ -394,7 +394,7 @@ fun Meteogram(
                     drawLine(GridLine, Offset(xm, top), Offset(xm, bottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
                     if (separatePrecip) drawLine(GridLine, Offset(xm, pTop), Offset(xm, pBottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
                     val lt = measurer.measure(if (hs >= end) tf.hourEnd(hs) else tf.hour(hs), labelStyle)
-                    drawText(lt, topLeft = Offset((xm - lt.size.width / 2f).coerceIn(0f, size.width - lt.size.width), 0f))
+                    drawText(lt, topLeft = Offset(axisLabelLeft(xm, lt.size.width, size.width), 0f))
                 }
                 // Hourly bars stand on the hour they cover: the values are the sums of the hour before
                 // the time stamp, as delivered by the models and stations. 00:00 is the previous

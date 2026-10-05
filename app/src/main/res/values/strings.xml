@@ -339,6 +339,9 @@
     <string name="outlook_precip_likely">%1$s likely from around %2$s (%3$d %%).</string>
     <string name="outlook_precip_likely_nochance">%1$s likely from around %2$s.</string>
     <string name="outlook_precip_possible">%1$s possible around %2$s (%3$d %%).</string>
+    <string name="outlook_precip_unlikely">%1$s possible around %2$s, but unlikely (%3$s %%).</string>
+    <string name="outlook_precip_unlikely_nochance">%1$s possible around %2$s, but unlikely.</string>
+    <string name="outlook_precip_unlikely_named">Its chance is low (%1$s %%).</string>
     <string name="outlook_precip_ends">The precipitation ends around %1$s.</string>
     <string name="outlook_precip_continues">The precipitation continues for the next hours.</string>
     <string name="outlook_tomorrow">Tomorrow %1$s, %2$s to %3$s.</string>

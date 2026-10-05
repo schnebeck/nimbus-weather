@@ -354,7 +354,7 @@ private fun PollenCourse(pollen: PollenForecast, now: Long) {
             }
             if (z.hour == 12) {
                 val l = measurer.measure(tf.weekdayShort(t), labelStyle)
-                drawText(l, topLeft = Offset((i * dx - l.size.width / 2f).coerceIn(0f, size.width - l.size.width), h + 2.dp.toPx()))
+                drawText(l, topLeft = Offset(axisLabelLeft(i * dx, l.size.width, size.width), h + 2.dp.toPx()))
             }
         }
         val maxLabel = measurer.measure("${max.roundToInt()}${NBSP}/m³", labelStyle)

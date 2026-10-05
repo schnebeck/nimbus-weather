@@ -300,7 +300,9 @@ private fun WeatherContent(
         PrecipToday.of(data, now, raining, todayMeasured, tfToday)?.dry == true
     }
 
-    // The page as a list of cards; wide ones (header, alerts, hourly row, sources) span all columns
+    // The page as a list of cards. In columns only the sky, the alerts, the offline note and the
+    // sources span them all: a card over all columns closed them like a line – the shorter one
+    // stayed empty above it beside a long card (an opened day of the 10-day forecast)
     val items = spanLonely(buildList {
         // the sky above the cards: double-tapping it switches full screen (the header drawn over it has no touch of its own)
         add(PageItem("header-space", true) { Spacer(Modifier.fillMaxWidth().height(with(density) { expandedPx.toDp() } - 12.dp).fullscreenByDoubleTap()) })
@@ -309,14 +311,16 @@ private fun WeatherContent(
         // The cards in the order chosen in the settings (Settings → Cards)
         cards.orderedCards().filter { cards.shows(it) }.forEach { card ->
             when (card) {
-                WeatherCard.HOURLY -> add(PageItem("hourly", true) { HourlyCard(data, now) })
+                WeatherCard.HOURLY -> add(PageItem("hourly", columns == 1) { HourlyCard(data, now) })
                 WeatherCard.DAILY -> add(PageItem("daily") { DailyCard(data, now, todayMeasured) })
                 // on a dry day hidden (setting) – decided here, an empty card would leave a gap
                 WeatherCard.PRECIPITATION -> if (cards.showDryPrecipitation || !dryToday)
                     add(PageItem("precip") { PrecipitationCard(data, now, raining, todayMeasured) })
                 WeatherCard.RADAR -> add(PageItem("radar") { RadarPreviewCard(data, onOpenRadar) })
-                // sideways (two narrow columns) over both: the small tiles side by side with room for their titles
-                WeatherCard.TILES -> if (cards.orderedTiles().any(cards::shows)) add(PageItem("tiles", fullSpan = sideways) { DetailTiles(data, now) })
+                // one column: two side by side; in columns each a card of its own (room for its title)
+                WeatherCard.TILES -> if (columns == 1) {
+                    if (cards.orderedTiles().any(cards::shows)) add(PageItem("tiles") { DetailTiles(data, now) })
+                } else detailTiles(data, now).forEach { (t, tile) -> add(PageItem("tile-${t.name.lowercase()}") { LaneTile(tile) }) }
                 WeatherCard.SUN -> add(PageItem("sun") { SunCard(data, now) })
                 WeatherCard.PRESSURE_CHART -> add(PageItem("pressure-chart") { PressureCard(data, now, todayMeasured) })
                 WeatherCard.MOON -> add(PageItem("moon") { MoonCard(data, now) })
@@ -709,7 +713,9 @@ internal fun Card(item: PageItem, arrivals: Arrivals, placeId: String) {
     // the protocol of the view (debug builds): each card drawn, with the parts it shows out of date
     if (dev.nimbus.weather.BuildConfig.DEBUG) android.util.Log.d("NimbusCard", "$placeId ${item.key} stale=$stale")
     PopIn(arrivals.fresh(item.key)) {
-        CompositionLocalProvider(LocalCardStatus provides cardStatus(item.key, stale)) { item.content() }
+        CompositionLocalProvider(LocalCardStatus provides cardStatus(item.key, stale)) {
+            Box(Modifier.testTag("card-${item.key}")) { item.content() }
+        }
     }
 }
 

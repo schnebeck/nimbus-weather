@@ -1,0 +1,3 @@
+• Landscape and tablet: the cards fill the shorter column – no gap beside an opened day any more; the small tiles stand singly in the columns
+• Sun arc in English: "12 AM" no longer cut off at the edges
+• Short forecast: no "No precipitation expected" while an hour shows drizzle – then with its low chance

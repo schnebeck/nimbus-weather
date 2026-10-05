@@ -213,7 +213,7 @@ private fun PressureChart(
                 val xm = x(mark)
                 drawLine(Color(0x1FFFFFFF), Offset(xm, top), Offset(xm, bottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
                 val t = measurer.measure(if (mark == end) tf.hourEnd(mark) else tf.hour(mark), labelStyle)
-                drawText(t, topLeft = Offset((xm - t.size.width / 2f).coerceIn(0f, size.width - t.size.width), bottom + 4.dp.toPx()))
+                drawText(t, topLeft = Offset(axisLabelLeft(xm, t.size.width, size.width), bottom + 4.dp.toPx()))
                 mark += 3 * 3_600_000L
             }
             // The day so far solid (measured where there are readings), the forecast dashed; fast falls in orange

@@ -25,7 +25,6 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.time.Instant
-import java.util.Locale
 import kotlin.math.roundToInt
 
 /**
@@ -62,17 +61,18 @@ object KnmiRadar : RadarComposite {
     }
 
     /**
-     * The composite at [time] as a grid of numbers (a few hundred kB, about 20 kB compressed –
-     * mostly "-32", no echo). Width and height given: so the cells are exactly 0.01°.
+     * The cells [window] of the composite at [time] as a grid of numbers (the whole: a few hundred
+     * kB, about 20 kB compressed – mostly "-32", no echo). Width and height given: so the cells are
+     * exactly 0.01°.
      */
-    fun url(time: Long): String =
-        "$WCS&coverage=Reflectivity&crs=EPSG:4326&format=aaigrid&bbox=$lon0,${"%.2f".format(Locale.ROOT, lat0)}," +
-            "${"%.2f".format(Locale.ROOT, lon1)},$lat1&width=$W&height=$H&time=${Instant.ofEpochMilli(time)}"
+    fun url(time: Long, window: GridWindow = whole): String =
+        "$WCS&coverage=Reflectivity&crs=EPSG:4326&format=aaigrid&bbox=${bbox(window)}" +
+            "&width=${window.w}&height=${window.h}&time=${Instant.ofEpochMilli(time)}"
 
-    override suspend fun fetch(http: OkHttpClient, frame: RadarFrame): ByteArray? {
+    override suspend fun fetch(http: OkHttpClient, frame: RadarFrame, window: GridWindow): ByteArray? {
         if (frame.isForecast) return null
-        val text = RadarDecode.text(http, url(frame.time)) ?: return null
-        return withContext(RadarDecode.decoding) { parse(text) }
+        val text = RadarDecode.text(http, url(frame.time, window)) ?: return null
+        return withContext(RadarDecode.decoding) { parse(text, window.w, window.h) }
     }
 
     override fun expired(base: String, modified: Long, now: Long, latestIssue: Long?): Boolean? {
@@ -82,9 +82,10 @@ object KnmiRadar : RadarComposite {
 
     /**
      * The answer (ESRI ASCII grid: a header, then the rows from the north) to codes; null if it is
-     * not this grid. The header's "NODATA_value" marks the cells beyond the radars.
+     * not a grid of [w] × [h] (the whole by default). The header's "NODATA_value" marks the cells
+     * beyond the radars.
      */
-    fun parse(text: String): ByteArray? {
+    fun parse(text: String, w: Int = W, h: Int = H): ByteArray? {
         val header = HashMap<String, String>()
         var pos = 0
         while (header.size < 6) {
@@ -94,9 +95,9 @@ object KnmiRadar : RadarComposite {
             header[parts[0].lowercase()] = parts[1]
             pos = end + 1
         }
-        if (header["ncols"]?.toIntOrNull() != W || header["nrows"]?.toIntOrNull() != H) return null
+        if (header["ncols"]?.toIntOrNull() != w || header["nrows"]?.toIntOrNull() != h) return null
         val noData = header["nodata_value"]?.toFloatOrNull()
-        val out = ByteArray(W * H)
+        val out = ByteArray(w * h)
         val numbers = Numbers(text, pos)
         for (i in out.indices) {
             val v = numbers.next() ?: return null

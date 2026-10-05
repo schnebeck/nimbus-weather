@@ -52,6 +52,10 @@ object RadarPreview {
     private val overlays = java.util.concurrent.ConcurrentHashMap<String, Overlay>()
     /** One off-screen render at a time (each one holds a map renderer). */
     private val renderMutex = kotlinx.coroutines.sync.Mutex()
+    /** The other places' pictures one after the other: the card shown never queues behind them. */
+    private val prefetching = kotlinx.coroutines.sync.Mutex()
+    /** A picture asked for by the card while the prefetching computes it: computed once. */
+    private val computing = InFlight<String, Overlay?>()
     /** Size of the preview card as laid out; prefetching renders for this size. */
     val cardSizeFlow = kotlinx.coroutines.flow.MutableStateFlow<Pair<Int, Int>?>(null)
     var cardSize: Pair<Int, Int>?
@@ -70,13 +74,15 @@ object RadarPreview {
         val (w, h) = cardSize ?: return
         val key = key(lat, lon, w, h)
         if (withBase && storedBase(key, lang) == null) renderBase(context, mapHttp, lat, lon, w, h, density, lang)
-        val timeline = runCatching { RadarSources.timeline(http, anchor = RadarComposites.anchorFor(lat, lon)) }.getOrNull() ?: return
-        timeline.frames.getOrNull(timeline.nowIndex)?.let { fetchOverlay(http, timeline, it, lat, lon, w, h) }
+        prefetching.withLock {
+            val timeline = runCatching { RadarSources.timeline(http, anchor = RadarComposites.anchorFor(lat, lon)) }.getOrNull() ?: return
+            timeline.frames.getOrNull(timeline.nowIndex)?.let { fetchOverlay(http, timeline, it, lat, lon, w, h) }
+        }
     }
 
     private const val OVERLAY_SCALE = 2
-    /** Bumped when the radar picture is drawn differently (9: from the composites' grids). */
-    private const val PICTURE_VERSION = 9
+    /** Bumped when the radar picture is drawn differently (9: from the composites' grids, 10: RainViewer at [RadarPicture.STILL_RV_ZOOM]). */
+    private const val PICTURE_VERSION = 10
 
     /** Same place and size share the pictures; a moving location gets new ones every ~100 m. */
     fun key(lat: Double, lon: Double, wDp: Int, hDp: Int) =
@@ -155,8 +161,12 @@ object RadarPreview {
     suspend fun fetchOverlay(http: OkHttpClient, tl: RadarTimeline, frame: RadarFrame, lat: Double, lon: Double, wDp: Int, hDp: Int): Overlay? {
         val key = key(lat, lon, wDp, hDp)
         overlays[ok(key)]?.takeIf { it.time == frame.time }?.let { return it }
+        return computing.get("${ok(key)}_${frame.time}") { compute(http, tl, frame, key, geo(lat, lon, wDp, hDp)) }
+    }
+
+    private suspend fun compute(http: OkHttpClient, tl: RadarTimeline, frame: RadarFrame, key: String, g: FieldGeo): Overlay? {
         val started = System.currentTimeMillis()
-        val picture = runCatching { RadarPicture.still(http, tl, frame, geo(lat, lon, wDp, hDp)) }.getOrNull() ?: return null
+        val picture = runCatching { RadarPicture.still(http, tl, frame, g) }.getOrNull() ?: return null
         // nothing falls: no picture to keep
         val bmp = picture.takeIf { p -> IntArray(p.width * p.height).also { p.getPixels(it, 0, p.width, 0, 0, p.width, p.height) }.any { it ushr 24 != 0 } }
         if (dev.nimbus.weather.BuildConfig.DEBUG) android.util.Log.d("NimbusPreview", "radar picture ${System.currentTimeMillis() - started} ms, step ${RadarSources.isoTime(frame.time)}")

@@ -1,0 +1,3 @@
+• Radar-Vorschau wieder schnell: lädt nur den eigenen Kartenausschnitt statt der ganzen Radarbilder
+• RainViewer in der Vorschau in gröberen Kacheln, nur wo kein Wetterdienst-Radar reicht
+• Die Vorschauen der anderen Orte werden nacheinander vorbereitet, die sichtbare zuerst

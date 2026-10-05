@@ -1,0 +1,3 @@
+• The radar preview is quick again: it loads just its own map area instead of the whole radar pictures
+• RainViewer in the preview in coarser tiles, only where no weather service radar reaches
+• The other places' previews are prepared one after the other, the visible one first

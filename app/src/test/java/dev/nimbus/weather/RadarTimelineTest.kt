@@ -47,7 +47,7 @@ class RadarTimelineTest {
         override fun covers(lat: Double, lon: Double) = lat in south..north
         override suspend fun latest(http: OkHttpClient) = newest
         override fun key(frame: RadarFrame) = "${id}_${frame.time}"
-        override suspend fun fetch(http: OkHttpClient, frame: RadarFrame): ByteArray? = null
+        override suspend fun fetch(http: OkHttpClient, frame: RadarFrame, window: dev.nimbus.weather.ui.radar.GridWindow): ByteArray? = null
         override fun expired(base: String, modified: Long, now: Long, latestIssue: Long?): Boolean? = null
     }
 

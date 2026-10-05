@@ -55,8 +55,11 @@ interface RadarComposite {
     /** Its store name of the step [frame]. */
     fun key(frame: RadarFrame): String
 
-    /** The step [frame] as codes ([w] × [h], row 0 at the north edge), null if it cannot be had. */
-    suspend fun fetch(http: OkHttpClient, frame: RadarFrame): ByteArray?
+    /**
+     * The cells [window] of the step [frame] as codes (row 0 at the window's north edge), null if
+     * they cannot be had.
+     */
+    suspend fun fetch(http: OkHttpClient, frame: RadarFrame, window: GridWindow = whole): ByteArray?
 
     /** Offline: the store name prefix of an older version of [frame] to show instead (null: none). */
     fun stalePrefix(frame: RadarFrame): String? = null
@@ -85,8 +88,11 @@ fun RadarComposite.codeAt(codes: ByteArray, lat: Double, lon: Double): Int {
     return codes[r * w + c].toInt() and 0xFF
 }
 
-/** A composite's step for the picture: its codes, and per picture pixel whether it covers it (null: all). */
-class RadarLayer(val composite: RadarComposite, val codes: ByteArray, val inside: BooleanArray?)
+/**
+ * A composite's step for the picture: its codes in [window] (all its cells, or those of the
+ * area), and per picture pixel whether it covers it (null: all).
+ */
+class RadarLayer(val composite: RadarComposite, val codes: ByteArray, val inside: BooleanArray?, val window: GridWindow = composite.whole)
 
 object RadarComposites {
     /** In this order: where the first covers a spot, it shows it. */

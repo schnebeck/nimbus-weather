@@ -19,6 +19,8 @@
 package dev.nimbus.weather.ui.radar
 
 import android.graphics.Bitmap
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import okhttp3.OkHttpClient
 import kotlin.math.floor
 import kotlin.math.ln
@@ -49,9 +51,28 @@ object RadarPicture {
         return (0 until n).any { i -> exact.none { it[i] } }
     }
 
-    /** RainViewer's tiles of the area at the zoom whose pixels match the picture's (at most 7, their finest). */
-    suspend fun mosaic(http: OkHttpClient, host: String, path: String, g: FieldGeo): RvMosaic {
-        val z = (ln(2 * Math.PI * FieldGeo.R / (512 * g.pxM)) / ln(2.0)).roundToInt().coerceIn(3, 7)
+    /**
+     * The composites the picture shows somewhere: covering a pixel no composite before them with an
+     * exact coverage covers ([RadarComposites.all]). Over Hannover the KNMI's rectangle reaches
+     * into the area, but the DWD's radars cover it all.
+     */
+    fun shown(covered: Map<RadarComposite, BooleanArray>, n: Int): List<RadarComposite> {
+        val taken = BooleanArray(n)
+        return covered.keys.sortedBy { RadarComposites.all.indexOf(it) }.filter { c ->
+            val inside = covered.getValue(c)
+            val shows = (0 until n).any { inside[it] && !taken[it] }
+            if (c.exactCoverage) for (i in 0 until n) if (inside[i]) taken[i] = true
+            shows
+        }
+    }
+
+    /** RainViewer's zoom whose pixels match the picture's, at most [maxZoom] (7: their finest). */
+    fun rvZoom(g: FieldGeo, maxZoom: Int = 7): Int =
+        (ln(2 * Math.PI * FieldGeo.R / (512 * g.pxM)) / ln(2.0)).roundToInt().coerceIn(3, maxZoom)
+
+    /** RainViewer's tiles of the area at [rvZoom]. */
+    suspend fun mosaic(http: OkHttpClient, host: String, path: String, g: FieldGeo, maxZoom: Int = 7): RvMosaic {
+        val z = rvZoom(g, maxZoom)
         val size = 2 * O / (1 shl z)
         val x0 = floor((g.minX + O) / size).toInt(); val x1 = floor((g.maxX + O) / size).toInt()
         val y0 = floor((O - g.maxY) / size).toInt(); val y1 = floor((O - g.minY) / size).toInt()
@@ -88,22 +109,33 @@ object RadarPicture {
     }
 
     /**
-     * The still picture of step [f] for the area [g] (the preview): the composites' steps and
-     * RainViewer's tiles fetched (or taken from the store), drawn as in the radar loop. Null if it
-     * cannot be had; a transparent picture where nothing falls.
+     * The still's RainViewer zoom: 5 (pixels of 1.5 km here, about its radars' own) – one to four
+     * tiles for the preview instead of up to nine at 7.
+     */
+    const val STILL_RV_ZOOM = 5
+
+    /**
+     * The still picture of step [f] for the area [g] (the preview): of each composite it shows only
+     * the cells of the area ([RadarStore.window]), RainViewer only where they do not reach – all at
+     * once – drawn as in the radar loop. Null if it cannot be had; a transparent picture where
+     * nothing falls.
      */
     suspend fun still(
         http: OkHttpClient, tl: RadarTimeline, f: RadarFrame, g: FieldGeo,
-        /** A composite's step (from the store, else fetched). */
-        load: suspend (RadarComposite) -> ByteArray? = { RadarStore.grid(http, it, f) },
-    ): Bitmap? {
+        /** A composite's cells of the area. */
+        load: suspend (RadarComposite, GridWindow) -> ByteArray? = { c, w -> RadarStore.window(http, c, f, w) },
+    ): Bitmap? = coroutineScope {
         val covered = coverage(g)
-        val layers = composites(f, g).mapNotNull { c -> load(c)?.let { RadarLayer(c, it, covered[c]) } }
-        val rv = f.rainViewerPath?.takeIf { needsRainViewer(covered, g.w * g.h) }?.let { mosaic(http, tl.rainViewerHost, it, g) }
-        if (layers.isEmpty() && rv == null) return null
-        val frame = RadarField.extract(g, layers, rv)
+        val layers = shown(covered, g.w * g.h).filter { !f.isForecast || it.hasNowcast }.mapNotNull { c ->
+            c.window(g.west, g.east, g.south, g.north)?.let { w -> async { load(c, w)?.let { RadarLayer(c, it, covered[c], w) } } }
+        }
+        val rv = f.rainViewerPath?.takeIf { needsRainViewer(covered, g.w * g.h) }
+            ?.let { async { mosaic(http, tl.rainViewerHost, it, g, STILL_RV_ZOOM) } }
+        val shown = layers.mapNotNull { it.await() }
+        val mosaic = rv?.await()
+        if (shown.isEmpty() && mosaic == null) return@coroutineScope null
         val out = IntArray(g.w * g.h)
-        RadarField.render(frame, null, null, 0f, g.w, g.h, snowAt(g, f.time), out)
-        return Bitmap.createBitmap(g.w, g.h, Bitmap.Config.ARGB_8888).also { it.setPixels(out, 0, g.w, 0, 0, g.w, g.h) }
+        RadarField.render(RadarField.extract(g, shown, mosaic), null, null, 0f, g.w, g.h, snowAt(g, f.time), out)
+        Bitmap.createBitmap(g.w, g.h, Bitmap.Config.ARGB_8888).also { it.setPixels(out, 0, g.w, 0, 0, g.w, g.h) }
     }
 }

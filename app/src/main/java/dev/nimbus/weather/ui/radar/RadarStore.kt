@@ -18,7 +18,6 @@
 package dev.nimbus.weather.ui.radar
 
 import android.util.LruCache
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -26,7 +25,6 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.Deflater
 import java.util.zip.Inflater
 
@@ -54,7 +52,7 @@ object RadarStore {
             override fun sizeOf(key: String, value: ByteArray) = value.size
         }
     }
-    private val inflight = ConcurrentHashMap<String, CompletableDeferred<ByteArray?>>()
+    private val inflight = InFlight<String, ByteArray?>()
     /** A service answers one big image at a time quickly; several in parallel keep the line busy. */
     private val downloads = Semaphore(6)
 
@@ -69,6 +67,16 @@ object RadarStore {
     suspend fun grid(http: OkHttpClient, composite: RadarComposite, frame: RadarFrame): ByteArray? =
         get(composite.key(frame), composite.w * composite.h) { composite.fetch(http, frame) }
             ?: composite.stalePrefix(frame)?.let { newest(it) }
+
+    /**
+     * The cells [window] of the step [frame] of [composite]: cut from the whole step if it is here
+     * (the radar loop's), else fetched alone – a few kB instead of the whole grid. Not kept: the
+     * preview keeps its picture.
+     */
+    suspend fun window(http: OkHttpClient, composite: RadarComposite, frame: RadarFrame, window: GridWindow): ByteArray? {
+        withContext(Dispatchers.IO) { peek(composite.key(frame)) }?.let { return composite.cut(it, window) }
+        return downloads.withPermit { runCatching { composite.fetch(http, frame, window) }.getOrNull() }?.takeIf { it.size == window.size }
+    }
 
     /** A RainViewer tile (512 × 512 bytes), null if it cannot be had. */
     suspend fun rvTile(http: OkHttpClient, host: String, path: String, z: Int, x: Int, y: Int): ByteArray? =
@@ -85,18 +93,12 @@ object RadarStore {
     private suspend fun get(key: String, size: Int, fetch: suspend () -> ByteArray?): ByteArray? {
         memory.get(key)?.let { return it }
         withContext(Dispatchers.IO) { read(key) }?.let { memory.put(key, it); return it }
-        val mine = CompletableDeferred<ByteArray?>()
-        val running = inflight.putIfAbsent(key, mine)
-        if (running != null) return running.await()
-        return try {
+        return inflight.get(key) {
             val data = downloads.withPermit { runCatching { fetch() }.getOrNull() }
-            if (data != null && data.size == size) {
-                memory.put(key, data)
-                withContext(Dispatchers.IO) { write(key, data) }
-                mine.complete(data); data
-            } else { mine.complete(null); null }
-        } finally {
-            inflight.remove(key)
+            data?.takeIf { it.size == size }?.also {
+                memory.put(key, it)
+                withContext(Dispatchers.IO) { write(key, it) }
+            }
         }
     }
 

@@ -28,6 +28,7 @@ import dev.nimbus.weather.ui.radar.RadarLayer
 import dev.nimbus.weather.ui.radar.RadarPicture
 import dev.nimbus.weather.ui.radar.RadarPreview
 import dev.nimbus.weather.ui.radar.RadarTimeline
+import dev.nimbus.weather.ui.radar.cut
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
@@ -63,7 +64,7 @@ class RadarPreviewTest {
     /** "Kleine Vorschau … auf das Gitter umstellen": the very picture of the radar loop, the preview's size. */
     @Test fun thePreviewIsTheLoopsPicture() = runBlocking {
         val g = RadarPreview.geo(52.3759, 9.732, 380, 220)
-        val still = RadarPicture.still(offline, timeline, frame, g) { c -> if (c == DwdRadar) shower else null }!!
+        val still = RadarPicture.still(offline, timeline, frame, g) { c, w -> if (c == DwdRadar) DwdRadar.cut(shower, w) else null }!!
         assertEquals(760 to 440, still.width to still.height)
         val px = pixels(still)
         assertTrue("no rain in the middle", px[220 * 760 + 380] ushr 24 > 0)
@@ -86,6 +87,6 @@ class RadarPreviewTest {
 
     /** Nothing to be had (no composite step, no RainViewer frame): no picture – the stored one stays. */
     @Test fun nothingToBeHadNoPicture() = runBlocking {
-        assertNull(RadarPicture.still(offline, timeline, frame, RadarPreview.geo(52.3759, 9.732, 380, 220)) { null })
+        assertNull(RadarPicture.still(offline, timeline, frame, RadarPreview.geo(52.3759, 9.732, 380, 220)) { _, _ -> null })
     }
 }

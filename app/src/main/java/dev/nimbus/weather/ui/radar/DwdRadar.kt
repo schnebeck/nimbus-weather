@@ -23,7 +23,6 @@ import dev.nimbus.weather.data.remote.getText
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.time.Instant
-import java.util.Locale
 
 /**
  * The DWD composite as the app keeps it: one byte per cell of 0.01° over the DWD area (about
@@ -67,14 +66,13 @@ object DwdRadar : RadarComposite {
 
     override fun key(frame: RadarFrame): String = key(frame, frame.issue)
 
-    override suspend fun fetch(http: OkHttpClient, frame: RadarFrame): ByteArray? {
-        val t = RadarSources.isoTime(frame.time)
-        val url = "$WMS?service=WMS&version=1.1.1&request=GetMap&layers=$LAYER" +
-            "&styles=&format=image/png&transparent=true&srs=EPSG:4326" +
-            "&bbox=$LON0,${"%.2f".format(Locale.ROOT, lat0)},${"%.2f".format(Locale.ROOT, lon1)},$LAT1" +
-            "&width=$W&height=$H&time=$t"
-        return RadarDecode.png(http, url, W, H, RadarPalette.Source.DWD)
-    }
+    /** The cells [window] of the step at [time] as a WMS picture, one pixel per cell. */
+    fun url(time: Long, window: GridWindow = whole): String =
+        "$WMS?service=WMS&version=1.1.1&request=GetMap&layers=$LAYER&styles=&format=image/png&transparent=true" +
+            "&srs=EPSG:4326&bbox=${bbox(window)}&width=${window.w}&height=${window.h}&time=${RadarSources.isoTime(time)}"
+
+    override suspend fun fetch(http: OkHttpClient, frame: RadarFrame, window: GridWindow): ByteArray? =
+        RadarDecode.png(http, url(frame.time, window), window.w, window.h, RadarPalette.Source.DWD)
 
     override suspend fun prepare(http: OkHttpClient) = DwdCoverage.ensure(http)
 

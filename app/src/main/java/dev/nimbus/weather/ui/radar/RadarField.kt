@@ -162,9 +162,9 @@ object RadarField {
         val rowLat = Array(k) { s -> DoubleArray(h) { y -> geo.lat(geo.maxY - (y + (s + 0.5) / k) * geo.pxM) } }
         val colMx = Array(k) { s -> DoubleArray(w) { x -> geo.minX + (x + (s + 0.5) / k) * geo.pxM } }
         val rowMy = Array(k) { s -> DoubleArray(h) { y -> geo.maxY - (y + (s + 0.5) / k) * geo.pxM } }
-        // each layer's cell of every sub-sample column and row (-1: outside its grid)
-        val cols = layers.map { l -> Array(k) { s -> IntArray(w) { x -> floor((colLon[s][x] - l.composite.lon0) / RadarComposite.STEP).toInt().takeIf { it in 0 until l.composite.w } ?: -1 } } }
-        val rows = layers.map { l -> Array(k) { s -> IntArray(h) { y -> floor((l.composite.lat1 - rowLat[s][y]) / RadarComposite.STEP).toInt().takeIf { it in 0 until l.composite.h } ?: -1 } } }
+        // each layer's cell of every sub-sample column and row in its window (-1: outside it)
+        val cols = layers.map { l -> Array(k) { s -> IntArray(w) { x -> (floor((colLon[s][x] - l.composite.lon0) / RadarComposite.STEP).toInt() - l.window.col0).takeIf { it in 0 until l.window.w } ?: -1 } } }
+        val rows = layers.map { l -> Array(k) { s -> IntArray(h) { y -> (floor((l.composite.lat1 - rowLat[s][y]) / RadarComposite.STEP).toInt() - l.window.row0).takeIf { it in 0 until l.window.h } ?: -1 } } }
         val kk = (k * k).toFloat()
         for (y in 0 until h) {
             for (x in 0 until w) {
@@ -176,7 +176,7 @@ object RadarField {
                         val l = layers[li]
                         if (l.inside != null && !l.inside[i]) continue
                         val r = rows[li][sy][y]; val c = cols[li][sx][x]
-                        val v = if (r < 0 || c < 0) RadarComposite.NO_DATA else l.codes[r * l.composite.w + c].toInt() and 0xFF
+                        val v = if (r < 0 || c < 0) RadarComposite.NO_DATA else l.codes[r * l.window.w + c].toInt() and 0xFF
                         if (v != RadarComposite.NO_DATA) { code = v; break }
                     }
                     // beyond the composites: RainViewer – the only one that marks snow

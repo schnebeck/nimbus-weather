@@ -62,7 +62,7 @@ class KnmiRadarTest {
     /** The URL asks for exactly these cells (width and height given: 0.01° each) at a time. */
     @Test fun theRequest() {
         val url = KnmiRadar.url(java.time.Instant.parse("2026-10-01T12:00:00Z").toEpochMilli())
-        assertTrue(url, "width=944&height=707" in url && "time=2026-10-01T12:00:00Z" in url && "bbox=1.4,48.90,10.84,55.97" in url)
+        assertTrue(url, "width=944&height=707" in url && "time=2026-10-01T12:00:00Z" in url && "bbox=1.40,48.90,10.84,55.97" in url)
     }
 
     private fun geo(lat: Double, lon: Double, halfDeg: Double = 0.05): FieldGeo {

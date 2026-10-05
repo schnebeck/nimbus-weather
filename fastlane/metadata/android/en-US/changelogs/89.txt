@@ -1,0 +1,3 @@
+• Radar beyond the DWD and KNMI (e.g. Norway): no more stutter – the step between two RainViewer frames is computed from the motion, not copied; in the forecast "No forecast for this area" instead of a spinner that hung
+• Zoomed out, smoother rain areas instead of blocks
+• Landscape: wind and pressure tiles complete again

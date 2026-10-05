@@ -629,6 +629,7 @@
     <string name="legend_temperature">Temperature</string>
     <string name="legend_temp_forecast">Temp. forecast</string>
     <string name="legend_chance">Precip. chance</string>
+    <string name="radar_no_forecast">No forecast for this area</string>
     <string name="radar_preparing">Preparing the radar…</string>
     <string name="settings_show_dry_precip">Precipitation card on dry days</string>
     <string name="settings_show_dry_precip_desc">Shows “Dry today” and the next precipitation in the forecast. Off: on a dry day the card is hidden.</string>

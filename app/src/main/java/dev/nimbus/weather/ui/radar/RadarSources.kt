@@ -103,7 +103,7 @@ object RadarSources {
             val frames = (-past..future).map { k ->
                 val t = last + k * step
                 val match = rvFrames.minByOrNull { kotlin.math.abs(it.first - t) }?.takeIf { kotlin.math.abs(it.first - t) <= 5 * 60_000L }
-                RadarFrame(t, t > latest, if (t > latest) latest else null, match?.second)
+                RadarFrame(t, t > latest, if (t > latest) latest else null, match?.second, match?.first)
             }
             val tl = RadarTimeline(frames, frames.indexOfLast { !it.isForecast }.coerceAtLeast(0), host, range)
             cached[key] = System.currentTimeMillis() to tl

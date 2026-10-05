@@ -116,6 +116,20 @@ class CardFlowTest {
         assertTrue("the small tiles not in the columns: ${narrow.map { it.first }}", narrow.count { it.first.startsWith("tile-") } >= 4)
     }
 
+    /**
+     * The small tiles as cards of their own: all their content shown – their middle shares out the
+     * tile's height (the wind's compass, the pressure's value), and in a column of the grid it got
+     * none (seen on the emulator: "LUFTDRUCK Gleichbleibend" without its value).
+     */
+    @Test fun theTilesInColumnsShowAllTheirContent() {
+        val all = cards(914)
+        val pressure = all.single { it.first == "tile-pressure" }.second
+        val value = compose.onAllNodes(androidx.compose.ui.test.hasText("1032"), useUnmergedTree = true).fetchSemanticsNodes()
+            .map { it.boundsInRoot }.firstOrNull { pressure.contains(it.center) }
+        assertTrue("no pressure value in its tile $pressure", value != null && value.height > 0f)
+        for ((key, r) in all.filter { it.first.startsWith("tile-") }) assertTrue("$key: ${r.height} of ${r.width}", r.height >= r.width / 2 - 1f)
+    }
+
     /** One column (phone upright): the small tiles two side by side in one card, as before. */
     @Test @Config(qualifiers = "de-w411dp-h891dp-xxhdpi") fun inOneColumnTheTilesTogether() {
         val keys = cards(411).map { it.first }

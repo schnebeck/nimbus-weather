@@ -23,8 +23,10 @@ data class RadarFrame(
     val isForecast: Boolean,
     /** A nowcast step: the analysis it was computed from (null for past steps). */
     val issue: Long?,
-    /** RainViewer tile path (Europe, past only), null if no matching frame. */
+    /** RainViewer tile path (Europe, past only): its frame nearest to [time] (at most 5 minutes off), null if none. */
     val rainViewerPath: String?,
+    /** The time of that RainViewer frame: every 10 minutes, so every other step lies between two of them. */
+    val rainViewerTime: Long? = null,
 )
 
 /**

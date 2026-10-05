@@ -618,6 +618,7 @@
     <string name="legend_temperature">Temperatur</string>
     <string name="legend_temp_forecast">Temp. Prognose</string>
     <string name="legend_chance">Niederschl.-Wahrsch.</string>
+    <string name="radar_no_forecast">Keine Vorhersage für dieses Gebiet</string>
     <string name="radar_preparing">Radar wird vorbereitet…</string>
     <string name="settings_show_dry_precip">Niederschlag-Kachel an trockenen Tagen</string>
     <string name="settings_show_dry_precip_desc">Zeigt „Heute trocken“ und den nächsten Niederschlag der Vorhersage. Aus: An trockenen Tagen wird die Kachel ausgeblendet.</string>

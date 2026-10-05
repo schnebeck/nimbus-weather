@@ -150,8 +150,10 @@ object RadarField {
      * The frame for [geo] from the composites' [layers] – at each pixel the first that covers it
      * and has a value there – else from RainViewer. Cells smaller than a pixel are averaged, cells
      * larger than a pixel are smoothed (two dimensions, on the reflectivity – no blocks).
+     * [fromRv]: marks the pixels no composite has a value for (RainViewer's, or nobody's);
+     * [minSmooth]: at least this smoothing (pixels) – a field pixel larger than a screen pixel.
      */
-    fun extract(geo: FieldGeo, layers: List<RadarLayer>, rv: RvMosaic?): ViewFrame {
+    fun extract(geo: FieldGeo, layers: List<RadarLayer>, rv: RvMosaic?, fromRv: BooleanArray? = null, minSmooth: Int = 0): ViewFrame {
         val w = geo.w; val h = geo.h; val n = w * h
         val dbz = FloatArray(n); val wet = FloatArray(n)
         var snow: FloatArray? = null
@@ -180,10 +182,10 @@ object RadarField {
                         if (v != RadarComposite.NO_DATA) { code = v; break }
                     }
                     // beyond the composites: RainViewer – the only one that marks snow
-                    val fromRv = code < 0
-                    if (fromRv) code = rv?.at(colMx[sx][x], rowMy[sy][y])?.coerceAtLeast(0) ?: 0
+                    val viaRv = code < 0
+                    if (viaRv) { fromRv?.set(i, true); code = rv?.at(colMx[sx][x], rowMy[sy][y])?.coerceAtLeast(0) ?: 0 }
                     val d = code and 0x7F
-                    if (d >= 8) { sum += d; cnt++; if (fromRv && code and RvMosaic.SNOW != 0) sn++ }
+                    if (d >= 8) { sum += d; cnt++; if (viaRv && code and RvMosaic.SNOW != 0) sn++ }
                 }
                 if (cnt > 0) {
                     dbz[i] = sum / cnt * (cnt / kk)          // weighted by wet share, as the smoothing expects
@@ -192,7 +194,7 @@ object RadarField {
                 }
             }
         }
-        smooth(dbz, wet, snow, w, h, smoothRadius(geo.pxKm))
+        smooth(dbz, wet, snow, w, h, max(smoothRadius(geo.pxKm), minSmooth))
         val qd = ByteArray(n); val qw = ByteArray(n)
         val qs = snow?.let { ByteArray(n) }
         for (i in 0 until n) {
@@ -434,7 +436,7 @@ object RadarField {
     }
 
     /** Bilinear sample of [f] at ([x], [y]): wet share, dBZ (of the wet part), snow share. */
-    private fun sample(f: ViewFrame, w: Int, h: Int, x: Float, y: Float, out: FloatArray) {
+    internal fun sample(f: ViewFrame, w: Int, h: Int, x: Float, y: Float, out: FloatArray) {
         val xf = x.coerceIn(0f, (w - 1).toFloat()); val yf = y.coerceIn(0f, (h - 1).toFloat())
         val x0 = min(xf.toInt(), w - 1); val y0 = min(yf.toInt(), h - 1)
         val x1 = min(x0 + 1, w - 1); val y1 = min(y0 + 1, h - 1)

@@ -140,7 +140,12 @@ fun DetailTiles(data: WeatherData, now: Long) {
 @Composable
 fun LaneTile(tile: @Composable (Modifier) -> Unit) {
     androidx.compose.foundation.layout.BoxWithConstraints {
-        tile(Modifier.fillMaxWidth().heightIn(min = maxWidth / 2))
+        val half = maxWidth / 2
+        // a height of its own (as a row of two has): the tiles share theirs out by weight – in a
+        // column of the grid, without one, the wind's compass and the pressure's value got none
+        Box(Modifier.height(androidx.compose.foundation.layout.IntrinsicSize.Min)) {
+            tile(Modifier.fillMaxWidth().heightIn(min = half).fillMaxHeight())
+        }
     }
 }
 

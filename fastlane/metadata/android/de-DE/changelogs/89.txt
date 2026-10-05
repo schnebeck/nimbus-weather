@@ -1,0 +1,3 @@
+• Radar außerhalb von DWD und KNMI (z. B. Norwegen): kein Ruckeln mehr – der Schritt zwischen zwei RainViewer-Bildern wird aus der Bewegung berechnet statt kopiert; in der Vorhersage „Keine Vorhersage für dieses Gebiet“ statt eines hängenden Kreisels
+• Herausgezoomt weichere Regenflächen statt Blöcken
+• Querformat: Wind- und Luftdruck-Kachel wieder vollständig

@@ -71,6 +71,11 @@ class RadarPlayer(
     private val _ready = MutableStateFlow(0)
     /** Grows with every frame ready to show – the screen checks playback then. */
     val ready: StateFlow<Int> = _ready
+    private val _nowcastHere = MutableStateFlow(true)
+    /** Whether a composite with a nowcast reaches into the picture area – else its future is empty. */
+    val nowcastHere: StateFlow<Boolean> = _nowcastHere
+    /** Smoothing for field pixels larger than screen pixels ([FrameBuilder.screenSmooth]). */
+    @Volatile private var screenSmooth = 0
 
     /** Playback position: frame index plus the fraction to the next one. */
     @Volatile var position = 0f
@@ -134,8 +139,11 @@ class RadarPlayer(
         restartExtractor()
     }
 
-    /** The visible area changed (camera idle): a new picture area if the old one no longer serves. */
-    fun setView(south: Double, north: Double, west: Double, east: Double) {
+    /**
+     * The visible area changed (camera idle): a new picture area if the old one no longer serves.
+     * [screenWidthPx]: the map's width on the screen (0: unknown).
+     */
+    fun setView(south: Double, north: Double, west: Double, east: Double, screenWidthPx: Int = 0) {
         val want = FieldGeo.forView(south, north, west, east, maxSide = maxSide)
         val g = geo
         val ratio = g?.let { want.pxM / it.pxM } ?: 0.0
@@ -143,6 +151,8 @@ class RadarPlayer(
             FieldGeo.mercY(south) >= g.minY && FieldGeo.mercY(north) <= g.maxY
         if (g != null && inside && ratio in 0.6..1.6) return
         geo = want
+        val screenPxM = if (screenWidthPx > 0) FieldGeo.R * Math.toRadians(east - west) / screenWidthPx else 0.0
+        screenSmooth = FrameBuilder.screenSmooth(want.pxM, screenPxM)
         covered = null
         frames.clear()
         flows.clear()
@@ -186,10 +196,9 @@ class RadarPlayer(
                             if (needed.isEmpty()) continue
                             // all composites of the step, then it counts – stored if any of them could be had
                             val got = needed.map { c -> RadarStore.grid(http, c, f) }
-                            if (got.any { it != null }) {
-                                stored += k
-                                wake.trySend(Unit)
-                            } else failed += k
+                            if (got.any { it != null }) stored += k else failed += k
+                            // either way the step can be drawn now (without what failed)
+                            wake.trySend(Unit)
                             countStored(tl)
                         }
                     }
@@ -214,6 +223,9 @@ class RadarPlayer(
         val gen = ++generation
         extractor = scope.launch(Dispatchers.Default) {
             if (covered == null) covered = RadarPicture.coverage(g)
+            val inArea = covered!!
+            _nowcastHere.value = inArea.any { (c, mask) -> c.hasNowcast && mask.any { it } }
+            val builder = FrameBuilder(http, tl, g, inArea, screenSmooth)
             wake.trySend(Unit)
             val strides = Progressive.strides(stepMinutes(tl))
             for (w in wake) {
@@ -244,11 +256,10 @@ class RadarPlayer(
                     val layers = withContext(Dispatchers.IO) {
                         needed.mapNotNull { c -> RadarStore.peek(c.key(f))?.let { RadarLayer(c, it, covered?.get(c)) } }
                     }
-                    if (needed.isNotEmpty() && layers.isEmpty()) continue        // not downloaded yet: a later pass
-                    val rv = f.rainViewerPath?.takeIf { covered?.let { c -> RadarPicture.needsRainViewer(c, g.w * g.h) } ?: true }?.let { RadarPicture.mosaic(http, tl.rainViewerHost, it, g) }
-                    if (needed.isEmpty() && rv == null) continue
+                    // not downloaded yet: a later pass (one the service did not deliver: without it)
+                    if (needed.isNotEmpty() && layers.isEmpty() && k !in failed) continue
                     val t0 = System.nanoTime()
-                    val vf = RadarField.extract(g, layers, rv)
+                    val vf = builder.build(i, layers)
                     if (dev.nimbus.weather.BuildConfig.DEBUG) android.util.Log.d("NimbusPlayer", "frame $i ${g.w}x${g.h} extract ${(System.nanoTime() - t0) / 1_000_000} ms")
                     if (gen != generation) return@launch
                     frames[k] = vf

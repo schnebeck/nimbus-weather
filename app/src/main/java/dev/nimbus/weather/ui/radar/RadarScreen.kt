@@ -224,6 +224,7 @@ fun RadarScreen(
     var reloadKey by remember { mutableIntStateOf(0) }
     /** Tile requests that failed or were answered from the cache while this screen is open. */
     val netStatus by RadarNetStatus.state.collectAsState()
+    val nowcastHere by player.nowcastHere.collectAsState()
     var frame by remember { mutableIntStateOf(0) }
     var playing by remember { mutableStateOf(false) }
     /** Archived day: playback holds until enough frames ahead are loaded. */
@@ -298,7 +299,7 @@ fun RadarScreen(
                 map.addOnCameraIdleListener {
                     gridCheck++
                     map.projection.visibleRegion.latLngBounds.let { b ->
-                        player.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast)
+                        player.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast, mapView.width)
                         sat.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast)
                     }
                     satView++
@@ -317,7 +318,7 @@ fun RadarScreen(
     LaunchedEffect(timeline, styleReady) {
         if (!styleReady || timeline == null) return@LaunchedEffect
         // the first picture area once the map has its size
-        controller.map?.projection?.visibleRegion?.latLngBounds?.let { b -> player.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast) }
+        controller.map?.projection?.visibleRegion?.latLngBounds?.let { b -> player.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast, mapView.width) }
         launch { player.loaded.collect { loadedFrames = it } }
         player.ready.collect {
             val tl = timeline ?: return@collect
@@ -495,15 +496,18 @@ fun RadarScreen(
             }
         }
         val total = timeline?.frames?.size ?: 0
-        val stillLoading = timeline != null && styleReady &&
+        // the future where no composite with a nowcast reaches (RainViewer has none): said so
+        val noForecast = timeline?.frames?.getOrNull(frame)?.isForecast == true && !nowcastHere
+        val stillLoading = timeline != null && styleReady && !noForecast &&
             (buffering || !player.canShow(frame.toFloat()) || loadedFrames < total)
         val trouble = netStatus.failed > 0 || netStatus.fromCache > 0
-        if (error || stillLoading || trouble) {
+        if (error || stillLoading || trouble || noForecast) {
             Column(
                 Modifier.align(Alignment.TopCenter).windowInsetsPadding(WindowInsets.statusBarsStable).padding(top = 64.dp, start = 24.dp, end = 24.dp)
                     .clip(RoundedCornerShape(12.dp)).background(Color(0xCC0B1424)).padding(horizontal = 14.dp, vertical = 10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                if (noForecast && !error) Text(stringResource(R.string.radar_no_forecast), color = Color.White, fontSize = 13.sp)
                 if (stillLoading && !error) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(14.dp))

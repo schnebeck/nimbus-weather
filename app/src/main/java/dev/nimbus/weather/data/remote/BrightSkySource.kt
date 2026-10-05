@@ -32,7 +32,7 @@ import java.time.OffsetDateTime
 data class StationSite(val name: String, val distanceKm: Double, val heightM: Double?)
 
 /** The values of a [StationObservation]; each may come from another station than the main one. */
-enum class Reading { TEMPERATURE, HUMIDITY, DEW_POINT, PRESSURE, WIND_SPEED, WIND_GUST, WIND_DIRECTION, VISIBILITY, CLOUD_COVER, PRECIPITATION, CONDITION }
+enum class Reading { TEMPERATURE, HUMIDITY, DEW_POINT, PRESSURE, WIND_SPEED, WIND_GUST, WIND_DIRECTION, VISIBILITY, CLOUD_COVER, PRECIPITATION, CONDITION, SUNSHINE }
 
 /**
  * A station observation: from the DWD via Bright Sky, or from another [network] (see
@@ -65,6 +65,8 @@ data class StationObservation(
     val network: dev.nimbus.weather.data.model.StationNetwork = dev.nimbus.weather.data.model.StationNetwork.DWD,
     /** The values taken from another station than the main one, and that station. */
     val fallbacks: Map<Reading, StationSite> = emptyMap(),
+    /** Minutes of sunshine per hour: measured over the last half hour (doubled), else the last hour. */
+    val sunshine: Double? = null,
 ) {
     val site: StationSite get() = StationSite(stationName, distanceKm, heightM)
     fun siteOf(r: Reading): StationSite = fallbacks[r] ?: site
@@ -90,7 +92,8 @@ data class StationObservation(
                 Reading.VISIBILITY -> o.copy(visibility = v)
                 Reading.CLOUD_COVER -> o.copy(cloudCover = v)
                 Reading.PRECIPITATION -> o.copy(precipitation60 = v)
-                Reading.CONDITION -> return@forEach   // the weather of an hour ago is not the weather now
+                // the weather and the sunshine of an hour ago are not those of now
+                Reading.CONDITION, Reading.SUNSHINE -> return@forEach
             }.let { it.copy(fallbacks = it.fallbacks - r) }
         }
         return o
@@ -128,6 +131,7 @@ data class StationObservation(
             cloudCover = cloudCover?.takeIf { fits(Reading.CLOUD_COVER) },
             precipitation60 = precipitation60?.takeIf { fits(Reading.PRECIPITATION) },
             condition = condition?.takeIf { fits(Reading.CONDITION) },
+            sunshine = sunshine?.takeIf { fits(Reading.SUNSHINE) },
             observedDry = observedDry && fits(Reading.CONDITION) && fits(Reading.PRECIPITATION),
             fallbacks = Reading.entries.filter { sites.getValue(it) != shown }.associateWith { sites.getValue(it) },
         )
@@ -204,6 +208,7 @@ class BrightSkySource(private val http: OkHttpClient, private val baseUrl: Strin
             val condStr = w.s("condition")
             note(Reading.CONDITION, "condition")
             val precipitation60 = value(Reading.PRECIPITATION, "precipitation_60")
+            val sunshine = w.d("sunshine_30")?.let { note(Reading.SUNSHINE, "sunshine_30"); it * 2 } ?: value(Reading.SUNSHINE, "sunshine_60")
             val condition = when (condStr) {
                 "fog" -> Condition.FOG
                 "rain" -> if ((precipitation60 ?: 0.0) >= WeatherCodes.HEAVY_RAIN_MM_H) Condition.HEAVY_RAIN else Condition.RAIN
@@ -232,6 +237,7 @@ class BrightSkySource(private val http: OkHttpClient, private val baseUrl: Strin
                 heightM = main.heightM,
                 stationId = src.s("dwd_station_id"),
                 fallbacks = fallbacks,
+                sunshine = sunshine,
             )
         }
 

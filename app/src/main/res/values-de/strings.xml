@@ -66,6 +66,20 @@
     <string name="community_sensors_detail">Median von %1$d Bürger-Sensoren im Umkreis von %2$s km (Sensor.Community)</string>
     <string name="community_spread">Streuung ±%1$s</string>
     <string name="data_sources">Datenquellen</string>
+    <string name="now_sources_title">Hier jetzt:</string>
+    <string name="now_source_measured">%1$s: gemessen, %2$s\u00A0(%3$s km)</string>
+    <string name="now_source_model">%1$s: Vorhersagemodell</string>
+    <string name="now_sky_observed">Himmel: von der Station beobachtet, %1$s\u00A0(%2$s km)</string>
+    <string name="now_sky_measured_sunshine">Himmel: nach dem gemessenen Sonnenschein, %1$s\u00A0(%2$s km)</string>
+    <string name="now_sky_model_sunshine">Himmel: Vorhersagemodell, nach seinem Sonnenschein in der laufenden Stunde</string>
+    <string name="now_sky_model">Himmel: Vorhersagemodell</string>
+    <string name="now_value_temperature">Temperatur</string>
+    <string name="now_value_humidity">Luftfeuchte</string>
+    <string name="now_value_dew_point">Taupunkt</string>
+    <string name="now_value_pressure">Luftdruck</string>
+    <string name="now_value_wind">Wind</string>
+    <string name="now_value_gusts">Böen</string>
+    <string name="now_value_visibility">Sichtweite</string>
     <string name="measured_at_station">Gemessen an %1$s-Station %2$s\u00A0(%3$s km)</string>
     <string name="alerts">Wetterwarnungen</string>
     <string name="alert_valid">%1$s – %2$s</string>
@@ -275,7 +289,7 @@
     <string name="precip_next_wet">Nächster Niederschlag %1$s ab etwa %2$s (%3$d %%)</string>
     <string name="precip_dry_ahead">Kein Niederschlag in der Vorhersage</string>
     <string name="term_hourly_title">Stündliche Vorhersage</string>
-    <string name="term_hourly_body">Die nächsten 24 Stunden auf einen Blick. Das Symbol zeigt das wahrscheinlichste Wetter der Stunde, die Zahl darunter die Temperatur.\n\n• Jetzt: das aktuelle Wetter – wo vorhanden an der nächsten DWD-Station gemessen, daher kann es leicht von der Vorhersage für diese Stunde abweichen\n• Prozentwerte: Niederschlagswahrscheinlichkeit – ab 10 % blau, darunter blass – Details in der Karte „Niederschlag“ weiter unten\n• Sonnensymbole mit Uhrzeit: Sonnenauf- und -untergang\n\nSeitlich wischen für weitere Stunden.\n\nDer Text über den Stunden ist eine kurze Vorhersage für die nächsten 12 Stunden, automatisch aus der stündlichen Vorhersage des gewählten Wettermodells erzeugt (Standard: DWD ICON). Sie stammt nicht von einer Meteorologin oder einem Meteorologen.\n\nSie nennt den nächsten Wetterwechsel, den Temperaturverlauf, ob und wann Niederschlag wahrscheinlich (ab 60 %) oder möglich (ab 30 %) ist, starke Böen ab 50 km/h und – nachmittags und abends – einen kurzen Ausblick auf morgen.\n\nRegnet es gerade, stammt das Ende des Niederschlags aus der 15-Minuten-Vorhersage.</string>
+    <string name="term_hourly_body">Die nächsten 24 Stunden auf einen Blick. Das Symbol zeigt das wahrscheinlichste Wetter der Stunde, die Zahl darunter die Temperatur.\n\n• Jetzt: das aktuelle Wetter – wo vorhanden an der nächsten DWD-Station gemessen, daher kann es leicht von der Vorhersage für diese Stunde abweichen\n• Prozentwerte: Niederschlagswahrscheinlichkeit – ab 10 % blau, darunter blass – Details in der Karte „Niederschlag“ weiter unten\n• Sonnensymbole mit Uhrzeit: Sonnenauf- und -untergang\n\nSeitlich wischen für weitere Stunden.\n\nDer Text über den Stunden ist eine kurze Vorhersage für die nächsten 12 Stunden, automatisch aus der stündlichen Vorhersage des gewählten Wettermodells erzeugt (voreingestellt: Automatisch). Sie stammt nicht von einer Meteorologin oder einem Meteorologen.\n\nSie nennt den nächsten Wetterwechsel, den Temperaturverlauf, ob und wann Niederschlag wahrscheinlich (ab 60 %) oder möglich (ab 30 %) ist, starke Böen ab 50 km/h und – nachmittags und abends – einen kurzen Ausblick auf morgen.\n\nRegnet es gerade, stammt das Ende des Niederschlags aus der 15-Minuten-Vorhersage.</string>
     <string name="term_daily_title">10-Tage-Vorhersage</string>
     <string name="term_daily_body">Eine Zeile pro Tag: Symbol, tiefste und höchste Temperatur.\n\n• Der Balken zeigt die Temperaturspanne des Tages auf einer gemeinsamen Skala für alle zehn Tage – so lassen sich wärmere und kältere Tage direkt vergleichen\n• Seine Farben reichen von Blau (kalt) über Grün und Gelb bis Rot (heiß)\n• Der Punkt im Balken von heute ist die aktuelle Temperatur\n• Blaue Prozentwerte: Niederschlagswahrscheinlichkeit an diesem Tag\n\nTippe auf einen Tag, um Temperaturverlauf und stündlichen Niederschlag zu sehen. Die Tage 9 und 10 sind deutlich unsicherer.</string>
 
@@ -394,7 +408,7 @@
     <string name="term_community_title">Community-Messnetz</string>
     <string name="term_community_body">Sensor.Community ist ein offenes Netz aus tausenden selbstgebauten Sensoren von Bürgerinnen und Bürgern – ähnlich wie OpenStreetMap, nur für Messwerte. Die Daten sind frei verfügbar.\n\nPrivate Sensoren sind nicht kalibriert und hängen oft an Balkonen oder Hauswänden, manchmal in der Sonne. Die App zeigt daher den Median aller Außensensoren in der Nähe und sortiert Ausreißer aus. Die Streuung zeigt, wie stark die Sensoren voneinander abweichen.\n\nNutze diese Werte als zusätzlichen lokalen Eindruck; die offizielle DWD-Station ist verlässlicher.</string>
     <string name="term_station_title">Gemessen oder vorhergesagt?</string>
-    <string name="term_station_body">In der Nähe einer Wetterstation sind die aktuellen Werte (Temperatur, Feuchte, Wind, Luftdruck, Sichtweite) echte Messungen der nächsten Station im Umkreis von 30 km: in Deutschland vom DWD (über Bright Sky), dazu GeoSphere Austria, MeteoSwiss und DMI (Dänemark) alle 10 Minuten – wo keines davon misst, ein Flughafen (METAR, halbstündlich, Temperatur in ganzen Grad). Es zählt nur eine Station in der Höhe des Ortes (höchstens 300 m Unterschied) und nur, wenn ihre Temperatur nahe am Modell liegt. Andernfalls stammen die Werte aus dem Vorhersagemodell für den genauen Ort.\n\nMessungen sind für den Stationsstandort genauer, die Bedingungen vor Ort können aber abweichen – etwa zwischen Innenstadt und Flughafen. In den Einstellungen lässt sich das abschalten.</string>
+    <string name="term_station_body">In der Nähe einer Wetterstation sind die aktuellen Werte (Temperatur, Feuchte, Wind, Luftdruck, Sichtweite) echte Messungen der nächsten Station im Umkreis von 30 km: in Deutschland vom DWD (über Bright Sky), dazu GeoSphere Austria, MeteoSwiss und DMI (Dänemark) alle 10 Minuten – wo keines davon misst, ein Flughafen (METAR, halbstündlich, Temperatur in ganzen Grad). Es zählt nur eine Station in der Höhe des Ortes (höchstens 300 m Unterschied) und nur, wenn ihre Temperatur nahe am Modell liegt. Andernfalls stammen die Werte aus dem Vorhersagemodell für den genauen Ort.\n\nDer Himmel (sonnig, bewölkt …) folgt dem Sonnenschein, den die Station in der letzten halben Stunde gemessen hat – so wie die Stunden der Vorhersage dem Sonnenschein des Modells folgen: Dünne, hohe Schleierwolken zählen zur Bewölkung, die Sonne scheint aber durch. Regen, Schnee oder Nebel, die die Station beobachtet, gelten vor der Vorhersage.\n\nMessungen sind für den Stationsstandort genauer, die Bedingungen vor Ort können aber abweichen – etwa zwischen Innenstadt und Flughafen. In den Einstellungen lässt sich das abschalten.</string>
     <string name="term_alerts_title">DWD-Wetterwarnungen</string>
     <string name="term_alerts_body">Amtliche Warnungen des Deutschen Wetterdienstes für deine Gemeinde, farblich nach Schwere:\n\n• Gelb – Wetterwarnung: mögliche Gefahr, z. B. Frost, starke Böen\n• Orange – Warnung vor markantem Wetter: gefährliches Wetter, z. B. Sturmböen, Starkregen\n• Rot – Unwetterwarnung: sehr gefährlich, z. B. orkanartige Böen, schwere Gewitter\n• Violett – Warnung vor extremem Unwetter: extrem gefährlich, Schutzmaßnahmen ergreifen\n\nWarnungen gibt es nur für Deutschland.</string>
     <string name="sun">Sonne</string>
@@ -504,8 +518,12 @@
     <string name="places_edit_hint">≡ halten und ziehen zum Sortieren, ⊖ zum Löschen, Modell antippen zum Ändern, ⧉ für den Ort ein zweites Mal mit anderem Modell</string>
     <string name="places_long_press_hint">Lange drücken, um Orte zu sortieren, zu löschen oder ihr Vorhersagemodell zu wählen</string>
     <string name="places_model">Modell: %1$s</string>
-    <string name="places_model_default">Standard (%1$s)</string>
-    <string name="places_model_default_desc">Das Modell aus den Einstellungen – ändert sich mit ihnen</string>
+    <string name="places_model_app">Wie in den App-Einstellungen</string>
+    <string name="places_model_app_desc">zurzeit: %1$s – ändert sich mit ihnen</string>
+    <string name="places_model_own">Eigenes Modell für diesen Ort</string>
+    <string name="places_model_own_desc">gilt nur für %1$s</string>
+    <string name="places_model_follows_app">%1$s (App-Einstellung)</string>
+    <string name="model_auto_short">Automatisch</string>
     <string name="places_model_title">Vorhersagemodell für %1$s</string>
     <string name="places_duplicate">Noch einmal, für ein anderes Modell</string>
     <string name="places_drag">Verschieben</string>

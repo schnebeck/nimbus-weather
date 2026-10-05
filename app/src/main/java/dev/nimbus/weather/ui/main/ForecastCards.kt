@@ -296,6 +296,7 @@ fun DailyCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) {
                 daily = data.daily,
                 now = now,
                 measured = if (isToday) measured else null,
+                nowCondition = if (isToday) data.current.condition else null,
             )
         }
     }
@@ -313,6 +314,8 @@ private fun DayRow(
     minutely: List<dev.nimbus.weather.data.model.MinutelyPoint> = emptyList(),
     /** Today: station readings for the hours already over (shown instead of the forecast). */
     measured: TodayMeasured? = null,
+    /** Today: the weather now (the header's) – the hour running now shows it. */
+    nowCondition: dev.nimbus.weather.data.model.Condition? = null,
 ) {
     val settings = LocalSettings.current
     Column(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
@@ -362,7 +365,7 @@ private fun DayRow(
         ) {
             val end = day.date + 24 * 3_600_000L
             Meteogram(
-                hours.map { h -> h.toMeteo().let { measured?.apply(it, now) ?: it } }, day.date, end,
+                hours.map { h -> h.toMeteo().let { measured?.apply(it, now) ?: it }.asNow(now, nowCondition) }, day.date, end,
                 remember(day.date, place) { nights(day.date, HourAxis.dayAxisEnd(end), place.latitude, place.longitude) }, now,
                 Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 showNow = currentTemp != null,   // today only

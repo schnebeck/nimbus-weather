@@ -78,7 +78,7 @@ class BrightSkyTest {
 
     @Test
     fun `measurements override model values`() {
-        val m = WeatherRepository.mergeObservation(model, obs(Condition.SNOW, false))
+        val m = dev.nimbus.weather.data.repo.NowWeather.mergeObservation(model, obs(Condition.SNOW, false))
         assertEquals(12.0, m.temperature, 0.0)
         assertEquals(10.0, m.apparentTemperature!!, 0.001)  // shifted by the same delta
         assertEquals(Condition.SNOW, m.condition)
@@ -88,14 +88,14 @@ class BrightSkyTest {
 
     @Test
     fun `dry station downgrades modelled rain`() {
-        val m = WeatherRepository.mergeObservation(model, obs(null, dry = true))
+        val m = dev.nimbus.weather.data.repo.NowWeather.mergeObservation(model, obs(null, dry = true))
         assertFalse(m.condition.isPrecipitation)
         assertEquals(Condition.PARTLY_CLOUDY, m.condition)
     }
 
     @Test
     fun `station rain does not downgrade modelled thunderstorm`() {
-        val m = WeatherRepository.mergeObservation(model.copy(condition = Condition.THUNDERSTORM), obs(Condition.RAIN, false))
+        val m = dev.nimbus.weather.data.repo.NowWeather.mergeObservation(model.copy(condition = Condition.THUNDERSTORM), obs(Condition.RAIN, false))
         assertEquals(Condition.THUNDERSTORM, m.condition)
     }
 

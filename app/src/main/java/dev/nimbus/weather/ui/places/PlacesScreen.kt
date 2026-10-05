@@ -274,7 +274,9 @@ private fun EditList(
 ) {
     var confirmId by remember { mutableStateOf<String?>(null) }
     var choosing by remember { mutableStateOf<Place?>(null) }
-    choosing?.let { p -> ModelSheet(p, state.settings.model, { m -> onSetModel(p, m); choosing = null }) { choosing = null } }
+    /** The place was just copied: it is there for a model of its own. */
+    var copied by remember { mutableStateOf(false) }
+    choosing?.let { p -> ModelSheet(p, state.settings.model, copied, { m -> onSetModel(p, m); choosing = null }) { choosing = null } }
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = navBottom + 16.dp)) {
         dev.nimbus.weather.ui.components.ReorderableColumn(
             places, key = { it.id }, gap = EditRowGap,
@@ -306,59 +308,23 @@ private fun EditList(
                 Column(Modifier.weight(1f).padding(start = 4.dp).clickable(enabled = confirmId == id) { confirmId = null }) {
                     Text(place.name, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     // the place's forecast model: tapped, the choice
-                    val model = place.model?.let { dev.nimbus.weather.ui.main.modelName(it) }
-                        ?: stringResource(R.string.places_model_default, dev.nimbus.weather.ui.main.modelName(state.settings.model))
+                    val model = place.model?.let { choiceName(it) }
+                        ?: stringResource(R.string.places_model_follows_app, choiceName(state.settings.model))
                     Text(
                         stringResource(R.string.places_model, model),
-                        Modifier.clip(RoundedCornerShape(6.dp)).clickable(enabled = confirmId != id) { choosing = place }
+                        Modifier.clip(RoundedCornerShape(6.dp)).clickable(enabled = confirmId != id) { copied = false; choosing = place }
                             .padding(vertical = 2.dp).testTag("model-${place.id}"),
                         fontSize = 13.sp, color = Color.White.copy(alpha = 0.85f), textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
                     )
                 }
                 // the same place once more, for another model: its model chosen right away
-                IconButton(onClick = { choosing = onDuplicate(place) }, Modifier.testTag("duplicate-${place.id}")) {
+                IconButton(onClick = { copied = true; choosing = onDuplicate(place) }, Modifier.testTag("duplicate-${place.id}")) {
                     Icon(Icons.Outlined.ContentCopy, stringResource(R.string.places_duplicate), tint = Color.White)
                 }
                 Icon(
                     Icons.Rounded.DragHandle, stringResource(R.string.places_drag), tint = Color.White,
                     modifier = handle.size(56.dp).padding(16.dp),
                 )
-            }
-        }
-    }
-}
-
-/**
- * The forecast model of [place]: the settings' one ([default], followed when the settings change)
- * or one of its own.
- */
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
-@Composable
-private fun ModelSheet(
-    place: Place, default: dev.nimbus.weather.data.model.ForecastModel,
-    onChoose: (dev.nimbus.weather.data.model.ForecastModel?) -> Unit, onDismiss: () -> Unit,
-) {
-    androidx.compose.material3.ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = Color(0xFF16233A), contentColor = Color.White, scrimColor = Color(0x99000000),
-    ) {
-        val navBottom = dev.nimbus.weather.ui.components.navBarBottom()
-        Column(
-            Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 24.dp, bottom = navBottom + 24.dp).testTag("model-sheet"),
-        ) {
-            Text(
-                stringResource(R.string.places_model_title, place.name), Modifier.padding(start = 8.dp, bottom = 8.dp),
-                fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color.White,
-            )
-            dev.nimbus.weather.ui.settings.ModelChoice(
-                place.model == null,
-                stringResource(R.string.places_model_default, dev.nimbus.weather.ui.main.modelName(default)),
-                stringResource(R.string.places_model_default_desc),
-            ) { onChoose(null) }
-            dev.nimbus.weather.ui.settings.ModelChoices.forEach { (m, title, desc) ->
-                dev.nimbus.weather.ui.settings.ModelChoice(place.model == m, stringResource(title), stringResource(desc)) { onChoose(m) }
             }
         }
     }

@@ -25,7 +25,7 @@ import okhttp3.OkHttpClient
  * The station networks besides the DWD's ([BrightSkySource]): GeoSphere Austria, MeteoSwiss and DMI
  * every 10 minutes, without a key – each only for its country; airports worldwide (METAR). Each
  * gives its station nearest to the place; which stands for the place decides
- * [StationObservation.forPlace], which network goes first [dev.nimbus.weather.data.repo.WeatherRepository.pickObservation].
+ * [StationObservation.forPlace], which network goes first [dev.nimbus.weather.data.repo.NowWeather.pickObservation].
  */
 class StationNetworks(
     private val geosphere: GeoSphereSource,

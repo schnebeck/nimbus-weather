@@ -129,7 +129,7 @@ class StationNetworksTest {
 
     /** A network every 10 minutes before the airport – even a nearer one; the airport where nothing else fits. */
     @Test fun theNationalNetworkBeforeTheAirport() {
-        val pick = { list: List<StationObservation> -> WeatherRepository.pickObservation(list, 60.0, 20.0, now) }
+        val pick = { list: List<StationObservation> -> dev.nimbus.weather.data.repo.NowWeather.pickObservation(list, 60.0, 20.0, now) }
         assertEquals(StationNetwork.GEOSPHERE, pick(listOf(obs(StationNetwork.METAR, 3.0), obs(StationNetwork.GEOSPHERE, 12.0)))!!.network)
         // the national one too old: the airport
         assertEquals(StationNetwork.METAR, pick(listOf(obs(StationNetwork.METAR, 3.0), obs(StationNetwork.GEOSPHERE, 12.0, ageMs = 3 * 3_600_000L)))!!.network)

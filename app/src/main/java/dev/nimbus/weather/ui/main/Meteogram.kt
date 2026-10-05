@@ -144,6 +144,13 @@ data class HourCompare(
     val sunM: Double?, val sunF: Double?,
 )
 
+/**
+ * The hour running at [now] (its values cover the hour before its time stamp) with the weather now
+ * [condition] – the header's: now the measurement decides, the hours to come the forecast.
+ */
+fun MeteoPoint.asNow(now: Long, condition: Condition?): MeteoPoint =
+    if (condition != null && time > now && time - now <= 3_600_000L) copy(condition = condition) else this
+
 fun HourlyPoint.toMeteo() = MeteoPoint(
     time, temperature, condition, isDay, precipitation, precipitationProbability,
     windSpeed, windDirection, windGust, humidity, apparentTemperature, sunshine = sunshine,

@@ -71,6 +71,20 @@
     <string name="community_sensors_detail">Median of %1$d citizen sensors within %2$s km (Sensor.Community)</string>
     <string name="community_spread">Spread ±%1$s</string>
     <string name="data_sources">Data Sources</string>
+    <string name="now_sources_title">Here now:</string>
+    <string name="now_source_measured">%1$s: measured, %2$s\u00A0(%3$s km)</string>
+    <string name="now_source_model">%1$s: forecast model</string>
+    <string name="now_sky_observed">Sky: observed by the station, %1$s\u00A0(%2$s km)</string>
+    <string name="now_sky_measured_sunshine">Sky: from the measured sunshine, %1$s\u00A0(%2$s km)</string>
+    <string name="now_sky_model_sunshine">Sky: forecast model, from its sunshine in the current hour</string>
+    <string name="now_sky_model">Sky: forecast model</string>
+    <string name="now_value_temperature">Temperature</string>
+    <string name="now_value_humidity">Humidity</string>
+    <string name="now_value_dew_point">Dew point</string>
+    <string name="now_value_pressure">Pressure</string>
+    <string name="now_value_wind">Wind</string>
+    <string name="now_value_gusts">Gusts</string>
+    <string name="now_value_visibility">Visibility</string>
     <string name="measured_at_station">Measured at %1$s station %2$s\u00A0(%3$s km)</string>
     <string name="alerts">Weather Warnings</string>
     <string name="alert_valid">%1$s – %2$s</string>
@@ -286,7 +300,7 @@
     <string name="precip_next_wet">Next precipitation %1$s from about %2$s (%3$d%%)</string>
     <string name="precip_dry_ahead">No precipitation in the forecast</string>
     <string name="term_hourly_title">Hourly Forecast</string>
-    <string name="term_hourly_body">The next 24 hours at a glance. The symbol shows the most likely weather for the hour, the number below it the temperature.\n\n• Now: the current weather – where available measured at the nearest DWD station, therefore it can differ slightly from the forecast for this hour\n• Percentages: chance of precipitation – blue from 10 %, below that dimmed – details in the “Precipitation” card further down\n• Sun symbols with a time: sunrise and sunset\n\nSwipe sideways for more hours.\n\nThe text above the hours is a short forecast for the next 12 hours, generated automatically from the hourly forecast of the selected weather model (default: DWD ICON). It is not written by a meteorologist.\n\nIt names the next change in weather, how the temperature develops, whether and when precipitation is likely (from 60 %) or possible (from 30 %), strong gusts from 50 km/h and – in the afternoon and evening – a short outlook for tomorrow.\n\nIf it is raining now, the end of the precipitation comes from the 15-minute forecast.</string>
+    <string name="term_hourly_body">The next 24 hours at a glance. The symbol shows the most likely weather for the hour, the number below it the temperature.\n\n• Now: the current weather – where available measured at the nearest DWD station, therefore it can differ slightly from the forecast for this hour\n• Percentages: chance of precipitation – blue from 10 %, below that dimmed – details in the “Precipitation” card further down\n• Sun symbols with a time: sunrise and sunset\n\nSwipe sideways for more hours.\n\nThe text above the hours is a short forecast for the next 12 hours, generated automatically from the hourly forecast of the selected weather model (preset: Automatic). It is not written by a meteorologist.\n\nIt names the next change in weather, how the temperature develops, whether and when precipitation is likely (from 60 %) or possible (from 30 %), strong gusts from 50 km/h and – in the afternoon and evening – a short outlook for tomorrow.\n\nIf it is raining now, the end of the precipitation comes from the 15-minute forecast.</string>
     <string name="term_daily_title">10-Day Forecast</string>
     <string name="term_daily_body">One row per day: symbol, lowest and highest temperature.\n\n• The bar shows the day\'s temperature range on a scale common to all ten days – so warmer and colder days are easy to compare\n• Its colours go from blue (cold) via green and yellow to red (hot)\n• The dot on today\'s bar is the current temperature\n• Blue percentages: chance of precipitation on that day\n\nTap a day to see its temperature curve and hourly precipitation. Days 9 and 10 have larger uncertainty.</string>
 
@@ -405,7 +419,7 @@
     <string name="term_community_title">Community Sensors</string>
     <string name="term_community_body">Sensor.Community is an open network of thousands of self-built sensors run by citizens – similar to OpenStreetMap, but for measurements. The data is freely available.\n\nPrivate sensors are not calibrated and are often mounted on balconies or house walls, sometimes in the sun. The app therefore shows the median of all outdoor sensors nearby and removes outliers. The spread shows how much the sensors disagree.\n\nUse these values as an additional local impression; the official DWD station is more reliable.</string>
     <string name="term_station_title">Measured or Forecast?</string>
-    <string name="term_station_body">Near a weather station the current values (temperature, humidity, wind, pressure, visibility) are real measurements of the nearest station within 30 km: the DWD\'s in Germany (via Bright Sky), GeoSphere Austria, MeteoSwiss and DMI (Denmark) every 10 minutes – where none of them measures, an airport (METAR, every half hour, temperature in whole degrees). Only a station at the height of the place counts (at most 300 m apart), and only if its temperature is near the model\'s. Otherwise the values come from the forecast model for the exact location.\n\nMeasurements are more accurate for the station itself, but local conditions can differ – for example between a city centre and an airport. You can switch this off in the settings.</string>
+    <string name="term_station_body">Near a weather station the current values (temperature, humidity, wind, pressure, visibility) are real measurements of the nearest station within 30 km: the DWD\'s in Germany (via Bright Sky), GeoSphere Austria, MeteoSwiss and DMI (Denmark) every 10 minutes – where none of them measures, an airport (METAR, every half hour, temperature in whole degrees). Only a station at the height of the place counts (at most 300 m apart), and only if its temperature is near the model\'s. Otherwise the values come from the forecast model for the exact location.\n\nThe sky (sunny, cloudy …) follows the sunshine the station measured in the last half hour – as the forecast hours follow the model\'s sunshine: thin high veil clouds count as cloud cover, yet the sun shines through. Rain, snow or fog the station observes go before the forecast.\n\nMeasurements are more accurate for the station itself, but local conditions can differ – for example between a city centre and an airport. You can switch this off in the settings.</string>
     <string name="term_alerts_title">DWD Weather Warnings</string>
     <string name="term_alerts_body">Official warnings of the Deutscher Wetterdienst for your municipality, colour-coded by severity:\n\n• Yellow – weather warning: possible hazard, e.g. frost, strong gusts\n• Orange – warning of significant weather: dangerous weather, e.g. storm gusts, heavy rain\n• Red – severe weather warning: very dangerous, e.g. hurricane-force gusts, heavy thunderstorms\n• Purple – extreme severe weather warning: extremely dangerous, take protective measures\n\nWarnings are only available for Germany.</string>
     <string name="sun">Sun</string>
@@ -515,8 +529,12 @@
     <string name="places_edit_hint">Hold and drag ≡ to sort, ⊖ to delete, tap the model to change it, ⧉ to add the place once more for another model</string>
     <string name="places_long_press_hint">Long press a place to sort, delete or choose its forecast model</string>
     <string name="places_model">Model: %1$s</string>
-    <string name="places_model_default">Default (%1$s)</string>
-    <string name="places_model_default_desc">The model of the settings – it follows when they change</string>
+    <string name="places_model_app">As in the app settings</string>
+    <string name="places_model_app_desc">currently: %1$s – changes with them</string>
+    <string name="places_model_own">A model of its own for this place</string>
+    <string name="places_model_own_desc">only for %1$s</string>
+    <string name="places_model_follows_app">%1$s (app setting)</string>
+    <string name="model_auto_short">Automatic</string>
     <string name="places_model_title">Forecast model for %1$s</string>
     <string name="places_duplicate">Once more, for another model</string>
     <string name="places_drag">Move</string>

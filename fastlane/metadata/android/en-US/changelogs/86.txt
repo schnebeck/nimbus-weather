@@ -1,0 +1,4 @@
+• Sky "now" from the measured sunshine: under thin veil clouds no longer "Cloudy" while the hour says "Sunny"
+• Running hour in the day chart as the header
+• "Measured at …" names for each value whether measured (where) or from the model
+• A place's model: first app setting or its own, then which

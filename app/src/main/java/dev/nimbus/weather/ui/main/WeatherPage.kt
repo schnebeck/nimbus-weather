@@ -484,11 +484,12 @@ private fun Header(
                 }
                 Text(condition, fontSize = if (compact) 18.sp else 21.sp, fontWeight = FontWeight.Medium, color = Color.White, style = androidx.compose.ui.text.TextStyle(shadow = TextShadow))
                 if (c.stationName != null && c.stationDistanceKm != null) {
-                    val explain = dev.nimbus.weather.ui.components.LocalExplain.current
+                    val explain = dev.nimbus.weather.ui.components.LocalExplainCase.current
+                    val sources = nowSourcesText(c)
                     // small text: on a pill of its own glass, dark enough for the sky behind
                     Row(
                         Modifier.padding(top = 4.dp).clip(RoundedCornerShape(10.dp)).background(header.pill)
-                            .clickable { explain(dev.nimbus.weather.ui.components.Term.STATION) }
+                            .clickable { explain(dev.nimbus.weather.ui.components.Term.STATION, sources) }
                             .padding(horizontal = 8.dp, vertical = 3.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {

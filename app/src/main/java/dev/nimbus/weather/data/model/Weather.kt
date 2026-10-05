@@ -72,6 +72,10 @@ data class CurrentWeather(
     val stationNetwork: StationNetwork? = null,
     /** True if [visibility] was measured at the DWD station (else it is a model value). */
     val visibilityMeasured: Boolean = false,
+    /** The values measured at a station, each with its station; the others are the model's. */
+    val measured: List<MeasuredValue> = emptyList(),
+    /** Where [condition] comes from. */
+    val sky: SkyBasis = SkyBasis.MODEL,
 )
 
 @Serializable

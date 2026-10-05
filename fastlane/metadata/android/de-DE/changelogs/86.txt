@@ -1,0 +1,4 @@
+• Himmel „jetzt“ nach dem gemessenen Sonnenschein: unter dünnen Schleierwolken nicht mehr „Bewölkt“, während die Stunde „Sonnig“ sagt
+• Laufende Stunde im Tagesdiagramm wie die Kopfzeile
+• „Gemessen an …“ nennt pro Wert, ob gemessen (wo) oder vom Modell
+• Modell eines Orts: erst App-Einstellung oder eigenes Modell, dann welches

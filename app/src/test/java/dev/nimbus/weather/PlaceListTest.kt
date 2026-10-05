@@ -35,6 +35,9 @@ import dev.nimbus.weather.data.model.Settings
 import dev.nimbus.weather.ui.main.LocationMark
 import dev.nimbus.weather.ui.places.PlaceCard
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.onAllNodesWithText
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -113,19 +116,44 @@ class PlaceListTest {
         var chosen: Pair<String, ForecastModel?>? = null
         places(listOf(berlin), onSetModel = { p, m -> chosen = p.id to m })
         compose.onNodeWithText("Berlin").performTouchInput { longClick() }
-        compose.onNodeWithText("Modell: Standard (Open-Meteo)").performClick()
+        compose.onNodeWithText("Modell: Automatisch (App-Einstellung)").performClick()
+        compose.onNodeWithText("Eigenes Modell für diesen Ort").performClick()
         compose.onNodeWithText("MET Nordic (1 km)").performScrollTo().performClick()
         assertEquals("berlin" to ForecastModel.MET_NORWAY, chosen)
     }
 
-    /** A place with its own model says which; back to the settings' one by "Standard". */
+    /** A place with its own model says which; back to the settings' one by "Wie in den App-Einstellungen". */
     @Test fun aPlaceSaysItsOwnModel() {
         var chosen: Pair<String, ForecastModel?>? = "none" to null
         places(listOf(berlin.copy(model = ForecastModel.MET_NORWAY)), onSetModel = { p, m -> chosen = p.id to m })
         compose.onNodeWithText("Berlin").performTouchInput { longClick() }
         compose.onNodeWithText("Modell: MET Nordic").performClick()
-        compose.onNodeWithText("Standard (Open-Meteo)").performClick()
+        compose.onNodeWithText("Wie in den App-Einstellungen").performClick()
         assertEquals("berlin" to null, chosen)
+    }
+
+    /**
+     * "zuerst zwischen Globale App einstellung oder die Lokalen Einstellungen wählen … aktuell ist
+     * Standard auf gleicher ebene wie die anderen": first the app's setting or a model of its own,
+     * the models only beneath the latter – switching to it alone changes nothing.
+     */
+    @Test fun firstAppSettingOrItsOwnThenTheModel() {
+        var chosen: Pair<String, ForecastModel?>? = null
+        places(listOf(berlin), onSetModel = { p, m -> chosen = p.id to m })
+        compose.onNodeWithText("Berlin").performTouchInput { longClick() }
+        compose.onNodeWithText("Modell: Automatisch (App-Einstellung)").performClick()
+        compose.onNodeWithText("Wie in den App-Einstellungen").assertExists()
+        compose.onNodeWithText("zurzeit: Automatisch – ändert sich mit ihnen").assertExists()
+        // no "Standard" among the models, and the models not yet shown
+        compose.onAllNodesWithText("Standard", substring = true).assertCountEquals(0)
+        compose.onAllNodesWithText("MET Nordic (1 km)").assertCountEquals(0)
+        compose.onNodeWithText("Eigenes Modell für diesen Ort").performClick()
+        compose.onNodeWithText("MET Nordic (1 km)").performScrollTo().assertExists()
+        assertEquals(null, chosen)
+        // the models beneath the choice of its own (indented)
+        val own = compose.onNodeWithText("Eigenes Modell für diesen Ort").fetchSemanticsNode().boundsInRoot
+        val model = compose.onNodeWithText("MET Nordic (1 km)").fetchSemanticsNode().boundsInRoot
+        assertTrue("$model not beneath $own", model.left > own.left && model.top > own.top)
     }
 }
 

@@ -81,11 +81,21 @@ enum class Term(@StringRes val title: Int, @StringRes val body: Int) {
 /** Opens the explanation sheet for a term; provided by [ExplainHost]. */
 val LocalExplain = staticCompositionLocalOf<(Term) -> Unit> { {} }
 
+/**
+ * Opens the explanation sheet for a term with lines about the case at hand above it (one per
+ * line, "• " for a bullet) – e.g. where each value now comes from.
+ */
+val LocalExplainCase = staticCompositionLocalOf<(Term, String) -> Unit> { { _, _ -> } }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExplainHost(content: @Composable () -> Unit) {
     var term by rememberSaveable { mutableStateOf<Term?>(null) }
-    CompositionLocalProvider(LocalExplain provides { term = it }) {
+    var case by rememberSaveable { mutableStateOf("") }
+    CompositionLocalProvider(
+        LocalExplain provides { term = it; case = "" },
+        LocalExplainCase provides { t, lines -> term = t; case = lines },
+    ) {
         content()
     }
     val t = term ?: return
@@ -108,6 +118,10 @@ fun ExplainHost(content: @Composable () -> Unit) {
                 style = TextStyle(hyphens = Hyphens.Auto, lineBreak = LineBreak.Heading),
             )
             Spacer(Modifier.height(12.dp))
+            if (case.isNotBlank()) {
+                ExplainBody(case)
+                Spacer(Modifier.height(16.dp))
+            }
             ExplainBody(stringResource(t.body))
         }
     }

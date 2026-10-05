@@ -189,11 +189,12 @@ class WeatherRepository(
                 h.windSpeed, h.windGust, h.windDirection, h.cloudCover, h.visibility, h.uvIndex, h.precipitation)
         } ?: throw IllegalStateException("No current weather")
         // only the measured values that stand for the place (its height, near the model)
-        val measured = pickObservation(obs, forecast.elevation, current.temperature, clock())
+        val measured = NowWeather.pickObservation(obs, forecast.elevation, current.temperature, clock())
         if (measured != null) {
-            current = mergeObservation(current, measured)
+            current = NowWeather.mergeObservation(current, measured)
             sources += Source(SourceKind.STATION, measured.stationName, network = measured.network)
         }
+        current = NowWeather.withModelSunshine(current, forecast.hourly, clock())
         val alerts = alertsJob.await()
         if (inDwdArea) sources += Source(SourceKind.DWD_WARNINGS)
         // The core: the page can show
@@ -332,44 +333,5 @@ class WeatherRepository(
 
         /** Rough bounding box of the DWD station network / warning area. */
         fun isInDwdArea(lat: Double, lon: Double) = lat in 47.2..55.1 && lon in 5.8..15.1
-
-        /**
-         * The measurement standing for the place among the networks' nearest stations ([obs]): not
-         * older than two hours, at the place's height and near the model ([StationObservation.forPlace]);
-         * a network measuring every 10 minutes before the airports (METAR: every half hour, whole
-         * degrees) – among them the nearest.
-         */
-        fun pickObservation(obs: List<StationObservation>, elevationM: Double?, modelTemperature: Double, now: Long): StationObservation? =
-            obs.filter { now - it.time < 2 * 3600_000L }
-                .mapNotNull { it.forPlace(elevationM, modelTemperature) }
-                .minWithOrNull(compareBy({ it.network == dev.nimbus.weather.data.model.StationNetwork.METAR }, { it.distanceKm }))
-
-        /** Measured values from a nearby station beat modelled ones ([obs] already [StationObservation.forPlace]). */
-        fun mergeObservation(model: CurrentWeather, obs: StationObservation): CurrentWeather {
-            val t = obs.temperature ?: model.temperature
-            val delta = t - model.temperature
-            val condition = when {
-                obs.condition != null && !(obs.condition == Condition.RAIN && model.condition == Condition.THUNDERSTORM) -> obs.condition
-                obs.observedDry && model.condition.isPrecipitation && (obs.precipitation60 ?: 0.0) == 0.0 ->
-                    WeatherCodes.derive(obs.cloudCover ?: model.cloudCover, 0.0, t)
-                else -> model.condition
-            }
-            return model.copy(
-                temperature = t,
-                apparentTemperature = model.apparentTemperature?.plus(delta),
-                condition = condition,
-                humidity = obs.humidity ?: model.humidity,
-                dewPoint = obs.dewPoint ?: model.dewPoint,
-                pressure = obs.pressure ?: model.pressure,
-                windSpeed = obs.windSpeed ?: model.windSpeed,
-                windGust = obs.windGust ?: model.windGust,
-                windDirection = obs.windDirection ?: model.windDirection,
-                visibility = obs.visibility ?: model.visibility,
-                visibilityMeasured = obs.visibility != null,
-                stationName = obs.stationName,
-                stationDistanceKm = obs.distanceKm,
-                stationNetwork = obs.network,
-            )
-        }
     }
 }

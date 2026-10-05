@@ -109,10 +109,11 @@ object RadarPicture {
     }
 
     /**
-     * The still's RainViewer zoom: 5 (pixels of 1.5 km here, about its radars' own) – one to four
-     * tiles for the preview instead of up to nine at 7.
+     * The still's RainViewer zoom: 6 – one to four tiles for the preview instead of up to nine at 7.
+     * At 5 a RainViewer pixel spans five of the preview's, more than the smoothing reaches: its
+     * rain showed as blocks.
      */
-    const val STILL_RV_ZOOM = 5
+    const val STILL_RV_ZOOM = 6
 
     /**
      * The still picture of step [f] for the area [g] (the preview): of each composite it shows only

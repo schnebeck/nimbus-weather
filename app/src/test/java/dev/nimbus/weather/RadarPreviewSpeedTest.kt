@@ -81,10 +81,13 @@ class RadarPreviewSpeedTest {
         assertEquals(listOf<RadarComposite>(KnmiRadar), RadarPicture.shown(mapOf(KnmiRadar to all), n))
     }
 
-    /** "RainViewer in der Vorschau höchstens Zoom 5 … das ergibt nur 1–4 Kacheln". */
+    /**
+     * "RainViewer in der Vorschau höchstens Zoom 5 … das ergibt nur 1–4 Kacheln": four at most – at
+     * 6, since at 5 its rain showed as blocks (1.33.2).
+     */
     @Test fun rainViewerCoarserForThePreview() {
         assertEquals(7, RadarPicture.rvZoom(hannover))
-        assertEquals(5, RadarPicture.rvZoom(hannover, RadarPicture.STILL_RV_ZOOM))
+        assertEquals(6, RadarPicture.rvZoom(hannover, RadarPicture.STILL_RV_ZOOM))
         for ((lat, lon) in listOf(52.3759 to 9.732, 48.857 to 2.352, 47.421 to 10.985, 59.33 to 18.07)) {
             val g = RadarPreview.geo(lat, lon, 380, 220)
             val size = 2 * 20037508.342789244 / (1 shl RadarPicture.STILL_RV_ZOOM)

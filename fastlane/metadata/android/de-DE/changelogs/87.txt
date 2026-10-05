@@ -1,0 +1,2 @@
+• Modell eines Orts: die Modellliste klappt ruhig von oben auf
+• Eine Ortskopie, für die kein Modell gewählt wird, wird wieder verworfen – kein doppelter Ort ohne Unterschied mehr

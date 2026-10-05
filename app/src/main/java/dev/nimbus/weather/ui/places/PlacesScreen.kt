@@ -276,7 +276,8 @@ private fun EditList(
     var choosing by remember { mutableStateOf<Place?>(null) }
     /** The place was just copied: it is there for a model of its own. */
     var copied by remember { mutableStateOf(false) }
-    choosing?.let { p -> ModelSheet(p, state.settings.model, copied, { m -> onSetModel(p, m); choosing = null }) { choosing = null } }
+    // a copy closed without a choice is the same place twice, told apart by nothing: discarded
+    choosing?.let { p -> ModelSheet(p, state.settings.model, copied, { m -> onSetModel(p, m); choosing = null }) { if (copied) onRemove(p); choosing = null } }
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = navBottom + 16.dp)) {
         dev.nimbus.weather.ui.components.ReorderableColumn(
             places, key = { it.id }, gap = EditRowGap,

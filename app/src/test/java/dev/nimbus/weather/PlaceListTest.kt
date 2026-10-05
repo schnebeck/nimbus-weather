@@ -87,10 +87,11 @@ class PlaceListTest {
     private fun places(
         saved: List<Place>, onSetModel: (Place, ForecastModel?) -> Unit = { _, _ -> },
         onDuplicate: (Place) -> Place = { dev.nimbus.weather.ui.places.PlaceTwins.copyOf(it, saved) },
+        onRemove: (Place) -> Unit = {},
     ) = compose.setContent {
         PlacesScreen(
             UiState(initialized = true, savedPlaces = saved, selectedPlaceId = saved.first().id), search = { emptyList() },
-            onAdd = {}, onRemove = {}, onReorder = {}, onSetModel = onSetModel, onDuplicate = onDuplicate,
+            onAdd = {}, onRemove = onRemove, onReorder = {}, onSetModel = onSetModel, onDuplicate = onDuplicate,
             onOpen = {}, onSettings = {}, onRequestLocation = {}, onBack = {},
         )
     }
@@ -154,6 +155,56 @@ class PlaceListTest {
         val own = compose.onNodeWithText("Eigenes Modell für diesen Ort").fetchSemanticsNode().boundsInRoot
         val model = compose.onNodeWithText("MET Nordic (1 km)").fetchSemanticsNode().boundsInRoot
         assertTrue("$model not beneath $own", model.left > own.left && model.top > own.top)
+    }
+
+    /**
+     * "Kopie ohne Wahl … Besser wäre: Ohne Wahl wird die Kopie wieder verworfen": the copy's sheet
+     * closed without a model – the copy goes; with one, it stays.
+     */
+    @Test fun aCopyClosedWithoutAModelIsDiscarded() {
+        val removed = mutableListOf<String>()
+        var chosen: Pair<String, ForecastModel?>? = null
+        places(listOf(berlin), onSetModel = { p, m -> chosen = p.id to m }, onRemove = { removed += it.id })
+        compose.onNodeWithText("Berlin").performTouchInput { longClick() }
+        compose.onNodeWithTag("duplicate-berlin").performClick()
+        compose.onNodeWithTag("model-sheet").assertExists()
+        androidx.test.espresso.Espresso.pressBack()
+        compose.waitForIdle()
+        assertEquals(listOf("berlin#2"), removed)
+        assertEquals(null, chosen)
+        // the place itself: its sheet closed without a choice changes nothing
+        compose.onNodeWithText("Modell: Automatisch (App-Einstellung)").performClick()
+        androidx.test.espresso.Espresso.pressBack()
+        compose.waitForIdle()
+        assertEquals(listOf("berlin#2"), removed)
+    }
+
+    /**
+     * "Ruhiger wäre es, wenn die Liste von der Trennlinie aus nach unten aufklappt": while it
+     * unfolds the models stand where they end up – beneath the choice, nothing sliding up from below.
+     */
+    @Test fun theModelsUnfoldDownwardsFromTheLine() {
+        places(listOf(berlin))
+        compose.onNodeWithText("Berlin").performTouchInput { longClick() }
+        compose.onNodeWithText("Modell: Automatisch (App-Einstellung)").performClick()
+        compose.waitForIdle()
+        // the first model's top below the choice "Eigenes Modell" – the sheet itself grows and moves
+        fun gap(): Float? {
+            val own = compose.onNodeWithText("Eigenes Modell für diesen Ort").fetchSemanticsNode().boundsInRoot
+            val model = compose.onAllNodes(androidx.compose.ui.test.hasText("Automatisch (beste Auswahl)"), useUnmergedTree = true)
+                .fetchSemanticsNodes().firstOrNull()?.boundsInRoot?.takeIf { it.height > 0f } ?: return null
+            return model.top - own.top
+        }
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithText("Eigenes Modell für diesen Ort").performClick()
+        // every 32 ms of the unfolding, from its first frame on
+        val gaps = (1..10).mapNotNull { compose.mainClock.advanceTimeBy(32); gap() }
+        compose.mainClock.autoAdvance = true
+        compose.waitForIdle()
+        val end = gap()!!
+        assertTrue("unfolding not seen: $gaps", gaps.size >= 5)
+        assertTrue("models above the choice while unfolding: $gaps", gaps.all { it > 0f })
+        assertTrue("models moving while unfolding: $gaps → $end", gaps.all { kotlin.math.abs(it - end) < 2f })
     }
 }
 

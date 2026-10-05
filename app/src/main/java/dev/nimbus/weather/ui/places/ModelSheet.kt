@@ -19,6 +19,10 @@
 package dev.nimbus.weather.ui.places
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -34,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -62,7 +67,7 @@ fun choiceName(m: ForecastModel): String =
 @Composable
 internal fun ModelSheet(
     place: Place, setting: ForecastModel,
-    /** A copy just made ("⧉"): it is there for a model of its own – the models open at once. */
+    /** A copy just made ("⧉"): it is there for a model of its own – the models open at once; closed without one, it goes. */
     copy: Boolean,
     onChoose: (ForecastModel?) -> Unit, onDismiss: () -> Unit,
 ) {
@@ -85,7 +90,12 @@ internal fun ModelSheet(
                 !own, stringResource(R.string.places_model_app), stringResource(R.string.places_model_app_desc, choiceName(setting)),
             ) { own = false; onChoose(null) }
             ModelChoice(own, stringResource(R.string.places_model_own), stringResource(R.string.places_model_own_desc, place.name)) { own = true }
-            AnimatedVisibility(own) {
+            // unfolding downwards from the line under the choice (the default slid it up from below)
+            AnimatedVisibility(
+                own,
+                enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
+                exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut(),
+            ) {
                 Column(Modifier.padding(start = 24.dp).testTag("own-models")) {
                     HorizontalDivider(Modifier.padding(vertical = 6.dp), color = Color.White.copy(alpha = 0.15f))
                     val inForce = place.model ?: setting

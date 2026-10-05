@@ -612,6 +612,8 @@ class MainViewModel(
     }
 
     fun removePlace(place: Place) {
+        // a load still running would bring its weather back (a copy discarded right after it was made)
+        jobs.remove(place.id)?.cancel()
         viewModelScope.launch {
             store.updatePlaces { list -> list.filterNot { it.id == place.id } }
             store.deleteCache(place.id)

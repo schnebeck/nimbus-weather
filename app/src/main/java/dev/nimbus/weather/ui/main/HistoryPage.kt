@@ -119,6 +119,8 @@ fun HistoryPage(
     onOpenRadarDay: (Long) -> Unit = {},
     /** For "my location": where its position stands – the dot behind the name, as on the weather page. */
     location: LocationMark? = null,
+    /** The model, for a place in the list more than once ([dev.nimbus.weather.ui.places.PlaceTwins.label]). */
+    modelLabel: String? = null,
 ) {
     val context = LocalContext.current
     val history = state?.history
@@ -203,7 +205,7 @@ fun HistoryPage(
                     Modifier.width(cutStart + paneWidth).fillMaxHeight().fullscreenByDoubleTap()
                         .padding(start = cutStart + 16.dp, end = 16.dp, top = statusTop + HeaderTop),
                     contentAlignment = Alignment.Center,
-                ) { HistoryHeader(place, title, day, summary, tf, emptyList(), shown, location) }
+                ) { HistoryHeader(place, title, day, summary, tf, emptyList(), shown, location, modelLabel) }
             }
             // Cards keep their title at the line below the top bar and slide away under it (GlassCard)
             val listTop = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
@@ -216,7 +218,7 @@ fun HistoryPage(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = statusTop + HeaderTop, bottom = navBottom + 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                if (!sideways) item(key = "header") { Box(Modifier.fullscreenByDoubleTap()) { HistoryHeader(place, title, day, summary, tf, parts, shown, location) } }
+                if (!sideways) item(key = "header") { Box(Modifier.fullscreenByDoubleTap()) { HistoryHeader(place, title, day, summary, tf, parts, shown, location, modelLabel) } }
                 else if (parts.isNotEmpty()) item(key = "parts") {
                     DayPartsTable(parts, shown, androidx.compose.ui.text.TextStyle(shadow = dev.nimbus.weather.ui.components.LocalHeaderStyle.current.shadow))
                 }
@@ -252,6 +254,7 @@ private fun HistoryHeader(
     place: Place, title: String, day: HistoryDay?, summary: DaySummary?, tf: TimeFormat,
     parts: List<dev.nimbus.weather.data.remote.DayPartWeather>, shown: Int,
     location: LocationMark? = null,
+    modelLabel: String? = null,
 ) {
     val s = LocalSettings.current
     // On the open sky: white with a dark halo, as the weather page's header
@@ -266,6 +269,7 @@ private fun HistoryHeader(
             // "my location": whether its position is current – as on the weather page
             if (location != null) LocationDot(location, 26.sp)
         }
+        dev.nimbus.weather.ui.places.TwinModelLine(modelLabel, halo)
         // a low window (a phone held sideways): a smaller title, the cards get the height
         val compact = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp < 500
         Text(

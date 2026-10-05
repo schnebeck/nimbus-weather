@@ -162,11 +162,12 @@ object RadarField {
     fun smoothRadius(pxKm: Double): Int = if (pxKm <= 0.0) 0 else (1.0 / pxKm / 2 + 0.3).toInt().coerceIn(0, 32)
 
     /**
-     * The frame for [geo] from the DWD grid (null: none) and RainViewer (outside the DWD area,
-     * [inDwd] marks the field pixels inside it). Cells smaller than a pixel are averaged, cells
-     * larger than a pixel are smoothed (two dimensions, on the reflectivity – no blocks).
+     * The frame for [geo] from the DWD grid (null: none) – outside the DWD area ([inDwd] marks the
+     * field pixels inside it) from the KNMI grid where its radars reach, else from RainViewer.
+     * Cells smaller than a pixel are averaged, cells larger than a pixel are smoothed (two
+     * dimensions, on the reflectivity – no blocks).
      */
-    fun extract(geo: FieldGeo, dwd: ByteArray?, rv: RvMosaic?, inDwd: BooleanArray?): ViewFrame {
+    fun extract(geo: FieldGeo, dwd: ByteArray?, rv: RvMosaic?, inDwd: BooleanArray?, knmi: ByteArray? = null): ViewFrame {
         val w = geo.w; val h = geo.h; val n = w * h
         val dbz = FloatArray(n); val wet = FloatArray(n)
         var snow: FloatArray? = null
@@ -189,7 +190,8 @@ object RadarField {
                     val code = if (dwdHere) {
                         val r = dRow[sy][y]; val c = dCol[sx][x]
                         if (r in 0 until DwdGrid.H && c in 0 until DwdGrid.W) dwd!![r * DwdGrid.W + c].toInt() and 0xFF else 0
-                    } else rv?.at(colMx[sx][x], rowMy[sy][y])?.coerceAtLeast(0) ?: 0
+                    } else KnmiRadar.at(knmi, rowLat[sy][y], colLon[sx][x]).takeIf { it != KnmiRadar.NO_DATA }
+                        ?: rv?.at(colMx[sx][x], rowMy[sy][y])?.coerceAtLeast(0) ?: 0
                     val d = code and 0x7F
                     if (d >= 8) { sum += d; cnt++; if (!dwdHere && code and RvMosaic.SNOW != 0) sn++ }
                 }

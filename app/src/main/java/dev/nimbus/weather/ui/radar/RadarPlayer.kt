@@ -185,6 +185,8 @@ class RadarPlayer(
                             val k = RadarStore.dwdKey(f)
                             if (f.dwdTime == null || k in stored) continue
                             if (geo?.let { overlapsDwd(it) } == false) continue
+                            // the Dutch composite beside it, where the picture reaches it (its failing keeps nothing back)
+                            if (geo?.let { overlapsKnmi(it) } == true) RadarStore.knmi(http, f)
                             if (RadarStore.dwd(http, f) != null) {
                                 stored += k
                                 wake.trySend(Unit)
@@ -244,7 +246,8 @@ class RadarPlayer(
                     val rv = f.rainViewerPath?.takeIf { needsRainViewer(g) }?.let { mosaic(tl, it, g) }
                     if (!needDwd && rv == null) continue
                     val t0 = System.nanoTime()
-                    val vf = RadarField.extract(g, dwd, rv, inDwd)
+                    val knmi = if (overlapsKnmi(g)) withContext(Dispatchers.IO) { RadarStore.peek(RadarStore.knmiKey(f)) } else null
+                    val vf = RadarField.extract(g, dwd, rv, inDwd, knmi)
                     if (dev.nimbus.weather.BuildConfig.DEBUG) android.util.Log.d("NimbusPlayer", "frame $i ${g.w}x${g.h} extract ${(System.nanoTime() - t0) / 1_000_000} ms")
                     if (gen != generation) return@launch
                     frames[k] = vf
@@ -270,6 +273,8 @@ class RadarPlayer(
         }
         return RvMosaic(z, tiles)
     }
+
+    private fun overlapsKnmi(g: FieldGeo) = KnmiRadar.overlaps(g.west, g.east, g.south, g.north)
 
     private fun overlapsDwd(g: FieldGeo) = g.east > DwdGrid.LON0 && g.west < DwdGrid.LON1 && g.north > DwdGrid.LAT0 && g.south < DwdGrid.LAT1
 

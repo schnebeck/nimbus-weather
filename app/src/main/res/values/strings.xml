@@ -71,7 +71,7 @@
     <string name="community_sensors_detail">Median of %1$d citizen sensors within %2$s km (Sensor.Community)</string>
     <string name="community_spread">Spread ±%1$s</string>
     <string name="data_sources">Data Sources</string>
-    <string name="measured_at_station">Measured at DWD station %1$s\u00A0(%2$s km)</string>
+    <string name="measured_at_station">Measured at %1$s station %2$s\u00A0(%3$s km)</string>
     <string name="alerts">Weather Warnings</string>
     <string name="alert_valid">%1$s – %2$s</string>
     <string name="alert_until">Until %1$s</string>
@@ -141,7 +141,7 @@
     <string name="radar_forecast_germany_only">Radar forecast (nowcast) only available for Germany</string>
     <string name="radar_minutes_ago">%1$d min ago</string>
     <string name="radar_minutes_ahead">in %1$d min</string>
-    <string name="radar_attribution">Radar: DWD · RainViewer | Map: © OpenFreeMap © OpenMapTiles © OpenStreetMap</string>
+    <string name="radar_attribution">Radar: DWD · KNMI · RainViewer | Map: © OpenFreeMap © OpenMapTiles © OpenStreetMap</string>
     <string name="radar_loading">Loading radar…</string>
     <string name="radar_error">Radar data currently unavailable</string>
     <string name="my_position">My position</string>
@@ -200,8 +200,8 @@
     <string name="settings_temperature">Temperature</string>
     <string name="settings_wind">Wind speed</string>
     <string name="settings_precipitation">Precipitation</string>
-    <string name="settings_stations">Use DWD station measurements</string>
-    <string name="settings_stations_desc">Replace modelled current values with measurements from the nearest DWD station</string>
+    <string name="settings_stations">Current values: measured, not modelled</string>
+    <string name="settings_stations_desc">Measurements of the nearest station at the place\'s height replace the model values: DWD, GeoSphere, MeteoSwiss, DMI, else airports (METAR)</string>
     <string name="settings_animations">Animated backgrounds</string>
     <string name="settings_animations_desc">Show rain, snow, clouds and thunderstorms in the background</string>
     <string name="settings_language">Language</string>
@@ -258,7 +258,7 @@
     <string name="src_gap_fill_from">Missing values and from %1$s on: Open-Meteo best match</string>
     <string name="src_part">%1$s, %2$s km</string>
     <string name="src_part_now">now %1$s</string>
-    <string name="src_station">Measurements: DWD station %1$s (Bright Sky)</string>
+    <string name="src_station">Measurements: %1$s station %2$s (%3$s)</string>
     <string name="src_warnings">Warnings: DWD (Bright Sky)</string>
     <string name="src_cams">Air quality &amp; pollen: CAMS Europe</string>
     <string name="src_community">Sensor.Community</string>
@@ -292,7 +292,7 @@
 
     <string name="models_unavailable">Model data currently unavailable – please try again later.</string>
 
-    <string name="visibility_measured">Measured: DWD %1$s</string>
+    <string name="visibility_measured">Measured: %1$s %2$s</string>
     <string name="visibility_model">Model value</string>
 
     <string name="pollen_forecast">Pollen Forecast</string>
@@ -399,13 +399,13 @@
     <string name="term_pollen_title">Pollen</string>
     <string name="term_pollen_body">The pollen forecast shows how strongly allergy-relevant pollen types are in the air.\n\nLevels (scale of the German Weather Service): none, low, moderate and high, with intermediate steps. Each bar has three segments – half-filled segments are the intermediate steps.\n\n• Germany: official DWD pollen forecast for 8 types (hazel, alder, ash, birch, grasses, rye, mugwort, ragweed) and 27 regions, issued daily around 11:00 for today, tomorrow and the day after\n• Rest of Europe: levels derived from the Copernicus CAMS model (6 types)\n\nComposition and course come from CAMS in grains per cubic metre of air. They show which pollen dominates – useful if you react to only some types. Sensitive people can react even at low levels.\n\nWhen pollen is in the air and it is dry, the animated background shows it as fine floating particles.</string>
     <string name="term_radar_title">Precipitation Radar</string>
-    <string name="term_radar_body">Weather radar sends out microwave pulses and measures how strongly raindrops, snowflakes and hail reflect them (reflectivity in dBZ). Stronger echoes mean heavier precipitation.\n\nGermany: DWD radar composite in 5-minute steps plus a nowcast that extrapolates the movement of the precipitation for the next two hours. Rest of Europe: RainViewer (past two hours only).\n\nBoth sources are shown in one colour scale. Radar sees precipitation in the air: light drizzle or snow close to the ground may be missing, and near mountains or radar sites artefacts can occur.</string>
+    <string name="term_radar_body">Weather radar sends out microwave pulses and measures how strongly raindrops, snowflakes and hail reflect them (reflectivity in dBZ). Stronger echoes mean heavier precipitation.\n\nGermany: DWD radar composite in 5-minute steps plus a nowcast that extrapolates the movement of the precipitation for the next two hours. The Netherlands, the North Sea and north-western Germany beyond the DWD radars: KNMI radar composite in 5-minute steps (past). Rest of Europe: RainViewer (past two hours only).\n\nAll sources are shown in one colour scale. Radar sees precipitation in the air: light drizzle or snow close to the ground may be missing, and near mountains or radar sites artefacts can occur.</string>
     <string name="term_models_title">Weather Models</string>
     <string name="term_models_body">Weather models are computer simulations that calculate the future state of the atmosphere on a three-dimensional grid. Finer grids resolve local effects such as thunderstorms, valleys and coasts better.\n\n• ICON-D2 (DWD): 2.2 km, Germany &amp; neighbours, 2 days\n• ICON-EU (DWD): 7 km, Europe, 5 days\n• ECMWF IFS: 9–⁠25 km, global, one of the best global models\n• MET Nordic (MET Norway): 1 km, Scandinavia &amp; northern Germany, 2½ days\n• AROME/ARPEGE (Météo-France), UK Met Office, KNMI Harmonie, MET Norway, NOAA GFS\n\nIf the lines lie close together, the forecast is fairly certain. If they diverge, the weather situation is uncertain – typical for thunderstorms or several days ahead. Tap a model to highlight it.</string>
     <string name="term_community_title">Community Sensors</string>
     <string name="term_community_body">Sensor.Community is an open network of thousands of self-built sensors run by citizens – similar to OpenStreetMap, but for measurements. The data is freely available.\n\nPrivate sensors are not calibrated and are often mounted on balconies or house walls, sometimes in the sun. The app therefore shows the median of all outdoor sensors nearby and removes outliers. The spread shows how much the sensors disagree.\n\nUse these values as an additional local impression; the official DWD station is more reliable.</string>
     <string name="term_station_title">Measured or Forecast?</string>
-    <string name="term_station_body">Near a DWD weather station the current values (temperature, humidity, wind, pressure, visibility) are real measurements from the nearest station within 30 km, provided by Bright Sky from DWD open data. Otherwise they come from the forecast model for the exact location.\n\nMeasurements are more accurate for the station itself, but local conditions can differ – for example between a city centre and an airport. You can switch this off in the settings.</string>
+    <string name="term_station_body">Near a weather station the current values (temperature, humidity, wind, pressure, visibility) are real measurements of the nearest station within 30 km: the DWD\'s in Germany (via Bright Sky), GeoSphere Austria, MeteoSwiss and DMI (Denmark) every 10 minutes – where none of them measures, an airport (METAR, every half hour, temperature in whole degrees). Only a station at the height of the place counts (at most 300 m apart), and only if its temperature is near the model\'s. Otherwise the values come from the forecast model for the exact location.\n\nMeasurements are more accurate for the station itself, but local conditions can differ – for example between a city centre and an airport. You can switch this off in the settings.</string>
     <string name="term_alerts_title">DWD Weather Warnings</string>
     <string name="term_alerts_body">Official warnings of the Deutscher Wetterdienst for your municipality, colour-coded by severity:\n\n• Yellow – weather warning: possible hazard, e.g. frost, strong gusts\n• Orange – warning of significant weather: dangerous weather, e.g. storm gusts, heavy rain\n• Red – severe weather warning: very dangerous, e.g. hurricane-force gusts, heavy thunderstorms\n• Purple – extreme severe weather warning: extremely dangerous, take protective measures\n\nWarnings are only available for Germany.</string>
     <string name="sun">Sun</string>
@@ -442,7 +442,7 @@
     <string name="licenses_show_text">Show license text</string>
     <string name="licenses_libraries">Libraries (%1$d)</string>
     <string name="licenses_data">Data and maps</string>
-    <string name="licenses_data_text">Weather data: Deutscher Wetterdienst (DWD), CC BY 4.0, partly via Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, RainViewer · Satellite: Contains modified EUMETSAT Meteosat data, CC BY 4.0 · Citizen sensors: Sensor.Community, ODbL · Water levels: PEGELONLINE (WSV), DL-DE Zero 2.0; NLWKN Pegelonline, pegelonline.nlwkn.niedersachsen.de; LANUK NRW (Hochwasserportal NRW), DL-DE Zero 2.0; LfULG Sachsen (Pegelnetz); HLNUG; flood classification and alerts: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0 · Place names: Nominatim, © OpenStreetMap contributors, ODbL · Maps: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors, ODbL.</string>
+    <string name="licenses_data_text">Weather data: Deutscher Wetterdienst (DWD), CC BY 4.0, partly via Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, KNMI (CC BY 4.0), RainViewer · Measurements: GeoSphere Austria, MeteoSwiss, DMI (CC BY 4.0), NOAA aviationweather.gov (METAR, public domain) · Satellite: Contains modified EUMETSAT Meteosat data, CC BY 4.0 · Citizen sensors: Sensor.Community, ODbL · Water levels: PEGELONLINE (WSV), DL-DE Zero 2.0; NLWKN Pegelonline, pegelonline.nlwkn.niedersachsen.de; LANUK NRW (Hochwasserportal NRW), DL-DE Zero 2.0; LfULG Sachsen (Pegelnetz); HLNUG; flood classification and alerts: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0 · Place names: Nominatim, © OpenStreetMap contributors, ODbL · Maps: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors, ODbL.</string>
     <string name="radar_loading_frames">Loading radar images %1$d/%2$d</string>
     <string name="radar_partly_cached">Connection problems – some radar images are older copies from the memory.</string>
     <string name="radar_partly_missing">Some radar images could not be loaded.</string>
@@ -512,12 +512,13 @@
     <string name="settings_cards">Cards</string>
     <string name="settings_cards_desc">Hold ≡ and drag to sort, the switch hides a card. The small tiles are one block on the page – expand it to sort them among themselves.</string>
     <string name="places_edit_done">Done</string>
-    <string name="places_edit_hint">Hold and drag ≡ to sort, ⊖ to delete, tap the model to change it</string>
+    <string name="places_edit_hint">Hold and drag ≡ to sort, ⊖ to delete, tap the model to change it, ⧉ to add the place once more for another model</string>
     <string name="places_long_press_hint">Long press a place to sort, delete or choose its forecast model</string>
     <string name="places_model">Model: %1$s</string>
     <string name="places_model_default">Default (%1$s)</string>
     <string name="places_model_default_desc">The model of the settings – it follows when they change</string>
     <string name="places_model_title">Forecast model for %1$s</string>
+    <string name="places_duplicate">Once more, for another model</string>
     <string name="places_drag">Move</string>
     <string name="pn_rain_light">Light rain</string>
     <string name="pn_rain_moderate">Moderate rain</string>

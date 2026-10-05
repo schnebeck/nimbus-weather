@@ -390,7 +390,9 @@ fun SourcesFooter(data: WeatherData) {
                 // filling what the chosen model lacks – and from its last hour on, everything
                 SourceKind.GAP_FILL -> (src.since?.let { stringResource(R.string.src_gap_fill_from, tf.weekdayShort(it) + " " + tf.time(it)) }
                     ?: stringResource(R.string.src_gap_fill)) + (src.part?.let { " (" + part(it) + ")" } ?: "")
-                SourceKind.DWD_STATION -> stringResource(R.string.src_station, src.detail ?: "")
+                SourceKind.DWD_STATION, SourceKind.STATION -> (src.network ?: dev.nimbus.weather.data.model.StationNetwork.DWD).let { n ->
+                    stringResource(R.string.src_station, n.label, src.detail ?: "", n.provider)
+                }
                 SourceKind.DWD_WARNINGS -> stringResource(R.string.src_warnings)
                 SourceKind.CAMS -> stringResource(R.string.src_cams)
                 SourceKind.COMMUNITY -> stringResource(R.string.src_community)

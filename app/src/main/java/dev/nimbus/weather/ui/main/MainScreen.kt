@@ -115,6 +115,8 @@ fun MainScreen(
     val now = rememberNow()
     val shelf = LocalShelf.current
     val location = if (place.isCurrentLocation) locationMark(state, shelf) else null
+    // the same place more than once (each with its model): the model under the name
+    val modelLabel = dev.nimbus.weather.ui.places.PlaceTwins.label(place, state.pages, state.settings)
 
     // Load the history as soon as the user starts swiping back.
     LaunchedEffect(pagerState, place.id) {
@@ -154,6 +156,7 @@ fun MainScreen(
                     onRequestModels = { onRequestModels(place.id) },
                     onRequestHistory = { onRequestHistory(place.id) },
                     location = location,
+                    modelLabel = modelLabel,
                 )
             } else {
                 // page 0 = two days ago, page HISTORY_DAYS - 1 = today so far
@@ -166,6 +169,7 @@ fun MainScreen(
                     onRetry = { onRequestHistory(place.id) },
                     onOpenRadarDay = { day -> onOpenRadarDay(place.id, day) },
                     location = location,
+                    modelLabel = modelLabel,
                 )
             }
         }
@@ -219,6 +223,7 @@ private fun PlacesSidebar(state: UiState, selectedId: String, onSelect: (String)
                 dev.nimbus.weather.ui.places.PlaceCard(
                     p, state.states[p.id], state.settings,
                     location = if (p.isCurrentLocation) locationMark(state, LocalShelf.current) else null,
+                    modelLabel = dev.nimbus.weather.ui.places.PlaceTwins.label(p, state.pages, state.settings),
                 ) { onSelect(p.id) }
             }
         }

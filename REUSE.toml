@@ -140,3 +140,28 @@ SPDX-License-Identifier = "LicenseRef-LfULG-Sachsen"
 path = ["app/src/test/resources/fixtures/lhp_*"]
 SPDX-FileCopyrightText = "Länderübergreifendes Hochwasserportal (LHP), www.hochwasserzentralen.de"
 SPDX-License-Identifier = "CC-BY-4.0"
+
+[[annotations]]
+path = "app/src/test/resources/fixtures/geosphere_*.json"
+SPDX-FileCopyrightText = "GeoSphere Austria"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+[[annotations]]
+path = "app/src/test/resources/fixtures/meteoswiss_*.csv"
+SPDX-FileCopyrightText = "MeteoSwiss (Federal Office of Meteorology and Climatology)"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+[[annotations]]
+path = "app/src/test/resources/fixtures/dmi_*.json"
+SPDX-FileCopyrightText = "Danish Meteorological Institute (DMI)"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+[[annotations]]
+path = "app/src/test/resources/fixtures/metar_*.json"
+SPDX-FileCopyrightText = "NOAA National Weather Service, Aviation Weather Center"
+SPDX-License-Identifier = "LicenseRef-US-Government-Public-Domain"
+
+[[annotations]]
+path = "app/src/test/resources/fixtures/knmi_*.asc.gz"
+SPDX-FileCopyrightText = "Royal Netherlands Meteorological Institute (KNMI)"
+SPDX-License-Identifier = "CC-BY-4.0"

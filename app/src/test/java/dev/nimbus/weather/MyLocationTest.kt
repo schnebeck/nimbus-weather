@@ -324,4 +324,27 @@ class MyLocationTest {
         repeat(20) { shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(20)); Thread.sleep(20) }
         assertTrue("Berlin loaded anew: $askedModels", askedModels.none { it.first == 52.52 })
     }
+
+    /** A place once more: a second entry on the same spot, loaded with its own model – the first one untouched. */
+    @Test fun aPlaceOnceMoreWithItsOwnModel() {
+        val app = RuntimeEnvironment.getApplication()
+        val phone = Phone(app)
+        val vm = model(app, phone)
+        until("the start's search") { vm.state.value.locationStatus == LocationStatus.LOADING }
+        phone.answer.complete(at(52.37, 9.73, System.currentTimeMillis()))
+        val berlin = Place("b", "Berlin", latitude = 52.52, longitude = 13.40)
+        vm.addPlace(berlin)
+        until("Berlin loaded") { vm.state.value.states[berlin.id]?.data != null && vm.state.value.states[berlin.id]?.loading == false }
+        repeat(10) { shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(20)); Thread.sleep(20) }
+
+        askedModels.clear()
+        val copy = vm.duplicatePlace(vm.state.value.savedPlaces.single { it.id == berlin.id })
+        vm.setPlaceModel(copy.id, dev.nimbus.weather.data.model.ForecastModel.KNMI)
+        until("the copy asked with KNMI: $askedModels") { 52.52 to "knmi_harmonie_arome_netherlands" in askedModels }
+        until("the copy loaded") { vm.state.value.states[copy.id]?.data != null }
+        val saved = vm.state.value.savedPlaces
+        assertEquals(listOf(berlin.id, copy.id), saved.filter { it.latitude == 52.52 }.map { it.id })
+        assertEquals(null, saved.single { it.id == berlin.id }.model)
+        assertEquals(dev.nimbus.weather.data.model.ForecastModel.KNMI, saved.single { it.id == copy.id }.model)
+    }
 }

@@ -51,6 +51,8 @@ class WeatherRepository(
     private val bathing: dev.nimbus.weather.data.remote.BathingSource? = null,
     /** The extras get this long in all (from the start of the load); later ones keep their last values. */
     private val extrasDeadlineMs: Long = SOURCE_TIMEOUT_MS,
+    /** The station networks besides the DWD's (null: the DWD's alone). */
+    private val stations: dev.nimbus.weather.data.remote.StationNetworks? = null,
 ) {
 
     /**
@@ -103,8 +105,15 @@ class WeatherRepository(
         // which single model Open-Meteo's best match takes, hour by hour (for the sources: named
         // with its grid) – it fills the chosen model's gaps, or it is the chosen one
         val partsJob = async { runCatching { openMeteo.bestMatchModels(lat, lon) }.getOrDefault(emptyMap()) }
+        // measured instead of modelled: the DWD's nearest station (Bright Sky) in Germany, the other
+        // networks where they measure (Austria, Switzerland, Denmark), airports everywhere
         val obsJob = async {
-            if (settings.useStationObservations && inDwdArea) runCatching { brightSky.currentObservation(lat, lon) }.getOrNull() else null
+            if (!settings.useStationObservations) emptyList()
+            else coroutineScope {
+                val dwd = async { if (inDwdArea) runCatching { brightSky.currentObservation(lat, lon) }.getOrNull() else null }
+                val others = async { stations?.let { runCatching { it.nearby(lat, lon) }.getOrNull() }.orEmpty() }
+                listOfNotNull(dwd.await()) + others.await()
+            }
         }
         val alertsJob = async {
             if (inDwdArea) runCatching { brightSky.alerts(lat, lon, german) }.getOrDefault(emptyList()) else emptyList()
@@ -180,10 +189,10 @@ class WeatherRepository(
                 h.windSpeed, h.windGust, h.windDirection, h.cloudCover, h.visibility, h.uvIndex, h.precipitation)
         } ?: throw IllegalStateException("No current weather")
         // only the measured values that stand for the place (its height, near the model)
-        val measured = obs?.takeIf { clock() - it.time < 2 * 3600_000L }?.forPlace(forecast.elevation, current.temperature)
+        val measured = pickObservation(obs, forecast.elevation, current.temperature, clock())
         if (measured != null) {
             current = mergeObservation(current, measured)
-            sources += Source(SourceKind.DWD_STATION, measured.stationName)
+            sources += Source(SourceKind.STATION, measured.stationName, network = measured.network)
         }
         val alerts = alertsJob.await()
         if (inDwdArea) sources += Source(SourceKind.DWD_WARNINGS)
@@ -324,7 +333,18 @@ class WeatherRepository(
         /** Rough bounding box of the DWD station network / warning area. */
         fun isInDwdArea(lat: Double, lon: Double) = lat in 47.2..55.1 && lon in 5.8..15.1
 
-        /** Measured values from a nearby DWD station beat modelled ones ([obs] already [StationObservation.forPlace]). */
+        /**
+         * The measurement standing for the place among the networks' nearest stations ([obs]): not
+         * older than two hours, at the place's height and near the model ([StationObservation.forPlace]);
+         * a network measuring every 10 minutes before the airports (METAR: every half hour, whole
+         * degrees) – among them the nearest.
+         */
+        fun pickObservation(obs: List<StationObservation>, elevationM: Double?, modelTemperature: Double, now: Long): StationObservation? =
+            obs.filter { now - it.time < 2 * 3600_000L }
+                .mapNotNull { it.forPlace(elevationM, modelTemperature) }
+                .minWithOrNull(compareBy({ it.network == dev.nimbus.weather.data.model.StationNetwork.METAR }, { it.distanceKm }))
+
+        /** Measured values from a nearby station beat modelled ones ([obs] already [StationObservation.forPlace]). */
         fun mergeObservation(model: CurrentWeather, obs: StationObservation): CurrentWeather {
             val t = obs.temperature ?: model.temperature
             val delta = t - model.temperature
@@ -348,6 +368,7 @@ class WeatherRepository(
                 visibilityMeasured = obs.visibility != null,
                 stationName = obs.stationName,
                 stationDistanceKm = obs.distanceKm,
+                stationNetwork = obs.network,
             )
         }
     }

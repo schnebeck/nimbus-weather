@@ -109,5 +109,6 @@ class AppContainer(app: Application) {
         bathing = dev.nimbus.weather.data.remote.BathingSource(http, File(app.cacheDir, "bathing")) {
             dev.nimbus.weather.ui.radar.RadarPrefetcher.isUnmetered(app)
         },
+        stations = dev.nimbus.weather.data.remote.StationNetworks(http),
     )
 }

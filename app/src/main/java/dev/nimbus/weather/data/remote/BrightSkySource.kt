@@ -35,9 +35,10 @@ data class StationSite(val name: String, val distanceKm: Double, val heightM: Do
 enum class Reading { TEMPERATURE, HUMIDITY, DEW_POINT, PRESSURE, WIND_SPEED, WIND_GUST, WIND_DIRECTION, VISIBILITY, CLOUD_COVER, PRECIPITATION, CONDITION }
 
 /**
- * A DWD station observation delivered by Bright Sky. The main station is [stationName]; values it
- * does not measure Bright Sky fills in from other stations nearby – [fallbacks] names their station,
- * which may be hundreds of metres lower or higher (see [forPlace]).
+ * A station observation: from the DWD via Bright Sky, or from another [network] (see
+ * [StationNetworks]). The main station is [stationName]; values it does not measure Bright Sky
+ * fills in from other stations nearby – [fallbacks] names their station, which may be hundreds of
+ * metres lower or higher (see [forPlace]).
  */
 data class StationObservation(
     val time: Long,
@@ -60,6 +61,8 @@ data class StationObservation(
     val heightM: Double? = null,
     /** DWD id of the main station. */
     val stationId: String? = null,
+    /** The network it was measured in. */
+    val network: dev.nimbus.weather.data.model.StationNetwork = dev.nimbus.weather.data.model.StationNetwork.DWD,
     /** The values taken from another station than the main one, and that station. */
     val fallbacks: Map<Reading, StationSite> = emptyMap(),
 ) {

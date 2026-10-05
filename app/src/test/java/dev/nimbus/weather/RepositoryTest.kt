@@ -112,7 +112,7 @@ class RepositoryTest {
         assertEquals(dev.nimbus.weather.data.model.PollenSourceKind.DWD, data.pollen?.source)
         assertTrue(data.pollen!!.region!!.startsWith("Geest"))
         assertEquals(dev.nimbus.weather.data.model.SourceKind.MODEL_DWD_ICON, data.sources.first().kind)
-        assertEquals("Berlin-Tempelhof", data.sources.first { it.kind == dev.nimbus.weather.data.model.SourceKind.DWD_STATION }.detail)
+        assertEquals("Berlin-Tempelhof", data.sources.first { it.kind == dev.nimbus.weather.data.model.SourceKind.STATION && it.network == dev.nimbus.weather.data.model.StationNetwork.DWD }.detail)
         assertTrue(requested.any { it.endsWith("icon_seamless") })
         assertTrue(requested.any { it.endsWith("best_match") })
     }

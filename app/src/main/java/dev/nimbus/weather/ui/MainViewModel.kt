@@ -575,6 +575,21 @@ class MainViewModel(
         }
     }
 
+    /**
+     * A copy of the saved [place] right after it, to give another forecast model: the same spot,
+     * its own id, data and records. Returned at once – the list shows it before it is stored.
+     */
+    fun duplicatePlace(place: Place): Place {
+        val copy = dev.nimbus.weather.ui.places.PlaceTwins.copyOf(place, _state.value.savedPlaces)
+        fun after(list: List<Place>) = list.indexOfFirst { it.id == place.id }.let { i -> if (i < 0) list + copy else list.take(i + 1) + copy + list.drop(i + 1) }
+        _state.update { it.copy(savedPlaces = after(it.savedPlaces)) }
+        viewModelScope.launch {
+            store.updatePlaces { list -> if (list.any { it.id == copy.id }) list else after(list) }
+            load(copy, force = true)
+        }
+        return copy
+    }
+
     /** New order of the saved places (ids in the wanted order; places not listed keep their place at the end). */
     fun reorderPlaces(ids: List<String>) {
         viewModelScope.launch {

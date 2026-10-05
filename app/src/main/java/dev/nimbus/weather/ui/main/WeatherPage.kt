@@ -197,6 +197,8 @@ fun WeatherPage(
     onRequestModels: () -> Unit,
     onRequestHistory: () -> Unit = {},
     location: LocationMark? = null,
+    /** The model, for a place in the list more than once ([dev.nimbus.weather.ui.places.PlaceTwins.label]). */
+    modelLabel: String? = null,
 ) {
     val context = LocalContext.current
     val now = rememberNow()
@@ -224,7 +226,7 @@ fun WeatherPage(
             dev.nimbus.weather.ui.components.LocalCardFill provides scene.cardFill,
             dev.nimbus.weather.ui.components.LocalHeaderStyle provides dev.nimbus.weather.ui.components.HeaderStyle(scene.headerHalo, scene.headerPill),
         ) {
-            WeatherContent(data, state ?: PlaceState(data), now, onRefresh, onOpenRadar, onRequestModels, location)
+            WeatherContent(data, state ?: PlaceState(data), now, onRefresh, onOpenRadar, onRequestModels, location, modelLabel)
         }
     }
 }
@@ -239,6 +241,7 @@ private fun WeatherContent(
     onOpenRadar: () -> Unit,
     onRequestModels: () -> Unit,
     location: LocationMark?,
+    modelLabel: String?,
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -350,7 +353,7 @@ private fun WeatherContent(
                 .padding(start = cutStart, top = statusTop + HeaderTop),
             contentAlignment = Alignment.Center,
         ) {
-            Header(data, { 0f }, statusTop, compact = true, location, onLocate, top = 0.dp) { }
+            Header(data, { 0f }, statusTop, compact = true, location, onLocate, top = 0.dp, modelLabel = modelLabel) { }
         }
     }
     Box(Modifier.fillMaxSize().padding(start = if (sideways) cutStart + paneWidth else 0.dp)) {
@@ -407,7 +410,7 @@ private fun WeatherContent(
         }
     }
         // read while drawing only: scrolling never recomposes the page (and rebuilds its cards)
-        if (!sideways) Header(data, { progress }, statusTop, compact, location, onLocate) { headerPx = it }
+        if (!sideways) Header(data, { progress }, statusTop, compact, location, onLocate, modelLabel = modelLabel) { headerPx = it }
     }
 }
 
@@ -417,6 +420,7 @@ private fun Header(
     location: LocationMark? = null, onLocate: () -> Unit = {},
     /** Space above it: below the status bar and the top bar – none in the header pane (sideways). */
     top: androidx.compose.ui.unit.Dp = statusTop + HeaderTop,
+    modelLabel: String? = null,
     onHeight: (Int) -> Unit = {},
 ) {
     val s = LocalSettings.current
@@ -446,6 +450,7 @@ private fun Header(
             // the status dot after the name, as on the cards after their title – not on the pin
             if (location != null) LocationDot(location, nameSize)
         }
+        dev.nimbus.weather.ui.places.TwinModelLine(modelLabel, androidx.compose.ui.text.TextStyle(shadow = TextShadow))
         Box(contentAlignment = Alignment.TopCenter) {
             // Collapsed line: "12° | Cloudy"
             Text(
@@ -491,7 +496,10 @@ private fun Header(
                         // the station's name kept together (it moves to the second line as a whole, the
                         // distance stays with it), the lines close and the pill only as wide as they are
                         dev.nimbus.weather.ui.components.TightText(
-                            stringResource(R.string.measured_at_station, keptTogether(c.stationName), Units.oneDecimal(c.stationDistanceKm)),
+                            stringResource(
+                                R.string.measured_at_station, (c.stationNetwork ?: dev.nimbus.weather.data.model.StationNetwork.DWD).label,
+                                keptTogether(c.stationName), Units.oneDecimal(c.stationDistanceKm),
+                            ),
                             Modifier.weight(1f, fill = false).testTag("station-line"),
                             androidx.compose.ui.text.TextStyle(fontSize = 12.sp, lineHeight = 16.sp, color = Color.White, textAlign = TextAlign.Center),
                         )

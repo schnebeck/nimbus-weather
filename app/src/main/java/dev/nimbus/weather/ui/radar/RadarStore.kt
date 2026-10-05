@@ -95,6 +95,21 @@ object RadarStore {
         } ?: if (frame.isForecast) newestNowcast(frame) else null
     }
 
+    fun knmiKey(frame: RadarFrame) = "knmi_${frame.time / 60_000L}"
+
+    /** The KNMI composite of a past [frame] (one byte per cell of [KnmiRadar]), null if it cannot be had. */
+    suspend fun knmi(http: OkHttpClient, frame: RadarFrame): ByteArray? {
+        if (frame.isForecast) return null
+        return get(knmiKey(frame), KnmiRadar.W * KnmiRadar.H) {
+            val text = withContext(Dispatchers.IO) {
+                http.newCall(Request.Builder().url(KnmiRadar.url(frame.time)).header("User-Agent", USER_AGENT).build()).await().use { r ->
+                    if (r.isSuccessful) r.body.string() else null
+                }
+            } ?: return@get null
+            withContext(decoding) { KnmiRadar.parse(text) }
+        }
+    }
+
     /** A RainViewer tile (512 × 512 bytes), null if it cannot be had. */
     suspend fun rvTile(http: OkHttpClient, host: String, path: String, z: Int, x: Int, y: Int): ByteArray? =
         get(rvKey(path, z, x, y), 512 * 512) {
@@ -216,6 +231,7 @@ object RadarStore {
         val base = name.removeSuffix(".nrd")
         return when {
             base.startsWith("rv_") -> now - modified > RV_KEEP_MS
+            base.startsWith("knmi_") -> base.removePrefix("knmi_").toLongOrNull()?.let { now - it * 60_000L > ANALYSIS_KEEP_MS } ?: true
             base.startsWith("dwd_") && "_n" in base -> {
                 val issue = base.substringAfter("_n").toLongOrNull()?.times(60_000L) ?: return true
                 val time = base.removePrefix("dwd_").substringBefore("_n").toLongOrNull()?.times(60_000L) ?: return true

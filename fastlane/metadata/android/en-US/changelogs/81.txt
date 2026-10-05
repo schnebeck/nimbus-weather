@@ -1,0 +1,3 @@
+• Measured, not modelled, in Austria, Switzerland and Denmark too (GeoSphere, MeteoSwiss, DMI, every 10 minutes), else airports worldwide (METAR)
+• Radar: KNMI composite for the Netherlands, the North Sea and north-western Germany
+• The same place more than once, each with its own model: ⧉ in the edit mode of the list of places

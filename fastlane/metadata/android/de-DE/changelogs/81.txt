@@ -1,0 +1,3 @@
+• Messung statt Modell auch in Österreich, der Schweiz und Dänemark (GeoSphere, MeteoSwiss, DMI, alle 10 Minuten), sonst Flughäfen weltweit (METAR)
+• Radar: KNMI-Komposit für Niederlande, Nordsee und Nordwestdeutschland
+• Derselbe Ort mehrfach, je mit eigenem Modell: ⧉ im Bearbeiten-Modus der Ortsliste

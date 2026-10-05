@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -80,11 +81,28 @@ class PlaceListTest {
         compose.assertDotBesidePin(org.robolectric.RuntimeEnvironment.getApplication().getString(R.string.my_location), 22f)
     }
 
-    private fun places(saved: List<Place>, onSetModel: (Place, ForecastModel?) -> Unit = { _, _ -> }) = compose.setContent {
+    private fun places(
+        saved: List<Place>, onSetModel: (Place, ForecastModel?) -> Unit = { _, _ -> },
+        onDuplicate: (Place) -> Place = { dev.nimbus.weather.ui.places.PlaceTwins.copyOf(it, saved) },
+    ) = compose.setContent {
         PlacesScreen(
             UiState(initialized = true, savedPlaces = saved, selectedPlaceId = saved.first().id), search = { emptyList() },
-            onAdd = {}, onRemove = {}, onReorder = {}, onSetModel = onSetModel, onOpen = {}, onSettings = {}, onRequestLocation = {}, onBack = {},
+            onAdd = {}, onRemove = {}, onReorder = {}, onSetModel = onSetModel, onDuplicate = onDuplicate,
+            onOpen = {}, onSettings = {}, onRequestLocation = {}, onBack = {},
         )
+    }
+
+    /** "⧉": the place once more – and its model chosen right away, for the copy. */
+    @Test fun aPlaceOnceMoreForAnotherModel() {
+        var copied: Place? = null
+        var chosen: Pair<String, ForecastModel?>? = null
+        places(listOf(berlin), onSetModel = { p, m -> chosen = p.id to m }, onDuplicate = { p -> dev.nimbus.weather.ui.places.PlaceTwins.copyOf(p, listOf(berlin)).also { copied = it } })
+        compose.onNodeWithText("Berlin").performTouchInput { longClick() }
+        compose.onNodeWithTag("duplicate-berlin").performClick()
+        assertEquals("berlin#2", copied?.id)
+        compose.onNodeWithText("Vorhersagemodell für Berlin").assertExists()
+        compose.onNodeWithText("KNMI Harmonie (2 km)").performScrollTo().performClick()
+        assertEquals("berlin#2" to ForecastModel.KNMI, chosen)
     }
 
     /**
@@ -93,7 +111,7 @@ class PlaceListTest {
      */
     @Test fun aPlaceGetsAModelOfItsOwn() {
         var chosen: Pair<String, ForecastModel?>? = null
-        places(listOf(berlin)) { p, m -> chosen = p.id to m }
+        places(listOf(berlin), onSetModel = { p, m -> chosen = p.id to m })
         compose.onNodeWithText("Berlin").performTouchInput { longClick() }
         compose.onNodeWithText("Modell: Standard (Open-Meteo)").performClick()
         compose.onNodeWithText("MET Nordic (1 km)").performScrollTo().performClick()
@@ -103,7 +121,7 @@ class PlaceListTest {
     /** A place with its own model says which; back to the settings' one by "Standard". */
     @Test fun aPlaceSaysItsOwnModel() {
         var chosen: Pair<String, ForecastModel?>? = "none" to null
-        places(listOf(berlin.copy(model = ForecastModel.MET_NORWAY))) { p, m -> chosen = p.id to m }
+        places(listOf(berlin.copy(model = ForecastModel.MET_NORWAY)), onSetModel = { p, m -> chosen = p.id to m })
         compose.onNodeWithText("Berlin").performTouchInput { longClick() }
         compose.onNodeWithText("Modell: MET Nordic").performClick()
         compose.onNodeWithText("Standard (Open-Meteo)").performClick()

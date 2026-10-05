@@ -101,6 +101,7 @@ fun NimbusRoot(viewModel: MainViewModel) {
                     onRemove = viewModel::removePlace,
                     onReorder = viewModel::reorderPlaces,
                     onSetModel = { place, model -> viewModel.setPlaceModel(place.id, model) },
+                    onDuplicate = viewModel::duplicatePlace,
                     onOpen = { viewModel.select(it); viewModel.back() },
                     onSettings = { viewModel.navigate(Screen.Settings) },
                     onRequestLocation = requestLocation,

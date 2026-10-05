@@ -88,7 +88,9 @@ object RadarPrefetcher {
         // The radar steps: raw images through the plain client (the map client recolours them)
         val raw = (context.applicationContext as dev.nimbus.weather.NimbusApp).container.http
         kotlinx.coroutines.coroutineScope {
-            val steps = tl.frames.map { f -> this.async { RadarStore.dwd(raw, f) } }
+            // a place within the Dutch composite: its steps too
+            val knmi = KnmiRadar.overlaps(place.longitude, place.longitude, place.latitude, place.latitude)
+            val steps = tl.frames.map { f -> this.async { RadarStore.dwd(raw, f); if (knmi) RadarStore.knmi(raw, f) } }
             steps.forEach { it.await() }
         }
         withContext(Dispatchers.IO) { RadarStore.prune() }

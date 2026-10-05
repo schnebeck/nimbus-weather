@@ -382,7 +382,7 @@ private fun VisibilityTile(data: WeatherData, modifier: Modifier) {
         BigValue(Units.visibilityKm(v))
         val station = data.current.stationName
         Text(
-            if (data.current.visibilityMeasured && station != null) stringResource(R.string.visibility_measured, station)
+            if (data.current.visibilityMeasured && station != null) stringResource(R.string.visibility_measured, (data.current.stationNetwork ?: dev.nimbus.weather.data.model.StationNetwork.DWD).label, station)
             else stringResource(R.string.visibility_model),
             fontSize = 12.sp, color = NimbusColors.Secondary, maxLines = 2, lineHeight = 15.sp,
         )

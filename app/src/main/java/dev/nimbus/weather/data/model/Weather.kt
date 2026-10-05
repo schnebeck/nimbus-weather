@@ -68,6 +68,8 @@ data class CurrentWeather(
     /** Name of the observation station if the values were measured, not modelled. */
     val stationName: String? = null,
     val stationDistanceKm: Double? = null,
+    /** The network of [stationName] (null in data stored before: the DWD's). */
+    val stationNetwork: StationNetwork? = null,
     /** True if [visibility] was measured at the DWD station (else it is a model value). */
     val visibilityMeasured: Boolean = false,
 )
@@ -219,7 +221,7 @@ data class BathingSite(
 
 /** A data source that contributed to a forecast; rendered localized in the UI. */
 @Serializable
-enum class SourceKind { MODEL_DWD_ICON, MODEL_ECMWF, MODEL_METEO_FRANCE, MODEL_REGIONAL, MODEL_BEST_MATCH, GAP_FILL, DWD_STATION, DWD_WARNINGS, CAMS, COMMUNITY, DWD_POLLEN, PEGELONLINE, NLWKN, GAUGES, LHP_ALERTS, BATHING }
+enum class SourceKind { MODEL_DWD_ICON, MODEL_ECMWF, MODEL_METEO_FRANCE, MODEL_REGIONAL, MODEL_BEST_MATCH, GAP_FILL, DWD_STATION, STATION, DWD_WARNINGS, CAMS, COMMUNITY, DWD_POLLEN, PEGELONLINE, NLWKN, GAUGES, LHP_ALERTS, BATHING }
 
 @Serializable
 data class Source(
@@ -229,7 +231,20 @@ data class Source(
     val since: Long? = null,
     /** The single model behind it (Open-Meteo's best match: which one, with its grid). */
     val part: ModelPart? = null,
+    /** The measuring network of a [SourceKind.STATION]. */
+    val network: StationNetwork? = null,
 )
+
+/** A network of weather stations whose measurements replace model values: its name and who delivers them. */
+@Serializable
+enum class StationNetwork(val label: String, val provider: String) {
+    DWD("DWD", "Bright Sky"),
+    GEOSPHERE("GeoSphere", "GeoSphere Austria"),
+    METEOSWISS("MeteoSwiss", "MeteoSwiss"),
+    DMI("DMI", "DMI Open Data"),
+    /** Airports worldwide (METAR, every half hour; temperatures in whole degrees). */
+    METAR("METAR", "NOAA aviationweather.gov"),
+}
 
 /** Pollen types covered by the DWD index and/or CAMS; [key] is used for texts and colours. */
 @Serializable

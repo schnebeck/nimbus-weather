@@ -48,6 +48,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
@@ -107,6 +108,8 @@ fun PlacesScreen(
     onReorder: (List<String>) -> Unit,
     /** A saved place's own forecast model (null: the one of the settings). */
     onSetModel: (Place, dev.nimbus.weather.data.model.ForecastModel?) -> Unit,
+    /** A copy of a saved place for another model (returned at once: its model is chosen next). */
+    onDuplicate: (Place) -> Place,
     onOpen: (String) -> Unit,
     onSettings: () -> Unit,
     onRequestLocation: () -> Unit,
@@ -168,7 +171,7 @@ fun PlacesScreen(
                 stringResource(R.string.places_edit_hint), Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
                 fontSize = 13.sp, color = NimbusColors.Secondary,
             )
-            EditList(saved, state, reorder, onRemove, onSetModel, Modifier.padding(top = 8.dp), navBottom)
+            EditList(saved, state, reorder, onRemove, onSetModel, onDuplicate, Modifier.padding(top = 8.dp), navBottom)
             return@Column
         }
         TextField(
@@ -238,6 +241,7 @@ fun PlacesScreen(
                 PlaceCard(
                     place, state.states[place.id], state.settings,
                     onLongClick = if (place.isCurrentLocation) null else ({ editing = true }),
+                    modelLabel = PlaceTwins.label(place, state.pages, state.settings),
                     location = if (place.isCurrentLocation) dev.nimbus.weather.ui.main.locationMark(state, dev.nimbus.weather.ui.main.LocalShelf.current) else null,
                 ) { onOpen(place.id) }
             }
@@ -265,6 +269,7 @@ private val EditRowGap = 10.dp
 private fun EditList(
     places: List<Place>, state: UiState, onReorder: (List<String>) -> Unit, onRemove: (Place) -> Unit,
     onSetModel: (Place, dev.nimbus.weather.data.model.ForecastModel?) -> Unit,
+    onDuplicate: (Place) -> Place,
     modifier: Modifier, navBottom: androidx.compose.ui.unit.Dp,
 ) {
     var confirmId by remember { mutableStateOf<String?>(null) }
@@ -309,6 +314,10 @@ private fun EditList(
                             .padding(vertical = 2.dp).testTag("model-${place.id}"),
                         fontSize = 13.sp, color = Color.White.copy(alpha = 0.85f), textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
                     )
+                }
+                // the same place once more, for another model: its model chosen right away
+                IconButton(onClick = { choosing = onDuplicate(place) }, Modifier.testTag("duplicate-${place.id}")) {
+                    Icon(Icons.Outlined.ContentCopy, stringResource(R.string.places_duplicate), tint = Color.White)
                 }
                 Icon(
                     Icons.Rounded.DragHandle, stringResource(R.string.places_drag), tint = Color.White,
@@ -362,6 +371,8 @@ fun PlaceCard(
     onLongClick: (() -> Unit)? = null,
     /** For "my location": whether its position is current – the pin with the status dot as on its page. */
     location: dev.nimbus.weather.ui.main.LocationMark? = null,
+    /** The model, for a place in the list more than once ([PlaceTwins.label]). */
+    modelLabel: String? = null,
     onClick: () -> Unit,
 ) {
     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
@@ -390,7 +401,8 @@ fun PlaceCard(
                     if (location != null) LocationDot(location, 22.sp)
                 }
                 Text(
-                    if (place.isCurrentLocation) place.name else (tf?.time(System.currentTimeMillis()) ?: place.subtitle),
+                    listOfNotNull(modelLabel, if (place.isCurrentLocation) place.name else (tf?.time(System.currentTimeMillis()) ?: place.subtitle))
+                        .joinToString(" · "),
                     fontSize = 14.sp, color = Color.White, maxLines = 1,
                 )
             }

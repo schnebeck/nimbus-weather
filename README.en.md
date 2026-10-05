@@ -20,9 +20,10 @@
 # Nimbus – weather for Germany and Europe
 
 Nimbus reflects the current weather with small matching background animations – drifting clouds,
-rain, snow or a starry sky. The data comes from the German Weather Service (DWD) – readings from
-the nearest weather station, forecasts from the high-resolution ICON-D2 model and the rain radar.
-No ads, no account, no Google services. The app speaks English and German.
+rain, snow or a starry sky. The data comes from Europe's weather services – readings from the
+nearest weather station (DWD, GeoSphere Austria, MeteoSwiss, DMI, else an airport), the forecast of
+the finest model for the place or of a model of your choice, per place too, and the rain radar of
+the DWD and the KNMI. No ads, no account, no Google services. The app speaks English and German.
 
 <p align="center">
   <img src="docs/screenshots/scenes.png" width="820" alt="Animated weather scenes: sun, autumn leaves, thunderstorm, snow, rain, clear night">
@@ -31,7 +32,7 @@ No ads, no account, no Google services. The app speaks English and German.
 
 <table>
   <tr>
-    <td align="center" width="33%"><img src="docs/screenshots/main.png" width="240" alt="Weather page"><br><sub><b>Weather page</b><br>readings of the nearest DWD station, outlook, hourly and 10 days</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/main.png" width="240" alt="Weather page"><br><sub><b>Weather page</b><br>readings of the nearest weather station, outlook, hourly and 10 days</sub></td>
     <td align="center" width="33%"><img src="docs/screenshots/meteogram.png" width="240" alt="Meteogram"><br><sub><b>Meteogram</b><br>temperature, rain, sunshine and wind per hour, with a slider</sub></td>
     <td align="center" width="33%"><img src="docs/screenshots/history.png" width="240" alt="Look back"><br><sub><b>Look back</b><br>measured versus forecast – just swipe right</sub></td>
   </tr>
@@ -50,9 +51,21 @@ No ads, no account, no Google services. The app speaks English and German.
 
 - Animated sky with sun, moon phase, stars, clouds, fog, rain, snow and thunderstorms; wind and gusts
   move clouds, precipitation and seasonal particles.
-- Current values from the nearest DWD station, DWD weather alerts, precipitation nowcast, hourly and
-  10-day forecast with chance of precipitation, detail tiles, air quality, pollen, citizen sensors and
-  a comparison of eight weather models.
+- Current values from the nearest weather station – DWD, GeoSphere Austria, MeteoSwiss and DMI every
+  10 minutes, else an airport (METAR) –, each value only from a station at the place's height (at
+  most 300 m apart) and near the model. The sky "now" follows the measured sunshine as the hours
+  follow the model's: thin veil clouds do not make a cloudy sky while the sun shines through; the
+  running hour in the day chart shows the same weather as the header. The ⓘ of "Measured at …" names
+  for each value whether it was measured (and where) or comes from the model.
+- DWD weather alerts, precipitation nowcast, hourly and 10-day forecast with chance of
+  precipitation, detail tiles, air quality, pollen, citizen sensors and a comparison of eight
+  weather models.
+- Forecast model: preset "Automatic" – the finest model for each place and time, named with its
+  grid in the data sources – or one of DWD ICON, ECMWF IFS, Météo-France, MET Nordic (1 km), KNMI
+  Harmonie, DMI Harmonie, UK Met Office, MeteoSwiss ICON-CH1/-CH2, GeoSphere AROME and ItaliaMeteo
+  ICON-2I. Each place first follows the app setting or gets a model of its own; outside a regional
+  model's area and after its last hours "Automatic" takes over. ⧉ adds a place once more, e.g. to see
+  two models side by side.
 - Day meteogram (temperature every 15 minutes forecast, every 10 minutes measured; today: station
   readings for the hours already over, then the forecast – also in the precipitation and pressure
   charts), look back at the past days (measured versus forecast, hour by hour as a table,
@@ -61,12 +74,15 @@ No ads, no account, no Google services. The app speaks English and German.
 - Bathing waters: all official EU bathing sites within an adjustable radius plus favourites, with
   EU classification, sea temperature at coasts and the latest samples (water temperature, blue-green
   algae) where states publish them openly – see [docs/BATHING.md](docs/BATHING.md).
-- Rain radar: DWD for Germany, RainViewer for Europe, one colour scale for rain (green → yellow →
+- Rain radar: DWD for Germany, KNMI for the Netherlands, RainViewer for the rest of Europe (the time
+  line follows the place's radar), one colour scale for rain (green → yellow →
   red → magenta) and snow (turquoise → white → violet), optionally calmer in blue and pink–violet;
   radar cells smoothed at every zoom level instead of blocks; smooth playback (the motion of the
   rain is computed between two radar images); an own radar store keeps every image, loaded once and
   processed, until it expires – panning and zooming need no network; roads, borders and names above
-  the radar; temperature (with isotherms) and wind layers, satellite and warning map.
+  the radar; temperature (with isotherms) and wind layers, satellite and warning map. The
+  precipitation map on the weather page shows the same picture for its area around the place,
+  loading only that area's radar cells, in a lane of its own beside the radar loop.
 - An ⓘ on every card explains the terms. Units follow the country on first start; the order and visibility of
   the cards can be set in the settings, places are sorted or deleted after a long press.
 - My location: while it is shown (its page, the list of places) the position is looked for on opening
@@ -90,7 +106,10 @@ No ads, no account, no Google services. The app speaks English and German.
 ## Data sources
 
 DWD (via [Bright Sky](https://brightsky.dev) and the DWD GeoServer), [Open-Meteo](https://open-meteo.com)
-(DWD ICON and other models, Copernicus CAMS), [RainViewer](https://www.rainviewer.com),
+(best match, DWD ICON, MET Norway's MET Nordic and the other models, Copernicus CAMS),
+[GeoSphere Austria](https://data.hub.geosphere.at), [MeteoSwiss](https://opendatadocs.meteoswiss.ch),
+[DMI](https://www.dmi.dk/friedata), airport reports (METAR, [aviationweather.gov](https://aviationweather.gov)),
+[KNMI](https://english.knmidata.nl/open-data) radar, [RainViewer](https://www.rainviewer.com),
 [Sensor.Community](https://sensor.community), [OpenFreeMap](https://openfreemap.org) ·
 © OpenMapTiles · © OpenStreetMap contributors.
 
@@ -111,8 +130,10 @@ after an intended change of the look.
 
 Nimbus is free software under the **GNU General Public License, version 3 or later**. Every file
 states its license in its header or in `REUSE.toml` ([REUSE](https://reuse.software) compliant); the
-sun and moon calculation is partly based on SunCalc (BSD-2-Clause), recorded test data are licensed
-CC BY 4.0 / ODbL 1.0.
+sun and moon calculation is partly based on SunCalc (BSD-2-Clause); recorded test data are licensed
+CC BY 4.0 (Open-Meteo, MET Norway, DWD, Copernicus, GeoSphere Austria, MeteoSwiss, DMI, KNMI), public
+domain (METAR) or ODbL 1.0 (Sensor.Community, Nominatim), gauge data by their publishers' terms –
+see `REUSE.toml`.
 
 Idea, decisions and testing: Thorsten Schnebeck. Written by Anthropic Claude Opus 5.5 (AI generated
 content).

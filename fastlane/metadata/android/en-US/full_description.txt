@@ -1,8 +1,9 @@
-<p>Nimbus reflects the current weather with small matching background animations – drifting clouds, rain, snow or a starry sky. The data comes from the German Weather Service (DWD) – readings from the nearest weather station, forecasts from the high-resolution ICON-D2 model and the rain radar. No ads, no account, no Google services.</p>
+<p>Nimbus reflects the current weather with small matching background animations – drifting clouds, rain, snow or a starry sky. The data comes from Europe's weather services – readings from the nearest weather station, the forecast of the finest model for the place or of a model of your choice and the rain radar of the DWD and the KNMI. No ads, no account, no Google services.</p>
 
 <p><b>Weather</b></p>
 <ul>
-<li>Current conditions measured at the nearest DWD station, DWD weather alerts</li>
+<li>Current conditions measured at the nearest weather station (DWD, GeoSphere Austria, MeteoSwiss, DMI, else an airport) – only at the place's height; the sky follows the measured sunshine</li>
+<li>DWD weather alerts</li>
 <li>Short text outlook for the next hours and precipitation in 15-minute steps</li>
 <li>Hourly and 10-day forecast with chance of precipitation</li>
 <li>Meteogram for every day: temperature, precipitation, sunshine and wind per hour, with a slider for the exact values</li>
@@ -17,7 +18,7 @@
 
 <p><b>Rain radar</b></p>
 <ul>
-<li>DWD radar with a 2-hour nowcast for Germany, RainViewer for Europe</li>
+<li>DWD radar with a 2-hour nowcast for Germany, KNMI radar for the Netherlands, RainViewer for the rest of Europe</li>
 <li>One colour scale for rain and for snow – decided per pixel by the temperature</li>
 <li>Temperature and wind layers, satellite and warning map, look back up to 24 hours</li>
 <li>On Wi-Fi the radar loop of your location is kept up to date in the background, so it opens instantly</li>
@@ -27,8 +28,8 @@
 <ul>
 <li>An ⓘ on every card explains the terms</li>
 <li>English and German, units follow your country (°C/°F, km/h, mph, m/s, knots, Beaufort, mm/inch)</li>
-<li>Forecast model to choose: DWD ICON, best match, ECMWF or Météo-France</li>
+<li>Forecast model: automatically the finest for each place and time, or DWD ICON, ECMWF, Météo-France and regional models such as MET Nordic (1 km) or KNMI Harmonie (2 km) – a model of its own for each place too</li>
 <li>Battery friendly: the animation slows down when the phone is left alone and stops in battery saver mode</li>
 </ul>
 
-<p>Data: Deutscher Wetterdienst (via Bright Sky and Open-Meteo), Open-Meteo, Copernicus CAMS, RainViewer, Sensor.Community, PEGELONLINE (WSV), NLWKN, LANUK NRW, LfULG Sachsen, HLNUG, Länderübergreifendes Hochwasserportal, OpenStreetMap/Nominatim. Maps © OpenFreeMap, OpenMapTiles, OpenStreetMap contributors.</p>
+<p>Data: Deutscher Wetterdienst (via Bright Sky and Open-Meteo), Open-Meteo, MET Norway, GeoSphere Austria, MeteoSwiss, DMI, KNMI, airport reports (METAR), Copernicus CAMS, RainViewer, Sensor.Community, PEGELONLINE (WSV), NLWKN, LANUK NRW, LfULG Sachsen, HLNUG, Länderübergreifendes Hochwasserportal, OpenStreetMap/Nominatim. Maps © OpenFreeMap, OpenMapTiles, OpenStreetMap contributors.</p>

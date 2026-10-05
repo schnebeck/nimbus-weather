@@ -20,9 +20,10 @@
 # Nimbus – Wetter für Deutschland und Europa
 
 Nimbus symbolisiert das aktuelle Wetter mit passenden kleinen Hintergrundanimationen – ziehende Wolken,
-Regen, Schnee oder ein Sternenhimmel. Die Daten kommen vom Deutschen Wetterdienst – Messwerte der
-nächsten Wetterstation, die Vorhersage des hochauflösenden Modells ICON-D2 und das Regenradar.
-Keine Werbung, kein Konto, keine Google-Dienste.
+Regen, Schnee oder ein Sternenhimmel. Die Daten kommen von den Wetterdiensten Europas – Messwerte der
+nächsten Wetterstation (DWD, GeoSphere Austria, MeteoSwiss, DMI, sonst ein Flughafen), die Vorhersage
+des feinsten Modells für den Ort oder eines Modells nach Wahl, auch je Ort, und das Regenradar von DWD
+und KNMI. Keine Werbung, kein Konto, keine Google-Dienste.
 
 <p align="center">
   <img src="docs/screenshots/scenes.png" width="820" alt="Animierte Wetterszenen: Sonne, Herbstlaub, Gewitter, Schnee, Regen, klare Nacht">
@@ -31,7 +32,7 @@ Keine Werbung, kein Konto, keine Google-Dienste.
 
 <table>
   <tr>
-    <td align="center" width="33%"><img src="docs/screenshots/main.png" width="240" alt="Wetterseite"><br><sub><b>Wetterseite</b><br>Messwerte der nächsten DWD-Station, Kurzvorhersage, Stunden und 10 Tage</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/main.png" width="240" alt="Wetterseite"><br><sub><b>Wetterseite</b><br>Messwerte der nächsten Wetterstation, Kurzvorhersage, Stunden und 10 Tage</sub></td>
     <td align="center" width="33%"><img src="docs/screenshots/meteogram.png" width="240" alt="Meteogramm"><br><sub><b>Meteogramm</b><br>Temperatur, Regen, Sonnenschein und Wind je Stunde – mit Schieber</sub></td>
     <td align="center" width="33%"><img src="docs/screenshots/history.png" width="240" alt="Rückblick"><br><sub><b>Rückblick</b><br>Was war gemessen, was war vorhergesagt? Einfach nach rechts wischen</sub></td>
   </tr>
@@ -72,7 +73,13 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   Quellen kommen hinzu, sobald ihre Daten da sind; ein Punkt je Kachel zeigt, ob ihre Daten aktuell
   sind (grün) oder noch die vorigen (gelb). Jede Datenart hat eine Haltbarkeit (Vorhersage 10, Rückblick
   15 Minuten): zurückgeholt und danach minütlich lädt die App nach, was abgelaufen ist.
-  Aktuelle Werte stammen, wo möglich, von der nächsten DWD-Station.
+  Aktuelle Werte stammen, wo möglich, von der nächsten Wetterstation: DWD, GeoSphere Austria,
+  MeteoSwiss und DMI alle 10 Minuten, sonst ein Flughafen (METAR). Jeder Wert zählt nur von einer
+  Station in der Höhe des Ortes (höchstens 300 m Unterschied) und nahe am Modell. Der Himmel „jetzt“
+  folgt dem gemessenen Sonnenschein, wie die Stunden dem Sonnenschein des Modells – dünne Schleierwolken
+  machen keinen bewölkten Himmel, wenn die Sonne durchscheint; die laufende Stunde im Tagesdiagramm
+  zeigt dasselbe Wetter wie die Kopfzeile. ⓘ am Hinweis „Gemessen an …“ nennt für jeden Wert, ob er
+  gemessen ist (und wo) oder vom Modell kommt.
 - **Meteogramm** je Tag (00–24 Uhr): Temperatur (Vorhersage alle 15 Minuten, Messwerte der
   DWD-Station alle 10 Minuten), Niederschlag, Sonnenscheindauer und Wind pro Stunde,
   Nachtschattierung, Legende mit Tagessummen. Die 10-Minuten-Messwerte der Station als
@@ -101,19 +108,22 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   Flüsse, Küsten –, Favoriten in jeder Entfernung; EU-Einstufung, Meerestemperatur an der Küste,
   in Berlin und Schleswig-Holstein die letzten Proben mit Wassertemperatur und Blaualgen-Hinweisen.
   Quellen je Bundesland: [docs/BATHING.md](docs/BATHING.md).
-- **Regenradar**: DWD-Radar mit 2-h-Vorhersage für Deutschland, RainViewer für Europa, einheitliche
+- **Regenradar**: DWD-Radar mit 2-h-Vorhersage für Deutschland, KNMI-Radar für die Niederlande,
+  RainViewer für das übrige Europa (die Zeitachse richtet sich nach dem Radar des Ortes), einheitliche
   Farbskala für Regen (grün → gelb → rot → magenta) und Schnee (türkis → weiß → violett, pro Pixel
   nach der Temperatur), wahlweise ruhiger in Blau bzw. Rosa–Violett; die Radarzellen in jeder
   Zoomstufe geglättet statt als Blöcke; flüssiges Abspielen: zwischen zwei Radarbildern wird die
-  Bewegung der Regengebiete berechnet; eigener Radarspeicher – jedes Bild (ganz Deutschland in
-  einem) wird einmal geladen, zu Reflektivität aufbereitet und bis zum Verfall lokal gehalten
+  Bewegung der Regengebiete berechnet; eigener Radarspeicher – jedes Bild eines Wetterdienstes (ganz
+  Deutschland, die Niederlande in einem) wird einmal geladen, zu Reflektivität aufbereitet und bis zum Verfall lokal gehalten
   (Analysen ~3½ Tage), Verschieben und Zoomen brauchen kein Netz; deckende Farben, Straßen, Grenzen
   und Namen über dem Radar; Temperatur- (mit Isothermen) und Windebene, Satellit (Meteosat, alle
   10 Minuten, zur Zeit des Radarbilds), Warnkarte, Rückblick bis 24 h. Auch das Radar eines Tages
   im Rückblick zeigt Temperatur, Wind und Satellit. Im WLAN hält die App die 2-Stunden-Schleife des aktuellen Orts etwa alle 15
   Minuten aktuell, auch im Hintergrund – solange die App am Vortag benutzt wurde. Die Auflösung des
   Radarbilds richtet sich nach dem Speicher des Geräts. Ohne Verbindung zeigt das Radar die
-  gespeicherten Bilder; nichts wartet endlos.
+  gespeicherten Bilder; nichts wartet endlos. Die Niederschlagskarte auf der Wetterseite zeigt dasselbe
+  Bild für ihren Ausschnitt um den Ort; sie lädt nur dessen Radarzellen, in eigener Spur neben der
+  Radarschleife.
 - **Akku**: Der animierte Himmel läuft mit 30 Bildern/s (Regen, Schnee: 60), nach einer Minute ohne
   Berührung mit 15; im Energiesparmodus des Systems steht er still. Die stündliche Aktualisierung im
   Hintergrund lädt nur die Vorhersage (die übrigen Quellen beim Öffnen) und pausiert, wenn die App
@@ -141,8 +151,14 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   der Rückblick), Listen (Pegel, Badestellen, Gezeiten) nach 30 Tagen ohne Nutzung, das Wetter
   entfernter Orte sofort.
 - **Orte, Einstellungen**: Standort und gespeicherte Orte (lange drücken zum Sortieren und Löschen);
-  Vorhersagemodell, Einheiten (beim ersten Start passend zum Land), Stationswerte, Animationen,
-  Reihenfolge und Sichtbarkeit der Kacheln.
+  Vorhersagemodell (voreingestellt: Automatisch – das feinste Modell je Ort und Zeitraum, die
+  Datenquellen nennen es mit seiner Auflösung), Einheiten (beim ersten Start passend zum Land),
+  Stationswerte, Animationen, Reihenfolge und Sichtbarkeit der Kacheln.
+- **Modell je Ort**: In der Ortsliste (lange drücken) wählt man für jeden Ort zuerst „Wie in den
+  App-Einstellungen“ oder „Eigenes Modell für diesen Ort“, dann das Modell – auch regionale wie MET
+  Nordic (1 km) oder KNMI Harmonie (2 km); außerhalb ihres Gebiets und nach ihren letzten Stunden
+  übernimmt „Automatisch“. ⧉ legt einen Ort ein weiteres Mal an, etwa um zwei Modelle nebeneinander zu
+  sehen.
 - **Tablet, Querformat**: ab 600 dp Breite die Kacheln in zwei Spalten (eine Karte, die allein in ihrer
   Zeile stünde, über die volle Breite), quer gehaltene Handys in drei gleich breiten Spalten: der Kopf links, die Kacheln in den zwei anderen
   und den Kacheln daneben (nichts unter der Kamera-Aussparung), im Querformat großer Tablets links eine
@@ -154,9 +170,10 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
 
 | Zweck | Quelle |
 |---|---|
-| Vorhersage | DWD ICON-D2/-EU/global via [Open-Meteo](https://open-meteo.com), Lücken aus Open-Meteo „best match“ |
-| Aktuelle Messwerte, Warnungen, Rückblick | DWD-Stationen und -Warnungen via [Bright Sky](https://brightsky.dev) |
-| Radar, Warnkarte | DWD GeoServer; Europa: [RainViewer](https://www.rainviewer.com/api.html) |
+| Vorhersage | [Open-Meteo](https://open-meteo.com): voreingestellt „best match“, wählbar DWD ICON, ECMWF IFS, Météo-France, MET Nordic (MET Norway), KNMI Harmonie, DMI Harmonie, UK Met Office, MeteoSwiss ICON-CH1/-CH2, GeoSphere AROME, ItaliaMeteo ICON-2I; Lücken aus „best match“ |
+| Aktuelle Messwerte | DWD-Stationen via [Bright Sky](https://brightsky.dev), [GeoSphere Austria](https://data.hub.geosphere.at), [MeteoSwiss](https://opendatadocs.meteoswiss.ch), [DMI](https://www.dmi.dk/friedata), Flughäfen (METAR, [aviationweather.gov](https://aviationweather.gov)) |
+| Warnungen, Rückblick | DWD-Warnungen und -Stationen via Bright Sky |
+| Radar, Warnkarte | DWD GeoServer, [KNMI](https://english.knmidata.nl/open-data) (Niederlande); übriges Europa: [RainViewer](https://www.rainviewer.com/api.html) |
 | Satellit | Meteosat (MTG, GeoColour) via [EUMETView](https://view.eumetsat.int) – „Contains modified EUMETSAT Meteosat data“, CC BY 4.0 |
 | Luftqualität, Pollen Europa | Copernicus CAMS via Open-Meteo |
 | Pollenflug Deutschland | [DWD-Pollenflug-Gefahrenindex](https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json) |
@@ -215,11 +232,14 @@ Temperatur-Verschiebung für die Radarfärbung.
 ```
 app/src/main/java/dev/nimbus/weather/
   data/model      Domänenmodell, WMO-Codes, Einstellungen
-  data/remote     Open-Meteo, Bright Sky (DWD), Pollen, Sensor.Community, Rückblick
-  data/repo       Repository, Standort, Speicher, Hintergrund-Aktualisierung
+  data/remote     Open-Meteo, Bright Sky (DWD), Stationsnetze (GeoSphere, MeteoSwiss, DMI, METAR),
+                  Pollen, Sensor.Community, Rückblick
+  data/repo       Repository, Wetter jetzt (Messung und Modell), Standort, Speicher,
+                  Hintergrund-Aktualisierung
   ui/background   Animierter Himmel, Jahreszeiten-Partikel
   ui/main         Wetterseite, Karten, Meteogramm, Rückblick
-  ui/radar        Radar, Farbskala, Temperatur-/Windebene
+  ui/radar        Radar: Komposite von DWD und KNMI, RainViewer, Radarspeicher, Vorschau,
+                  Farbskala, Temperatur-/Windebene
   ui/places, ui/settings, ui/components, ui/theme
   util            Einheiten und Formatierung, Sonne und Mond
 ```
@@ -235,8 +255,10 @@ Jede Datei trägt ihren Lizenzhinweis im Kopf oder in `REUSE.toml` (geprüft mit
 - Sonnen- und Mondberechnung in `util/Moon.kt`: teilweise nach SunCalc, © 2026 Volodymyr Agafonkin,
   BSD-2-Clause
 - Gradle-Wrapper: Apache-2.0
-- Aufgezeichnete API-Antworten in `app/src/test/resources/fixtures/`: Daten von Open-Meteo, DWD und
-  Copernicus unter CC BY 4.0, von Sensor.Community unter ODbL 1.0
+- Aufgezeichnete API-Antworten in `app/src/test/resources/fixtures/`: Daten von Open-Meteo (auch
+  MET Norway), DWD, Copernicus, GeoSphere Austria, MeteoSwiss, DMI und KNMI unter CC BY 4.0, METAR
+  (US-Regierung) gemeinfrei, Sensor.Community und Nominatim unter ODbL 1.0, Pegeldaten nach den
+  Bedingungen ihrer Herausgeber – im Einzelnen in `REUSE.toml`
 - Screenshots in `docs/screenshots/`: CC BY 4.0, mit Wetter-, Radar- und Kartendaten von DWD,
   Open-Meteo, RainViewer, OpenFreeMap, OpenMapTiles und OpenStreetMap-Mitwirkenden (ODbL)
 

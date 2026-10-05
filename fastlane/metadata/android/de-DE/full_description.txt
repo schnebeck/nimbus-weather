@@ -1,8 +1,9 @@
-<p>Nimbus symbolisiert das aktuelle Wetter mit passenden kleinen Hintergrundanimationen – ziehende Wolken, Regen, Schnee oder ein Sternenhimmel. Die Daten kommen vom Deutschen Wetterdienst – Messwerte der nächsten Wetterstation, die Vorhersage des hochauflösenden Modells ICON-D2 und das Regenradar. Keine Werbung, kein Konto, keine Google-Dienste.</p>
+<p>Nimbus symbolisiert das aktuelle Wetter mit passenden kleinen Hintergrundanimationen – ziehende Wolken, Regen, Schnee oder ein Sternenhimmel. Die Daten kommen von den Wetterdiensten Europas – Messwerte der nächsten Wetterstation, die Vorhersage des feinsten Modells für den Ort oder eines Modells nach Wahl und das Regenradar von DWD und KNMI. Keine Werbung, kein Konto, keine Google-Dienste.</p>
 
 <p><b>Wetter</b></p>
 <ul>
-<li>Aktuelle Werte gemessen an der nächsten DWD-Station, DWD-Unwetterwarnungen</li>
+<li>Aktuelle Werte gemessen an der nächsten Wetterstation (DWD, GeoSphere Austria, MeteoSwiss, DMI, sonst ein Flughafen) – nur in der Höhe des Ortes; der Himmel folgt dem gemessenen Sonnenschein</li>
+<li>DWD-Unwetterwarnungen</li>
 <li>Kurzvorhersage als Text für die nächsten Stunden und Niederschlag in 15-Minuten-Schritten</li>
 <li>Stunden- und 10-Tage-Vorhersage mit Niederschlagswahrscheinlichkeit</li>
 <li>Meteogramm für jeden Tag: Temperatur, Niederschlag, Sonnenschein und Wind pro Stunde, mit Schieber für die genauen Werte</li>
@@ -17,7 +18,7 @@
 
 <p><b>Regenradar</b></p>
 <ul>
-<li>DWD-Radar mit 2-Stunden-Vorhersage für Deutschland, RainViewer für Europa</li>
+<li>DWD-Radar mit 2-Stunden-Vorhersage für Deutschland, KNMI-Radar für die Niederlande, RainViewer für das übrige Europa</li>
 <li>Eine Farbskala für Regen und eine für Schnee – pro Bildpunkt nach der Temperatur entschieden</li>
 <li>Temperatur- und Windebene, Satellit und Warnkarte, Rückblick bis 24 Stunden</li>
 <li>Im WLAN hält die App die Radarschleife deines Standorts im Hintergrund aktuell, damit sie sofort erscheint</li>
@@ -27,8 +28,8 @@
 <ul>
 <li>Ein ⓘ an jeder Karte erklärt die Begriffe</li>
 <li>Deutsch und Englisch, Einheiten passend zum Land (°C/°F, km/h, mph, m/s, Knoten, Beaufort, mm/Zoll)</li>
-<li>Vorhersagemodell wählbar: DWD ICON, beste Auswahl, ECMWF oder Météo-France</li>
+<li>Vorhersagemodell: automatisch das feinste je Ort und Zeitraum, oder DWD ICON, ECMWF, Météo-France und regionale Modelle wie MET Nordic (1 km) oder KNMI Harmonie (2 km) – auch für jeden Ort ein eigenes</li>
 <li>Akkuschonend: Die Animation wird langsamer, wenn das Handy unbenutzt liegt, und stoppt im Energiesparmodus</li>
 </ul>
 
-<p>Daten: Deutscher Wetterdienst (über Bright Sky und Open-Meteo), Open-Meteo, Copernicus CAMS, RainViewer, Sensor.Community, PEGELONLINE (WSV), NLWKN, LANUK NRW, LfULG Sachsen, HLNUG, Länderübergreifendes Hochwasserportal, OpenStreetMap/Nominatim. Karten © OpenFreeMap, OpenMapTiles, OpenStreetMap-Mitwirkende.</p>
+<p>Daten: Deutscher Wetterdienst (über Bright Sky und Open-Meteo), Open-Meteo, MET Norway, GeoSphere Austria, MeteoSwiss, DMI, KNMI, Flughafenmeldungen (METAR), Copernicus CAMS, RainViewer, Sensor.Community, PEGELONLINE (WSV), NLWKN, LANUK NRW, LfULG Sachsen, HLNUG, Länderübergreifendes Hochwasserportal, OpenStreetMap/Nominatim. Karten © OpenFreeMap, OpenMapTiles, OpenStreetMap-Mitwirkende.</p>

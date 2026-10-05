@@ -441,15 +441,22 @@ fun RadarScreen(
     }
     // Playback runs continuously: the position moves on with every display frame and the player
     // draws the rain moved between the steps – no jumping from step to step.
-    LaunchedEffect(playing, timeline) {
+    // panned where the future is empty: back to "now" if it stood in it
+    LaunchedEffect(nowcastHere, timeline) {
+        val tl = timeline ?: return@LaunchedEffect
+        val last = tl.lastShown(nowcastHere)
+        if (frame > last) { frame = last; player.position = last.toFloat() }
+    }
+    LaunchedEffect(playing, timeline, nowcastHere) {
         val tl = timeline ?: return@LaunchedEffect
         if (!playing) { buffering = false; player.playing = false; player.position = frame.toFloat(); return@LaunchedEffect }
         val archived = tl.day != null
         // time per 5-minute step: the live ranges show [HistoryRange.playMinutes] per beat
         val stepMs = if (archived) ARCHIVE_STEP_MS else FRAME_MS * HistoryRange.STEP_MINUTES / tl.range.playMinutes
         player.playing = true
-        val lastIndex = tl.frames.lastIndex
-        var state = Playback.State(frame.toFloat(), buffering = !player.canShow(minOf(frame + BUFFER_START, lastIndex).toFloat()))
+        // where no nowcast reaches into the area: the loop ends at "now"
+        val lastIndex = tl.lastShown(nowcastHere)
+        var state = Playback.State(frame.coerceAtMost(lastIndex).toFloat(), buffering = !player.canShow(minOf(frame + BUFFER_START, lastIndex).toFloat()))
         var last = withFrameNanos { it }
         while (playing) {
             val now = withFrameNanos { it }
@@ -555,6 +562,8 @@ fun RadarScreen(
         ) {
             if (tl != null) {
                 val f = tl.frames[frame.coerceIn(0, tl.frames.lastIndex)]
+                // the last step to choose: "now" where the area has no nowcast
+                val last = tl.lastShown(nowcastHere)
                 if (!archive) Row(verticalAlignment = Alignment.CenterVertically) {
                     HistoryRange.entries.forEach { r ->
                         ToggleChip(stringResource(R.string.radar_range_hours, r.hours), range == r) {
@@ -568,7 +577,8 @@ fun RadarScreen(
                     }
                 }
                 if (!archive) Spacer(Modifier.height(8.dp))
-                if (f.isForecast && !nowcastHere) {
+                // the forecast part greyed out: said why
+                if (!archive && !nowcastHere && tl.lastShown(false) < tl.frames.lastIndex) {
                     Text(
                         stringResource(R.string.radar_forecast_germany_only),
                         Modifier.clip(RoundedCornerShape(8.dp)).background(Color(0x66000000)).padding(horizontal = 8.dp, vertical = 4.dp),
@@ -622,12 +632,12 @@ fun RadarScreen(
                             }
                             // Step by step: one 5-minute step back or forward (the slider is too
                             // fine for that with hundreds of steps)
-                            fun stepTo(i: Int) { playing = false; frame = i.coerceIn(0, tl.frames.lastIndex); player.position = frame.toFloat() }
+                            fun stepTo(i: Int) { playing = false; frame = i.coerceIn(0, last); player.position = frame.toFloat() }
                             StepButton(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, stringResource(R.string.radar_step_back), frame > 0) { stepTo(frame - 1) }
                             Spacer(Modifier.width(6.dp))
-                            StepButton(Icons.AutoMirrored.Rounded.KeyboardArrowRight, stringResource(R.string.radar_step_forward), frame < tl.frames.lastIndex) { stepTo(frame + 1) }
+                            StepButton(Icons.AutoMirrored.Rounded.KeyboardArrowRight, stringResource(R.string.radar_step_forward), frame < last) { stepTo(frame + 1) }
                         }
-                        TimelineSlider(tl, frame) {
+                        TimelineSlider(tl, frame, last) {
                             playing = false
                             frame = it
                             player.position = it.toFloat()
@@ -674,11 +684,16 @@ private fun StepButton(icon: androidx.compose.ui.graphics.vector.ImageVector, la
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun TimelineSlider(tl: RadarTimeline, frame: Int, onChange: (Int) -> Unit) {
+internal fun TimelineSlider(
+    tl: RadarTimeline, frame: Int,
+    /** The last step that can be chosen ([lastShown]); beyond it the track is greyed out. */
+    last: Int = tl.frames.lastIndex,
+    onChange: (Int) -> Unit,
+) {
     val n = tl.frames.size - 1
     Slider(
         value = frame.toFloat(),
-        onValueChange = { onChange(it.roundToInt()) },
+        onValueChange = { onChange(it.roundToInt().coerceAtMost(last)) },
         valueRange = 0f..n.toFloat(),
         steps = n - 1,
         // the slider runs almost to the screen's edges: dragging it there is for the slider, not
@@ -705,9 +720,9 @@ internal fun TimelineSlider(tl: RadarTimeline, frame: Int, onChange: (Int) -> Un
                     return@Canvas
                 }
                 val nowX = size.width * tl.nowIndex / n
-                // past = white-ish, forecast = amber
+                // past = white-ish, forecast = amber – grey where the area has none to show
                 drawLine(Color(0x40FFFFFF), Offset(0f, y), Offset(nowX, y), h, StrokeCap.Round)
-                drawLine(Color(0x66FFD27A), Offset(nowX, y), Offset(size.width, y), h, StrokeCap.Round)
+                drawLine(if (last < n) ForecastOff else Color(0x66FFD27A), Offset(nowX, y), Offset(size.width, y), h, StrokeCap.Round)
                 drawLine(Color(0xCCFFFFFF), Offset(0f, y), Offset(minOf(pos, nowX), y), h, StrokeCap.Round)
                 if (pos > nowX) drawLine(Color(0xFFFFD27A), Offset(nowX, y), Offset(pos, y), h, StrokeCap.Round)
                 // ticks at full hours (24 h: every 3 hours) and the "now" marker
@@ -726,6 +741,9 @@ internal fun TimelineSlider(tl: RadarTimeline, frame: Int, onChange: (Int) -> Un
 }
 
 /** Rain (green → yellow → red) and, where it can snow, snow (turquoise → white → violet) scales, plus the temperature scale when shown. */
+/** The forecast part of the time line where the picture area has no nowcast: there, but not to be chosen. */
+internal val ForecastOff = Color(0x1FFFFFFF)
+
 /** Land colour of the slate map style, under the legend bars. */
 private val MapLand = Color(0xFF505E6F)
 

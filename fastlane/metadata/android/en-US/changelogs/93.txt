@@ -1,0 +1,1 @@
+• Radar: where the map shows no area with a radar forecast (e.g. Norway), playback ends at "now"; the forecast part of the slider is greyed out and cannot be chosen

@@ -56,8 +56,13 @@ class RadarNowhereTest {
         } finally { scope.cancel() }
     }
 
+    /**
+     * Alone the steps are there in under a second. In the whole suite other tests' downloads can
+     * still hold the store's places (RadarStore is one per process, their network waits long) –
+     * the offline steps then wait their turn: up to a minute.
+     */
     private fun waitFor(what: String, cond: () -> Boolean) {
-        val until = System.currentTimeMillis() + 20_000
+        val until = System.currentTimeMillis() + 60_000
         while (!cond()) { assertTrue("waited in vain: $what", System.currentTimeMillis() < until); Thread.sleep(50) }
     }
 

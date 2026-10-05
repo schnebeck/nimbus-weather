@@ -1,0 +1,1 @@
+• Radar: Zeigt der Kartenausschnitt kein Gebiet mit Radarvorhersage (z. B. Norwegen), endet die Wiedergabe bei „Jetzt“; der Vorhersageteil des Schiebers ist ausgegraut und nicht wählbar

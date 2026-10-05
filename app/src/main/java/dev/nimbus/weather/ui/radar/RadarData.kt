@@ -43,6 +43,14 @@ data class RadarTimeline(
 )
 
 /**
+ * The last step that can be shown: the whole time line – but where no composite with a nowcast
+ * reaches into the picture area ([nowcastHere] false: panned beyond the DWD's radars), the
+ * future is empty; the loop then ends at "now" and the forecast part cannot be chosen.
+ */
+fun RadarTimeline.lastShown(nowcastHere: Boolean): Int =
+    if (nowcastHere || day != null) frames.lastIndex else nowIndex.coerceIn(0, frames.lastIndex)
+
+/**
  * How far the radar loop looks back. DWD keeps three days of radar, RainViewer (Europe) only two
  * hours, so the longer ranges show the composites only. Every range has all 5-minute steps (the
  * slider steps through them), [playMinutes] is how much weather playback shows per beat – the

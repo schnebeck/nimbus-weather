@@ -59,6 +59,8 @@ In the list of places (long press, then tap "Model: …") each place first gets 
 - **A model of its own for this place** – the list of models unfolds beneath it, the model in force
   marked. Only tapping a model fixes it for the place.
 
+<p align="center"><img src="screenshots/en/models.png" width="300" alt="Forecast model of a place: the app setting or a model of its own"></p>
+
 "My location" moves and always takes the model of the settings.
 
 **The same place more than once:** ⧉ in the edit mode adds a place once more and opens its model

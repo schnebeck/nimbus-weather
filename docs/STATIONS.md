@@ -26,6 +26,8 @@ oben die Werte der nächsten Wetterstation statt der Modellwerte für den Ort. D
 „Gemessen an DWD-Station Norderney (13,5 km)“ nennt die Station der Temperatur; ⓘ daran listet für
 jeden Wert, ob er gemessen ist (und an welcher Station) oder vom Modell kommt.
 
+<p align="center"><img src="screenshots/station.png" width="300" alt="Herkunft der Werte: gemessen an der Station oder vom Modell"></p>
+
 ## Netze
 
 | Gebiet | Netz | Takt | Messwerte | Lizenz |

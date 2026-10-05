@@ -60,6 +60,8 @@ In der Ortsliste (lange drücken, dann auf „Modell: …“ tippen) wählt man 
 - **Eigenes Modell für diesen Ort** – darunter klappt die Liste der Modelle auf; vorgewählt ist das
   Modell, das gerade gilt. Erst der Tipp auf ein Modell legt den Ort fest.
 
+<p align="center"><img src="screenshots/models.png" width="300" alt="Vorhersagemodell für einen Ort: App-Einstellung oder eigenes Modell"></p>
+
 „Mein Standort“ wandert und nimmt immer das Modell aus den Einstellungen.
 
 **Derselbe Ort mehrfach:** ⧉ im Bearbeiten-Modus legt einen Ort ein weiteres Mal an und öffnet

@@ -26,6 +26,8 @@ weather page shows the values of the nearest weather station instead of the mode
 The note "Measured at DWD station Norderney (13.5 km)" names the station of the temperature; its ⓘ
 lists for each value whether it was measured (and at which station) or comes from the model.
 
+<p align="center"><img src="screenshots/en/station.png" width="300" alt="Source of the values: measured at the station or from the model"></p>
+
 ## Networks
 
 | Area | Network | Interval | Values | Licence |

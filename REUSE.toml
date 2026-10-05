@@ -57,7 +57,7 @@ SPDX-License-Identifier = "GPL-3.0-or-later"
 
 # Screenshots for the project page: the app with weather, radar and map data shown in it
 [[annotations]]
-path = "docs/screenshots/*.png"
+path = ["docs/screenshots/*.png", "docs/screenshots/en/*.png"]
 SPDX-FileCopyrightText = [
     "(C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>",
     "Weather data: Deutscher Wetterdienst (DWD), Open-Meteo.com",
@@ -65,11 +65,11 @@ SPDX-FileCopyrightText = [
 SPDX-License-Identifier = "CC-BY-4.0"
 
 [[annotations]]
-path = "docs/screenshots/radar.png"
+path = ["docs/screenshots/radar.png", "docs/screenshots/en/radar.png"]
 precedence = "override"
 SPDX-FileCopyrightText = [
     "(C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>",
-    "Radar and weather data: Deutscher Wetterdienst (DWD), RainViewer, Open-Meteo.com",
+    "Radar and weather data: Deutscher Wetterdienst (DWD), KNMI, RainViewer, Open-Meteo.com",
     "Map: OpenFreeMap, OpenMapTiles, OpenStreetMap contributors",
 ]
 SPDX-License-Identifier = "CC-BY-4.0 AND ODbL-1.0"
@@ -100,7 +100,7 @@ SPDX-License-Identifier = "GPL-3.0-or-later"
 path = ["fastlane/metadata/android/*/images/featureGraphic.png", "fastlane/metadata/android/*/images/phoneScreenshots/*.png"]
 SPDX-FileCopyrightText = [
     "(C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>",
-    "Radar and weather data: Deutscher Wetterdienst (DWD), RainViewer, Open-Meteo.com",
+    "Radar and weather data: Deutscher Wetterdienst (DWD), KNMI, RainViewer, Open-Meteo.com",
     "Map: OpenFreeMap, OpenMapTiles, OpenStreetMap contributors",
 ]
 SPDX-License-Identifier = "CC-BY-4.0 AND ODbL-1.0"

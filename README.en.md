@@ -32,13 +32,13 @@ the DWD and the KNMI. No ads, no account, no Google services. The app speaks Eng
 
 <table>
   <tr>
-    <td align="center" width="33%"><img src="docs/screenshots/main.png" width="240" alt="Weather page"><br><sub><b>Weather page</b><br>readings of the nearest weather station, outlook, hourly and 10 days</sub></td>
-    <td align="center" width="33%"><img src="docs/screenshots/meteogram.png" width="240" alt="Meteogram"><br><sub><b>Meteogram</b><br>temperature, rain, sunshine and wind per hour, with a slider</sub></td>
-    <td align="center" width="33%"><img src="docs/screenshots/history.png" width="240" alt="Look back"><br><sub><b>Look back</b><br>measured versus forecast – just swipe right</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/en/main.png" width="240" alt="Weather page"><br><sub><b>Weather page</b><br>readings of the nearest weather station, outlook, hourly and 10 days</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/en/meteogram.png" width="240" alt="Meteogram"><br><sub><b>Meteogram</b><br>temperature, rain, sunshine and wind per hour, with a slider</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/en/history.png" width="240" alt="Look back"><br><sub><b>Look back</b><br>measured versus forecast – just swipe right</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/radar.png" width="240" alt="Rain radar"><br><sub><b>Rain radar</b><br>DWD radar with nowcast, temperature and wind layers</sub></td>
-    <td align="center"><img src="docs/screenshots/sun.png" width="240" alt="Sun and moon"><br><sub><b>Sun and moon</b><br>sun arc with golden and blue hour, moon phase</sub></td>
+    <td align="center"><img src="docs/screenshots/en/radar.png" width="240" alt="Rain radar"><br><sub><b>Rain radar</b><br>DWD radar with nowcast, temperature and wind layers</sub></td>
+    <td align="center"><img src="docs/screenshots/en/sun.png" width="240" alt="Sun and moon"><br><sub><b>Sun and moon</b><br>sun arc with golden and blue hour, moon phase</sub></td>
     <td align="center" valign="middle">
       <b>Download</b><br><br>
       <a href="https://github.com/schnebeck/nimbus-weather/releases/latest">Latest release (APK)</a><br><br>

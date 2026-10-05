@@ -1,0 +1,3 @@
+• Radar for Norway, Sweden, Finland and Denmark from the weather service MET Norway: every 5 minutes, 1 km fine, an overview when zoomed out
+• Radar notes and the look-back's day radar follow what the area has – no longer Germany only
+• The radar starts even when the temperature grid is slow

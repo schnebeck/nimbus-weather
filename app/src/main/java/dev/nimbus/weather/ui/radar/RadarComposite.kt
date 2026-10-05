@@ -35,8 +35,19 @@ interface RadarComposite {
     val lat1: Double
     val w: Int
     val h: Int
-    val lon1: Double get() = lon0 + w * STEP
-    val lat0: Double get() = lat1 - h * STEP
+    /** Size of its cells in degrees: [STEP] (1 km) – coarser for an overview of a large area. */
+    val step: Double get() = STEP
+    val lon1: Double get() = lon0 + w * step
+    val lat0: Double get() = lat1 - h * step
+
+    /**
+     * Fetched only in windows ([GridWindow]) of the picture area, never whole: its whole grid
+     * would be too large for one step (the Nordic composite at 1 km).
+     */
+    val windowed: Boolean get() = false
+
+    /** Whether it draws a picture area [g] – a coarse and a fine grid of one service share them by scale. */
+    fun serves(g: FieldGeo): Boolean = true
 
     /** Whether it has steps ahead (a nowcast); else past steps only. */
     val hasNowcast: Boolean
@@ -82,8 +93,8 @@ fun RadarComposite.overlaps(west: Double, east: Double, south: Double, north: Do
 
 /** The code at a position: dBZ, 0 dry, [RadarComposite.NO_DATA] outside its grid. */
 fun RadarComposite.codeAt(codes: ByteArray, lat: Double, lon: Double): Int {
-    val r = floor((lat1 - lat) / RadarComposite.STEP).toInt()
-    val c = floor((lon - lon0) / RadarComposite.STEP).toInt()
+    val r = floor((lat1 - lat) / step).toInt()
+    val c = floor((lon - lon0) / step).toInt()
     if (r !in 0 until h || c !in 0 until w) return RadarComposite.NO_DATA
     return codes[r * w + c].toInt() and 0xFF
 }
@@ -96,7 +107,7 @@ class RadarLayer(val composite: RadarComposite, val codes: ByteArray, val inside
 
 object RadarComposites {
     /** In this order: where the first covers a spot, it shows it. */
-    val all: List<RadarComposite> = listOf(DwdRadar, KnmiRadar)
+    val all: List<RadarComposite> = listOf(DwdRadar, KnmiRadar, NordicOverview, NordicFine)
 
     /** Where the composites keep what they prepare (the DWD's coverage mask). */
     @Volatile var dir: java.io.File? = null
@@ -107,6 +118,12 @@ object RadarComposites {
      */
     fun anchorFor(lat: Double, lon: Double, among: List<RadarComposite> = all): RadarComposite =
         among.firstOrNull { it.covers(lat, lon) } ?: among.first()
+
+    /**
+     * Whether a composite covers the place – its steps kept for days (the look-back's radar of a
+     * whole day); beyond them only RainViewer's two hours.
+     */
+    fun covered(lat: Double, lon: Double): Boolean = all.any { it.covers(lat, lon) }
 
     /** Prepares all of them – none failing the others ([RadarComposite.prepare]). */
     suspend fun prepare(http: OkHttpClient) = all.forEach { runCatching { it.prepare(http) } }

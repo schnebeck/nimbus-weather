@@ -44,7 +44,10 @@ object RadarDecode {
     /** A coloured radar image of [w] × [h] pixels as codes, null if it is not one. */
     suspend fun png(
         http: OkHttpClient, url: String, w: Int, h: Int, source: RadarPalette.Source, on: CoroutineDispatcher = lane(w * h),
-    ): ByteArray? {
+    ): ByteArray? = pixels(http, url, w, h, on)?.let { px -> withContext(on) { codes(px, source) } }
+
+    /** The pixels (ARGB, not premultiplied) of a PNG of [w] × [h], null if it is not one. */
+    suspend fun pixels(http: OkHttpClient, url: String, w: Int, h: Int, on: CoroutineDispatcher = lane(w * h)): IntArray? {
         val bytes = withContext(Dispatchers.IO) {
             http.newCall(Request.Builder().url(url).header("User-Agent", USER_AGENT).build()).await().use { r ->
                 if (!r.isSuccessful || r.header("Content-Type")?.startsWith("image/png") != true) null else r.body.bytes()
@@ -54,9 +57,7 @@ object RadarDecode {
             val opts = BitmapFactory.Options().apply { inPremultiplied = false }
             val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts) ?: return@withContext null
             if (bmp.width != w || bmp.height != h) { bmp.recycle(); return@withContext null }
-            val px = IntArray(w * h).also { bmp.getPixels(it, 0, w, 0, 0, w, h) }
-            bmp.recycle()
-            codes(px, source)
+            IntArray(w * h).also { bmp.getPixels(it, 0, w, 0, 0, w, h); bmp.recycle() }
         }
     }
 

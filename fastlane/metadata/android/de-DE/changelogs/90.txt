@@ -1,0 +1,3 @@
+• Radar für Norwegen, Schweden, Finnland und Dänemark vom Wetterdienst MET Norway: alle 5 Minuten, 1 km fein, herausgezoomt als Übersicht
+• Radar-Hinweise und Tagesradar im Rückblick richten sich nach dem, was im Ausschnitt verfügbar ist – nicht mehr nur nach Deutschland
+• Radar startet auch, wenn das Temperaturgitter langsam kommt

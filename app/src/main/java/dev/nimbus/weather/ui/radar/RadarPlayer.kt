@@ -74,6 +74,12 @@ class RadarPlayer(
     private val _nowcastHere = MutableStateFlow(true)
     /** Whether a composite with a nowcast reaches into the picture area – else its future is empty. */
     val nowcastHere: StateFlow<Boolean> = _nowcastHere
+    private val _compositeHere = MutableStateFlow(true)
+    /**
+     * Whether a weather service's composite reaches into the picture area – else only RainViewer,
+     * which keeps two hours (the longer look-back stays empty there).
+     */
+    val compositeHere: StateFlow<Boolean> = _compositeHere
     /** Smoothing for field pixels larger than screen pixels ([FrameBuilder.screenSmooth]). */
     @Volatile private var screenSmooth = 0
 
@@ -139,6 +145,7 @@ class RadarPlayer(
         restartExtractor()
     }
 
+
     /**
      * The visible area changed (camera idle): a new picture area if the old one no longer serves.
      * [screenWidthPx]: the map's width on the screen (0: unknown).
@@ -156,8 +163,11 @@ class RadarPlayer(
         covered = null
         frames.clear()
         flows.clear()
+        // a composite loaded in windows of the area: its steps of the new area are others
+        val windowed = RadarComposites.all.any { it.windowed && it.serves(want) && it.overlaps(want.west, want.east, want.south, want.north) }
         restartExtractor()
-        if (downloader == null) restartDownloader()
+        if (windowed) stored.clear()
+        if (downloader == null || windowed) restartDownloader()
     }
 
     private fun stepMinutes(tl: RadarTimeline) =
@@ -173,7 +183,7 @@ class RadarPlayer(
         failed.clear()
         downloader = scope.launch(Dispatchers.Default) {
             withContext(Dispatchers.IO) {
-                tl.frames.forEach { f -> geo?.let { g -> RadarPicture.composites(f, g) }?.takeIf { it.isNotEmpty() && it.all { c -> RadarStore.has(c.key(f)) } }?.let { stored += f.id } }
+                tl.frames.forEach { f -> geo?.let { g -> RadarPicture.composites(f, g).takeIf { it.isNotEmpty() && it.all { c -> RadarStore.hasArea(c, f, g) } } }?.let { stored += f.id } }
             }
             countStored(tl)
             wake.trySend(Unit)
@@ -192,10 +202,11 @@ class RadarPlayer(
                             val f = tl.frames[i]
                             val k = f.id
                             if (k in stored) continue
-                            val needed = geo?.let { RadarPicture.composites(f, it) }.orEmpty()
+                            val g = geo ?: continue
+                            val needed = RadarPicture.composites(f, g)
                             if (needed.isEmpty()) continue
                             // all composites of the step, then it counts – stored if any of them could be had
-                            val got = needed.map { c -> RadarStore.grid(http, c, f) }
+                            val got = needed.map { c -> RadarStore.forArea(http, c, f, g) }
                             if (got.any { it != null }) stored += k else failed += k
                             // either way the step can be drawn now (without what failed)
                             wake.trySend(Unit)
@@ -225,6 +236,7 @@ class RadarPlayer(
             if (covered == null) covered = RadarPicture.coverage(g)
             val inArea = covered!!
             _nowcastHere.value = inArea.any { (c, mask) -> c.hasNowcast && mask.any { it } }
+            _compositeHere.value = inArea.values.any { mask -> mask.any { it } }
             val builder = FrameBuilder(http, tl, g, inArea, screenSmooth)
             wake.trySend(Unit)
             val strides = Progressive.strides(stepMinutes(tl))
@@ -254,7 +266,7 @@ class RadarPlayer(
                     if (frames.containsKey(k)) continue
                     val needed = RadarPicture.composites(f, g)
                     val layers = withContext(Dispatchers.IO) {
-                        needed.mapNotNull { c -> RadarStore.peek(c.key(f))?.let { RadarLayer(c, it, covered?.get(c)) } }
+                        needed.mapNotNull { c -> RadarStore.peekArea(c, f, g)?.let { (codes, w) -> RadarLayer(c, codes, covered?.get(c), w) } }
                     }
                     // not downloaded yet: a later pass (one the service did not deliver: without it)
                     if (needed.isNotEmpty() && layers.isEmpty() && k !in failed) continue

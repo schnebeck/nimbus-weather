@@ -91,7 +91,6 @@ import dev.nimbus.weather.BuildConfig
 import dev.nimbus.weather.NimbusApp
 import dev.nimbus.weather.R
 import dev.nimbus.weather.data.model.Place
-import dev.nimbus.weather.data.repo.WeatherRepository
 import dev.nimbus.weather.ui.theme.NimbusColors
 import dev.nimbus.weather.util.TimeFormat
 import kotlinx.coroutines.async
@@ -119,6 +118,8 @@ import java.util.TimeZone
 const val STYLE_URL = "https://tiles.openfreemap.org/styles/dark"
 const val RADAR_ZOOM = 6.6
 /** Time per step while playing: the live loop, and an archived day (5-minute steps, a day in ~55 s). */
+/** How long the radar waits for the temperature grid before it starts without (it follows). */
+private const val GRID_WAIT_MS = 8_000L
 private const val FRAME_MS = 450f
 private const val ARCHIVE_STEP_MS = 180f
 /** The live loop rests this long on its last frame before starting over. */
@@ -225,6 +226,7 @@ fun RadarScreen(
     /** Tile requests that failed or were answered from the cache while this screen is open. */
     val netStatus by RadarNetStatus.state.collectAsState()
     val nowcastHere by player.nowcastHere.collectAsState()
+    val compositeHere by player.compositeHere.collectAsState()
     var frame by remember { mutableIntStateOf(0) }
     var playing by remember { mutableStateOf(false) }
     /** Archived day: playback holds until enough frames ahead are loaded. */
@@ -333,8 +335,9 @@ fun RadarScreen(
         }
     }
 
-    // The time line follows the composite the place lies in (the DWD's in Germany, the KNMI's beyond it)
-    val anchor = remember(place) { RadarComposites.anchorFor(place?.latitude ?: 51.1, place?.longitude ?: 10.4) }
+    // The time line follows the composite the place lies in (the DWD's in Germany, the KNMI's or MET
+    // Norway's beyond it) – decided once their areas are known (masks, from the device after the first time)
+    var anchor by remember(place) { mutableStateOf(RadarComposites.anchorFor(place?.latitude ?: 51.1, place?.longitude ?: 10.4)) }
 
     // (Re)load the frames for the selected history range.
     LaunchedEffect(range, styleReady, reloadKey) {
@@ -345,14 +348,16 @@ fun RadarScreen(
         // Grid and time line in parallel; neither may hold up the other.
         val gridJob = async { WeatherGridStore.ensure(container.http, lat, lon, from = archiveDay) }
         // What the composites need before their first picture – the DWD's area mask (from disk after the first time)
-        val coverageJob = async { kotlinx.coroutines.withTimeoutOrNull(5_000L) { RadarComposites.prepare(container.http) } }
+        kotlinx.coroutines.withTimeoutOrNull(5_000L) { RadarComposites.prepare(container.http) }
+        anchor = RadarComposites.anchorFor(lat, lon)
         val tl = runCatching {
             if (archiveDay != null) RadarSources.dayTimeline(container.http, archiveDay, anchor = anchor)
             else RadarSources.timeline(container.http, range, force = reloadKey > 0, anchor = anchor)
         }.getOrNull()
         if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "timeline after ${System.currentTimeMillis() - openedAt} ms")
-        val grid = gridJob.await()
-        coverageJob.await()
+        // the grid colours snow: waited for a while, never for ever (a slow request held the radar for minutes)
+        val grid = kotlinx.coroutines.withTimeoutOrNull(GRID_WAIT_MS) { gridJob.await() }
+        if (grid == null) launch { gridJob.await()?.let { overlays.setGrid(it) } }
         if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "grid after ${System.currentTimeMillis() - openedAt} ms")
         if (tl == null) { error = true; return@LaunchedEffect }
         error = false
@@ -496,18 +501,15 @@ fun RadarScreen(
             }
         }
         val total = timeline?.frames?.size ?: 0
-        // the future where no composite with a nowcast reaches (RainViewer has none): said so
-        val noForecast = timeline?.frames?.getOrNull(frame)?.isForecast == true && !nowcastHere
-        val stillLoading = timeline != null && styleReady && !noForecast &&
+        val stillLoading = timeline != null && styleReady &&
             (buffering || !player.canShow(frame.toFloat()) || loadedFrames < total)
         val trouble = netStatus.failed > 0 || netStatus.fromCache > 0
-        if (error || stillLoading || trouble || noForecast) {
+        if (error || stillLoading || trouble) {
             Column(
                 Modifier.align(Alignment.TopCenter).windowInsetsPadding(WindowInsets.statusBarsStable).padding(top = 64.dp, start = 24.dp, end = 24.dp)
                     .clip(RoundedCornerShape(12.dp)).background(Color(0xCC0B1424)).padding(horizontal = 14.dp, vertical = 10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                if (noForecast && !error) Text(stringResource(R.string.radar_no_forecast), color = Color.White, fontSize = 13.sp)
                 if (stillLoading && !error) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(14.dp))
@@ -553,7 +555,6 @@ fun RadarScreen(
         ) {
             if (tl != null) {
                 val f = tl.frames[frame.coerceIn(0, tl.frames.lastIndex)]
-                val outsideGermany = place != null && !WeatherRepository.isInDwdArea(place.latitude, place.longitude)
                 if (!archive) Row(verticalAlignment = Alignment.CenterVertically) {
                     HistoryRange.entries.forEach { r ->
                         ToggleChip(stringResource(R.string.radar_range_hours, r.hours), range == r) {
@@ -561,12 +562,13 @@ fun RadarScreen(
                         }
                         Spacer(Modifier.width(6.dp))
                     }
-                    if (range != HistoryRange.H2 && outsideGermany) {
+                    // what the picture area has, not where the place lies: panned on, it may be other
+                    if (range != HistoryRange.H2 && !compositeHere) {
                         Text(stringResource(R.string.radar_history_germany_only), fontSize = 11.sp, color = Color(0xFFFFD27A), lineHeight = 13.sp)
                     }
                 }
                 if (!archive) Spacer(Modifier.height(8.dp))
-                if (f.isForecast && outsideGermany) {
+                if (f.isForecast && !nowcastHere) {
                     Text(
                         stringResource(R.string.radar_forecast_germany_only),
                         Modifier.clip(RoundedCornerShape(8.dp)).background(Color(0x66000000)).padding(horizontal = 8.dp, vertical = 4.dp),

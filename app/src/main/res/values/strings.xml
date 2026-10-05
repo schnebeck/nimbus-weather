@@ -155,7 +155,7 @@
     <string name="radar_forecast_germany_only">Radar forecast (nowcast) only available for Germany</string>
     <string name="radar_minutes_ago">%1$d min ago</string>
     <string name="radar_minutes_ahead">in %1$d min</string>
-    <string name="radar_attribution">Radar: DWD · KNMI · RainViewer | Map: © OpenFreeMap © OpenMapTiles © OpenStreetMap</string>
+    <string name="radar_attribution">Radar: DWD · KNMI · MET Norway · RainViewer | Map: © OpenFreeMap © OpenMapTiles © OpenStreetMap</string>
     <string name="radar_loading">Loading radar…</string>
     <string name="radar_error">Radar data currently unavailable</string>
     <string name="my_position">My position</string>
@@ -279,7 +279,7 @@
     <string name="src_moon">Moon: calculated on device</string>
 
     <string name="radar_range_hours">%1$d h</string>
-    <string name="radar_history_germany_only">Longer history for Germany only</string>
+    <string name="radar_history_germany_only">Longer history only with weather service radar</string>
 
     <string name="radar_hours_ago">%1$d h ago</string>
 
@@ -416,7 +416,7 @@
     <string name="term_pollen_title">Pollen</string>
     <string name="term_pollen_body">The pollen forecast shows how strongly allergy-relevant pollen types are in the air.\n\nLevels (scale of the German Weather Service): none, low, moderate and high, with intermediate steps. Each bar has three segments – half-filled segments are the intermediate steps.\n\n• Germany: official DWD pollen forecast for 8 types (hazel, alder, ash, birch, grasses, rye, mugwort, ragweed) and 27 regions, issued daily around 11:00 for today, tomorrow and the day after\n• Rest of Europe: levels derived from the Copernicus CAMS model (6 types)\n\nComposition and course come from CAMS in grains per cubic metre of air. They show which pollen dominates – useful if you react to only some types. Sensitive people can react even at low levels.\n\nWhen pollen is in the air and it is dry, the animated background shows it as fine floating particles.</string>
     <string name="term_radar_title">Precipitation Radar</string>
-    <string name="term_radar_body">Weather radar sends out microwave pulses and measures how strongly raindrops, snowflakes and hail reflect them (reflectivity in dBZ). Stronger echoes mean heavier precipitation.\n\nGermany: DWD radar composite in 5-minute steps plus a nowcast that extrapolates the movement of the precipitation for the next two hours. The Netherlands, the North Sea and north-western Germany beyond the DWD radars: KNMI radar composite in 5-minute steps (past). Rest of Europe: RainViewer (past two hours only).\n\nAll sources are shown in one colour scale. Radar sees precipitation in the air: light drizzle or snow close to the ground may be missing, and near mountains or radar sites artefacts can occur.</string>
+    <string name="term_radar_body">Weather radar sends out microwave pulses and measures how strongly raindrops, snowflakes and hail reflect them (reflectivity in dBZ). Stronger echoes mean heavier precipitation.\n\nGermany: DWD radar composite in 5-minute steps plus a nowcast that extrapolates the movement of the precipitation for the next two hours. The Netherlands, the North Sea and north-western Germany beyond the DWD radars: KNMI radar composite in 5-minute steps (past). Norway, Sweden, Finland and Denmark: MET Norway\'s Nordic radar composite in 5-minute steps (past; zoomed out in coarser cells). Rest of Europe: RainViewer (past two hours only, every 10 minutes – the steps between computed from the motion).\n\nAll sources are shown in one colour scale. Radar sees precipitation in the air: light drizzle or snow close to the ground may be missing, and near mountains or radar sites artefacts can occur.</string>
     <string name="term_models_title">Weather Models</string>
     <string name="term_models_body">Weather models are computer simulations that calculate the future state of the atmosphere on a three-dimensional grid. Finer grids resolve local effects such as thunderstorms, valleys and coasts better.\n\n• ICON-D2 (DWD): 2.2 km, Germany &amp; neighbours, 2 days\n• ICON-EU (DWD): 7 km, Europe, 5 days\n• ECMWF IFS: 9–⁠25 km, global, one of the best global models\n• MET Nordic (MET Norway): 1 km, Scandinavia &amp; northern Germany, 2½ days\n• AROME/ARPEGE (Météo-France), UK Met Office, KNMI Harmonie, MET Norway, NOAA GFS\n\nIf the lines lie close together, the forecast is fairly certain. If they diverge, the weather situation is uncertain – typical for thunderstorms or several days ahead. Tap a model to highlight it.</string>
     <string name="term_community_title">Community Sensors</string>
@@ -459,7 +459,7 @@
     <string name="licenses_show_text">Show license text</string>
     <string name="licenses_libraries">Libraries (%1$d)</string>
     <string name="licenses_data">Data and maps</string>
-    <string name="licenses_data_text">Weather data: Deutscher Wetterdienst (DWD), CC BY 4.0, partly via Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, KNMI (CC BY 4.0), RainViewer · Measurements: GeoSphere Austria, MeteoSwiss, DMI (CC BY 4.0), NOAA aviationweather.gov (METAR, public domain) · Satellite: Contains modified EUMETSAT Meteosat data, CC BY 4.0 · Citizen sensors: Sensor.Community, ODbL · Water levels: PEGELONLINE (WSV), DL-DE Zero 2.0; NLWKN Pegelonline, pegelonline.nlwkn.niedersachsen.de; LANUK NRW (Hochwasserportal NRW), DL-DE Zero 2.0; LfULG Sachsen (Pegelnetz); HLNUG; flood classification and alerts: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0 · Place names: Nominatim, © OpenStreetMap contributors, ODbL · Maps: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors, ODbL.</string>
+    <string name="licenses_data_text">Weather data: Deutscher Wetterdienst (DWD), CC BY 4.0, partly via Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, KNMI, MET Norway (CC BY 4.0), RainViewer · Measurements: GeoSphere Austria, MeteoSwiss, DMI (CC BY 4.0), NOAA aviationweather.gov (METAR, public domain) · Satellite: Contains modified EUMETSAT Meteosat data, CC BY 4.0 · Citizen sensors: Sensor.Community, ODbL · Water levels: PEGELONLINE (WSV), DL-DE Zero 2.0; NLWKN Pegelonline, pegelonline.nlwkn.niedersachsen.de; LANUK NRW (Hochwasserportal NRW), DL-DE Zero 2.0; LfULG Sachsen (Pegelnetz); HLNUG; flood classification and alerts: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0 · Place names: Nominatim, © OpenStreetMap contributors, ODbL · Maps: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors, ODbL.</string>
     <string name="radar_loading_frames">Loading radar images %1$d/%2$d</string>
     <string name="radar_partly_cached">Connection problems – some radar images are older copies from the memory.</string>
     <string name="radar_partly_missing">Some radar images could not be loaded.</string>
@@ -556,7 +556,7 @@
     <string name="pn_hail">Thunderstorms with hail</string>
     <string name="history_radar_title">Radar of the day</string>
     <string name="history_radar_text">Rain radar for %1$s, midnight to midnight in 5-minute steps</string>
-    <string name="history_radar_hint">Play, pan and zoom · Germany only (DWD)</string>
+    <string name="history_radar_hint">Play, pan and zoom · where a weather service radar measures (DWD, KNMI, MET Norway)</string>
     <string name="bathing_title">Bathing waters</string>
     <string name="bathing_off_season">Outside the bathing season (May 15 – Sept 15): the values come from the last samples of the season.</string>
     <string name="bathing_all">All %1$d bathing sites within %2$d km</string>
@@ -629,7 +629,6 @@
     <string name="legend_temperature">Temperature</string>
     <string name="legend_temp_forecast">Temp. forecast</string>
     <string name="legend_chance">Precip. chance</string>
-    <string name="radar_no_forecast">No forecast for this area</string>
     <string name="radar_preparing">Preparing the radar…</string>
     <string name="settings_show_dry_precip">Precipitation card on dry days</string>
     <string name="settings_show_dry_precip_desc">Shows “Dry today” and the next precipitation in the forecast. Off: on a dry day the card is hidden.</string>

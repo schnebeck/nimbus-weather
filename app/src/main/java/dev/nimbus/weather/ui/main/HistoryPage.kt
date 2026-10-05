@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import dev.nimbus.weather.data.repo.WeatherRepository
 import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -236,8 +235,8 @@ fun HistoryPage(
                         item(key = "summary") { SummaryCard(summary, history, settings, tf) }
                         // Right after midnight there is only one hour – nothing to draw yet.
                         if (day.hours.size >= 2) item(key = "course") { DayCourseCard(day, summary, settings, tf, history, place) }
-                        // The DWD keeps about 3½ days of radar: the whole day, in 5-minute steps (Germany)
-                        if (WeatherRepository.isInDwdArea(place.latitude, place.longitude)) item(key = "radar") {
+                        // The composites keep days of radar (DWD, KNMI, MET Norway): the whole day, in 5-minute steps
+                        if (dev.nimbus.weather.ui.radar.RadarComposites.covered(place.latitude, place.longitude)) item(key = "radar") {
                             val start = day.date.atStartOfDay(history.zone).toInstant().toEpochMilli()
                             RadarDayCard(start, tf) { onOpenRadarDay(start) }
                         }

@@ -165,3 +165,8 @@ SPDX-License-Identifier = "LicenseRef-US-Government-Public-Domain"
 path = "app/src/test/resources/fixtures/knmi_*.asc.gz"
 SPDX-FileCopyrightText = "Royal Netherlands Meteorological Institute (KNMI)"
 SPDX-License-Identifier = "CC-BY-4.0"
+
+[[annotations]]
+path = "app/src/test/resources/fixtures/nordic_*.png"
+SPDX-FileCopyrightText = "Norwegian Meteorological Institute (MET Norway), Nordic radar composite"
+SPDX-License-Identifier = "CC-BY-4.0"

@@ -90,7 +90,8 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
   forecast of the chosen model, on top the day in parts (early to night) with symbol and weather, the
   sky showing them one after the other; the mean deviation, the hourly values as a table
   measured | forecast; precipitation measured and forecast with its chance; and the rain radar of the
-  whole day in 5-minute steps to play, pan and zoom (Germany).
+  whole day in 5-minute steps to play, pan and zoom (where a weather service radar measures: DWD,
+  KNMI, MET Norway).
 - **Sun and moon**: sun arc on a fixed scale per place (the height of the arc shows the season),
   light phases day, golden hour, blue hour and night, day length; moon phase, rise and set.
 - **Environment**: air quality, pollen (DWD index and composition, species to choose – e.g. trees
@@ -106,8 +107,10 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
   rivers, coasts –, favourites at any distance; EU classification, sea temperature at the coast, in
   Berlin and Schleswig-Holstein the latest samples with water temperature and blue-green algae
   notes. Sources per state: [docs/BATHING.en.md](docs/BATHING.en.md).
-- **Rain radar**: DWD radar with a 2-hour nowcast for Germany, KNMI radar for the Netherlands,
-  RainViewer for the rest of Europe (the time line follows the place's radar), one colour scale for
+- **Rain radar**: DWD radar with a 2-hour nowcast for Germany, KNMI radar for the Netherlands, MET
+  Norway's radar for Norway, Sweden, Finland and Denmark (1 km, zoomed out an overview in coarser
+  cells), RainViewer for the rest of Europe (every 10 minutes, the steps between computed from the
+  motion; the time line follows the place's radar), one colour scale for
   rain (green → yellow → red → magenta) and snow (turquoise → white → violet, per pixel by the
   temperature), optionally calmer in blue and pink–violet; the radar cells smoothed at every zoom
   level instead of blocks; smooth playback: between two radar images the motion of the rain is
@@ -169,7 +172,7 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
 | Forecast | [Open-Meteo](https://open-meteo.com): preset "best match", to choose DWD ICON, ECMWF IFS, Météo-France, MET Nordic (MET Norway), KNMI Harmonie, DMI Harmonie, UK Met Office, MeteoSwiss ICON-CH1/-CH2, GeoSphere AROME, ItaliaMeteo ICON-2I; gaps from "best match" |
 | Current readings | DWD stations via [Bright Sky](https://brightsky.dev), [GeoSphere Austria](https://data.hub.geosphere.at), [MeteoSwiss](https://opendatadocs.meteoswiss.ch), [DMI](https://www.dmi.dk/friedata), airports (METAR, [aviationweather.gov](https://aviationweather.gov)) |
 | Alerts, look-back | DWD alerts and stations via Bright Sky |
-| Radar, warning map | DWD GeoServer, [KNMI](https://english.knmidata.nl/open-data) (Netherlands); rest of Europe: [RainViewer](https://www.rainviewer.com/api.html) |
+| Radar, warning map | DWD GeoServer, [KNMI](https://english.knmidata.nl/open-data) (Netherlands), [MET Norway](https://www.met.no/en/free-meteorological-data) (Nordic composite); rest of Europe: [RainViewer](https://www.rainviewer.com/api.html) |
 | Satellite | Meteosat (MTG, GeoColour) via [EUMETView](https://view.eumetsat.int) – "Contains modified EUMETSAT Meteosat data", CC BY 4.0 |
 | Air quality, pollen in Europe | Copernicus CAMS via Open-Meteo |
 | Pollen in Germany | [DWD pollen hazard index](https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json) |

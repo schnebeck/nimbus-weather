@@ -45,6 +45,8 @@ object RadarStore {
     private const val MAGIC = 0x4E524431          // "NRD1"
     private const val RV_KEEP_MS = 3L * 3_600_000L
     private const val MAX_BYTES = 200L * 1024 * 1024
+    /** Windows of a windowed composite snap to blocks of this many cells (0.64° of the 1 km grid). */
+    const val AREA_BLOCK = 64
 
     /** Decoded steps in memory (DWD grid 1.8 MB each, RainViewer tiles 256 kB). */
     private val memory by lazy {
@@ -82,6 +84,37 @@ object RadarStore {
         withContext(Dispatchers.IO) { peek(composite.key(frame)) }?.let { return composite.cut(it, window) }
         return small.withPermit { runCatching { composite.fetch(http, frame, window) }.getOrNull() }?.takeIf { it.size == window.size }
     }
+
+    /**
+     * The window of a windowed composite ([RadarComposite.windowed]) for the picture area [g]: its
+     * cells under it, snapped outwards to blocks of [AREA_BLOCK] – a little panning keeps it.
+     * The whole grid for the others.
+     */
+    fun areaWindow(c: RadarComposite, g: FieldGeo): GridWindow? {
+        if (!c.windowed) return c.whole
+        val w = c.window(g.west, g.east, g.south, g.north, margin = 0) ?: return null
+        val c0 = w.col0 / AREA_BLOCK * AREA_BLOCK; val r0 = w.row0 / AREA_BLOCK * AREA_BLOCK
+        val c1 = minOf(c.w, (w.col0 + w.w + AREA_BLOCK - 1) / AREA_BLOCK * AREA_BLOCK)
+        val r1 = minOf(c.h, (w.row0 + w.h + AREA_BLOCK - 1) / AREA_BLOCK * AREA_BLOCK)
+        return GridWindow(c0, r0, c1 - c0, r1 - r0)
+    }
+
+    /** The store name of the step [f] of [c] in [window] (a windowed composite's carries the window). */
+    fun areaKey(c: RadarComposite, f: RadarFrame, window: GridWindow): String =
+        if (c.windowed) "${c.key(f)}_w${window.col0}_${window.row0}_${window.w}x${window.h}" else c.key(f)
+
+    /** The step [f] of [c] for the picture area [g] – the whole grid, or its window – with that window; null if it cannot be had. */
+    suspend fun forArea(http: OkHttpClient, c: RadarComposite, f: RadarFrame, g: FieldGeo): Pair<ByteArray, GridWindow>? {
+        val w = areaWindow(c, g) ?: return null
+        if (!c.windowed) return grid(http, c, f)?.let { it to w }
+        return get(areaKey(c, f, w), w.size, downloads) { c.fetch(http, f, w) }?.let { it to w }
+    }
+
+    /** [forArea] if it is at hand (memory or disk) – no download. */
+    fun peekArea(c: RadarComposite, f: RadarFrame, g: FieldGeo): Pair<ByteArray, GridWindow>? =
+        areaWindow(c, g)?.let { w -> peek(areaKey(c, f, w))?.let { it to w } }
+
+    fun hasArea(c: RadarComposite, f: RadarFrame, g: FieldGeo): Boolean = areaWindow(c, g)?.let { has(areaKey(c, f, it)) } == true
 
     /** A RainViewer tile (512 × 512 bytes), null if it cannot be had; [preview]: in the small requests' lane. */
     suspend fun rvTile(http: OkHttpClient, host: String, path: String, z: Int, x: Int, y: Int, preview: Boolean = false): ByteArray? =

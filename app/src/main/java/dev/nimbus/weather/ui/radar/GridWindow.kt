@@ -38,10 +38,10 @@ val RadarComposite.whole: GridWindow get() = GridWindow(0, 0, w, h)
  * reaches; null if it does not reach into it.
  */
 fun RadarComposite.window(west: Double, east: Double, south: Double, north: Double, margin: Int = 2): GridWindow? {
-    val c0 = (floor((west - lon0) / RadarComposite.STEP).toInt() - margin).coerceAtLeast(0)
-    val c1 = (floor((east - lon0) / RadarComposite.STEP).toInt() + margin).coerceAtMost(w - 1)
-    val r0 = (floor((lat1 - north) / RadarComposite.STEP).toInt() - margin).coerceAtLeast(0)
-    val r1 = (floor((lat1 - south) / RadarComposite.STEP).toInt() + margin).coerceAtMost(h - 1)
+    val c0 = (floor((west - lon0) / step).toInt() - margin).coerceAtLeast(0)
+    val c1 = (floor((east - lon0) / step).toInt() + margin).coerceAtMost(w - 1)
+    val r0 = (floor((lat1 - north) / step).toInt() - margin).coerceAtLeast(0)
+    val r1 = (floor((lat1 - south) / step).toInt() + margin).coerceAtMost(h - 1)
     return if (c1 < c0 || r1 < r0) null else GridWindow(c0, r0, c1 - c0 + 1, r1 - r0 + 1)
 }
 
@@ -58,7 +58,6 @@ fun RadarComposite.cut(codes: ByteArray, window: GridWindow): ByteArray {
  */
 fun RadarComposite.bbox(window: GridWindow): String {
     fun f(v: Double) = "%.2f".format(Locale.ROOT, v)
-    val step = RadarComposite.STEP
     return "${f(lon0 + window.col0 * step)},${f(lat1 - (window.row0 + window.h) * step)}," +
         "${f(lon0 + (window.col0 + window.w) * step)},${f(lat1 - window.row0 * step)}"
 }

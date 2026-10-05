@@ -31,13 +31,13 @@ object RadarPicture {
 
     /** The composites with a step [f] in the area [g]: reaching into it, the future only with a nowcast. */
     fun composites(f: RadarFrame, g: FieldGeo): List<RadarComposite> =
-        RadarComposites.all.filter { it.overlaps(g.west, g.east, g.south, g.north) && (!f.isForecast || it.hasNowcast) }
+        RadarComposites.all.filter { it.overlaps(g.west, g.east, g.south, g.north) && it.serves(g) && (!f.isForecast || it.hasNowcast) }
 
     /** Per composite reaching into the area: the pixels it covers. */
     fun coverage(g: FieldGeo): Map<RadarComposite, BooleanArray> {
         val lat = DoubleArray(g.h) { g.lat(g.my(it.toDouble())) }
         val lon = DoubleArray(g.w) { g.lon(g.mx(it.toDouble())) }
-        return RadarComposites.all.filter { it.overlaps(g.west, g.east, g.south, g.north) }.associateWith { c ->
+        return RadarComposites.all.filter { it.overlaps(g.west, g.east, g.south, g.north) && it.serves(g) }.associateWith { c ->
             BooleanArray(g.w * g.h) { i -> c.covers(lat[i / g.w], lon[i % g.w]) }
         }
     }

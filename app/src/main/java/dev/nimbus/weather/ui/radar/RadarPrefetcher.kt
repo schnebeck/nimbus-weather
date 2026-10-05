@@ -90,7 +90,8 @@ object RadarPrefetcher {
         val raw = (context.applicationContext as dev.nimbus.weather.NimbusApp).container.http
         kotlinx.coroutines.coroutineScope {
             // the steps of every composite the place lies in
-            val here = RadarComposites.all.filter { it.covers(place.latitude, place.longitude) }
+            // (a windowed one only for a picture area – the radar view loads it)
+            val here = RadarComposites.all.filter { it.covers(place.latitude, place.longitude) && !it.windowed }
             val steps = tl.frames.flatMap { f -> here.filter { !f.isForecast || it.hasNowcast }.map { c -> this.async { RadarStore.grid(raw, c, f) } } }
             steps.forEach { it.await() }
         }

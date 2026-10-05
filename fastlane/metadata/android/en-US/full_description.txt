@@ -18,7 +18,7 @@
 
 <p><b>Rain radar</b></p>
 <ul>
-<li>DWD radar with a 2-hour nowcast for Germany, KNMI radar for the Netherlands, RainViewer for the rest of Europe</li>
+<li>DWD radar with a 2-hour nowcast for Germany, KNMI radar for the Netherlands, MET Norway's radar for Norway, Sweden, Finland and Denmark, RainViewer for the rest of Europe</li>
 <li>One colour scale for rain and for snow – decided per pixel by the temperature</li>
 <li>Temperature and wind layers, satellite and warning map, look back up to 24 hours</li>
 <li>On Wi-Fi the radar loop of your location is kept up to date in the background, so it opens instantly</li>

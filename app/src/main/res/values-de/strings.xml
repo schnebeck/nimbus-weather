@@ -147,7 +147,7 @@
     <string name="radar_forecast_germany_only">Radarvorhersage (Nowcast) nur für Deutschland verfügbar</string>
     <string name="radar_minutes_ago">vor %1$d Min.</string>
     <string name="radar_minutes_ahead">in %1$d Min.</string>
-    <string name="radar_attribution">Radar: DWD · KNMI · RainViewer | Karte: © OpenFreeMap © OpenMapTiles © OpenStreetMap</string>
+    <string name="radar_attribution">Radar: DWD · KNMI · MET Norway · RainViewer | Karte: © OpenFreeMap © OpenMapTiles © OpenStreetMap</string>
     <string name="radar_loading">Radar wird geladen…</string>
     <string name="radar_error">Radardaten derzeit nicht verfügbar</string>
     <string name="my_position">Meine Position</string>
@@ -268,7 +268,7 @@
     <string name="src_moon">Mond: auf dem Gerät berechnet</string>
 
     <string name="radar_range_hours">%1$d Std.</string>
-    <string name="radar_history_germany_only">Längerer Rückblick nur für Deutschland</string>
+    <string name="radar_history_germany_only">Längerer Rückblick nur mit Wetterdienst-Radar</string>
 
     <string name="radar_hours_ago">vor %1$d Std.</string>
 
@@ -405,7 +405,7 @@
     <string name="term_pollen_title">Pollen</string>
     <string name="term_pollen_body">Die Pollenflugvorhersage zeigt, wie stark allergierelevante Pollenarten in der Luft sind.\n\nStufen (Skala des Deutschen Wetterdienstes): keine, gering, mittel und hoch, mit Zwischenstufen. Jeder Balken hat drei Segmente – halb gefüllte Segmente sind die Zwischenstufen.\n\n• Deutschland: amtlicher Pollenflug-Gefahrenindex des DWD für 8 Arten (Hasel, Erle, Esche, Birke, Gräser, Roggen, Beifuß, Ambrosia) und 27 Regionen, täglich gegen 11 Uhr für heute, morgen und übermorgen\n• Übriges Europa: Stufen abgeleitet aus dem Copernicus-CAMS-Modell (6 Arten)\n\nZusammensetzung und Verlauf stammen aus CAMS in Pollenkörnern pro Kubikmeter Luft. Sie zeigen, welche Pollen dominieren – hilfreich, wenn man nur auf bestimmte Arten reagiert. Empfindliche Menschen können schon bei geringer Belastung reagieren.\n\nSind Pollen in der Luft und ist es trocken, zeigt der animierte Hintergrund sie als feine schwebende Partikel.</string>
     <string name="term_radar_title">Niederschlagsradar</string>
-    <string name="term_radar_body">Ein Wetterradar sendet Mikrowellenimpulse aus und misst, wie stark Regentropfen, Schneeflocken und Hagel sie zurückwerfen (Reflektivität in dBZ). Stärkere Echos bedeuten stärkeren Niederschlag.\n\nDeutschland: DWD-Radarkomposit im 5-Minuten-Takt plus Nowcast, der die Zugbahn des Niederschlags für die nächsten zwei Stunden fortschreibt. Niederlande, Nordsee und Nordwestdeutschland jenseits der DWD-Radare: KNMI-Radarkomposit im 5-Minuten-Takt (Vergangenheit). Übriges Europa: RainViewer (nur die vergangenen zwei Stunden).\n\nAlle Quellen werden in einer gemeinsamen Farbskala dargestellt. Das Radar sieht Niederschlag in der Luft: Leichter Niesel oder Schnee in Bodennähe kann fehlen, an Bergen oder Radarstandorten können Artefakte auftreten.</string>
+    <string name="term_radar_body">Ein Wetterradar sendet Mikrowellenimpulse aus und misst, wie stark Regentropfen, Schneeflocken und Hagel sie zurückwerfen (Reflektivität in dBZ). Stärkere Echos bedeuten stärkeren Niederschlag.\n\nDeutschland: DWD-Radarkomposit im 5-Minuten-Takt plus Nowcast, der die Zugbahn des Niederschlags für die nächsten zwei Stunden fortschreibt. Niederlande, Nordsee und Nordwestdeutschland jenseits der DWD-Radare: KNMI-Radarkomposit im 5-Minuten-Takt (Vergangenheit). Norwegen, Schweden, Finnland und Dänemark: Nordic-Radarkomposit von MET Norway im 5-Minuten-Takt (Vergangenheit; herausgezoomt in gröberen Zellen). Übriges Europa: RainViewer (nur die vergangenen zwei Stunden, alle 10 Minuten – die Schritte dazwischen aus der Bewegung berechnet).\n\nAlle Quellen werden in einer gemeinsamen Farbskala dargestellt. Das Radar sieht Niederschlag in der Luft: Leichter Niesel oder Schnee in Bodennähe kann fehlen, an Bergen oder Radarstandorten können Artefakte auftreten.</string>
     <string name="term_models_title">Wettermodelle</string>
     <string name="term_models_body">Wettermodelle sind Computersimulationen, die den künftigen Zustand der Atmosphäre auf einem dreidimensionalen Gitter berechnen. Feinere Gitter bilden lokale Effekte wie Gewitter, Täler und Küsten besser ab.\n\n• ICON-D2 (DWD): 2,2 km, Deutschland &amp; Nachbarländer, 2 Tage\n• ICON-EU (DWD): 7 km, Europa, 5 Tage\n• ECMWF IFS: 9–⁠25 km, global, eines der besten globalen Modelle\n• MET Nordic (MET Norway): 1 km, Skandinavien &amp; Norddeutschland, 2½ Tage\n• AROME/ARPEGE (Météo-France), UK Met Office, KNMI Harmonie, MET Norway, NOAA GFS\n\nLiegen die Linien eng beieinander, ist die Vorhersage recht sicher. Laufen sie auseinander, ist die Wetterlage unsicher – typisch bei Gewittern oder mehrere Tage im Voraus. Tippe auf ein Modell, um es hervorzuheben.</string>
     <string name="term_community_title">Community-Messnetz</string>
@@ -448,7 +448,7 @@
     <string name="licenses_show_text">Lizenztext anzeigen</string>
     <string name="licenses_libraries">Bibliotheken (%1$d)</string>
     <string name="licenses_data">Daten und Karten</string>
-    <string name="licenses_data_text">Wetterdaten: Deutscher Wetterdienst (DWD), CC BY 4.0, teils über Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, KNMI (CC BY 4.0), RainViewer · Messwerte: GeoSphere Austria, MeteoSwiss, DMI (CC BY 4.0), NOAA aviationweather.gov (METAR, gemeinfrei) · Satellit: Contains modified EUMETSAT Meteosat data, CC BY 4.0 · Bürger-Messnetz: Sensor.Community, ODbL · Pegel: PEGELONLINE (WSV), DL-DE Zero 2.0; NLWKN Pegelonline, pegelonline.nlwkn.niedersachsen.de; LANUK NRW (Hochwasserportal NRW), DL-DE Zero 2.0; LfULG Sachsen (Pegelnetz); HLNUG; Hochwasser-Einstufung und -Warnungen: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0 · Ortsnamen: Nominatim, © OpenStreetMap-Mitwirkende, ODbL · Karten: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap-Mitwirkende, ODbL.</string>
+    <string name="licenses_data_text">Wetterdaten: Deutscher Wetterdienst (DWD), CC BY 4.0, teils über Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, KNMI, MET Norway (CC BY 4.0), RainViewer · Messwerte: GeoSphere Austria, MeteoSwiss, DMI (CC BY 4.0), NOAA aviationweather.gov (METAR, gemeinfrei) · Satellit: Contains modified EUMETSAT Meteosat data, CC BY 4.0 · Bürger-Messnetz: Sensor.Community, ODbL · Pegel: PEGELONLINE (WSV), DL-DE Zero 2.0; NLWKN Pegelonline, pegelonline.nlwkn.niedersachsen.de; LANUK NRW (Hochwasserportal NRW), DL-DE Zero 2.0; LfULG Sachsen (Pegelnetz); HLNUG; Hochwasser-Einstufung und -Warnungen: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0 · Ortsnamen: Nominatim, © OpenStreetMap-Mitwirkende, ODbL · Karten: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap-Mitwirkende, ODbL.</string>
     <string name="radar_loading_frames">Radarbilder werden geladen %1$d/%2$d</string>
     <string name="radar_partly_cached">Verbindungsprobleme – einige Radarbilder sind ältere Kopien aus dem Speicher.</string>
     <string name="radar_partly_missing">Einige Radarbilder konnten nicht geladen werden.</string>
@@ -545,7 +545,7 @@
     <string name="pn_hail">Gewitter mit Hagel</string>
     <string name="history_radar_title">Radar des Tages</string>
     <string name="history_radar_text">Niederschlagsradar für %1$s, 0–24 Uhr in 5-Minuten-Schritten</string>
-    <string name="history_radar_hint">Abspielen, verschieben und zoomen · nur Deutschland (DWD)</string>
+    <string name="history_radar_hint">Abspielen, verschieben und zoomen · wo ein Wetterdienst-Radar misst (DWD, KNMI, MET Norway)</string>
     <string name="bathing_title">Badegewässer</string>
     <string name="bathing_off_season">Außerhalb der Badesaison (15. Mai – 15. Sept.): die Werte stammen aus den letzten Proben der Saison.</string>
     <string name="bathing_all">Alle %1$d Badestellen bis %2$d km</string>
@@ -618,7 +618,6 @@
     <string name="legend_temperature">Temperatur</string>
     <string name="legend_temp_forecast">Temp. Prognose</string>
     <string name="legend_chance">Niederschl.-Wahrsch.</string>
-    <string name="radar_no_forecast">Keine Vorhersage für dieses Gebiet</string>
     <string name="radar_preparing">Radar wird vorbereitet…</string>
     <string name="settings_show_dry_precip">Niederschlag-Kachel an trockenen Tagen</string>
     <string name="settings_show_dry_precip_desc">Zeigt „Heute trocken“ und den nächsten Niederschlag der Vorhersage. Aus: An trockenen Tagen wird die Kachel ausgeblendet.</string>

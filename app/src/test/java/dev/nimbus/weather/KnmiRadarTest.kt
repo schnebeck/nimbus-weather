@@ -98,9 +98,9 @@ class KnmiRadarTest {
         assertTrue("the KNMI's rain not shown beyond the DWD's area", dwdNot.wet.any { it.toInt() and 0xFF > 0 })
     }
 
-    /** Both composites known to the processing, the DWD's first; KNMI past steps only. */
+    /** The composites known to the processing, the DWD's first, then the KNMI's, then MET Norway's two grids; KNMI past steps only. */
     @Test fun theCompositesInOrder() {
-        assertEquals(listOf("dwd", "knmi"), dev.nimbus.weather.ui.radar.RadarComposites.all.map { it.id })
+        assertEquals(listOf("dwd", "knmi", "nordic4", "nordic1"), dev.nimbus.weather.ui.radar.RadarComposites.all.map { it.id })
         assertTrue(DwdRadar.hasNowcast && DwdRadar.exactCoverage)
         assertTrue(!KnmiRadar.hasNowcast && !KnmiRadar.exactCoverage)
     }

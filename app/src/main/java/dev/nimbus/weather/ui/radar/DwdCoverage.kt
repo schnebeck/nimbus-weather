@@ -17,15 +17,7 @@
 
 package dev.nimbus.weather.ui.radar
 
-import android.graphics.BitmapFactory
-import dev.nimbus.weather.data.remote.USER_AGENT
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import java.io.File
 
 /**
  * Past radar frames used to stack two layers – DWD and RainViewer, each at 85 % – so over
@@ -41,47 +33,22 @@ internal object DwdCoverage {
     const val LON1 = 18.8
     const val LAT0 = 45.6
     const val LAT1 = 56.3
-    private const val MAX_AGE_MS = 30L * 24 * 3_600_000L
 
-    @Volatile private var mask: BooleanArray? = null
-    private val mutex = Mutex()
-
-    /** Inside the DWD radar area (false while the mask is not loaded). */
-    fun covers(lat: Double, lon: Double): Boolean {
-        val m = mask ?: return false
-        val x = ((lon - LON0) / (LON1 - LON0) * W).toInt()
-        val y = ((LAT1 - lat) / (LAT1 - LAT0) * H).toInt()
-        if (x !in 0 until W || y !in 0 until H) return false
-        return m[y * W + x]
-    }
-
-    val ready: Boolean get() = mask != null
-
-    /** Loads the mask from disk or, at most once a month, from one DWD image (~20 kB). */
-    suspend fun ensure(http: OkHttpClient) = mutex.withLock {
-        if (mask != null) return@withLock
-        val file = RadarComposites.dir?.let { File(it, "dwd_coverage.png") }
-        val now = System.currentTimeMillis()
-        val bytes = withContext(Dispatchers.IO) {
-            file?.takeIf { it.exists() && now - it.lastModified() < MAX_AGE_MS }?.readBytes()
-        } ?: run {
-            val time = RadarLatest.known(DwdRadar) ?: RadarLatest.check(http, DwdRadar) ?: return@withLock
-            val url = DwdRadar.WMS + "?service=WMS&version=1.1.1&request=GetMap&layers=${DwdRadar.LAYER}" +
+    /** One DWD image of the newest step (~20 kB), at most once a month. */
+    private val mask = CoverageMask("dwd_coverage.png", LON0, LAT0, LON1, LAT1, W, H, url = { http ->
+        (RadarLatest.known(DwdRadar) ?: RadarLatest.check(http, DwdRadar))?.let { time ->
+            DwdRadar.WMS + "?service=WMS&version=1.1.1&request=GetMap&layers=${DwdRadar.LAYER}" +
                 "&styles=&format=image/png&transparent=true&srs=EPSG:4326&bbox=$LON0,$LAT0,$LON1,$LAT1" +
                 "&width=$W&height=$H&time=${RadarSources.isoTime(time)}"
-            withContext(Dispatchers.IO) {
-                runCatching {
-                    http.newCall(Request.Builder().url(url).header("User-Agent", USER_AGENT).build()).execute().use { r ->
-                        if (r.isSuccessful && r.header("Content-Type")?.startsWith("image/png") == true) r.body.bytes() else null
-                    }
-                }.getOrNull()?.also { b -> file?.let { runCatching { it.parentFile?.mkdirs(); it.writeBytes(b) } } }
-            }
-        } ?: return@withLock
-        val bmp = withContext(Dispatchers.Default) { BitmapFactory.decodeByteArray(bytes, 0, bytes.size) } ?: return@withLock
-        if (bmp.width != W || bmp.height != H) return@withLock
-        val px = IntArray(W * H).also { bmp.getPixels(it, 0, W, 0, 0, W, H) }
-        mask = withContext(Dispatchers.Default) { compute(px, W, H) }
-    }
+        }
+    }, classify = ::compute)
+
+    /** Inside the DWD radar area (false while the mask is not loaded). */
+    fun covers(lat: Double, lon: Double): Boolean = mask.covers(lat, lon)
+
+    val ready: Boolean get() = mask.ready
+
+    suspend fun ensure(http: OkHttpClient) = mask.ensure(http)
 
     /**
      * Covered pixels from a DWD composite image ([argb], row by row): everything that is not the

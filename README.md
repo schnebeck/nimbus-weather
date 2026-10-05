@@ -92,7 +92,7 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   mit Symbol und Wetter, der Himmel zeigt sie nacheinander; mit mittlerer Abweichung, Stundenwerte als Tabelle
   Messung | Vorhersage; Niederschlag gemessen und vorhergesagt mit Wahrscheinlichkeit; dazu das
   Regenradar des ganzen Tages in 5-Minuten-Schritten zum Abspielen, Verschieben und Zoomen
-  (Deutschland).
+  (wo ein Wetterdienst-Radar misst: DWD, KNMI, MET Norway).
 - **Sonne und Mond**: Sonnenbogen mit fester Skala je Ort (die Bogenhöhe zeigt die Jahreszeit),
   Lichtphasen Tag, Morgen-/Abendrot, Blaue Stunde und Nacht, Tageslänge; Mondphase, Auf- und Untergang.
 - **Umwelt**: Luftqualität, Pollenflug (DWD-Index und Zusammensetzung, Arten wählbar – z. B. nur
@@ -109,7 +109,9 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   in Berlin und Schleswig-Holstein die letzten Proben mit Wassertemperatur und Blaualgen-Hinweisen.
   Quellen je Bundesland: [docs/BATHING.md](docs/BATHING.md).
 - **Regenradar**: DWD-Radar mit 2-h-Vorhersage für Deutschland, KNMI-Radar für die Niederlande,
-  RainViewer für das übrige Europa (die Zeitachse richtet sich nach dem Radar des Ortes), einheitliche
+  MET-Norway-Radar für Norwegen, Schweden, Finnland und Dänemark (1 km, herausgezoomt als Übersicht in
+  gröberen Zellen), RainViewer für das übrige Europa (alle 10 Minuten, die Schritte dazwischen aus der
+  Bewegung berechnet; die Zeitachse richtet sich nach dem Radar des Ortes), einheitliche
   Farbskala für Regen (grün → gelb → rot → magenta) und Schnee (türkis → weiß → violett, pro Pixel
   nach der Temperatur), wahlweise ruhiger in Blau bzw. Rosa–Violett; die Radarzellen in jeder
   Zoomstufe geglättet statt als Blöcke; flüssiges Abspielen: zwischen zwei Radarbildern wird die
@@ -173,7 +175,7 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
 | Vorhersage | [Open-Meteo](https://open-meteo.com): voreingestellt „best match“, wählbar DWD ICON, ECMWF IFS, Météo-France, MET Nordic (MET Norway), KNMI Harmonie, DMI Harmonie, UK Met Office, MeteoSwiss ICON-CH1/-CH2, GeoSphere AROME, ItaliaMeteo ICON-2I; Lücken aus „best match“ |
 | Aktuelle Messwerte | DWD-Stationen via [Bright Sky](https://brightsky.dev), [GeoSphere Austria](https://data.hub.geosphere.at), [MeteoSwiss](https://opendatadocs.meteoswiss.ch), [DMI](https://www.dmi.dk/friedata), Flughäfen (METAR, [aviationweather.gov](https://aviationweather.gov)) |
 | Warnungen, Rückblick | DWD-Warnungen und -Stationen via Bright Sky |
-| Radar, Warnkarte | DWD GeoServer, [KNMI](https://english.knmidata.nl/open-data) (Niederlande); übriges Europa: [RainViewer](https://www.rainviewer.com/api.html) |
+| Radar, Warnkarte | DWD GeoServer, [KNMI](https://english.knmidata.nl/open-data) (Niederlande), [MET Norway](https://www.met.no/en/free-meteorological-data) (Nordic-Komposit); übriges Europa: [RainViewer](https://www.rainviewer.com/api.html) |
 | Satellit | Meteosat (MTG, GeoColour) via [EUMETView](https://view.eumetsat.int) – „Contains modified EUMETSAT Meteosat data“, CC BY 4.0 |
 | Luftqualität, Pollen Europa | Copernicus CAMS via Open-Meteo |
 | Pollenflug Deutschland | [DWD-Pollenflug-Gefahrenindex](https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json) |

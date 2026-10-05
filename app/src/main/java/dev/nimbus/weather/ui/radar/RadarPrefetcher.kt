@@ -66,11 +66,7 @@ object RadarPrefetcher {
         return cm.activeNetwork != null && !cm.isActiveNetworkMetered
     }
 
-    /**
-     * [background]: called by the periodic worker – there is no preview card to wait for, and the
-     * snapshot runs without a visible activity.
-     */
-    suspend fun prefetch(context: Context, http: OkHttpClient, place: Place, background: Boolean = false) {
+    suspend fun prefetch(context: Context, http: OkHttpClient, place: Place) {
         if (paused) return
         val key = "%.2f,%.2f".format(place.latitude, place.longitude)
         val now = System.currentTimeMillis()
@@ -81,7 +77,7 @@ object RadarPrefetcher {
             }
             lastRun[key] = now
         }
-        if (!background) withTimeoutOrNull(30_000L) { previewReady.await() }
+        withTimeoutOrNull(30_000L) { previewReady.await() }
         if (paused) return
         WeatherGridStore.ensure(http, place.latitude, place.longitude)
         val anchor = RadarComposites.anchorFor(place.latitude, place.longitude)
@@ -97,9 +93,6 @@ object RadarPrefetcher {
         }
         withContext(Dispatchers.IO) { RadarStore.prune() }
         if (paused) return
-        // The base map hardly changes and is in the map cache for long: in the background drawn
-        // at most every 12 hours per place (a MapLibre snapshot every 15 minutes cost GPU and battery)
-        if (background && !dev.nimbus.weather.data.repo.AppUse.baseMapDue(context, key)) return
         // The base map of the radar view (no radar layers: the radar comes from the store)
         val style = MapStyle.builder(http, context.resources.configuration.locales[0].language)
         withContext(Dispatchers.Main) {

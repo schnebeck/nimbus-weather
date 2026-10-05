@@ -278,7 +278,7 @@
     <string name="legend_snow">Schnee</string>
 
     <string name="settings_preload_radar">Radar vorladen</string>
-    <string name="settings_preload_radar_desc">Radarschleife für den aktuellen Ort im WLAN aktuell halten (etwa alle 15 Minuten, auch im Hintergrund), damit sie sofort erscheint</string>
+    <string name="settings_preload_radar_desc">Radarschleife für den aktuellen Ort im WLAN aktuell halten, solange die App geöffnet ist (etwa alle 15 Minuten), damit sie sofort erscheint</string>
 
     <string name="precip_title">Niederschlag heute</string>
     <string name="precip_today_amount">%1$s heute</string>

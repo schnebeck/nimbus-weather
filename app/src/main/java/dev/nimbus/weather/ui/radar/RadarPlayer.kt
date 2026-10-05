@@ -141,10 +141,31 @@ class RadarPlayer(
 
     fun setTimeline(tl: RadarTimeline) {
         timeline = tl
+        if (stopped) return
         restartDownloader()
         restartExtractor()
     }
 
+    /**
+     * Not shown (the app left, the phone locked): downloading and cutting stop – a half-loaded
+     * loop kept the phone busy behind the lock screen. What is in the store stays.
+     */
+    @Volatile private var stopped = false
+
+    fun stop() {
+        stopped = true
+        downloader?.cancel(); downloader = null
+        extractor?.cancel(); extractor = null
+    }
+
+    /** Shown again: on where it stopped (the steps in the store are not fetched again). */
+    fun start() {
+        if (!stopped) return
+        stopped = false
+        if (timeline == null) return
+        restartDownloader()
+        restartExtractor()
+    }
 
     /**
      * The visible area changed (camera idle): a new picture area if the old one no longer serves.
@@ -165,8 +186,9 @@ class RadarPlayer(
         flows.clear()
         // a composite loaded in windows of the area: its steps of the new area are others
         val windowed = RadarComposites.all.any { it.windowed && it.serves(want) && it.overlaps(want.west, want.east, want.south, want.north) }
-        restartExtractor()
         if (windowed) stored.clear()
+        if (stopped) return
+        restartExtractor()
         if (downloader == null || windowed) restartDownloader()
     }
 

@@ -289,7 +289,7 @@
     <string name="legend_snow">Snow</string>
 
     <string name="settings_preload_radar">Preload radar</string>
-    <string name="settings_preload_radar_desc">Keep the radar loop of the current place up to date on Wi-Fi (about every 15 minutes, also in the background), so it opens instantly</string>
+    <string name="settings_preload_radar_desc">Keep the radar loop of the current place up to date on Wi-Fi while the app is open (about every 15 minutes), so it opens instantly</string>
 
     <string name="precip_title">Precipitation today</string>
     <string name="precip_today_amount">%1$s today</string>

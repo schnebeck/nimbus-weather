@@ -21,7 +21,6 @@
 <li>DWD-Radar mit 2-Stunden-Vorhersage für Deutschland, KNMI-Radar für die Niederlande, MET-Norway-Radar für Norwegen, Schweden, Finnland und Dänemark, RainViewer für das übrige Europa</li>
 <li>Eine Farbskala für Regen und eine für Schnee – pro Bildpunkt nach der Temperatur entschieden</li>
 <li>Temperatur- und Windebene, Satellit und Warnkarte, Rückblick bis 24 Stunden</li>
-<li>Im WLAN hält die App die Radarschleife deines Standorts im Hintergrund aktuell, damit sie sofort erscheint</li>
 </ul>
 
 <p><b>Details</b></p>
@@ -29,7 +28,7 @@
 <li>Ein ⓘ an jeder Karte erklärt die Begriffe</li>
 <li>Deutsch und Englisch, Einheiten passend zum Land (°C/°F, km/h, mph, m/s, Knoten, Beaufort, mm/Zoll)</li>
 <li>Vorhersagemodell: automatisch das feinste je Ort und Zeitraum, oder DWD ICON, ECMWF, Météo-France und regionale Modelle wie MET Nordic (1 km) oder KNMI Harmonie (2 km) – auch für jeden Ort ein eigenes</li>
-<li>Akkuschonend: Die Animation wird langsamer, wenn das Handy unbenutzt liegt, und stoppt im Energiesparmodus</li>
+<li>Akkuschonend: Nimbus arbeitet nur, solange es zu sehen ist – keine Aktualisierung im Hintergrund; die Animation wird langsamer, wenn das Handy unbenutzt liegt, und stoppt im Energiesparmodus</li>
 </ul>
 
 <p>Daten: Deutscher Wetterdienst (über Bright Sky und Open-Meteo), Open-Meteo, MET Norway, GeoSphere Austria, MeteoSwiss, DMI, KNMI, Flughafenmeldungen (METAR), Copernicus CAMS, RainViewer, Sensor.Community, PEGELONLINE (WSV), NLWKN, LANUK NRW, LfULG Sachsen, HLNUG, Länderübergreifendes Hochwasserportal, OpenStreetMap/Nominatim. Karten © OpenFreeMap, OpenMapTiles, OpenStreetMap-Mitwirkende.</p>

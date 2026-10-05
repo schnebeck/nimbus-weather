@@ -1,0 +1,1 @@
+• Battery: Nimbus now works only while it is shown – no hourly update and no radar preloading in the background any more; locking the phone stops the radar too. On opening, what has expired is loaded.

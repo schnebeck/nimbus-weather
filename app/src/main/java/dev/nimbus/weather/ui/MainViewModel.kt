@@ -174,12 +174,26 @@ class MainViewModel(
     val shelf = dev.nimbus.weather.data.repo.Shelf(viewModelScope, onDue = ::onDue)
     private var lastSettings: Settings? = null
 
+    /**
+     * Work that prepares what may be looked at next (the radar loop, other places' previews): only
+     * while the app is shown – called off when it goes ([onPause]); brought back, it is started
+     * again by the loads then. Nothing of it keeps the phone busy behind the lock screen.
+     * (Declared before [init], which starts such work: a property after it was still null then.)
+     */
+    private val whileShown = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<kotlinx.coroutines.Job, Boolean>())
+
+    private fun launchWhileShown(block: suspend kotlinx.coroutines.CoroutineScope.() -> Unit) {
+        val job = viewModelScope.launch(block = block)
+        whileShown += job
+        job.invokeOnCompletion { whileShown -= job }
+    }
+
     init {
         // DWD radar area for the RainViewer tiles (from disk after the first time)
         viewModelScope.launch { dev.nimbus.weather.ui.radar.RadarComposites.prepare(container.http) }
         // Once the preview card has its size: prepare the radar previews of all places, so that
         // switching places shows a picture at once (base maps only on Wi-Fi, see RadarPreview).
-        viewModelScope.launch {
+        launchWhileShown {
             dev.nimbus.weather.ui.radar.RadarPreview.cardSizeFlow.first { it != null }
             kotlinx.coroutines.delay(5_000L)            // the visible place first
             val app = getApplication<Application>()
@@ -243,6 +257,7 @@ class MainViewModel(
     /** Refreshes the radar cache of the shown place while the app is open (Wi-Fi only). */
     private var radarTicker: kotlinx.coroutines.Job? = null
 
+
     /**
      * A record went out of date (its time was up, or a failed one is to be asked again): fetched
      * anew – while the app is in front; brought back, [onResume] fetches what went out of date.
@@ -276,6 +291,7 @@ class MainViewModel(
         resumed = false
         radarTicker?.cancel()
         radarTicker = null
+        whileShown.toList().forEach { it.cancel() }
     }
 
     fun onResume() {
@@ -485,8 +501,8 @@ class MainViewModel(
                 runCatching { store.cacheWeather(d) }
                 maybePrefetchRadar(place, settings)
                 // Radar preview of this place, so switching to it shows a picture at once
-                // (own job: must not keep the load job of the place active)
-                viewModelScope.launch {
+                // (own job: must not keep the load job of the place active; only while shown)
+                if (resumed) launchWhileShown {
                     val app = getApplication<Application>()
                     runCatching {
                         dev.nimbus.weather.ui.radar.RadarPreview.prefetch(
@@ -508,8 +524,8 @@ class MainViewModel(
     private fun maybePrefetchRadar(place: Place, settings: Settings) {
         val app = getApplication<Application>()
         val selected = _state.value.selectedPlaceId
-        if (!settings.preloadRadar || (selected != null && selected != place.id) || !RadarPrefetcher.isUnmetered(app)) return
-        viewModelScope.launch {
+        if (!resumed || !settings.preloadRadar || (selected != null && selected != place.id) || !RadarPrefetcher.isUnmetered(app)) return
+        launchWhileShown {
             kotlinx.coroutines.delay(2_000)      // let the page settle first
             runCatching { RadarPrefetcher.prefetch(app, container.mapHttp, place) }
         }

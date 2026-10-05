@@ -1,0 +1,2 @@
+• Akku: Nimbus arbeitet nur noch, solange es zu sehen ist – keine stündliche Aktualisierung und kein Radar-Vorladen im Hintergrund mehr; beim Sperren hält auch das Radar an. Beim Öffnen wird geladen, was abgelaufen ist.
+• Behebt den Absturz beim Start von 1.35.1

@@ -256,17 +256,6 @@ class RepositoryTest {
     }
 
     @Test
-    fun `background work rests while nobody uses the app`() {
-        val now = fixtureNow
-        val use = dev.nimbus.weather.data.repo.AppUse
-        assertTrue(use.worthIt(now - 3_600_000L, now, use.RADAR_IDLE_MS))
-        assertTrue(!use.worthIt(now - 2 * 24 * 3_600_000L, now, use.RADAR_IDLE_MS))         // radar: a day
-        assertTrue(use.worthIt(now - 2 * 24 * 3_600_000L, now, use.REFRESH_IDLE_MS))         // weather: three days
-        assertTrue(!use.worthIt(now - 4 * 24 * 3_600_000L, now, use.REFRESH_IDLE_MS))
-        assertTrue(!use.worthIt(0L, now, use.REFRESH_IDLE_MS))                              // never opened
-    }
-
-    @Test
     fun `cards switched off load nothing`() = runTest {
         val off = Settings(hiddenCards = setOf(dev.nimbus.weather.data.model.WeatherCard.COMMUNITY))
         val data = repo(fixtureNow).load(berlin, off, german = true)

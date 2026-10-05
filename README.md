@@ -121,15 +121,15 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   und Namen über dem Radar; Temperatur- (mit Isothermen) und Windebene, Satellit (Meteosat, alle
   10 Minuten, zur Zeit des Radarbilds), Warnkarte, Rückblick bis 24 h. Auch das Radar eines Tages
   im Rückblick zeigt Temperatur, Wind und Satellit. Im WLAN hält die App die 2-Stunden-Schleife des aktuellen Orts etwa alle 15
-  Minuten aktuell, auch im Hintergrund – solange die App am Vortag benutzt wurde. Die Auflösung des
+  Minuten aktuell, solange sie geöffnet ist. Die Auflösung des
   Radarbilds richtet sich nach dem Speicher des Geräts. Ohne Verbindung zeigt das Radar die
   gespeicherten Bilder; nichts wartet endlos. Die Niederschlagskarte auf der Wetterseite zeigt dasselbe
   Bild für ihren Ausschnitt um den Ort; sie lädt nur dessen Radarzellen, in eigener Spur neben der
   Radarschleife.
 - **Akku**: Der animierte Himmel läuft mit 30 Bildern/s (Regen, Schnee: 60), nach einer Minute ohne
-  Berührung mit 15; im Energiesparmodus des Systems steht er still. Die stündliche Aktualisierung im
-  Hintergrund lädt nur die Vorhersage (die übrigen Quellen beim Öffnen) und pausiert, wenn die App
-  drei Tage nicht geöffnet wurde.
+  Berührung mit 15; im Energiesparmodus des Systems steht er still. Nimbus arbeitet nur, solange es zu
+  sehen ist: keine Aktualisierung im Hintergrund, beim Sperren hält auch das Radar an. Beim Öffnen
+  lädt die App, was abgelaufen ist – bis dahin zeigt sie die letzten Daten mit gelbem Punkt.
 - **Barrierefreiheit**: große Systemschrift bis 200 % und kleine Displays ab 320 dp – nichts überlappt
   oder wird abgeschnitten, lange Wörter werden getrennt oder abgekürzt; die 10-Tage-Zeilen werden
   bei großer Schrift zweizeilig.
@@ -165,8 +165,8 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   Zeile stünde, über die volle Breite), quer gehaltene Handys in drei gleich breiten Spalten: der Kopf links, die Kacheln in den zwei anderen
   (nichts unter der Kamera-Aussparung), im Querformat großer Tablets links eine
   Ortsleiste; Einstellungen, Orte, Rückblick und Radar-Bedienung mittig in lesbarer Breite. Unter „Open-Source-Lizenzen“ stehen die Lizenzen
-  von Nimbus und aller verwendeten Bibliotheken. Stündliche Aktualisierung im Hintergrund,
-  offline die zuletzt geladenen Daten.
+  von Nimbus und aller verwendeten Bibliotheken. Offline die zuletzt geladenen
+  Daten.
 
 ## Datenquellen
 
@@ -237,7 +237,7 @@ app/src/main/java/dev/nimbus/weather/
   data/remote     Open-Meteo, Bright Sky (DWD), Stationsnetze (GeoSphere, MeteoSwiss, DMI, METAR),
                   Pollen, Sensor.Community, Rückblick
   data/repo       Repository, Wetter jetzt (Messung und Modell), Standort, Speicher,
-                  Hintergrund-Aktualisierung
+                  Haltbarkeit der Daten
   ui/background   Animierter Himmel, Jahreszeiten-Partikel
   ui/main         Wetterseite, Karten, Meteogramm, Rückblick
   ui/radar        Radar: Komposite von DWD und KNMI, RainViewer, Radarspeicher, Vorschau,

@@ -120,14 +120,14 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
   temperature (with isotherms) and wind layers, satellite (Meteosat, every 10 minutes, at the time of
   the radar image), warning map, look-back up to 24 h. The radar of a day in the look-back shows
   temperature, wind and satellite too. On Wi-Fi the app keeps the 2-hour loop of the current place
-  up to date about every 15 minutes, in the background too – as long as the app was used the day
-  before. The radar resolution follows the device's memory. Without a connection the radar shows the
+  up to date about every 15 minutes while it is open. The radar resolution follows the device's memory. Without a connection the radar shows the
   stored images; nothing waits forever. The precipitation map on the weather page shows the same
   picture for its area around the place, loading only that area's radar cells, in a lane of its own
   beside the radar loop.
 - **Battery**: the animated sky runs at 30 frames/s (rain, snow: 60), after a minute without touch at
-  15; in the system's battery saver it stands still. The hourly background update loads the forecast
-  only (the other sources on opening) and pauses when the app has not been opened for three days.
+  15; in the system's battery saver it stands still. Nimbus works only while it is shown: no update
+  in the background, and the radar stops too when the phone is locked. On opening the app loads
+  what has expired – until then it shows the last data with a yellow dot.
 - **Accessibility**: large system font up to 200 % and small displays from 320 dp – nothing overlaps
   or is cut off, long words are hyphenated or shortened; the 10-day rows go to two lines with a large
   font.
@@ -162,8 +162,8 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
   its row across the full width), phones held sideways in three equal columns: the header on the
   left, the cards in the other two (nothing under the camera cut-out); on large tablets in landscape
   a places sidebar on the left; settings, places, look-back and radar controls centred at a readable
-  width. "Open-source licenses" lists the licences of Nimbus and of all libraries used. Hourly
-  background update, offline the data loaded last.
+  width. "Open-source licenses" lists the licences of Nimbus and of all libraries used. Offline the
+  data loaded last.
 
 ## Data sources
 
@@ -234,7 +234,7 @@ app/src/main/java/dev/nimbus/weather/
   data/remote     Open-Meteo, Bright Sky (DWD), station networks (GeoSphere, MeteoSwiss, DMI, METAR),
                   pollen, Sensor.Community, look-back
   data/repo       repository, weather now (measurement and model), location, storage,
-                  background update
+                  shelf life of the data
   ui/background   animated sky, seasonal particles
   ui/main         weather page, cards, meteogram, look-back
   ui/radar        radar: composites of the DWD and the KNMI, RainViewer, radar store, preview,

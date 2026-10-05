@@ -21,7 +21,6 @@
 <li>DWD radar with a 2-hour nowcast for Germany, KNMI radar for the Netherlands, MET Norway's radar for Norway, Sweden, Finland and Denmark, RainViewer for the rest of Europe</li>
 <li>One colour scale for rain and for snow – decided per pixel by the temperature</li>
 <li>Temperature and wind layers, satellite and warning map, look back up to 24 hours</li>
-<li>On Wi-Fi the radar loop of your location is kept up to date in the background, so it opens instantly</li>
 </ul>
 
 <p><b>Details</b></p>
@@ -29,7 +28,7 @@
 <li>An ⓘ on every card explains the terms</li>
 <li>English and German, units follow your country (°C/°F, km/h, mph, m/s, knots, Beaufort, mm/inch)</li>
 <li>Forecast model: automatically the finest for each place and time, or DWD ICON, ECMWF, Météo-France and regional models such as MET Nordic (1 km) or KNMI Harmonie (2 km) – a model of its own for each place too</li>
-<li>Battery friendly: the animation slows down when the phone is left alone and stops in battery saver mode</li>
+<li>Battery friendly: Nimbus works only while it is shown – no updates in the background; the animation slows down when the phone is left alone and stops in battery saver mode</li>
 </ul>
 
 <p>Data: Deutscher Wetterdienst (via Bright Sky and Open-Meteo), Open-Meteo, MET Norway, GeoSphere Austria, MeteoSwiss, DMI, KNMI, airport reports (METAR), Copernicus CAMS, RainViewer, Sensor.Community, PEGELONLINE (WSV), NLWKN, LANUK NRW, LfULG Sachsen, HLNUG, Länderübergreifendes Hochwasserportal, OpenStreetMap/Nominatim. Maps © OpenFreeMap, OpenMapTiles, OpenStreetMap contributors.</p>

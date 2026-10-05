@@ -57,7 +57,6 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         dev.nimbus.weather.ui.background.UserActivity.touch()
-        dev.nimbus.weather.data.repo.AppUse.touch(this)
         viewModel.onResume()
     }
 
@@ -92,12 +91,6 @@ class MainActivity : ComponentActivity() {
         if (BuildConfig.DEBUG) i.getStringExtra("demo_add_place")?.split(",")?.takeIf { it.size == 3 }?.let { (n, la, lo) ->
             val lat = la.toDoubleOrNull(); val lon = lo.toDoubleOrNull()
             if (lat != null && lon != null) viewModel.addPlace(dev.nimbus.weather.data.model.Place(id = "demo-$n", name = n, latitude = lat, longitude = lon))
-        }
-        // Test hook: run the background radar refresh once right now (debug builds only).
-        if (BuildConfig.DEBUG && i.getBooleanExtra("demo_radar_worker", false)) {
-            androidx.work.WorkManager.getInstance(this).enqueue(
-                androidx.work.OneTimeWorkRequestBuilder<dev.nimbus.weather.data.repo.RadarWorker>().build(),
-            )
         }
     }
 }

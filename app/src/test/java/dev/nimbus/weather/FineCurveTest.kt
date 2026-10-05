@@ -26,7 +26,7 @@ import dev.nimbus.weather.data.remote.SynopReport
 import dev.nimbus.weather.ui.main.Curve
 import dev.nimbus.weather.ui.main.CurvePoint
 import dev.nimbus.weather.ui.main.HourAxis
-import dev.nimbus.weather.ui.main.PrecipStyle
+import dev.nimbus.weather.ui.main.HourBars
 import dev.nimbus.weather.ui.main.TodayMeasured
 import dev.nimbus.weather.ui.main.dayCurve
 import kotlinx.serialization.json.Json
@@ -147,7 +147,8 @@ class FineCurveTest {
     }
 
     @Test fun lookBackForecastIsOpaque() {
-        // the look-back forecast is opaque (it does not blend with the bar behind it)
-        assertEquals(1f, PrecipStyle.Forecast.alpha, 0.001f)
+        // the forecast frames are opaque (they do not blend with the block behind them)
+        assertEquals(1f, HourBars.Rain.frame.alpha, 0.001f)
+        assertEquals(1f, HourBars.Sun.frame.alpha, 0.001f)
     }
 }

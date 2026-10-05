@@ -91,6 +91,7 @@ class LookTest {
         p.copy(
             precipitation = p.precipitation!! * if ((p.time / h) % 2 == 0L) 1.6 else 0.5,
             forecastPrecipitation = p.precipitation, forecastTemperature = p.temperature + 1.0,
+            precipMeasured = true, sunMeasured = true, forecastSunshine = 30.0,
         )
     }
 
@@ -133,30 +134,43 @@ class LookTest {
         best
     }
 
-    /** Horizontal runs of bar colour (light blue) in the row [y]: (first, last) x. */
+    /**
+     * Horizontal runs of bar colour in the row [y]: (first, last) x. A light blue block or the
+     * amber frame (#FFB547, close: the warm temperature curve's smoothed edges come near it).
+     */
     private fun Bitmap.barRuns(y: Int): List<IntRange> {
         val out = ArrayList<IntRange>(); var s = -1
         for (x in 0 until width) {
             val (r, g, b) = rgb(x, y)
-            val bar = b > 150 && b - r > 40 && g > 110
+            val bar = (b > 150 && b - r > 40 && g > 110) || (abs(r - 255) <= 8 && abs(g - 181) <= 8 && abs(b - 71) <= 8)
             if (bar && s < 0) s = x
             if (!bar && s >= 0) { out += s until x; s = -1 }
         }
-        return out.filter { it.last - it.first >= 4 }
+        // no wider than an hour's column: not a flat stretch of the temperature curve
+        return out.filter { it.last - it.first in 4 until width / 25 }
     }
 
-    /** The row with the most bar pixels (just above the axis). */
-    private fun Bitmap.barRow(): Int = (0 until height).maxBy { y -> barRuns(y).sumOf { it.last - it.first } }
+    /**
+     * The row of the bars' feet: bars stand on the axis, so the lowest row of the plot with bar
+     * colour – below the time labels and weather symbols (card padding 12 dp, 14 + 30 dp), above
+     * the sunshine row (the plot 120 dp, [separate]: the precipitation chart 30 + 76 dp more); of
+     * the few rows there the widest, past the rounded corners. (The row with the most bar pixels was
+     * the curve's or the symbols' as soon as the bars were frames.)
+     */
+    private fun Bitmap.barRow(separate: Boolean = false): Int {
+        val foot = ((12 + 14 + 30) * 3 until (12 + 14 + 30 + 120 + if (separate) 106 else 0) * 3).reversed().first { y -> barRuns(y).isNotEmpty() }
+        return (foot - 8..foot).maxBy { y -> barRuns(y).sumOf { it.last - it.first } }
+    }
 
-    private fun assertCursorCentredOnABar(img: Bitmap, what: String, pressedX: Float) {
+    private fun assertCursorCentredOnABar(img: Bitmap, what: String, pressedX: Float, separate: Boolean = false) {
         val cx = img.cursorX()
         // the cursor goes to the bar under the finger
         assertTrue("$what: pressed at x=$pressedX, cursor at $cx", abs(cx - pressedX) <= img.width / 25f)
-        val row = img.barRow()
+        val row = img.barRow(separate)
         // the cursor line itself splits its bar: join runs separated by the line
         val runs = img.barRuns(row).fold(mutableListOf<IntRange>()) { acc, r ->
             val last = acc.lastOrNull()
-            if (last != null && r.first - last.last <= 6 && cx in last.last..r.first) acc[acc.lastIndex] = last.first..r.last else acc += r
+            if (last != null && r.first - last.last <= 8 && cx in last.last..r.first) acc[acc.lastIndex] = last.first..r.last else acc += r
             acc
         }
         val bar = runs.firstOrNull { cx in it }
@@ -239,7 +253,7 @@ class LookTest {
         compose.setContent { Card { Meteogram(points, day, day + 24 * h, emptyList(), now, showNow = shown) } }
         compose.waitForIdle()
         // (narrower than a column: not the legend's swatch)
-        val runs = bitmap().let { img -> img.barRuns(img.barRow()).filter { it.last - it.first < img.width / 25 } }
+        val runs = bitmap().let { img -> img.barRuns(img.barRow()) }
         val bar = runs.singleOrNull() ?: throw AssertionError("bars $runs")
         val centre = (bar.first + bar.last) / 2f
         val column = (bar.last - bar.first + 1) / dev.nimbus.weather.ui.main.HourAxis.BAR_SHARE
@@ -266,9 +280,9 @@ class LookTest {
         val chance = plain.whiteRows()
         assertTrue("chance line not found", chance.isNotEmpty())
         val x = pressAt(0.37f, 0.45f)
-        assertCursorCentredOnABar(bitmap(), "separate precipitation", x)
+        assertCursorCentredOnABar(bitmap(), "separate precipitation", x, separate = true)
         // the bars stand in the chart below the temperature: under the chance line's top
-        assertTrue("bars below the temperature chart", bitmap().barRow() > chance.first())
+        assertTrue("bars below the temperature chart", bitmap().barRow(separate = true) > chance.first())
         compose.onRoot().captureRoboImage("src/test/screenshots/meteogram_separate.png")
     }
 

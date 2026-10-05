@@ -84,12 +84,9 @@ import kotlin.math.PI
 import kotlin.math.floor
 import kotlin.math.roundToInt
 
-private val PrecipBar = PrecipStyle.Bar
 /** The chance of precipitation: a white line, as in the precipitation chart. */
 private val ChanceLine = Color(0xF2FFFFFF)
-// Sunshine columns: wide and faint, so rain bars and the temperature curve stay readable on top.
-// Sunshine row: light grey, no outline – the temperature curve has the warm colours.
-private val SunFill = Color(0xFFC3C9D2)
+// Sunshine row (bars: HourBars.Sun) on a faint track
 private val SunTrack = Color(0x14FFFFFF)
 // Day slightly lighter, night clearly darker than the card: the two must be told apart at a glance.
 internal val DayTint = Color(0x14FFFFFF)
@@ -133,6 +130,12 @@ data class MeteoPoint(
     val measured: Boolean = false,
     /** Look-back: what was measured and what was forecast, kept apart for the readout table. */
     val compare: HourCompare? = null,
+    /** [precipitation] is a reading (a block in the chart); else the forecast (a frame). */
+    val precipMeasured: Boolean = false,
+    /** [sunshine] is a reading; else the forecast. */
+    val sunMeasured: Boolean = false,
+    /** Look-back: the forecast sunshine beside the measured (a frame in front of its block). */
+    val forecastSunshine: Double? = null,
 )
 
 /** One hour of the look-back: measured (M) and forecast (F) values; null where there is none. */
@@ -293,11 +296,10 @@ fun Meteogram(
     } + gap
     // Daily totals (the first point, 00:00, belongs to the hour before the day)
     val dayPts = pts.filter { it.time > start && it.time <= end }
-    // Totals of what happened (the look-back of today leaves out the hours still to come)
-    val sunTotalMin = dayPts.filter { !it.forecastOnly }.mapNotNull { it.sunshine }.takeIf { it.isNotEmpty() }?.sum()
-    val precipTotal = dayPts.filter { !it.forecastOnly }.mapNotNull { it.precipitation }.takeIf { it.isNotEmpty() }?.sum()
-    // Look-back: the forecast's total next to the measured one
-    val forecastTotal = if (compare) dayPts.mapNotNull { it.forecastPrecipitation }.takeIf { it.isNotEmpty() }?.sum() else null
+    // Totals of the blocks (measured) and of the frames (expected)
+    val sunTotals = dayPts.barTotals { it.sunBar() }
+    val rainTotals = dayPts.barTotals { it.rainBar() }
+    val sunShown = sunTotals.measured != null || sunTotals.expected != null
     val axisR = with(density) {
         listOf(
             (0..2).maxOf { measurer.measure(precipLabel(it), labelStyle).size.width },
@@ -310,7 +312,7 @@ fun Meteogram(
     val windH = 26.dp
     // The sunshine row keeps a small gap to the plot, where the lowest axis numbers reach down.
     val sunGap = 6.dp
-    val sunH = if (sunTotalMin != null) 20.dp + sunGap else 0.dp
+    val sunH = if (sunShown) 20.dp + sunGap else 0.dp
     // The precipitation chart of its own: a gap for its units, then the plot
     val precipGap = if (separatePrecip) 30.dp else 0.dp
     val precipPlotH = if (separatePrecip) 76.dp else 0.dp
@@ -404,28 +406,21 @@ fun Meteogram(
                 fun barX(t: Long) = axis.barLeft(t)
                 clipRect(left = l, right = r) {
                     // Sunshine row right below the plot: minutes per hour, full row height = 60 min
-                    if (sunTotalMin != null) {
+                    if (sunShown) {
                         val rowTop = rows + sunGap.toPx() + 2.dp.toPx()
                         val rowBottom = rows + sunH.toPx() - 2.dp.toPx()
                         drawRect(SunTrack, Offset(l, rowTop), Size(r - l, rowBottom - rowTop))
                         pts.filter { it.time > start }.forEach { h ->
-                            val m = (h.sunshine ?: 0.0).coerceIn(0.0, 60.0)
-                            if (m >= 1.0) {
-                                val hgt = (m / 60.0 * (rowBottom - rowTop)).toFloat()
-                                drawRoundRect(SunFill, Offset(barX(h.time), rowBottom - hgt), Size(barW, hgt), CornerRadius(1.5.dp.toPx()))
+                            hourBar(HourBars.Sun, h.sunBar(), barX(h.time), barW, rowBottom, 1.5.dp.toPx(), least = 1.0) { m ->
+                                rowBottom - (m.coerceIn(0.0, 60.0) / 60.0 * (rowBottom - rowTop)).toFloat()
                             }
                         }
                     }
+                    // Measured precipitation as blocks, the forecast as frames (in front of a block)
                     pts.filter { it.time > start }.forEach { h ->
-                        fun bar(v: Double, c: Color) {
-                            if (v > 0.0) drawRoundRect(c, Offset(barX(h.time), yP(v)), Size(barW, pBottom - yP(v)), CornerRadius(2.dp.toPx()))
+                        hourBar(HourBars.Rain, h.rainBar(), barX(h.time), barW, pBottom, 2.dp.toPx()) { v ->
+                            yP(Units.precipitationValue(v, s.precipitationUnit))
                         }
-                        val p = Units.precipitationValue(h.precipitation ?: 0.0, s.precipitationUnit)
-                        val measuredBar = compare && !h.forecastOnly
-                        val fp = h.forecastPrecipitation?.let { Units.precipitationValue(it, s.precipitationUnit) }
-                        bar(p, if (measuredBar) PrecipStyle.Measured else PrecipBar)
-                        // Look-back: the forecast as a thin unfilled frame in front
-                        if (fp != null && fp > 0.0) with(PrecipStyle) { forecastFrame(barX(h.time), yP(fp), barW, pBottom) }
                     }
                     // The chance of precipitation as a line (precipitation chart of its own)
                     if (separatePrecip) {
@@ -468,7 +463,7 @@ fun Meteogram(
                     single.forEach { drawCircle(brush, 3.5.dp.toPx(), it) }
                 }
                 // Sunshine row label: sun glyph on the left (the day's total is in the legend)
-                if (sunTotalMin != null) {
+                if (sunShown) {
                     val cy = rows + sunGap.toPx() + (sunH - sunGap).toPx() / 2
                     val c = Offset((l - gap.toPx()) / 2f, cy)
                     val rr = 3.dp.toPx()
@@ -540,7 +535,7 @@ fun Meteogram(
             Readout(shown, highlighted = cursorOn, compare = compare)
             summary?.invoke()
             BarLegend(
-                precipTotal, sunTotalMin, measured = compare, forecastTotal = forecastTotal, chance = separatePrecip,
+                rainTotals, sunTotals.takeIf { sunShown }, chance = separatePrecip,
                 tempColors = Insights.temperatureColor(pts.minOf { it.temperature }) to Insights.temperatureColor(pts.maxOf { it.temperature }),
                 tempForecast = compare && dashCurve.isNotEmpty(),
             )
@@ -594,7 +589,7 @@ fun LegendItem(color: Color, text: String, line: Boolean = false, dashed: Boolea
                 color, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.dp.toPx(),
                 pathEffect = if (dashed) PathEffect.dashPathEffect(floatArrayOf(10f, 7f)) else null,   // as the forecast curve
             ) else if (frame) {
-                val w = PrecipStyle.FRAME_DP.dp.toPx()
+                val w = HourBars.FRAME_DP.dp.toPx()
                 drawRoundRect(color, Offset(w / 2, w / 2), Size(size.width - w, size.height - w), CornerRadius(2.dp.toPx()), style = Stroke(w))
             } else drawRoundRect(color, cornerRadius = CornerRadius(2.dp.toPx()))
         }
@@ -614,12 +609,12 @@ fun LegendRow(content: @Composable () -> Unit) = androidx.compose.foundation.lay
 /**
  * What the curves and bars mean, with the day's totals – readable without the cursor: the
  * temperature curve in its colours ([tempColors]: of the day's lowest and highest value) and, in
- * the look-back, the dashed forecast ([tempForecast]). [measured]: the bars are (partly)
- * measurements – shown as such, with the forecast's total when there is one.
+ * the look-back, the dashed forecast ([tempForecast]); sunshine ([sun], null: no sunshine row) and
+ * precipitation as blocks (measured) and frames (expected), each with its total.
  */
 @Composable
 private fun BarLegend(
-    precipTotal: Double?, sunMinutes: Double?, measured: Boolean = false, forecastTotal: Double? = null, chance: Boolean = false,
+    rain: HourBar, sun: HourBar?, chance: Boolean = false,
     tempColors: Pair<Color, Color>, tempForecast: Boolean = false,
 ) {
     val s = LocalSettings.current
@@ -630,11 +625,12 @@ private fun BarLegend(
         val temp = Brush.horizontalGradient(listOf(tempColors.first, tempColors.second))
         LegendItem(tempColors.second, stringResource(R.string.legend_temperature), line = true, brush = temp)
         if (tempForecast) LegendItem(ForecastLine, stringResource(R.string.legend_temp_forecast), line = true, dashed = true)
-        if (sunMinutes != null) LegendItem(SunFill, stringResource(R.string.legend_sunshine, hoursMinutes(sunMinutes)))
-        if (measured) {
-            LegendItem(PrecipStyle.Measured, stringResource(R.string.legend_precip_measured, amount(precipTotal)))
-            if (forecastTotal != null) LegendItem(PrecipStyle.ForecastFrame, stringResource(R.string.legend_precip_forecast, amount(forecastTotal)), frame = true)
-        } else LegendItem(PrecipBar, stringResource(R.string.legend_precip, amount(precipTotal)))
+        if (sun != null) BarLegendItems(
+            HourBars.Sun, sun, R.string.legend_sunshine, R.string.legend_sun_measured, R.string.legend_sun_forecast,
+        ) { hoursMinutes(it) }
+        BarLegendItems(
+            HourBars.Rain, rain, R.string.legend_precip, R.string.legend_precip_measured, R.string.legend_precip_forecast,
+        ) { amount(it) }
         if (chance) LegendItem(ChanceLine, stringResource(R.string.legend_chance), line = true)
     }
 }

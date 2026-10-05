@@ -615,6 +615,8 @@
     <string name="radar_step_forward">5 Minuten vor</string>
     <string name="legend_precip_measured">Niederschl. gemessen %1$s</string>
     <string name="legend_precip_forecast">Niederschl. Prognose %1$s</string>
+    <string name="legend_sun_measured">Sonne gemessen %1$s</string>
+    <string name="legend_sun_forecast">Sonne Prognose %1$s</string>
     <string name="legend_temperature">Temperatur</string>
     <string name="legend_temp_forecast">Temp. Prognose</string>
     <string name="legend_chance">Niederschl.-Wahrsch.</string>

@@ -55,6 +55,9 @@ data class TodayMeasured(
             windGust = m.windGust ?: p.windGust,
             sunshine = m.sunshineMinutes ?: p.sunshine,
             measured = true,
+            // a station without a rain gauge or sunshine sensor leaves the forecast: drawn as such
+            precipMeasured = m.precipitation != null,
+            sunMeasured = m.sunshineMinutes != null,
         )
     }
 

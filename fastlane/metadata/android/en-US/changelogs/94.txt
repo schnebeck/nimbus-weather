@@ -1,0 +1,3 @@
+• Day charts: measured hours as filled blocks, expected ones as frames – precipitation amber, sunshine magenta; today, in the look-back and in the 10-day forecast, combined and separate
+• Legend names measured and forecast apart
+• Without the station's rain gauge or sunshine sensor the forecast no longer shows as measured

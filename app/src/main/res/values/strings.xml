@@ -626,6 +626,8 @@
     <string name="radar_step_forward">5 minutes forward</string>
     <string name="legend_precip_measured">Precip. measured %1$s</string>
     <string name="legend_precip_forecast">Precip. forecast %1$s</string>
+    <string name="legend_sun_measured">Sun measured %1$s</string>
+    <string name="legend_sun_forecast">Sun forecast %1$s</string>
     <string name="legend_temperature">Temperature</string>
     <string name="legend_temp_forecast">Temp. forecast</string>
     <string name="legend_chance">Precip. chance</string>

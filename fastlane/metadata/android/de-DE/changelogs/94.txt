@@ -1,0 +1,3 @@
+• Tagesdiagramme: gemessene Stunden als gefüllte Blöcke, erwartete als Rahmen – Niederschlag bernstein, Sonne magenta; heute, im Rückblick und in der 10-Tage-Vorhersage, kombiniert wie getrennt
+• Legende nennt gemessen und Prognose getrennt
+• Ohne Regenmesser oder Sonnensensor der Station erscheint die Vorhersage nicht mehr als gemessen

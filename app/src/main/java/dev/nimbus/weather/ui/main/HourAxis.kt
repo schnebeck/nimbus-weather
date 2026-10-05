@@ -17,7 +17,6 @@
 
 package dev.nimbus.weather.ui.main
 
-import androidx.compose.ui.graphics.Color
 import kotlin.math.abs
 
 /**
@@ -186,38 +185,5 @@ object Curve {
         if (fine.isEmpty()) return coarse
         val lo = fine.minOf { it.time }; val hi = fine.maxOf { it.time }
         return (fine + coarse.filter { it.time < lo || it.time > hi }).sortedBy { it.time }
-    }
-}
-
-/** Precipitation bars of the day charts – the colours of the course of the day everywhere. */
-object PrecipStyle {
-    /** An amount on its own (forecast days) and a measured one: the meteogram's light blue. */
-    val Bar = Color(0xB38FD3FF)
-    /** Measured amount (DWD station). */
-    val Measured = Bar
-    /** Forecast next to measurements (today, look-back): a muted blue, opaque – no blending. */
-    val Forecast = Color(0xFF6F89A0)
-
-    /**
-     * Look-back: the forecast as an unfilled frame of the bar's size, a thin line drawn in front –
-     * the measured bar stays one colour, and the frame shows the forecast's height above, on or
-     * inside it. Warm amber: it stands out from the light blue-grey bar as from the dark glass.
-     */
-    val ForecastFrame = Color(0xFFFFB547)
-    const val FRAME_DP = 1f
-
-    /** Draws the forecast frame of a bar ([left], [top] … [bottom], [width] wide). */
-    fun androidx.compose.ui.graphics.drawscope.DrawScope.forecastFrame(left: Float, top: Float, width: Float, bottom: Float) {
-        val w = FRAME_DP * density
-        if (bottom - top < w) {
-            // (almost) nothing forecast: a thin line on the axis
-            drawLine(ForecastFrame, androidx.compose.ui.geometry.Offset(left, bottom - w / 2), androidx.compose.ui.geometry.Offset(left + width, bottom - w / 2), w)
-            return
-        }
-        drawRoundRect(
-            ForecastFrame, androidx.compose.ui.geometry.Offset(left + w / 2, top + w / 2),
-            androidx.compose.ui.geometry.Size(width - w, bottom - top - w), androidx.compose.ui.geometry.CornerRadius(2f * density),
-            style = androidx.compose.ui.graphics.drawscope.Stroke(w),
-        )
     }
 }

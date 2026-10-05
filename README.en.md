@@ -1,6 +1,6 @@
 <!--
   Nimbus - README.en.md
-  Short English overview of the app.
+  Overview in English: features, data sources, building and licensing.
 
     Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
     Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
@@ -47,93 +47,216 @@ the DWD and the KNMI. No ads, no account, no Google services. The app speaks Eng
   </tr>
 </table>
 
+## Installation
+
+The signed APKs are under [Releases](https://github.com/schnebeck/nimbus-weather/releases/latest):
+
+| File | For |
+|---|---|
+| `Nimbus-<version>-arm64.apk` | practically all Android phones since about 2017 |
+| `Nimbus-<version>-universal.apk` | all devices including 32-bit ARM and x86 |
+
+Copy the APK to the phone, open it and allow installing from unknown sources. Requires Android 8.0
+(API 26); Google Play Services are not needed.
+
 ## Features
 
-- Animated sky with sun, moon phase, stars, clouds, fog, rain, snow and thunderstorms; wind and gusts
-  move clouds, precipitation and seasonal particles.
-- Current values from the nearest weather station – DWD, GeoSphere Austria, MeteoSwiss and DMI every
-  10 minutes, else an airport (METAR) –, each value only from a station at the place's height (at
-  most 300 m apart) and near the model. The sky "now" follows the measured sunshine as the hours
-  follow the model's: thin veil clouds do not make a cloudy sky while the sun shines through; the
-  running hour in the day chart shows the same weather as the header. The ⓘ of "Measured at …" names
-  for each value whether it was measured (and where) or comes from the model.
-- DWD weather alerts, precipitation nowcast, hourly and 10-day forecast with chance of
-  precipitation, detail tiles, air quality, pollen, citizen sensors and a comparison of eight
-  weather models.
-- Forecast model: preset "Automatic" – the finest model for each place and time, named with its
-  grid in the data sources – or one of DWD ICON, ECMWF IFS, Météo-France, MET Nordic (1 km), KNMI
-  Harmonie, DMI Harmonie, UK Met Office, MeteoSwiss ICON-CH1/-CH2, GeoSphere AROME and ItaliaMeteo
-  ICON-2I. Each place first follows the app setting or gets a model of its own; outside a regional
-  model's area and after its last hours "Automatic" takes over. ⧉ adds a place once more, e.g. to see
-  two models side by side.
-- Day meteogram (temperature every 15 minutes forecast, every 10 minutes measured; today: station
-  readings for the hours already over, then the forecast – also in the precipitation and pressure
-  charts), look back at the past days (measured versus forecast, hour by hour as a table,
-  precipitation measured and forecast with its chance) with the rain radar of the whole day in
-  5-minute steps, sun and moon card with light phases.
-- Bathing waters: all official EU bathing sites within an adjustable radius plus favourites, with
-  EU classification, sea temperature at coasts and the latest samples (water temperature, blue-green
-  algae) where states publish them openly – see [docs/BATHING.md](docs/BATHING.md).
-- Rain radar: DWD for Germany, KNMI for the Netherlands, RainViewer for the rest of Europe (the time
-  line follows the place's radar), one colour scale for rain (green → yellow →
-  red → magenta) and snow (turquoise → white → violet), optionally calmer in blue and pink–violet;
-  radar cells smoothed at every zoom level instead of blocks; smooth playback (the motion of the
-  rain is computed between two radar images); an own radar store keeps every image, loaded once and
-  processed, until it expires – panning and zooming need no network; roads, borders and names above
-  the radar; temperature (with isotherms) and wind layers, satellite and warning map. The
-  precipitation map on the weather page shows the same picture for its area around the place,
-  loading only that area's radar cells, in a lane of its own beside the radar loop.
-- An ⓘ on every card explains the terms. Units follow the country on first start; the order and visibility of
-  the cards can be set in the settings, places are sorted or deleted after a long press.
-- My location: while it is shown (its page, the list of places) the position is looked for on opening
-  and after 5 minutes – by cell/Wi-Fi first, by GPS as well where that gives nothing (e.g. on an EDGE
-  network); a dot on the location pin tells whether the position is current (green) or older (yellow,
-  then the cards too); searches without result wait longer each time (2, 5, 10 minutes). For saved
-  places the GPS stays off. Pulling to reload (or tapping the pin) asks for the position first –
+- **Animated sky**: colours by the sun's position, sun, moon in its real phase, stars, clouds, fog,
+  rain, snow and thunderstorms. Wind and gusts move clouds, precipitation and particles; in dry
+  weather blossoms, seeds, leaves or ice crystals drift by the season, pollen by the real load.
+- **Weather page**: combined symbol, temperature with unit and max/min, a short forecast for the
+  next hours, DWD alerts, "Precipitation today" on top (amount, next 3 hours, highest chance; on dry
+  days one line with the next precipitation, or hidden), hourly and 10-day forecast with the chance
+  of precipitation, tiles for feels-like, UV, wind, humidity, visibility and pressure. The forecast
+  appears at once, tiles with slower sources follow as soon as their data is there; a dot per tile
+  shows whether its data is current (green) or still the previous one (yellow). Each kind of data has
+  a shelf life (forecast 10, look-back 15 minutes): on returning and every minute after, the app
+  loads what has expired.
+  Current values come, where possible, from the nearest weather station: DWD, GeoSphere Austria,
+  MeteoSwiss and DMI every 10 minutes, else an airport (METAR). Each value counts only from a station
+  at the place's height (at most 300 m apart) and near the model. The sky "now" follows the measured
+  sunshine as the hours follow the model's – thin veil clouds do not make a cloudy sky while the sun
+  shines through; the running hour in the day chart shows the same weather as the header. The ⓘ of
+  "Measured at …" names for each value whether it was measured (and where) or comes from the model.
+  Networks and rules: [docs/STATIONS.en.md](docs/STATIONS.en.md).
+- **Meteogram** per day (00–24 h): temperature (forecast every 15 minutes, the DWD station's readings
+  every 10 minutes), precipitation, sunshine and wind per hour, night shading, a legend with the
+  day's totals. The station's 10-minute readings as 30-minute means, the forecast continuing from the
+  last reading without a step. Precipitation in the temperature chart or as a chart of its own below,
+  with the chance as a line (in the look-back too). A long press shows a cursor with all values of
+  the hour. Today the meteogram, precipitation and pressure show the DWD station's readings for the
+  hours already over, the forecast after them.
+- **Look back** by swiping right: today so far, yesterday, the day before – DWD readings against the
+  forecast of the chosen model, on top the day in parts (early to night) with symbol and weather, the
+  sky showing them one after the other; the mean deviation, the hourly values as a table
+  measured | forecast; precipitation measured and forecast with its chance; and the rain radar of the
+  whole day in 5-minute steps to play, pan and zoom (Germany).
+- **Sun and moon**: sun arc on a fixed scale per place (the height of the arc shows the season),
+  light phases day, golden hour, blue hour and night, day length; moon phase, rise and set.
+- **Environment**: air quality, pollen (DWD index and composition, species to choose – e.g. trees
+  only), citizen sensors, a comparison of eight weather models.
+- **Tides and water levels**: the gauges within 10 km, one per water body (e.g. Weser, Fulda and
+  Werra in Hann. Münden), free places with further water bodies up to 15 km. At the coast and on
+  tidal rivers first the next high and low waters with a tide curve – computed from four weeks of
+  gauge readings, about ±30 minutes, not for navigation or mudflat hiking. Readings from the federal
+  waterways and from Lower Saxony, NRW, Saxony and Hesse, elsewhere the flood classification of the
+  state portal with a link; plus the states' flood warnings. Which source per state and why:
+  [docs/GAUGES.en.md](docs/GAUGES.en.md).
+- **Bathing waters**: all official EU bathing sites within an adjustable radius (10–100 km) – lakes,
+  rivers, coasts –, favourites at any distance; EU classification, sea temperature at the coast, in
+  Berlin and Schleswig-Holstein the latest samples with water temperature and blue-green algae
+  notes. Sources per state: [docs/BATHING.en.md](docs/BATHING.en.md).
+- **Rain radar**: DWD radar with a 2-hour nowcast for Germany, KNMI radar for the Netherlands,
+  RainViewer for the rest of Europe (the time line follows the place's radar), one colour scale for
+  rain (green → yellow → red → magenta) and snow (turquoise → white → violet, per pixel by the
+  temperature), optionally calmer in blue and pink–violet; the radar cells smoothed at every zoom
+  level instead of blocks; smooth playback: between two radar images the motion of the rain is
+  computed; an own radar store – each image of a weather service (all of Germany, the Netherlands in
+  one) is loaded once, turned into reflectivity and kept locally until it expires (analyses ~3½ days),
+  panning and zooming need no network; opaque colours, roads, borders and names above the radar;
+  temperature (with isotherms) and wind layers, satellite (Meteosat, every 10 minutes, at the time of
+  the radar image), warning map, look-back up to 24 h. The radar of a day in the look-back shows
+  temperature, wind and satellite too. On Wi-Fi the app keeps the 2-hour loop of the current place
+  up to date about every 15 minutes, in the background too – as long as the app was used the day
+  before. The radar resolution follows the device's memory. Without a connection the radar shows the
+  stored images; nothing waits forever. The precipitation map on the weather page shows the same
+  picture for its area around the place, loading only that area's radar cells, in a lane of its own
+  beside the radar loop.
+- **Battery**: the animated sky runs at 30 frames/s (rain, snow: 60), after a minute without touch at
+  15; in the system's battery saver it stands still. The hourly background update loads the forecast
+  only (the other sources on opening) and pauses when the app has not been opened for three days.
+- **Accessibility**: large system font up to 200 % and small displays from 320 dp – nothing overlaps
+  or is cut off, long words are hyphenated or shortened; the 10-day rows go to two lines with a large
+  font.
+- **Full screen**: a double tap on the sky above the cards hides and shows the status and navigation
+  bars, optionally by a button too; with three-button navigation the app ends above the buttons.
+- **Glossary**: the ⓘ on every card explains the terms.
+- **My location**: while it is shown (its page, the list of places) the position is looked for on
+  opening and after 5 minutes – by cell/Wi-Fi first, by GPS as well where that gives nothing (e.g. on
+  an EDGE network). A dot on the location pin tells whether the position is current (green) or older
+  (yellow, then the cards too); searches without result wait longer each time (2, 5, 10 minutes). For
+  saved places the GPS stays off. Reloading (or tapping the pin) asks for the position first –
   everything for "My location" is yellow and waits until it is confirmed or the new place is taken;
   then the cards turn green one by one. A reload fetches everything anew (no cache, station lists and
   tides too); if a request fails, the old data stay, yellow, and are tried again next time.
-- Shelf life: each part of the data has its own – forecast, station, citizen sensors and flood
-  alerts 10 minutes, gauges 15, air quality and bathing waters 60, pollen 3 hours. Past it, the
-  part tells so itself – its dot turns yellow that very moment (no timer redrawing the page) – and
-  only that part is loaded again; each card turns green as soon as its source has answered. With
-  the position out of date, so are all data of "My location". Stored data nobody needs is deleted: data of a moment after 4 days (as far as the
-  look-back reaches), lists (gauges, bathing waters, tides) after 30 days without use, the weather
-  of removed places at once.
-- Tablets: two columns of cards from 600 dp, a places sidebar in landscape on large tablets; phones
-  held sideways show three equal columns: the header on the left, the cards in the other two, clear of the camera cut-out.
+- **Shelf life**: each part of the data has its own – forecast, station, citizen sensors and flood
+  alerts 10 minutes, gauges 15, air quality and bathing waters 60, pollen 3 hours. Past it, the part
+  tells so itself – its dot turns yellow that very moment (no timer redrawing the page) – and only
+  that part is loaded again; each card turns green as soon as its source has answered. With the
+  position out of date, so are all data of "My location". Stored data nobody needs is deleted: data
+  of a moment after 4 days (as far as the look-back reaches), lists (gauges, bathing waters, tides)
+  after 30 days without use, the weather of removed places at once.
+- **Places, settings**: my location and saved places (long press to sort and delete); the forecast
+  model (preset: Automatic – the finest model for each place and time, named with its grid in the
+  data sources), units (on first start to suit the country), station values, animations, order and
+  visibility of the cards.
+- **A model per place**: in the list of places (long press) each place first gets "As in the app
+  settings" or "A model of its own for this place", then the model – regional ones too, like MET
+  Nordic (1 km) or KNMI Harmonie (2 km); outside their area and after their last hours "Automatic"
+  takes over. ⧉ adds a place once more, e.g. to see two models side by side. All models with grid,
+  area and range: [docs/MODELS.en.md](docs/MODELS.en.md).
+- **Tablet, landscape**: from 600 dp width the cards in two columns (a card that would stand alone in
+  its row across the full width), phones held sideways in three equal columns: the header on the
+  left, the cards in the other two (nothing under the camera cut-out); on large tablets in landscape
+  a places sidebar on the left; settings, places, look-back and radar controls centred at a readable
+  width. "Open-source licenses" lists the licences of Nimbus and of all libraries used. Hourly
+  background update, offline the data loaded last.
 
 ## Data sources
 
-DWD (via [Bright Sky](https://brightsky.dev) and the DWD GeoServer), [Open-Meteo](https://open-meteo.com)
-(best match, DWD ICON, MET Norway's MET Nordic and the other models, Copernicus CAMS),
-[GeoSphere Austria](https://data.hub.geosphere.at), [MeteoSwiss](https://opendatadocs.meteoswiss.ch),
-[DMI](https://www.dmi.dk/friedata), airport reports (METAR, [aviationweather.gov](https://aviationweather.gov)),
-[KNMI](https://english.knmidata.nl/open-data) radar, [RainViewer](https://www.rainviewer.com),
-[Sensor.Community](https://sensor.community), [OpenFreeMap](https://openfreemap.org) ·
-© OpenMapTiles · © OpenStreetMap contributors.
+| Purpose | Source |
+|---|---|
+| Forecast | [Open-Meteo](https://open-meteo.com): preset "best match", to choose DWD ICON, ECMWF IFS, Météo-France, MET Nordic (MET Norway), KNMI Harmonie, DMI Harmonie, UK Met Office, MeteoSwiss ICON-CH1/-CH2, GeoSphere AROME, ItaliaMeteo ICON-2I; gaps from "best match" |
+| Current readings | DWD stations via [Bright Sky](https://brightsky.dev), [GeoSphere Austria](https://data.hub.geosphere.at), [MeteoSwiss](https://opendatadocs.meteoswiss.ch), [DMI](https://www.dmi.dk/friedata), airports (METAR, [aviationweather.gov](https://aviationweather.gov)) |
+| Alerts, look-back | DWD alerts and stations via Bright Sky |
+| Radar, warning map | DWD GeoServer, [KNMI](https://english.knmidata.nl/open-data) (Netherlands); rest of Europe: [RainViewer](https://www.rainviewer.com/api.html) |
+| Satellite | Meteosat (MTG, GeoColour) via [EUMETView](https://view.eumetsat.int) – "Contains modified EUMETSAT Meteosat data", CC BY 4.0 |
+| Air quality, pollen in Europe | Copernicus CAMS via Open-Meteo |
+| Pollen in Germany | [DWD pollen hazard index](https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json) |
+| Citizen sensors | [Sensor.Community](https://sensor.community) |
+| Model comparison, temperature/wind grid | Open-Meteo |
+| Water levels, tides, floods | PEGELONLINE (WSV), NLWKN, LANUK NRW, LfULG Sachsen, HLNUG, Länderübergreifendes Hochwasserportal – details in [docs/GAUGES.en.md](docs/GAUGES.en.md) |
+| Bathing waters | European Environment Agency, LAGeSo Berlin, Schleswig-Holstein, sea temperature Open-Meteo – details in [docs/BATHING.en.md](docs/BATHING.en.md) |
+| Name of my location | the system geocoder, else [Nominatim](https://nominatim.org) (OpenStreetMap) |
+| Sun and moon | computed on the device (after SunCalc and J. Meeus) |
+| Map | [OpenFreeMap](https://openfreemap.org) · © OpenMapTiles · © OpenStreetMap contributors |
+
+The free Open-Meteo API allows 5,000 calls per hour and 10,000 per day per IP address. So the app
+caches grid data for an hour and shows the data stored last when the limit is reached.
 
 ## Building
 
-JDK 21 and the Android SDK (platform 37) are required:
+Requires JDK 21 and the Android SDK with platform 37 and build tools 36.
 
 ```bash
 echo "sdk.dir=$HOME/Android/Sdk" > local.properties
-./gradlew testDebugUnitTest assembleRelease
+./gradlew testDebugUnitTest      # unit tests, including the screenshot comparison of the charts
+./gradlew assembleRelease        # APKs in app/build/outputs/apk/release/
 ```
 
-The unit tests also render the charts from fixed data (Robolectric, Roborazzi) and compare them with
-the reference images in `app/src/test/screenshots/`; `./gradlew recordRoborazziDebug` writes new ones
-after an intended change of the look.
+The tests render the charts from fixed data (Robolectric, Roborazzi) and compare them with the
+reference images in `app/src/test/screenshots/`; a test also checks in the finished image that the
+cursor stands centred on its bar. After an intended change of the look,
+`./gradlew recordRoborazziDebug` writes new reference images.
 
-## License
+Signing uses `keystore/keystore.properties` (not in the repository); without it the release APK
+stays unsigned (`app-universal-release-unsigned.apk`), as F-Droid expects it.
 
-Nimbus is free software under the **GNU General Public License, version 3 or later**. Every file
-states its license in its header or in `REUSE.toml` ([REUSE](https://reuse.software) compliant); the
-sun and moon calculation is partly based on SunCalc (BSD-2-Clause); recorded test data are licensed
-CC BY 4.0 (Open-Meteo, MET Norway, DWD, Copernicus, GeoSphere Austria, MeteoSwiss, DMI, KNMI), public
-domain (METAR) or ODbL 1.0 (Sensor.Community, Nominatim), gauge data by their publishers' terms –
-see `REUSE.toml`.
+Technology: Kotlin, Jetpack Compose (Material 3), OkHttp, kotlinx.serialization, DataStore,
+WorkManager, MapLibre Android, AboutLibraries (licence list, generated at build time).
+
+### F-Droid
+
+Store texts, screenshots and change notes are in the F-Droid format under
+`fastlane/metadata/android/` (German and English). The draft build recipe for the fdroiddata
+repository is in `docs/fdroid/dev.nimbus.weather.yml`.
+
+### Demo mode for visual tests
+
+```bash
+adb shell am start -S -n dev.nimbus.weather/.MainActivity \
+  --es demo_condition THUNDERSTORM --ez demo_night true \
+  --es demo_season AUTUMN --es demo_wind 0.8 --es demo_pollen 0.5
+```
+
+`demo_condition`: CLEAR … THUNDERSTORM (see `Condition`) · `demo_season`: SPRING, SUMMER, AUTUMN,
+WINTER · `demo_wind`: −1…1 · `demo_screen`: radar, places, settings · `demo_radar_temp`:
+temperature offset for the radar colouring.
+
+### Project structure
+
+```
+app/src/main/java/dev/nimbus/weather/
+  data/model      domain model, WMO codes, settings
+  data/remote     Open-Meteo, Bright Sky (DWD), station networks (GeoSphere, MeteoSwiss, DMI, METAR),
+                  pollen, Sensor.Community, look-back
+  data/repo       repository, weather now (measurement and model), location, storage,
+                  background update
+  ui/background   animated sky, seasonal particles
+  ui/main         weather page, cards, meteogram, look-back
+  ui/radar        radar: composites of the DWD and the KNMI, RainViewer, radar store, preview,
+                  colour scale, temperature/wind layers
+  ui/places, ui/settings, ui/components, ui/theme
+  util            units and formatting, sun and moon
+```
+
+## Licence
+
+Nimbus is free software under the **GNU General Public License, version 3 or later**
+(`LICENSES/GPL-3.0-or-later.txt`). There is no warranty, to the extent permitted by law.
+
+Every file states its licence in its header or in `REUSE.toml` (checked with
+[`reuse lint`](https://reuse.software)). Deviating from it:
+
+- Sun and moon calculation in `util/Moon.kt`: partly after SunCalc, © 2026 Volodymyr Agafonkin,
+  BSD-2-Clause
+- Gradle wrapper: Apache-2.0
+- Recorded API responses in `app/src/test/resources/fixtures/`: data of Open-Meteo (MET Norway too),
+  DWD, Copernicus, GeoSphere Austria, MeteoSwiss, DMI and KNMI under CC BY 4.0, METAR (US government)
+  in the public domain, Sensor.Community and Nominatim under ODbL 1.0, gauge data by their
+  publishers' terms – in detail in `REUSE.toml`
+- Screenshots in `docs/screenshots/`: CC BY 4.0, with weather, radar and map data of DWD, Open-Meteo,
+  RainViewer, OpenFreeMap, OpenMapTiles and OpenStreetMap contributors (ODbL)
 
 Idea, decisions and testing: Thorsten Schnebeck. Written by Anthropic Claude Opus 5.5 (AI generated
 content).

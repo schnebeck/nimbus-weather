@@ -15,6 +15,8 @@
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
+<p align="right"><a href="GAUGES.en.md">English</a></p>
+
 # Pegel und Gezeiten – Ländersupport
 
 Stand: **30. September 2026** (Nimbus 1.12.0). Alle Quellen wurden an diesem Tag live geprüft.

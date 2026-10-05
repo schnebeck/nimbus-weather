@@ -79,7 +79,7 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   folgt dem gemessenen Sonnenschein, wie die Stunden dem Sonnenschein des Modells – dünne Schleierwolken
   machen keinen bewölkten Himmel, wenn die Sonne durchscheint; die laufende Stunde im Tagesdiagramm
   zeigt dasselbe Wetter wie die Kopfzeile. ⓘ am Hinweis „Gemessen an …“ nennt für jeden Wert, ob er
-  gemessen ist (und wo) oder vom Modell kommt.
+  gemessen ist (und wo) oder vom Modell kommt. Netze und Regeln: [docs/STATIONS.md](docs/STATIONS.md).
 - **Meteogramm** je Tag (00–24 Uhr): Temperatur (Vorhersage alle 15 Minuten, Messwerte der
   DWD-Station alle 10 Minuten), Niederschlag, Sonnenscheindauer und Wind pro Stunde,
   Nachtschattierung, Legende mit Tagessummen. Die 10-Minuten-Messwerte der Station als
@@ -158,10 +158,10 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   App-Einstellungen“ oder „Eigenes Modell für diesen Ort“, dann das Modell – auch regionale wie MET
   Nordic (1 km) oder KNMI Harmonie (2 km); außerhalb ihres Gebiets und nach ihren letzten Stunden
   übernimmt „Automatisch“. ⧉ legt einen Ort ein weiteres Mal an, etwa um zwei Modelle nebeneinander zu
-  sehen.
+  sehen. Alle Modelle mit Gitter, Gebiet und Reichweite: [docs/MODELS.md](docs/MODELS.md).
 - **Tablet, Querformat**: ab 600 dp Breite die Kacheln in zwei Spalten (eine Karte, die allein in ihrer
   Zeile stünde, über die volle Breite), quer gehaltene Handys in drei gleich breiten Spalten: der Kopf links, die Kacheln in den zwei anderen
-  und den Kacheln daneben (nichts unter der Kamera-Aussparung), im Querformat großer Tablets links eine
+  (nichts unter der Kamera-Aussparung), im Querformat großer Tablets links eine
   Ortsleiste; Einstellungen, Orte, Rückblick und Radar-Bedienung mittig in lesbarer Breite. Unter „Open-Source-Lizenzen“ stehen die Lizenzen
   von Nimbus und aller verwendeten Bibliotheken. Stündliche Aktualisierung im Hintergrund,
   offline die zuletzt geladenen Daten.

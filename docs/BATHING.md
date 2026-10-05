@@ -15,6 +15,8 @@
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
+<p align="right"><a href="BATHING.en.md">English</a></p>
+
 # Badegewässer – Quellen und Ländersupport
 
 Stand: **1. Oktober 2026** (Nimbus 1.14.0). Alle Quellen wurden an diesem Tag live geprüft.

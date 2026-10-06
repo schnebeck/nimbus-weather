@@ -1,0 +1,1 @@
+• Radar: Nach dem Verschieben oder Zoomen der Karte blieb das Laden der Radarschleife manchmal stehen – ein abgebrochener Download riss die wartenden mit, bis keiner mehr lud. Jetzt übernimmt ein wartender den Schritt selbst.

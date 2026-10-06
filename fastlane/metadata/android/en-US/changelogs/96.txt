@@ -1,0 +1,1 @@
+• Radar: after panning or zooming the map the radar loop sometimes stopped loading – a cancelled download took the ones waiting for it along until none was left. Now a waiting one takes the step over.

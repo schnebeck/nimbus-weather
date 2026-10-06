@@ -78,4 +78,29 @@ class RadarNowhereTest {
         waitFor("all steps shown around Hannover") { tl.frames.indices.all { p.isLoaded(it) } }
         assertEquals(true, p.nowcastHere.value)
     }
+
+    /**
+     * "hängt nach Laden": a loop called off while it loads (the screen left, its downloader
+     * restarted after panning) – a second loop waiting for the same steps still gets every one.
+     * (Handed the first one's cancellation, its download workers ended one after the other.)
+     */
+    @Test fun aLoopCalledOffLeavesNoStepBehind() {
+        val slow = OkHttpClient.Builder().addInterceptor { Thread.sleep(200); throw java.io.IOException("offline in the test") }.build()
+        val t0 = latest - 3 * 24 * 3_600_000L    // steps of their own: no other test has them
+        val tl = RadarTimeline((-24..0).map { k -> RadarFrame(t0 + k * step, false, null, null) }, 24, "")
+        val first = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        val second = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        try {
+            RadarPlayer(first, slow, maxSide = 128).apply { setTimeline(tl); setView(51.9, 52.9, 8.7, 10.7, 1080) }
+            Thread.sleep(300)
+            val p = RadarPlayer(second, slow, maxSide = 128).apply { setTimeline(tl); setView(51.9, 52.9, 8.7, 10.7, 1080) }
+            Thread.sleep(100)
+            first.cancel()
+            val until = System.currentTimeMillis() + 30_000
+            while (!tl.frames.indices.all { p.isLoaded(it) }) {
+                assertTrue("steps left behind: ${tl.frames.indices.count { !p.isLoaded(it) }}", System.currentTimeMillis() < until)
+                Thread.sleep(50)
+            }
+        } finally { first.cancel(); second.cancel() }
+    }
 }

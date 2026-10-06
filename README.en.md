@@ -84,12 +84,16 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
   day's totals. The station's 10-minute readings as 30-minute means, the forecast continuing from the
   last reading without a step. Precipitation in the temperature chart or as a chart of its own below,
   with the chance as a line (in the look-back too). A long press shows a cursor with all values of
-  the hour. Today the meteogram, precipitation and pressure show the DWD station's readings for the
-  hours already over, the forecast after them.
+  the hour, in the columns "measured | expected". What was measured stands as a filled bar, what is
+  expected as a frame – precipitation violet, sunshine orange. Today the meteogram, precipitation and
+  pressure show the readings for the hours already over, the forecast after them; an hour without a
+  reading stays empty, the legend says "not measured". Precipitation is measured by the DWD radar
+  over the place, sunshine by the satellite – not by a station 20–40 km away
+  ([docs/STATIONS.en.md](docs/STATIONS.en.md)); below the chart it says where the measurements come from.
 - **Look back** by swiping right: today so far, yesterday, the day before – DWD readings against the
   forecast of the chosen model, on top the day in parts (early to night) with symbol and weather, the
   sky showing them one after the other; the mean deviation, the hourly values as a table
-  measured | forecast; precipitation measured and forecast with its chance; and the rain radar of the
+  measured | expected; precipitation measured and forecast with its chance; and the rain radar of the
   whole day in 5-minute steps to play, pan and zoom (where a weather service radar measures: DWD,
   KNMI, MET Norway).
 - **Sun and moon**: sun arc on a fixed scale per place (the height of the arc shows the season),
@@ -119,15 +123,18 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
   panning and zooming need no network; opaque colours, roads, borders and names above the radar;
   temperature (with isotherms) and wind layers, satellite (Meteosat, every 10 minutes, at the time of
   the radar image), warning map, look-back up to 24 h. The radar of a day in the look-back shows
-  temperature, wind and satellite too. On Wi-Fi the app keeps the 2-hour loop of the current place
-  up to date about every 15 minutes while it is open. The radar resolution follows the device's memory. Without a connection the radar shows the
+  temperature, wind and satellite too. For someone who opened the radar within the last week, the app
+  loads the past images of the current place's 2-hour loop ahead on Wi-Fi while it is open (the radar
+  forecast is fetched by the radar itself – it is new every 5 minutes). The radar resolution follows the device's memory. Without a connection the radar shows the
   stored images; nothing waits forever. The precipitation map on the weather page shows the same
   picture for its area around the place, loading only that area's radar cells, in a lane of its own
   beside the radar loop.
 - **Battery**: the animated sky runs at 30 frames/s (rain, snow: 60), after a minute without touch at
-  15; in the system's battery saver it stands still. Nimbus works only while it is shown: no update
-  in the background, and the radar stops too when the phone is locked. On opening the app loads
-  what has expired – until then it shows the last data with a yellow dot.
+  15; in the system's battery saver, with the system's animations off or the animation switched off it
+  stands still – without rain, snow, lightning and leaves. Nimbus works only while it is shown: no
+  update in the background, no timers behind the lock screen, and the radar stops too when the phone
+  is locked. On opening the app loads what has expired – until then it shows the last data with a
+  yellow dot –, the look-back for the place shown only.
 - **Accessibility**: large system font up to 200 % and small displays from 320 dp – nothing overlaps
   or is cut off, long words are hyphenated or shortened; the 10-day rows go to two lines with a large
   font.
@@ -172,6 +179,7 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
 | Forecast | [Open-Meteo](https://open-meteo.com): preset "best match", to choose DWD ICON, ECMWF IFS, Météo-France, MET Nordic (MET Norway), KNMI Harmonie, DMI Harmonie, UK Met Office, MeteoSwiss ICON-CH1/-CH2, GeoSphere AROME, ItaliaMeteo ICON-2I; gaps from "best match" |
 | Current readings | DWD stations via [Bright Sky](https://brightsky.dev), [GeoSphere Austria](https://data.hub.geosphere.at), [MeteoSwiss](https://opendatadocs.meteoswiss.ch), [DMI](https://www.dmi.dk/friedata), airports (METAR, [aviationweather.gov](https://aviationweather.gov)) |
 | Alerts, look-back | DWD alerts and stations via Bright Sky |
+| Measured over the place | Precipitation: DWD radar RADOLAN (RW, RY), Germany · sunshine: DWD from EUMETSAT MTG satellite data via [Open-Meteo](https://open-meteo.com/en/docs/satellite-radiation-api), Europe |
 | Radar, warning map | DWD GeoServer, [KNMI](https://english.knmidata.nl/open-data) (Netherlands), [MET Norway](https://www.met.no/en/free-meteorological-data) (Nordic composite); rest of Europe: [RainViewer](https://www.rainviewer.com/api.html) |
 | Satellite | Meteosat (MTG, GeoColour) via [EUMETView](https://view.eumetsat.int) – "Contains modified EUMETSAT Meteosat data", CC BY 4.0 |
 | Air quality, pollen in Europe | Copernicus CAMS via Open-Meteo |
@@ -232,12 +240,12 @@ temperature offset for the radar colouring.
 app/src/main/java/dev/nimbus/weather/
   data/model      domain model, WMO codes, settings
   data/remote     Open-Meteo, Bright Sky (DWD), station networks (GeoSphere, MeteoSwiss, DMI, METAR),
-                  pollen, Sensor.Community, look-back
+                  pollen, Sensor.Community, look-back, radar and satellite over the place
   data/repo       repository, weather now (measurement and model), location, storage,
                   shelf life of the data
   ui/background   animated sky, seasonal particles
   ui/main         weather page, cards, meteogram, look-back
-  ui/radar        radar: composites of the DWD and the KNMI, RainViewer, radar store, preview,
+  ui/radar        radar: composites of the DWD, the KNMI and MET Norway, RainViewer, radar store, preview,
                   colour scale, temperature/wind layers
   ui/places, ui/settings, ui/components, ui/theme
   util            units and formatting, sun and moon

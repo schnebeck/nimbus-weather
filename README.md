@@ -85,12 +85,16 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   Nachtschattierung, Legende mit Tagessummen. Die 10-Minuten-Messwerte der Station als
   30-Minuten-Mittel, die Vorhersage schließt ohne Sprung an die letzte Messung an. Niederschlag wahlweise im Temperaturdiagramm oder als
   eigenes Diagramm darunter, mit der Wahrscheinlichkeit als Linie (auch im Rückblick). Langes Drücken
-  blendet einen Cursor mit allen Werten der Stunde ein. Heute zeigen Meteogramm, Niederschlag und Luftdruck für die vergangenen Stunden
-  die Messwerte der DWD-Station, danach die Vorhersage.
+  blendet einen Cursor mit allen Werten der Stunde ein, in den Spalten „gemessen | erwartet“. Gemessenes
+  steht als gefüllter Balken, Erwartetes als Rahmen – Niederschlag violett, Sonne orange. Heute zeigen
+  Meteogramm, Niederschlag und Luftdruck für die vergangenen Stunden die Messwerte, danach die
+  Vorhersage; eine Stunde ohne Messung bleibt leer, die Legende sagt „nicht gemessen“. Niederschlag
+  misst das DWD-Radar über dem Ort, Sonnenschein der Satellit – nicht eine Station 20–40 km entfernt
+  ([docs/STATIONS.md](docs/STATIONS.md)); unter dem Diagramm steht, woher die Messungen stammen.
 - **Rückblick** per Wischen nach rechts: heute bisher, gestern, vorgestern – DWD-Messwerte im
   Vergleich zur Vorhersage des gewählten Modells, oben der Tag in Abschnitten (früh bis nachts)
   mit Symbol und Wetter, der Himmel zeigt sie nacheinander; mit mittlerer Abweichung, Stundenwerte als Tabelle
-  Messung | Vorhersage; Niederschlag gemessen und vorhergesagt mit Wahrscheinlichkeit; dazu das
+  gemessen | erwartet; Niederschlag gemessen und vorhergesagt mit Wahrscheinlichkeit; dazu das
   Regenradar des ganzen Tages in 5-Minuten-Schritten zum Abspielen, Verschieben und Zoomen
   (wo ein Wetterdienst-Radar misst: DWD, KNMI, MET Norway).
 - **Sonne und Mond**: Sonnenbogen mit fester Skala je Ort (die Bogenhöhe zeigt die Jahreszeit),
@@ -120,16 +124,19 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   (Analysen ~3½ Tage), Verschieben und Zoomen brauchen kein Netz; deckende Farben, Straßen, Grenzen
   und Namen über dem Radar; Temperatur- (mit Isothermen) und Windebene, Satellit (Meteosat, alle
   10 Minuten, zur Zeit des Radarbilds), Warnkarte, Rückblick bis 24 h. Auch das Radar eines Tages
-  im Rückblick zeigt Temperatur, Wind und Satellit. Im WLAN hält die App die 2-Stunden-Schleife des aktuellen Orts etwa alle 15
-  Minuten aktuell, solange sie geöffnet ist. Die Auflösung des
+  im Rückblick zeigt Temperatur, Wind und Satellit. Wer das Radar in der letzten Woche geöffnet hat,
+  dem lädt die App im WLAN die vergangenen Bilder der 2-Stunden-Schleife des aktuellen Orts vor,
+  solange sie geöffnet ist (die Radarvorhersage holt das Radar selbst – sie ist alle 5 Minuten neu). Die Auflösung des
   Radarbilds richtet sich nach dem Speicher des Geräts. Ohne Verbindung zeigt das Radar die
   gespeicherten Bilder; nichts wartet endlos. Die Niederschlagskarte auf der Wetterseite zeigt dasselbe
   Bild für ihren Ausschnitt um den Ort; sie lädt nur dessen Radarzellen, in eigener Spur neben der
   Radarschleife.
 - **Akku**: Der animierte Himmel läuft mit 30 Bildern/s (Regen, Schnee: 60), nach einer Minute ohne
-  Berührung mit 15; im Energiesparmodus des Systems steht er still. Nimbus arbeitet nur, solange es zu
-  sehen ist: keine Aktualisierung im Hintergrund, beim Sperren hält auch das Radar an. Beim Öffnen
-  lädt die App, was abgelaufen ist – bis dahin zeigt sie die letzten Daten mit gelbem Punkt.
+  Berührung mit 15; im Energiesparmodus des Systems, bei abgeschalteten System-Animationen oder
+  abgeschalteter Animation steht er still – ohne Regen, Schnee, Blitze und Blätter. Nimbus arbeitet
+  nur, solange es zu sehen ist: keine Aktualisierung im Hintergrund, keine Zeitgeber hinter dem
+  Sperrbildschirm, beim Sperren hält auch das Radar an. Beim Öffnen lädt die App, was abgelaufen ist –
+  bis dahin zeigt sie die letzten Daten mit gelbem Punkt –, den Rückblick nur für den sichtbaren Ort.
 - **Barrierefreiheit**: große Systemschrift bis 200 % und kleine Displays ab 320 dp – nichts überlappt
   oder wird abgeschnitten, lange Wörter werden getrennt oder abgekürzt; die 10-Tage-Zeilen werden
   bei großer Schrift zweizeilig.
@@ -175,6 +182,7 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
 | Vorhersage | [Open-Meteo](https://open-meteo.com): voreingestellt „best match“, wählbar DWD ICON, ECMWF IFS, Météo-France, MET Nordic (MET Norway), KNMI Harmonie, DMI Harmonie, UK Met Office, MeteoSwiss ICON-CH1/-CH2, GeoSphere AROME, ItaliaMeteo ICON-2I; Lücken aus „best match“ |
 | Aktuelle Messwerte | DWD-Stationen via [Bright Sky](https://brightsky.dev), [GeoSphere Austria](https://data.hub.geosphere.at), [MeteoSwiss](https://opendatadocs.meteoswiss.ch), [DMI](https://www.dmi.dk/friedata), Flughäfen (METAR, [aviationweather.gov](https://aviationweather.gov)) |
 | Warnungen, Rückblick | DWD-Warnungen und -Stationen via Bright Sky |
+| Gemessen über dem Ort | Niederschlag: DWD-Radar RADOLAN (RW, RY), Deutschland · Sonnenschein: DWD aus EUMETSAT-MTG-Satellitendaten via [Open-Meteo](https://open-meteo.com/en/docs/satellite-radiation-api), Europa |
 | Radar, Warnkarte | DWD GeoServer, [KNMI](https://english.knmidata.nl/open-data) (Niederlande), [MET Norway](https://www.met.no/en/free-meteorological-data) (Nordic-Komposit); übriges Europa: [RainViewer](https://www.rainviewer.com/api.html) |
 | Satellit | Meteosat (MTG, GeoColour) via [EUMETView](https://view.eumetsat.int) – „Contains modified EUMETSAT Meteosat data“, CC BY 4.0 |
 | Luftqualität, Pollen Europa | Copernicus CAMS via Open-Meteo |
@@ -235,12 +243,12 @@ Temperatur-Verschiebung für die Radarfärbung.
 app/src/main/java/dev/nimbus/weather/
   data/model      Domänenmodell, WMO-Codes, Einstellungen
   data/remote     Open-Meteo, Bright Sky (DWD), Stationsnetze (GeoSphere, MeteoSwiss, DMI, METAR),
-                  Pollen, Sensor.Community, Rückblick
+                  Pollen, Sensor.Community, Rückblick, Radar und Satellit über dem Ort
   data/repo       Repository, Wetter jetzt (Messung und Modell), Standort, Speicher,
                   Haltbarkeit der Daten
   ui/background   Animierter Himmel, Jahreszeiten-Partikel
   ui/main         Wetterseite, Karten, Meteogramm, Rückblick
-  ui/radar        Radar: Komposite von DWD und KNMI, RainViewer, Radarspeicher, Vorschau,
+  ui/radar        Radar: Komposite von DWD, KNMI und MET Norway, RainViewer, Radarspeicher, Vorschau,
                   Farbskala, Temperatur-/Windebene
   ui/places, ui/settings, ui/components, ui/theme
   util            Einheiten und Formatierung, Sonne und Mond

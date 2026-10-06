@@ -175,7 +175,7 @@ class MainViewModel(
             is dev.nimbus.weather.data.repo.RecordKey.Part ->
                 _state.value.pages.firstOrNull { it.id == key.placeId }?.let { load(it, force = false) }
             is dev.nimbus.weather.data.repo.RecordKey.LookBack ->
-                if (_state.value.states[key.placeId]?.history != null) loadHistory(key.placeId)
+                if (key.placeId == shownPlaceId(_state.value) && _state.value.states[key.placeId]?.history != null) loadHistory(key.placeId)
         }
     }
 
@@ -190,8 +190,13 @@ class MainViewModel(
         val st = _state.value
         // "my location" while its position is looked for: loaded for the place found (or, without one, for the old place) afterwards
         st.pages.forEach { if (!(it.isCurrentLocation && st.locationStatus == LocationStatus.LOADING)) load(it, force = false) }
-        st.states.forEach { (id, ps) -> if (ps.history != null) loadHistory(id) }
+        // the look-back (and today's measurements) of the place shown – the others' when they are
+        // shown (their page asks): each is a round of requests to the station, radar and satellite
+        shownPlaceId(st)?.let { id -> if (st.states[id]?.history != null) loadHistory(id) }
     }
+
+    /** The place whose page is shown. */
+    private fun shownPlaceId(st: UiState): String? = (st.pages.firstOrNull { it.id == st.selectedPlaceId } ?: st.pages.firstOrNull())?.id
 
     fun onPause() {
         resumed = false

@@ -1,0 +1,2 @@
+• Akku und Daten: Die Radarschleife wird nur noch vorgeladen, wenn das Radar in der letzten Woche geöffnet wurde – und ohne die Radarvorhersage, die alle 5 Minuten neu ist (am Handy gemessen: 60 MB WLAN an einem Tag)
+• Rückblick und Tagesmessungen werden beim Zurückkehren nur für den sichtbaren Ort neu geladen

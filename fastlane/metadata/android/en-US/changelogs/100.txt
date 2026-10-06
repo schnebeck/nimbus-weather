@@ -1,0 +1,2 @@
+• Battery and data: the radar loop is loaded ahead only when the radar was opened within the last week – and without the radar forecast, which is new every 5 minutes (measured on the phone: 60 MB Wi-Fi a day)
+• Look-back and today's measurements are renewed on return for the place shown only

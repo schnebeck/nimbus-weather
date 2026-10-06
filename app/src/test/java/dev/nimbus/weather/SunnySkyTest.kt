@@ -60,7 +60,8 @@ class SunnySkyTest {
                 {"timestamp":"2026-10-04T11:00:00+02:00","source_id":1,"temperature":12.0,"cloud_cover":90,"sunshine":48.0,"precipitation":0.0,"condition":"fog","icon":"fog"}
                ],"sources":[{"id":1,"observation_type":"historical","station_name":"Hannover","distance":3500}]}""",
         )
-        assertEquals(Condition.CLEAR, HistorySource.parseObservations(json).byTime.values.single().condition)
+        // the station's hour as it ends up in the look-back: brightened by its sunshine (HistorySource.overSpot)
+        assertEquals(Condition.CLEAR, HistorySource.overSpot(HistorySource.parseObservations(json).byTime, emptyMap(), emptyMap(), Long.MAX_VALUE).values.single().condition)
     }
 
     /** The hour of the screenshot: Hannover-Kirchrode, 30 Sept. 13:00 – 87 % cloud, 60 min sun, icon "cloudy". */
@@ -71,7 +72,7 @@ class SunnySkyTest {
                 {"timestamp":"2026-10-01T13:00:00+02:00","source_id":1,"temperature":18.0,"cloud_cover":100,"sunshine":0.0,"precipitation":0.0,"condition":"dry","icon":"cloudy"}
                ],"sources":[{"id":1,"observation_type":"historical","station_name":"Hannover-Kirchrode","distance":3500}]}""",
         )
-        val obs = HistorySource.parseObservations(json).byTime.values.toList()
+        val obs = HistorySource.overSpot(HistorySource.parseObservations(json).byTime, emptyMap(), emptyMap(), Long.MAX_VALUE).toSortedMap().values.toList()
         assertEquals(Condition.CLEAR, obs[0].condition)
         assertEquals(Condition.CLOUDY, obs[1].condition)
     }

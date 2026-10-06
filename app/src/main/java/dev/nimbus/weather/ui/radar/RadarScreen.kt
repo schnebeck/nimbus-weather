@@ -341,6 +341,8 @@ fun RadarScreen(
     DisposableEffect(Unit) {
         RadarPrefetcher.paused = true
         RadarPrefetcher.cancelRunning()
+        // someone who opens the radar: its loop is loaded ahead from now on (see usedRecently)
+        RadarPrefetcher.radarOpened(context)
         onDispose { RadarPrefetcher.paused = false }
     }
 

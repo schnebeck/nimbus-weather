@@ -32,9 +32,12 @@ import org.maplibre.android.snapshotter.MapSnapshotter
 import kotlin.coroutines.resume
 
 /**
- * Loads the radar loop for a place in the background, so the radar screen opens instantly: the
- * time steps go into the [RadarStore] (one image per step, decoded and kept on disk) and an
- * invisible MapLibre snapshot of the radar view fetches the base map into the map cache.
+ * Loads the radar loop for a place ahead, so the radar screen opens instantly: the past time
+ * steps go into the [RadarStore] (one image per step, decoded and kept on disk) and an invisible
+ * MapLibre snapshot of the radar view fetches the base map into the map cache. Only for someone
+ * who uses the radar ([usedRecently]); and never the nowcast: its steps are replaced with every
+ * analysis (every 5 minutes) – loaded ahead they were out of date when the radar opened, and
+ * were most of the 60 MB a day measured on the phone.
  */
 object RadarPrefetcher {
     private val lastRun = HashMap<String, Long>()
@@ -60,6 +63,28 @@ object RadarPrefetcher {
     }
 
     private const val MIN_INTERVAL_MS = 8 * 60_000L
+    /** The radar opened within this long: its loop is loaded ahead. */
+    const val USED_WITHIN_MS = 7 * 24 * 3_600_000L
+    private const val PREFS = "radar"
+    private const val OPENED_AT = "openedAt"
+
+    /** The radar screen was opened (now). */
+    fun radarOpened(context: Context, now: Long = System.currentTimeMillis()) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putLong(OPENED_AT, now).apply()
+    }
+
+    /** Whether the radar was opened within [USED_WITHIN_MS] before [now]. */
+    fun usedRecently(context: Context, now: Long = System.currentTimeMillis()): Boolean =
+        usedRecently(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getLong(OPENED_AT, 0L), now)
+
+    fun usedRecently(openedAt: Long, now: Long): Boolean = openedAt > 0 && now - openedAt < USED_WITHIN_MS
+
+    /**
+     * The steps to load ahead of [tl] for the composites [here]: the past ones – the nowcast's
+     * are left to the radar screen (they are new with every analysis).
+     */
+    fun stepsAhead(tl: RadarTimeline, here: List<RadarComposite>): List<Pair<RadarComposite, RadarFrame>> =
+        tl.frames.filter { !it.isForecast }.flatMap { f -> here.map { c -> c to f } }
 
     fun isUnmetered(context: Context): Boolean {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -67,7 +92,7 @@ object RadarPrefetcher {
     }
 
     suspend fun prefetch(context: Context, http: OkHttpClient, place: Place) {
-        if (paused) return
+        if (paused || !usedRecently(context)) return
         val key = "%.2f,%.2f".format(place.latitude, place.longitude)
         val now = System.currentTimeMillis()
         synchronized(lastRun) {
@@ -88,7 +113,7 @@ object RadarPrefetcher {
             // the steps of every composite the place lies in
             // (a windowed one only for a picture area – the radar view loads it)
             val here = RadarComposites.all.filter { it.covers(place.latitude, place.longitude) && !it.windowed }
-            val steps = tl.frames.flatMap { f -> here.filter { !f.isForecast || it.hasNowcast }.map { c -> this.async { RadarStore.grid(raw, c, f) } } }
+            val steps = stepsAhead(tl, here).map { (c, f) -> this.async { RadarStore.grid(raw, c, f) } }
             steps.forEach { it.await() }
         }
         withContext(Dispatchers.IO) { RadarStore.prune() }

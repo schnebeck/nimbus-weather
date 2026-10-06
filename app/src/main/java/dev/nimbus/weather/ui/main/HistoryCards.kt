@@ -143,6 +143,7 @@ internal fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings,
             showNow = true,
             // precipitation in the same card: in the temperature chart or as a chart of its own
             separatePrecip = settings.separatePrecipitation,
+            measuredBy = measuredBy(day.hours.mapNotNull { it.measured }, history.stationName),
             // the result first, then what the lines and bars mean; the press hint ends the card
             summary = sum.tempError?.let { err ->
                 {

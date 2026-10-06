@@ -438,7 +438,7 @@
     <string name="licenses_show_text">Show license text</string>
     <string name="licenses_libraries">Libraries (%1$d)</string>
     <string name="licenses_data">Data and maps</string>
-    <string name="licenses_data_text">Weather data: Deutscher Wetterdienst (DWD), CC BY 4.0, partly via Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, KNMI, MET Norway (CC BY 4.0), RainViewer · Measurements: GeoSphere Austria, MeteoSwiss, DMI (CC BY 4.0), NOAA aviationweather.gov (METAR, public domain) · Satellite: Contains modified EUMETSAT Meteosat data, CC BY 4.0 · Citizen sensors: Sensor.Community, ODbL · Water levels: PEGELONLINE (WSV), DL-DE Zero 2.0; NLWKN Pegelonline, pegelonline.nlwkn.niedersachsen.de; LANUK NRW (Hochwasserportal NRW), DL-DE Zero 2.0; LfULG Sachsen (Pegelnetz); HLNUG; flood classification and alerts: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0 · Place names: Nominatim, © OpenStreetMap contributors, ODbL · Maps: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors, ODbL.</string>
+    <string name="licenses_data_text">Weather data: Deutscher Wetterdienst (DWD), CC BY 4.0, partly via Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, KNMI, MET Norway (CC BY 4.0), RainViewer · Measurements: GeoSphere Austria, MeteoSwiss, DMI (CC BY 4.0), NOAA aviationweather.gov (METAR, public domain) · Satellite: Contains modified EUMETSAT Meteosat data, CC BY 4.0 · Precipitation over the place: DWD RADOLAN, CC BY 4.0 · Sunshine over the place: DWD from EUMETSAT MTG data, via Open-Meteo.com, CC BY 4.0 · Citizen sensors: Sensor.Community, ODbL · Water levels: PEGELONLINE (WSV), DL-DE Zero 2.0; NLWKN Pegelonline, pegelonline.nlwkn.niedersachsen.de; LANUK NRW (Hochwasserportal NRW), DL-DE Zero 2.0; LfULG Sachsen (Pegelnetz); HLNUG; flood classification and alerts: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0 · Place names: Nominatim, © OpenStreetMap contributors, ODbL · Maps: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors, ODbL.</string>
     <string name="radar_loading_frames">Loading radar images %1$d/%2$d</string>
     <string name="radar_partly_cached">Connection problems – some radar images are older copies from the memory.</string>
     <string name="radar_partly_missing">Some radar images could not be loaded.</string>
@@ -607,6 +607,15 @@
     <string name="legend_precip_forecast">Precip. forecast %1$s</string>
     <string name="legend_sun_measured">Sun measured %1$s</string>
     <string name="legend_sun_forecast">Sun forecast %1$s</string>
+    <string name="readout_measured">measured</string>
+    <string name="readout_expected">expected</string>
+    <string name="legend_sun_not_measured">Sun not measured</string>
+    <string name="legend_precip_not_measured">Precip. not measured</string>
+    <string name="measured_by">Measured: %1$s</string>
+    <string name="measured_by_station">DWD station %1$s</string>
+    <string name="measured_by_radar">precipitation by the DWD radar over the place</string>
+    <string name="measured_by_satellite">sunshine by the satellite over the place</string>
+    <string name="radar_over_place">DWD radar over the place</string>
     <string name="legend_temperature">Temperature</string>
     <string name="legend_temp_forecast">Temp. forecast</string>
     <string name="legend_chance">Precip. chance</string>

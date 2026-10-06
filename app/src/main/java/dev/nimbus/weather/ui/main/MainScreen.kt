@@ -307,7 +307,7 @@ private fun TopBarRow(
 @Composable
 private fun WelcomeScreen(state: UiState, onRequestLocation: () -> Unit, onSearch: () -> Unit) {
     Box(Modifier.fillMaxSize()) {
-        WeatherBackground(placeholderScene(), animate = state.settings.animationsEnabled)
+        WeatherBackground(placeholderScene(), animate = true, motion = state.settings.animationsEnabled)
         Box(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(Color(0x66061A3A), Color(0x22061A3A), Color.Transparent))))
         Column(
             Modifier.fillMaxSize().padding(32.dp).windowInsetsPadding(WindowInsets.navigationBars),

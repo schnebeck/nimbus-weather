@@ -100,6 +100,8 @@ fun LegendRow(content: @Composable () -> Unit) = androidx.compose.foundation.lay
 internal fun BarLegend(
     rain: HourBar, sun: HourBar?, chance: Boolean = false,
     tempColors: Pair<Color, Color>, tempForecast: Boolean = false,
+    /** The hours over have no precipitation / sunshine reading at all. */
+    rainNotMeasured: Boolean = false, sunNotMeasured: Boolean = false,
 ) {
     val s = LocalSettings.current
     val unit = stringResource(Texts.precipUnit(s.precipitationUnit))
@@ -111,9 +113,11 @@ internal fun BarLegend(
         if (tempForecast) LegendItem(ForecastLine, stringResource(R.string.legend_temp_forecast), line = true, dashed = true)
         if (sun != null) BarLegendItems(
             HourBars.Sun, sun, R.string.legend_sunshine, R.string.legend_sun_measured, R.string.legend_sun_forecast,
+            R.string.legend_sun_not_measured.takeIf { sunNotMeasured },
         ) { hoursMinutes(it) }
         BarLegendItems(
             HourBars.Rain, rain, R.string.legend_precip, R.string.legend_precip_measured, R.string.legend_precip_forecast,
+            R.string.legend_precip_not_measured.takeIf { rainNotMeasured },
         ) { amount(it) }
         if (chance) LegendItem(ChanceLine, stringResource(R.string.legend_chance), line = true)
     }
@@ -125,7 +129,11 @@ internal fun BarLegend(
  * height). Look-back: measurement and forecast side by side.
  */
 @Composable
-internal fun Readout(h: MeteoPoint, highlighted: Boolean, compare: Boolean) {
+internal fun Readout(
+    h: MeteoPoint, highlighted: Boolean, compare: Boolean,
+    /** Today's chart: the forecast's feels-like temperature and humidity in rows of their own. */
+    extraRows: Boolean = false,
+) {
     val s = LocalSettings.current
     val tf = LocalTimeFormat.current
     val dirs = Texts.compass.map { stringResource(it) }
@@ -137,11 +145,8 @@ internal fun Readout(h: MeteoPoint, highlighted: Boolean, compare: Boolean) {
         v?.let { Units.windNumber(it, s.windUnit) + NBSP + wUnit + (dir?.let { d -> NBSP + dirs[Units.compassIndex(d)] } ?: "") } ?: NO_VALUE
     fun sun(v: Double?) = v?.let { "${it.roundToInt()}" + NBSP + "min" } ?: NO_VALUE
     fun pct(v: Double?, amount: Double?) = v?.let { (Insights.chanceText(it, amount) ?: "0") + NBSP + "%" } ?: NO_VALUE
-    val condition = stringResource(Texts.condition(h.condition, h.isDay)) + when {
-        h.forecastOnly -> " · " + stringResource(R.string.forecast)
-        h.measured -> " · " + stringResource(R.string.measured_word)
-        else -> ""
-    }
+    // measured or expected: the columns say it (look-back, today); a day to come is all forecast
+    val condition = stringResource(Texts.condition(h.condition, h.isDay))
     val lTemp = stringResource(R.string.readout_temperature)
     val lPrecip = stringResource(R.string.precipitation)
     val lChance = stringResource(R.string.readout_chance)
@@ -165,20 +170,23 @@ internal fun Readout(h: MeteoPoint, highlighted: Boolean, compare: Boolean) {
         Spacer(Modifier.height(4.dp))
         Column(Modifier.fillMaxWidth()) {
             if (compare) {
-                // Look-back: an hour still to come has the forecast only
+                // Look-back and today: measured and expected side by side – an hour to come, or a
+                // quantity not measured, has an empty cell for the measurement
                 val c = h.compare ?: HourCompare(
                     null, h.temperature, null, h.precipitation, h.precipitationChance,
                     null, null, h.windSpeed, null, h.windGust, null, h.sunshine,
                 )
                 ReadoutTable(
-                    listOf(stringResource(R.string.history_legend_measured), stringResource(R.string.forecast)),
-                    listOf(
+                    listOf(stringResource(R.string.readout_measured), stringResource(R.string.readout_expected)),
+                    listOfNotNull(
                         lTemp to listOf(t(c.tempM), t(c.tempF)),
+                        if (extraRows) stringResource(R.string.readout_feels) to listOf(NO_VALUE, t(c.feelsF)) else null,
                         lPrecip to listOf(p(c.precipM), p(c.precipF)),
                         lChance to listOf(NO_VALUE, pct(c.chanceF, c.precipF)),
                         lWind to listOf(w(c.windM, c.windDirM), w(c.windF)),
                         lGust to listOf(w(c.gustM), w(c.gustF)),
                         lSun to listOf(sun(c.sunM), sun(c.sunF)),
+                        if (extraRows) stringResource(R.string.humidity) to listOf(NO_VALUE, c.humidityF?.let { "${it.roundToInt()}" + NBSP + "%" } ?: NO_VALUE) else null,
                     ),
                 )
             } else {

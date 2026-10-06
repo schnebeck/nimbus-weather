@@ -427,7 +427,7 @@
     <string name="licenses_show_text">Lizenztext anzeigen</string>
     <string name="licenses_libraries">Bibliotheken (%1$d)</string>
     <string name="licenses_data">Daten und Karten</string>
-    <string name="licenses_data_text">Wetterdaten: Deutscher Wetterdienst (DWD), CC BY 4.0, teils über Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, KNMI, MET Norway (CC BY 4.0), RainViewer · Messwerte: GeoSphere Austria, MeteoSwiss, DMI (CC BY 4.0), NOAA aviationweather.gov (METAR, gemeinfrei) · Satellit: Contains modified EUMETSAT Meteosat data, CC BY 4.0 · Bürger-Messnetz: Sensor.Community, ODbL · Pegel: PEGELONLINE (WSV), DL-DE Zero 2.0; NLWKN Pegelonline, pegelonline.nlwkn.niedersachsen.de; LANUK NRW (Hochwasserportal NRW), DL-DE Zero 2.0; LfULG Sachsen (Pegelnetz); HLNUG; Hochwasser-Einstufung und -Warnungen: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0 · Ortsnamen: Nominatim, © OpenStreetMap-Mitwirkende, ODbL · Karten: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap-Mitwirkende, ODbL.</string>
+    <string name="licenses_data_text">Wetterdaten: Deutscher Wetterdienst (DWD), CC BY 4.0, teils über Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, KNMI, MET Norway (CC BY 4.0), RainViewer · Messwerte: GeoSphere Austria, MeteoSwiss, DMI (CC BY 4.0), NOAA aviationweather.gov (METAR, gemeinfrei) · Satellit: Contains modified EUMETSAT Meteosat data, CC BY 4.0 · Niederschlag über dem Ort: DWD RADOLAN, CC BY 4.0 · Sonnenschein über dem Ort: DWD aus EUMETSAT-MTG-Daten, über Open-Meteo.com, CC BY 4.0 · Bürger-Messnetz: Sensor.Community, ODbL · Pegel: PEGELONLINE (WSV), DL-DE Zero 2.0; NLWKN Pegelonline, pegelonline.nlwkn.niedersachsen.de; LANUK NRW (Hochwasserportal NRW), DL-DE Zero 2.0; LfULG Sachsen (Pegelnetz); HLNUG; Hochwasser-Einstufung und -Warnungen: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0 · Ortsnamen: Nominatim, © OpenStreetMap-Mitwirkende, ODbL · Karten: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap-Mitwirkende, ODbL.</string>
     <string name="radar_loading_frames">Radarbilder werden geladen %1$d/%2$d</string>
     <string name="radar_partly_cached">Verbindungsprobleme – einige Radarbilder sind ältere Kopien aus dem Speicher.</string>
     <string name="radar_partly_missing">Einige Radarbilder konnten nicht geladen werden.</string>
@@ -596,6 +596,15 @@
     <string name="legend_precip_forecast">Niederschl. Prognose %1$s</string>
     <string name="legend_sun_measured">Sonne gemessen %1$s</string>
     <string name="legend_sun_forecast">Sonne Prognose %1$s</string>
+    <string name="readout_measured">gemessen</string>
+    <string name="readout_expected">erwartet</string>
+    <string name="legend_sun_not_measured">Sonne nicht gemessen</string>
+    <string name="legend_precip_not_measured">Niederschl. nicht gemessen</string>
+    <string name="measured_by">Gemessen: %1$s</string>
+    <string name="measured_by_station">DWD-Station %1$s</string>
+    <string name="measured_by_radar">Niederschlag vom DWD-Radar über dem Ort</string>
+    <string name="measured_by_satellite">Sonne vom Satelliten über dem Ort</string>
+    <string name="radar_over_place">DWD-Radar über dem Ort</string>
     <string name="legend_temperature">Temperatur</string>
     <string name="legend_temp_forecast">Temp. Prognose</string>
     <string name="legend_chance">Niederschl.-Wahrsch.</string>

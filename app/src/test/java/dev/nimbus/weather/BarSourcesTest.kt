@@ -30,6 +30,7 @@ import dev.nimbus.weather.ui.main.lookBackPoints
 import dev.nimbus.weather.ui.main.rainBar
 import dev.nimbus.weather.ui.main.sunBar
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 import java.time.ZoneId
@@ -79,9 +80,20 @@ class BarSourcesTest {
         assertEquals(12 * 40.0, day.barTotals { it.sunBar() }.expected!!, 1e-9)
     }
 
-    /** A station without rain gauge and sunshine sensor: its hours keep the forecast – drawn as such, not as fallen. */
-    @Test fun aStationWithoutGaugeOrSunshineLeavesTheForecastFramed() {
-        today(history(rain = null, sun = null)).forEach {
+    /**
+     * „wenn eine Station gar keinen Parameter meldet, sollte die Grafik den dann einfach auch gar
+     * nicht visualisieren“: without rain gauge and sunshine sensor the hours over show no bar
+     * (their forecast is in the readout's second column) – the hours to come the forecast's frames.
+     */
+    @Test fun theHoursOverWithoutAReadingShowNothing() {
+        val pts = today(history(rain = null, sun = null))
+        pts.filter { it.time <= now }.forEach {
+            assertEquals(HourBar(null, null), it.rainBar())
+            assertEquals(HourBar(null, null), it.sunBar())
+            assertEquals(0.3, it.compare!!.precipF!!, 1e-9)
+            assertEquals(40.0, it.compare!!.sunF!!, 1e-9)
+        }
+        pts.filter { it.time > now }.forEach {
             assertEquals(HourBar(null, 0.3), it.rainBar())
             assertEquals(HourBar(null, 40.0), it.sunBar())
         }
@@ -92,7 +104,7 @@ class BarSourcesTest {
         val past = today(history(rain = 0.0, sun = null)).filter { it.time in t0 + h..now }
         past.forEach {
             assertEquals(HourBar(0.0, null), it.rainBar())
-            assertEquals(HourBar(null, 40.0), it.sunBar())
+            assertEquals(HourBar(null, null), it.sunBar())
         }
     }
 
@@ -121,6 +133,47 @@ class BarSourcesTest {
         forecast().forEach {
             assertEquals(HourBar(null, 0.3), it.rainBar())
             assertEquals(HourBar(null, 40.0), it.sunBar())
+        }
+    }
+
+    /**
+     * Over the place itself: the radar's precipitation and the satellite's sunshine take the
+     * station's place – each hour's weather brightened by the sunshine measured there.
+     */
+    @Test fun theRadarAndTheSatelliteMeasureOverThePlace() {
+        val station = (0..12).associate { k -> t0 + k * h to reading(k, rain = 0.8, sun = 55.0).copy(condition = Condition.CLOUDY) }
+        val noon = t0 + 12 * h
+        val spot = dev.nimbus.weather.data.remote.HistorySource.overSpot(station, radar = mapOf(noon to 1.5), sun = mapOf(noon to 5.0), now = now)
+        val m = spot.getValue(noon)
+        assertEquals(1.5, m.precipitation!!, 1e-9)
+        assertEquals(dev.nimbus.weather.data.remote.Provenance.RADAR, m.precipitationFrom)
+        assertEquals(5.0, m.sunshineMinutes!!, 1e-9)
+        assertEquals(dev.nimbus.weather.data.remote.Provenance.SATELLITE, m.sunshineFrom)
+        // five minutes of sun leave the clouds: the station's 55 minutes (40 km away) made it sunny
+        assertEquals(Condition.CLOUDY, m.condition)
+        assertEquals(Condition.CLEAR, spot.getValue(noon - h).condition)
+        assertEquals(dev.nimbus.weather.data.remote.Provenance.STATION, spot.getValue(noon - h).precipitationFrom)
+    }
+
+    /** No station (beyond Germany): the satellite's sunshine is measured all the same – the temperature is the forecast's. */
+    @Test fun theSatelliteWithoutAStation() {
+        val sun = (1..12).associate { k -> t0 + k * h to 30.0 }
+        val measured = dev.nimbus.weather.data.remote.HistorySource.overSpot(emptyMap(), emptyMap(), sun, now)
+        val hist = History(
+            listOf(HistoryDay(today, (0..24).map { k -> HistoryHour(t0 + k * h, measured[t0 + k * h], modelled()) })),
+            null, null, "icon_seamless", zone, now,
+        )
+        val pts = hist.lookBackPoints(hist.days[0], t0)
+        pts.filter { it.time in t0 + h..t0 + 12 * h }.forEach {
+            assertEquals(HourBar(30.0, 40.0), it.sunBar())
+            assertEquals(HourBar(null, 0.3), it.rainBar())
+            assertTrue(it.forecastOnly)
+        }
+        // today's chart: sunshine measured in the hours over, and nothing else measured
+        val m = TodayMeasured.of(hist, today)!!
+        forecast().map { m.apply(it, now) }.filter { it.time in t0 + h..now }.forEach {
+            assertEquals(HourBar(30.0, null), it.sunBar())
+            assertEquals(HourBar(null, null), it.rainBar())
         }
     }
 }

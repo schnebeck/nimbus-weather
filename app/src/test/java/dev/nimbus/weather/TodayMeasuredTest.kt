@@ -71,9 +71,16 @@ class TodayMeasuredTest {
         assertEquals(Condition.RAIN, over.condition)
         assertEquals(0.0, over.sunshine!!, 1e-9)
         assertEquals(true, over.measured)
-        // the hour still running and the hours to come keep the forecast
-        assertEquals(forecast, m.apply(forecast, now = t - 1))
-        assertEquals(forecast.copy(time = t + 3_600_000L), m.apply(forecast.copy(time = t + 3_600_000L), now = t + 600_000L))
+        // the readout: measured beside expected
+        assertEquals(15.0, over.compare!!.tempM!!, 1e-9)
+        assertEquals(18.0, over.compare!!.tempF!!, 1e-9)
+        assertEquals(30.0, over.compare!!.sunF!!, 1e-9)
+        // the hour still running and the hours to come keep the forecast – with nothing measured in the readout
+        val running = m.apply(forecast, now = t - 1)
+        assertEquals(forecast, running.copy(compare = null))
+        assertEquals(null, running.compare!!.tempM)
+        assertEquals(18.0, running.compare!!.tempF!!, 1e-9)
+        assertEquals(forecast.copy(time = t + 3_600_000L), m.apply(forecast.copy(time = t + 3_600_000L), now = t + 600_000L).copy(compare = null))
     }
 
 

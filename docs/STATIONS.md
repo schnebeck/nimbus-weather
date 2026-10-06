@@ -71,6 +71,22 @@ Deshalb gilt für den Himmel dieselbe Regel wie für die Stunden der Vorhersage:
 
 Die laufende Stunde im Tagesdiagramm zeigt dasselbe Wetter wie die Kopfzeile.
 
+## Gemessen über dem Ort: Radar und Satellit
+
+Eine Station liegt oft 20–40 km entfernt – ein Schauer dazwischen fällt durchs Raster. Für
+Niederschlag und Sonnenschein der Tagesdiagramme (heute und Rückblick) misst Nimbus deshalb über
+dem Ort selbst:
+
+| Größe | Quelle | Gebiet | Verzug |
+|---|---|---|---|
+| Niederschlag | DWD-Radar RADOLAN RW (Stundensumme, an Bodenmessungen angeglichen, 1 km) | Deutschland | ca. 30 min |
+| Niederschlag, jüngste Stunde | DWD-Radar RADOLAN RY (5-Minuten-Summen) | Deutschland | wenige Minuten |
+| Sonnenschein | DWD aus EUMETSAT-MTG-Satellitendaten, über Open-Meteo (2,5 km) | Europa | ca. 20 min |
+
+Temperatur und Wind kommen weiter von der Station. Unter dem Diagramm steht, woher die Messungen
+stammen. Eine Stunde, für die es keine Messung gibt, zeigt keinen Balken; die Prognose steht in der
+Werte-Tabelle in der Spalte „erwartet“.
+
 ## Geprüft, aber nicht eingebaut
 
 | Netz | Befund |

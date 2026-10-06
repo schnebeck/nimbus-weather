@@ -71,6 +71,22 @@ follows the same rule as the forecast hours:
 
 The running hour in the day chart shows the same weather as the header.
 
+## Measured over the place: radar and satellite
+
+A station often lies 20–40 km away – a shower in between slips through. For precipitation and
+sunshine of the day charts (today and the look-back) Nimbus therefore measures over the place
+itself:
+
+| Quantity | Source | Area | Delay |
+|---|---|---|---|
+| Precipitation | DWD radar RADOLAN RW (hourly sum, adjusted to the rain gauges, 1 km) | Germany | about 30 min |
+| Precipitation, the newest hour | DWD radar RADOLAN RY (5-minute sums) | Germany | a few minutes |
+| Sunshine | DWD from EUMETSAT MTG satellite data, via Open-Meteo (2.5 km) | Europe | about 20 min |
+
+Temperature and wind still come from the station. Below the chart it says where the measurements
+come from. An hour without a measurement shows no bar; the forecast stands in the value table's
+"expected" column.
+
 ## Checked, not built in
 
 | Network | Finding |

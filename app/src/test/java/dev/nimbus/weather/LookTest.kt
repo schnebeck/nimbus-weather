@@ -136,13 +136,13 @@ class LookTest {
 
     /**
      * Horizontal runs of bar colour in the row [y]: (first, last) x. A light blue block or the
-     * amber frame (#FFB547, close: the warm temperature curve's smoothed edges come near it).
+     * violet frame (#9B4DFF, close: the curve's smoothed edges come near other colours).
      */
     private fun Bitmap.barRuns(y: Int): List<IntRange> {
         val out = ArrayList<IntRange>(); var s = -1
         for (x in 0 until width) {
             val (r, g, b) = rgb(x, y)
-            val bar = (b > 150 && b - r > 40 && g > 110) || (abs(r - 255) <= 8 && abs(g - 181) <= 8 && abs(b - 71) <= 8)
+            val bar = (b > 150 && b - r > 40 && g > 110) || (abs(r - 155) <= 8 && abs(g - 77) <= 8 && abs(b - 255) <= 8)
             if (bar && s < 0) s = x
             if (!bar && s >= 0) { out += s until x; s = -1 }
         }
@@ -192,11 +192,11 @@ class LookTest {
         compose.setContent { Card { Meteogram(lookBackDay(), day, day + 24 * h, emptyList(), day + 30 * h) } }
         compose.waitForIdle()
         val img = bitmap()
-        // amber frame pixels (the forecast) – in every hour that has one
-        val amber = (0 until img.width).count { x ->
-            (0 until img.height).any { y -> val (r, g, b) = img.rgb(x, y); r > 220 && g in 150..200 && b < 110 }
+        // violet frame pixels (the forecast of precipitation) – in every hour that has one
+        val violet = (0 until img.width).count { x ->
+            (0 until img.height).any { y -> val (r, g, b) = img.rgb(x, y); abs(r - 155) <= 8 && abs(g - 77) <= 8 && abs(b - 255) <= 8 }
         }
-        assertTrue("forecast frames not visible ($amber columns)", amber > 100)
+        assertTrue("forecast frames not visible ($violet columns)", violet > 100)
         compose.onRoot().captureRoboImage("src/test/screenshots/meteogram_lookback.png")
     }
 
@@ -437,8 +437,8 @@ class LookTest {
 
     @Test fun forecastReadoutSteady() = assertSteadyWhileSliding(restlessDay(), false, ctx().getString(R.string.readout_feels))
     @Test fun forecastReadoutSteadySeparate() = assertSteadyWhileSliding(restlessDay(), true, ctx().getString(R.string.readout_feels))
-    @Test fun lookBackReadoutSteady() = assertSteadyWhileSliding(restlessLookBack(), false, ctx().getString(R.string.forecast))
-    @Test fun lookBackReadoutSteadySeparate() = assertSteadyWhileSliding(restlessLookBack(), true, ctx().getString(R.string.forecast))
+    @Test fun lookBackReadoutSteady() = assertSteadyWhileSliding(restlessLookBack(), false, ctx().getString(R.string.readout_expected))
+    @Test fun lookBackReadoutSteadySeparate() = assertSteadyWhileSliding(restlessLookBack(), true, ctx().getString(R.string.readout_expected))
 
     private fun ctx(): android.content.Context = org.robolectric.RuntimeEnvironment.getApplication()
 

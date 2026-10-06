@@ -137,7 +137,11 @@ fun PrecipitationCard(data: WeatherData, now: Long, raining: Boolean = false, me
         // What the station has measured so far today
         if (readings.isNotEmpty()) {
             Text(
-                stringResource(R.string.precip_measured_so_far, Units.precipitationNumber(readings.values.sum(), s.precipitationUnit) + NBSP + unit, measured?.station ?: "DWD"),
+                stringResource(
+                    R.string.precip_measured_so_far, Units.precipitationNumber(readings.values.sum(), s.precipitationUnit) + NBSP + unit,
+                    if (measured?.precipitationFrom == dev.nimbus.weather.data.remote.Provenance.RADAR) stringResource(R.string.radar_over_place)
+                    else measured?.station ?: "DWD",
+                ),
                 fontSize = 14.sp, color = NimbusColors.Secondary,
             )
         }

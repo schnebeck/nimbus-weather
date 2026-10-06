@@ -37,13 +37,13 @@ class BarLook(val fill: Color, val frame: Color)
  * and of a colour of their own, so they stand out from their block as from the dark glass.
  */
 object HourBars {
-    /** Precipitation: light blue, the forecast framed in warm amber. */
-    val Rain = BarLook(fill = Color(0xB38FD3FF), frame = Color(0xFFFFB547))
     /**
-     * Sunshine: light grey (the temperature curve has the warm colours), the forecast framed in
-     * magenta – far from the amber, the blue and every colour of the temperature curve.
+     * Precipitation: light blue, the forecast framed in violet – dark and saturated enough to stand
+     * out in front of the light blue block as on the dark glass.
      */
-    val Sun = BarLook(fill = Color(0xFFC3C9D2), frame = Color(0xFFFF6BD6))
+    val Rain = BarLook(fill = Color(0xB38FD3FF), frame = Color(0xFF9B4DFF))
+    /** Sunshine: light grey (the temperature curve has the warm colours), the forecast framed in orange. */
+    val Sun = BarLook(fill = Color(0xFFC3C9D2), frame = Color(0xFFFFB547))
     const val FRAME_DP = 1.5f
 }
 
@@ -90,12 +90,24 @@ private fun DrawScope.frame(color: Color, left: Float, top: Float, width: Float,
 
 /**
  * The legend of one quantity's bars with the day's totals: block and frame named apart where
- * both are drawn; frames alone (a day to come) under the plain name.
+ * both are drawn; frames alone (a day to come) under the plain name. [notMeasured]: the hours
+ * over have no reading of it at all – said so (their bars are not drawn), with the frames to come.
  */
 @Composable
-fun BarLegendItems(look: BarLook, totals: HourBar, @StringRes plain: Int, @StringRes measured: Int, @StringRes expected: Int, amount: @Composable (Double) -> String) {
-    if (totals.measured != null) {
-        LegendItem(look.fill, stringResource(measured, amount(totals.measured)))
-        if (totals.expected != null) LegendItem(look.frame, stringResource(expected, amount(totals.expected)), frame = true)
-    } else LegendItem(look.frame, stringResource(plain, amount(totals.expected ?: 0.0)), frame = true)
+fun BarLegendItems(
+    look: BarLook, totals: HourBar, @StringRes plain: Int, @StringRes measured: Int, @StringRes expected: Int,
+    @StringRes notMeasured: Int? = null, amount: @Composable (Double) -> String,
+) {
+    when {
+        totals.measured != null -> {
+            LegendItem(look.fill, stringResource(measured, amount(totals.measured)))
+            if (totals.expected != null) LegendItem(look.frame, stringResource(expected, amount(totals.expected)), frame = true)
+        }
+        notMeasured != null -> {
+            // no block in the chart: a faint one in the legend
+            LegendItem(look.fill.copy(alpha = 0.25f), stringResource(notMeasured))
+            if (totals.expected != null) LegendItem(look.frame, stringResource(expected, amount(totals.expected)), frame = true)
+        }
+        else -> LegendItem(look.frame, stringResource(plain, amount(totals.expected ?: 0.0)), frame = true)
+    }
 }

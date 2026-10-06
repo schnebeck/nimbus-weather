@@ -125,6 +125,8 @@ fun Meteogram(
      * Both share the time axis, the night shading and the cursor.
      */
     separatePrecip: Boolean = false,
+    /** Where the measured values come from (station, radar, satellite) – a line under the legend. */
+    measuredBy: String? = null,
 ) {
     val s = LocalSettings.current
     val tf = LocalTimeFormat.current
@@ -210,6 +212,10 @@ fun Meteogram(
     val sunTotals = dayPts.barTotals { it.sunBar() }
     val rainTotals = dayPts.barTotals { it.rainBar() }
     val sunShown = sunTotals.measured != null || sunTotals.expected != null
+    // the hours over (today, the look-back): a quantity measured in none of them is said so
+    val over = dayPts.filter { it.compare != null && it.time <= now }
+    val rainNotMeasured = over.isNotEmpty() && over.none { it.precipMeasured }
+    val sunNotMeasured = over.isNotEmpty() && over.none { it.sunMeasured }
     val axisR = with(density) {
         listOf(
             (0..2).maxOf { measurer.measure(precipLabel(it), labelStyle).size.width },
@@ -442,13 +448,15 @@ fun Meteogram(
                 temperature = tm ?: sel.temperature,
                 compare = sel.compare?.let { c -> c.copy(tempM = if (c.tempM != null) tm ?: c.tempM else null, tempF = tfc ?: c.tempF) },
             )
-            Readout(shown, highlighted = cursorOn, compare = compare)
+            Readout(shown, highlighted = cursorOn, compare = compare, extraRows = pts.any { it.compare?.feelsF != null || it.compare?.humidityF != null })
             summary?.invoke()
             BarLegend(
                 rainTotals, sunTotals.takeIf { sunShown }, chance = separatePrecip,
                 tempColors = Insights.temperatureColor(pts.minOf { it.temperature }) to Insights.temperatureColor(pts.maxOf { it.temperature }),
                 tempForecast = compare && dashCurve.isNotEmpty(),
+                rainNotMeasured = rainNotMeasured, sunNotMeasured = sunNotMeasured,
             )
+            if (measuredBy != null) Text(measuredBy, fontSize = 11.sp, lineHeight = 15.sp, color = NimbusColors.Secondary, modifier = Modifier.padding(top = 4.dp))
             // Always laid out (only faded), so the card does not change height with the cursor
             Text(
                 stringResource(R.string.meteogram_hint), fontSize = 11.sp, lineHeight = 15.sp, color = NimbusColors.Tertiary,

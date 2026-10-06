@@ -22,50 +22,37 @@ import dev.nimbus.weather.data.remote.History
 import dev.nimbus.weather.data.remote.HistoryDay
 
 /**
- * The hours of [day] (starting at [start]) from 00:00 through the 24 column: the station's
- * readings where there are some, the forecast beside them. With precipitation readings the bars
- * show what fell, the forecast as frames in front; an hour without a reading only its forecast.
- * Sunshine likewise, hour by hour.
+ * The hours of [day] (starting at [start]) from 00:00 through the 24 column, each quantity on its
+ * own: what was measured (station; precipitation and sunshine over the place by radar and
+ * satellite) as a block with the forecast's frame in front – what was not, the forecast's frame
+ * alone. An hour without a temperature reading (yet) is drawn as the forecast, dashed.
  */
-fun History.lookBackPoints(day: HistoryDay, start: Long): List<MeteoPoint> {
-    val measuredRain = day.hours.any { it.measured?.precipitation != null }
-    return chartHours(start).mapNotNull { h ->
-        val m = h.measured
-        val f = h.model
-        // No reading (yet): the forecast only, dashed – never the forecast drawn as measured
-        if (m?.temperature == null) {
-            val ft = f?.temperature ?: return@mapNotNull null
-            return@mapNotNull MeteoPoint(
-                time = h.time, temperature = ft, condition = f.condition, isDay = f.isDay,
-                precipitation = if (measuredRain) null else f.precipitation,
-                forecastPrecipitation = if (measuredRain) f.precipitation else null, windSpeed = f.windSpeed, windDirection = f.windDirection, windGust = f.windGust,
-                forecastTemperature = ft, sunshine = f.sunshineMinutes, forecastOnly = true,
-                compare = HourCompare(
-                    null, ft, null, f.precipitation, f.chance, null, null, f.windSpeed, null, f.windGust, null, f.sunshineMinutes,
-                ),
-            )
-        }
-        val sunMeasured = m.sunshineMinutes != null
-        MeteoPoint(
-            time = h.time,
-            temperature = m.temperature,
-            condition = m.condition ?: f?.condition ?: Condition.CLOUDY,
-            isDay = f?.isDay ?: true,
-            precipitation = if (measuredRain) m.precipitation else f?.precipitation,
-            windSpeed = m.windSpeed ?: f?.windSpeed,
-            windDirection = m.windDirection ?: f?.windDirection,
-            windGust = m.windGust ?: f?.windGust,
-            forecastTemperature = f?.temperature,
-            forecastPrecipitation = if (measuredRain) f?.precipitation else null,
-            sunshine = m.sunshineMinutes ?: f?.sunshineMinutes,
-            // the readout table shows both apart, an empty cell where one is missing
-            compare = HourCompare(
-                m.temperature, f?.temperature, m.precipitation, f?.precipitation, f?.chance,
-                m.windSpeed, m.windDirection, f?.windSpeed, m.windGust, f?.windGust, m.sunshineMinutes, f?.sunshineMinutes,
-            ),
-            precipMeasured = measuredRain && m.precipitation != null,
-            sunMeasured = sunMeasured,
-            forecastSunshine = if (sunMeasured) f?.sunshineMinutes else null,
-        )
-    }
+fun History.lookBackPoints(day: HistoryDay, start: Long): List<MeteoPoint> = chartHours(start).mapNotNull { h ->
+    val m = h.measured
+    val f = h.model
+    val temp = m?.temperature ?: f?.temperature ?: return@mapNotNull null
+    val rain = m?.precipitation
+    val sun = m?.sunshineMinutes
+    MeteoPoint(
+        time = h.time,
+        temperature = temp,
+        condition = m?.condition ?: f?.condition ?: Condition.CLOUDY,
+        isDay = f?.isDay ?: true,
+        precipitation = rain ?: f?.precipitation,
+        windSpeed = m?.windSpeed ?: f?.windSpeed,
+        windDirection = m?.windDirection ?: f?.windDirection,
+        windGust = m?.windGust ?: f?.windGust,
+        forecastTemperature = f?.temperature,
+        forecastPrecipitation = f?.precipitation.takeIf { rain != null },
+        sunshine = sun ?: f?.sunshineMinutes,
+        forecastOnly = m?.temperature == null,
+        // the readout table shows both apart, an empty cell where one is missing
+        compare = HourCompare(
+            m?.temperature, f?.temperature, rain, f?.precipitation, f?.chance,
+            m?.windSpeed, m?.windDirection, f?.windSpeed, m?.windGust, f?.windGust, sun, f?.sunshineMinutes,
+        ),
+        precipMeasured = rain != null,
+        sunMeasured = sun != null,
+        forecastSunshine = f?.sunshineMinutes.takeIf { sun != null },
+    )
 }

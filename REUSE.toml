@@ -170,3 +170,15 @@ SPDX-License-Identifier = "CC-BY-4.0"
 path = "app/src/test/resources/fixtures/nordic_*.png"
 SPDX-FileCopyrightText = "Norwegian Meteorological Institute (MET Norway), Nordic radar composite"
 SPDX-License-Identifier = "CC-BY-4.0"
+
+# The DWD's radar (RADOLAN RW, RY) at a point, recorded
+[[annotations]]
+path = "app/src/test/resources/fixtures/radolan_*.json"
+SPDX-FileCopyrightText = "Deutscher Wetterdienst (DWD), RADOLAN"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+# Sunshine from the satellite at a point (DWD SIS from EUMETSAT MTG), via Open-Meteo, recorded
+[[annotations]]
+path = "app/src/test/resources/fixtures/satellite_*.json"
+SPDX-FileCopyrightText = ["Weather data by Open-Meteo.com", "Deutscher Wetterdienst (DWD), from EUMETSAT satellite data"]
+SPDX-License-Identifier = "CC-BY-4.0"

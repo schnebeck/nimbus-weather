@@ -28,6 +28,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
@@ -96,9 +97,9 @@ class BarLookTest {
 
     private fun Bitmap.rgb(x: Int, y: Int): Triple<Int, Int, Int> = getPixel(x, y).let { Triple((it shr 16) and 255, (it shr 8) and 255, it and 255) }
     private fun rainBlock(r: Int, g: Int, b: Int) = b > 170 && b - r > 60 && g in 140..190
-    private fun rainFrame(r: Int, g: Int, b: Int) = abs(r - 255) <= 8 && abs(g - 181) <= 8 && abs(b - 71) <= 8
+    private fun rainFrame(r: Int, g: Int, b: Int) = abs(r - 155) <= 8 && abs(g - 77) <= 8 && abs(b - 255) <= 8
     private fun sunBlock(r: Int, g: Int, b: Int) = abs(r - 195) < 12 && abs(g - 201) < 12 && abs(b - 210) < 12
-    private fun sunFrame(r: Int, g: Int, b: Int) = abs(r - 255) <= 8 && abs(g - 107) <= 8 && abs(b - 214) <= 8
+    private fun sunFrame(r: Int, g: Int, b: Int) = abs(r - 255) <= 8 && abs(g - 181) <= 8 && abs(b - 71) <= 8
 
     /** What one hour's column shows. */
     private data class Seen(val rainBlock: Boolean, val rainFrame: Boolean, val sunBlock: Boolean, val sunFrame: Boolean)
@@ -151,13 +152,18 @@ class BarLookTest {
     @Test fun dayToComeCombined() = check(Form.DAY_TO_COME, separate = false)
     @Test fun dayToComeSeparate() = check(Form.DAY_TO_COME, separate = true)
 
-    /** The two frames apart from each other and from the blocks they stand in front of. */
+    /**
+     * The two frames apart from each other and from the blocks they stand in front of – the blocks
+     * as they are seen, on the card (the precipitation's is see-through).
+     */
     @Test fun framesStandOut() {
         val rain = dev.nimbus.weather.ui.main.HourBars.Rain
         val sun = dev.nimbus.weather.ui.main.HourBars.Sun
+        val card = Color(0xFF2B3A4E)
+        fun seen(c: Color) = c.compositeOver(card)
         fun dist(a: Color, b: Color) = abs(a.red - b.red) + abs(a.green - b.green) + abs(a.blue - b.blue)
         assertTrue("rain frame vs sun frame", dist(rain.frame, sun.frame) > 0.6f)
-        assertTrue("rain frame vs its block", dist(rain.frame, rain.fill) > 0.6f)
-        assertTrue("sun frame vs its block", dist(sun.frame, sun.fill) > 0.6f)
+        assertTrue("rain frame vs its block", dist(rain.frame, seen(rain.fill)) > 0.6f)
+        assertTrue("sun frame vs its block", dist(sun.frame, seen(sun.fill)) > 0.6f)
     }
 }

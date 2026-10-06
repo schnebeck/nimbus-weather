@@ -75,6 +75,25 @@ object UserActivity {
 private const val IDLE_AFTER_MS = 60_000L
 
 /** Battery saver switched on in the system: no animation (Android's own guideline). */
+/**
+ * Whether the system's animations are on (the animator duration scale above 0) – followed while
+ * shown: switched off in the developer settings or by accessibility, the sky stands at once.
+ */
+@Composable
+private fun rememberSystemAnimations(): Boolean {
+    val context = LocalContext.current
+    fun read() = SystemSettings.Global.getFloat(context.contentResolver, SystemSettings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f
+    var on by remember { mutableStateOf(read()) }
+    DisposableEffect(context) {
+        val observer = object : android.database.ContentObserver(android.os.Handler(android.os.Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) { on = read() }
+        }
+        context.contentResolver.registerContentObserver(SystemSettings.Global.getUriFor(SystemSettings.Global.ANIMATOR_DURATION_SCALE), false, observer)
+        onDispose { context.contentResolver.unregisterContentObserver(observer) }
+    }
+    return on
+}
+
 @Composable
 private fun rememberPowerSaveMode(): Boolean {
     val context = LocalContext.current
@@ -95,16 +114,18 @@ private fun rememberPowerSaveMode(): Boolean {
 
 /**
  * Full-screen animated sky for the given [scene]. All animation is computed from a single
- * frame clock inside the draw phase, so no recomposition happens per frame.
+ * frame clock inside the draw phase, so no recomposition happens per frame. [animate]: the page
+ * is the one shown (else its sky stands, as it is, until it is). [motion]: moving pictures are
+ * wanted at all – off in the settings, by the system's animations or its battery saver the sky is
+ * still: without rain, snow, lightning, shooting stars, leaves and pollen, which only make sense
+ * moving (a heavy shower frozen in the air looked like a fault).
  */
 @Composable
-fun WeatherBackground(scene: SkyScene, animate: Boolean, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val systemAnimations = remember {
-        SystemSettings.Global.getFloat(context.contentResolver, SystemSettings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f
-    }
+fun WeatherBackground(scene: SkyScene, animate: Boolean, modifier: Modifier = Modifier, motion: Boolean = true) {
+    val systemAnimations = rememberSystemAnimations()
     val powerSave = rememberPowerSaveMode()
-    val running = animate && systemAnimations && !powerSave
+    val moving = motion && systemAnimations && !powerSave
+    val running = animate && moving
     val clock = remember { mutableDoubleStateOf(12.0) }
     // Fast particles (rain, snow, lightning) need a smooth picture; drifting clouds, stars and
     // leaves look the same at 30 fps and cost half (or, on 120 Hz screens, a quarter) of the GPU
@@ -196,7 +217,7 @@ fun WeatherBackground(scene: SkyScene, animate: Boolean, modifier: Modifier = Mo
                                 strokeWidth = (1.1f + 0.45f * g) * dp, cap = StrokeCap.Round,
                             )
                         }
-                        drawShootingStar(t, w, h, dp, night * starAlpha)
+                        if (moving) drawShootingStar(t, w, h, dp, night * starAlpha)
                     }
                     if (sunVisible && moonUp) {
                         // Glow scales with the lit fraction: bright at full moon, faint for a thin crescent.
@@ -261,12 +282,12 @@ fun WeatherBackground(scene: SkyScene, animate: Boolean, modifier: Modifier = Mo
                 }
 
                 // --- seasonal particles & pollen (dry weather only) ---
-                if (ambient != Ambient.NONE || pollen > 0f) {
+                if (moving && (ambient != Ambient.NONE || pollen > 0f)) {
                     drawAmbient(ambient, pollen, t, w, h, dp, wind, night, scene.autumnProgress, ambientShapes, air)
                 }
 
                 // --- lightning ---
-                if (condition == Condition.THUNDERSTORM) drawLightning(t, w, h, dp, boltPath)
+                if (moving && condition == Condition.THUNDERSTORM) drawLightning(t, w, h, dp, boltPath)
 
                 // --- fog ---
                 if (condition == Condition.FOG) {
@@ -284,10 +305,10 @@ fun WeatherBackground(scene: SkyScene, animate: Boolean, modifier: Modifier = Mo
                 }
 
                 // --- rain ---
-                if (rain != null) drawRain(rain, t, w, h, dp, effWind, particles)
+                if (moving && rain != null) drawRain(rain, t, w, h, dp, effWind, particles)
 
                 // --- snow ---
-                if (snow > 0) drawSnow(snow, t, w, h, dp, effWind, particles)
+                if (moving && snow > 0) drawSnow(snow, t, w, h, dp, effWind, particles)
 
                 // --- readability: darken the header area on bright skies (snow, fog, overcast day) ---
                 if (scrim > 0f) {

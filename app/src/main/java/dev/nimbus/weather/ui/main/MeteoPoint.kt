@@ -61,6 +61,8 @@ data class HourCompare(
     val windM: Double?, val windDirM: Double?, val windF: Double?,
     val gustM: Double?, val gustF: Double?,
     val sunM: Double?, val sunF: Double?,
+    /** Today's chart: the forecast's feels-like temperature and humidity (rows of their own). */
+    val feelsF: Double? = null, val humidityF: Double? = null,
 )
 
 /**

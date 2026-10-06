@@ -30,7 +30,10 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
-/** One past hour: DWD station measurement (if available) next to the model value. */
+/** Where a measured value comes from: the station, or over the place itself (radar, satellite). */
+enum class Provenance { STATION, RADAR, SATELLITE }
+
+/** One past hour: what was measured (station, radar, satellite – if anything) next to the model value. */
 data class HistoryHour(
     val time: Long,
     val measured: Measured?,
@@ -41,6 +44,10 @@ data class HistoryHour(
         val windDirection: Double?, val sunshineMinutes: Double?, val cloudCover: Double?, val condition: Condition?,
         /** Air pressure reduced to sea level (hPa). */
         val pressure: Double? = null,
+        /** Where [precipitation] was measured: the station's gauge, or the radar over the place. */
+        val precipitationFrom: Provenance = Provenance.STATION,
+        /** Where [sunshineMinutes] was measured: at the station, or by the satellite over the place. */
+        val sunshineFrom: Provenance = Provenance.STATION,
     )
 
     data class Modelled(
@@ -93,10 +100,15 @@ class HistorySource(
     private val http: OkHttpClient,
     private val openMeteoUrl: String = "https://api.open-meteo.com",
     private val brightSkyUrl: String = "https://api.brightsky.dev",
+    /** Precipitation and sunshine measured over the place itself (null: the station's only). */
+    private val spot: SpotSource? = null,
 ) {
     suspend fun load(lat: Double, lon: Double, model: String, inGermany: Boolean, now: Long = System.currentTimeMillis()): History =
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { coroutineScope {
         val modelJob = async { runCatching { http.getJson(modelUrl(lat, lon, model)) } }
+        // over the place itself: the radar's precipitation (Germany), the satellite's sunshine (Europe)
+        val radarJob = async { if (spot == null || !inGermany) emptyMap() else spot.radarPrecipitation(lat, lon, now - SPOT_BACK_MS, now) }
+        val sunJob = async { spot?.satelliteSunshine(lat, lon, pastDays = 2).orEmpty() }
         val obsJob = async {
             if (!inGermany) null else runCatching {
                 // Zone is not known before the model answer; Germany is always Europe/Berlin.
@@ -132,7 +144,7 @@ class HistorySource(
                 parseSynop(http.getJson(url.toString()))
             }.getOrNull()
         }.orEmpty()
-        combine(modelRoot, obsRoot, used, now, synop)
+        combine(modelRoot, obsRoot, used, now, synop, radarJob.await(), sunJob.await())
     } }
 
     private fun modelUrl(lat: Double, lon: Double, model: String) = "$openMeteoUrl/v1/forecast".toHttpUrl().newBuilder()
@@ -151,6 +163,8 @@ class HistorySource(
     companion object {
         /** Open-Meteo's best match: the model where the chosen one has no answer. */
         const val BEST_MATCH = "best_match"
+        /** How far back the radar is asked (it keeps a day; the look-back reaches into the day before yesterday). */
+        private const val SPOT_BACK_MS = 3 * 24 * 3_600_000L
 
         data class Observations(val byTime: Map<Long, HistoryHour.Measured>, val station: String?, val distanceKm: Double?)
 
@@ -209,7 +223,7 @@ class HistorySource(
             return HistoryHour.Measured(
                 temperature = at.temperature, precipitation = precip, windSpeed = at.windSpeed, windGust = at.windGust,
                 windDirection = at.windDirection, sunshineMinutes = at.sunshine60, cloudCover = at.cloudCover,
-                condition = condition(at.condition, at.icon, precip)?.let { WeatherCodes.withSunshine(it, at.sunshine60) }, pressure = at.pressure,
+                condition = condition(at.condition, at.icon, precip), pressure = at.pressure,
             )
         }
 
@@ -247,12 +261,32 @@ class HistorySource(
                     temperature = v("temperature"), precipitation = precipitation, windSpeed = v("wind_speed"),
                     windGust = v("wind_gust_speed"), windDirection = v("wind_direction"), sunshineMinutes = sunshine,
                     cloudCover = v("cloud_cover"),
-                    // Bright Sky's icon follows the cloud cover only: the measured sunshine corrects it
-                    condition = condition(w.s("condition")?.takeIf { fits("condition") }, icon, precipitation)?.let { WeatherCodes.withSunshine(it, sunshine) },
+                    // Bright Sky's icon follows the cloud cover only: the measured sunshine corrects it (combine)
+                    condition = condition(w.s("condition")?.takeIf { fits("condition") }, icon, precipitation),
                     pressure = v("pressure_msl"),
                 )
             }?.toMap().orEmpty()
             return Observations(map, main?.s("station_name"), main?.d("distance")?.div(1000.0))
+        }
+
+        /**
+         * The station's hours with what was measured over the place in their stead – the radar's
+         * precipitation, the satellite's sunshine – and hours of their own where the station has
+         * none; then each hour's weather brightened by its sunshine ([WeatherCodes.withSunshine]).
+         */
+        internal fun overSpot(
+            station: Map<Long, HistoryHour.Measured>, radar: Map<Long, Double>, sun: Map<Long, Double>, now: Long,
+        ): Map<Long, HistoryHour.Measured> = (station.keys + radar.keys + sun.keys).filter { it <= now }.associateWith { t ->
+            val m = station[t] ?: HistoryHour.Measured(null, null, null, null, null, null, null, null)
+            val rain = radar[t]
+            val s = sun[t]
+            val spot = m.copy(
+                precipitation = rain ?: m.precipitation,
+                precipitationFrom = if (rain != null) Provenance.RADAR else m.precipitationFrom,
+                sunshineMinutes = s ?: m.sunshineMinutes,
+                sunshineFrom = if (s != null) Provenance.SATELLITE else m.sunshineFrom,
+            )
+            spot.copy(condition = spot.condition?.let { WeatherCodes.withSunshine(it, spot.sunshineMinutes) })
         }
 
         fun condition(condition: String?, icon: String?, precipitation: Double?): Condition? = when (condition) {
@@ -271,7 +305,15 @@ class HistorySource(
             }
         }
 
-        fun combine(modelRoot: JsonElement, obsRoot: JsonElement?, model: String, now: Long, synop: List<SynopReport> = emptyList()): History {
+        /**
+         * The look-back from the model's answer, the station's ([obsRoot], [synop]) and what was
+         * measured over the place itself – [radar] precipitation and [sun]shine by the hour's end,
+         * taking the station's place where they have the hour.
+         */
+        fun combine(
+            modelRoot: JsonElement, obsRoot: JsonElement?, model: String, now: Long, synop: List<SynopReport> = emptyList(),
+            radar: Map<Long, Double> = emptyMap(), sun: Map<Long, Double> = emptyMap(),
+        ): History {
             val (zone, modelled) = parseModel(modelRoot)
             val hourly = obsRoot?.let { parseObservations(it, modelRoot.obj()?.d("elevation")) } ?: Observations(emptyMap(), null, null)
             // Hours the hourly values do not have yet, from the 10-minute reports
@@ -279,10 +321,11 @@ class HistorySource(
             val filled = reports.keys.filter { it % 3_600_000L == 0L && it !in hourly.byTime && it <= now }
                 .mapNotNull { t -> hourFromSynop(reports, t)?.let { t to it } }
             // a measured temperature far off the model's belongs to somewhere else (Representative.temperature)
-            val obs = hourly.copy(byTime = (hourly.byTime + filled).mapValues { (t, m) ->
+            val station = (hourly.byTime + filled).mapValues { (t, m) ->
                 val model = modelled[t]?.temperature
                 if (m.temperature != null && !Representative.temperature(m.temperature, model)) m.copy(temperature = null) else m
-            })
+            }
+            val obs = hourly.copy(byTime = overSpot(station, radar, sun, now))
             val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
             // Past hours, and for today the forecast up to midnight (drawn dashed, not counted in the summary)
             val times = (modelled.keys + obs.byTime.keys).filter { t ->

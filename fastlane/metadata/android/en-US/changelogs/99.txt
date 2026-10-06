@@ -1,0 +1,4 @@
+• Measured over the place: precipitation by the DWD radar (Germany), sunshine by the satellite (Europe) instead of a station 20–40 km away
+• Value table with columns "measured | expected"; hours without a measurement without a bar
+• Frames: precipitation forecast violet, sunshine forecast orange
+• Without animation (battery saver, switched off) no frozen rain any more

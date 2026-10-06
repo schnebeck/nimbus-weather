@@ -17,14 +17,18 @@
 
 package dev.nimbus.weather.ui.main
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import dev.nimbus.weather.R
 import dev.nimbus.weather.data.remote.History
 import dev.nimbus.weather.data.remote.HistoryHour
+import dev.nimbus.weather.data.remote.Provenance
 import java.time.LocalDate
 
 /**
- * Hourly readings of the nearest DWD station for today, keyed by the hour's time stamp (sums
- * cover the hour before it, like the model values): precipitation in mm, pressure in hPa, and
- * all readings of the hour in [hours].
+ * What was measured today, keyed by the hour's time stamp (sums cover the hour before it, like the
+ * model values): precipitation in mm – by the radar over the place where it reaches, else the
+ * station's gauge ([precipitationFrom]) –, pressure in hPa, and all readings of the hour in [hours].
  */
 data class TodayMeasured(
     val precipitation: Map<Long, Double>,
@@ -33,31 +37,40 @@ data class TodayMeasured(
     val hours: Map<Long, HistoryHour.Measured> = emptyMap(),
     /** Station temperature every 10 minutes today (SYNOP), by time. */
     val fine: Map<Long, Double> = emptyMap(),
+    /** Where today's precipitation was measured (null: nowhere). */
+    val precipitationFrom: Provenance? = null,
 ) {
     /**
-     * The 0–24 h charts show what was measured for the hours already over, the forecast only for
-     * the rest of the day (the comparison of the two is in the look-back): [p] with the station's
-     * readings in place of the model values, unchanged for hours to come or without a reading.
+     * Today's chart: the hours over show what was measured – a quantity not measured in an hour is
+     * not drawn there –, the hours to come the forecast; the readout puts measured and expected
+     * side by side ([MeteoPoint.compare]).
      */
     fun apply(p: MeteoPoint, now: Long): MeteoPoint {
-        if (p.time > now) return p
-        // An hour over without a precipitation reading shows none (its forecast is not what fell)
-        val m = hours[p.time] ?: return if (precipitation.isNotEmpty()) p.copy(precipitation = null) else p
-        val t = m.temperature
+        val expected = HourCompare(
+            null, p.temperature, null, p.precipitation, p.precipitationChance, null, null, p.windSpeed, null, p.windGust,
+            null, p.sunshine, feelsF = p.apparentTemperature, humidityF = p.humidity,
+        )
+        if (p.time > now) return p.copy(compare = expected)
+        val m = hours[p.time]
+        val t = m?.temperature
         return p.copy(
             temperature = t ?: p.temperature,
             apparentTemperature = if (t != null) p.apparentTemperature?.plus(t - p.temperature) else p.apparentTemperature,
-            condition = m.condition ?: p.condition,
-            precipitation = m.precipitation ?: if (precipitation.isNotEmpty()) null else p.precipitation,
+            condition = m?.condition ?: p.condition,
+            // what fell and how long the sun shone: measured, or not drawn (the forecast is not what was)
+            precipitation = m?.precipitation,
+            sunshine = m?.sunshineMinutes,
             // the chance stays as it was forecast
-            windSpeed = m.windSpeed ?: p.windSpeed,
-            windDirection = m.windDirection ?: p.windDirection,
-            windGust = m.windGust ?: p.windGust,
-            sunshine = m.sunshineMinutes ?: p.sunshine,
-            measured = true,
-            // a station without a rain gauge or sunshine sensor leaves the forecast: drawn as such
-            precipMeasured = m.precipitation != null,
-            sunMeasured = m.sunshineMinutes != null,
+            windSpeed = m?.windSpeed ?: p.windSpeed,
+            windDirection = m?.windDirection ?: p.windDirection,
+            windGust = m?.windGust ?: p.windGust,
+            measured = m != null,
+            precipMeasured = m?.precipitation != null,
+            sunMeasured = m?.sunshineMinutes != null,
+            compare = expected.copy(
+                tempM = t, precipM = m?.precipitation, windM = m?.windSpeed, windDirM = m?.windDirection,
+                gustM = m?.windGust, sunM = m?.sunshineMinutes,
+            ),
         )
     }
 
@@ -70,7 +83,11 @@ data class TodayMeasured(
             if (hours.isEmpty()) return null
             val start = today.atStartOfDay(history.zone).toInstant().toEpochMilli()
             val fine = history.fineMeasured.filterKeys { it in start - 3_600_000L..start + 24 * 3_600_000L }
-            return TodayMeasured(precip, pressure, history.stationName, hours, fine)
+            val from = day.hours.filter { it.measured?.precipitation != null }.map { it.measured!!.precipitationFrom }
+            return TodayMeasured(
+                precip, pressure, history.stationName, hours, fine,
+                precipitationFrom = if (Provenance.RADAR in from) Provenance.RADAR else from.firstOrNull(),
+            )
         }
     }
 }
@@ -97,3 +114,18 @@ fun dayCurve(
     // the forecast goes on from the last reading, no step at "now"
     return Curve.joined(readings, forecast)
 }
+
+/**
+ * "Measured: …" – where the measured values of [hours] come from: the station ([station]), the
+ * radar's precipitation and the satellite's sunshine over the place; null when nothing was measured.
+ */
+@Composable
+fun measuredBy(hours: Collection<HistoryHour.Measured>, station: String?): String? {
+    val parts = buildList {
+        if (station != null && hours.any { it.temperature != null }) add(stringResource(R.string.measured_by_station, station))
+        if (hours.any { it.precipitation != null && it.precipitationFrom == Provenance.RADAR }) add(stringResource(R.string.measured_by_radar))
+        if (hours.any { it.sunshineMinutes != null && it.sunshineFrom == Provenance.SATELLITE }) add(stringResource(R.string.measured_by_satellite))
+    }
+    return if (parts.isEmpty()) null else stringResource(R.string.measured_by, parts.joinToString(" · "))
+}
+

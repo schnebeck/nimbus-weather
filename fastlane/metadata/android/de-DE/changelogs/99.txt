@@ -1,0 +1,4 @@
+• Gemessen über dem Ort: Niederschlag vom DWD-Radar (Deutschland), Sonnenschein vom Satelliten (Europa) statt von einer Station 20–40 km entfernt
+• Werte-Tabelle mit Spalten „gemessen | erwartet“; Stunden ohne Messung ohne Balken
+• Rahmen: Regen-Prognose violett, Sonnen-Prognose orange
+• Ohne Animation (Energiesparmodus, abgeschaltet) kein eingefrorener Regen mehr

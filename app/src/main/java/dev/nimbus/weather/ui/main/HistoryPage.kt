@@ -155,7 +155,7 @@ fun HistoryPage(
     Box(Modifier.fillMaxSize()) {
         // one weather into the next: clouds and rain fade over instead of switching
         androidx.compose.animation.Crossfade(scene, animationSpec = androidx.compose.animation.core.tween(1200), label = "sky") { sc ->
-            WeatherBackground(sc, animate = isActive && settings.animationsEnabled)
+            WeatherBackground(sc, animate = isActive, motion = settings.animationsEnabled)
         }
         // the look-back's cards say whether they are current: yellow while loading or expired
         // and, for "my location", while its position is not current

@@ -147,11 +147,12 @@ fun WeatherPage(
 ) {
     val context = LocalContext.current
     val now = rememberNow()
-    // Today's station readings for the day charts (measured instead of forecast for the hours over), Germany only
+    // Today's readings for the day charts (measured instead of forecast for the hours over): the
+    // station's in Germany, the radar's precipitation there, the satellite's sunshine everywhere
     LaunchedEffect(place.id, isActive) {
-        if (isActive && dev.nimbus.weather.data.repo.WeatherRepository.isInDwdArea(place.latitude, place.longitude) &&
-            (settings.shows(WeatherCard.PRECIPITATION) || settings.shows(WeatherCard.PRESSURE_CHART) || settings.shows(WeatherCard.DAILY))
-        ) onRequestHistory()
+        if (isActive && (settings.shows(WeatherCard.PRECIPITATION) || settings.shows(WeatherCard.PRESSURE_CHART) || settings.shows(WeatherCard.DAILY))) {
+            onRequestHistory()
+        }
     }
     val raw = state?.data
     val data = remember(raw, demo) { raw?.withDemo(demo) }
@@ -161,7 +162,7 @@ fun WeatherPage(
     val tf = remember(data?.timezone) { TimeFormat(data?.timezone ?: "UTC", DateFormat.is24HourFormat(context)) }
 
     Box(Modifier.fillMaxSize()) {
-        WeatherBackground(scene, animate = isActive && settings.animationsEnabled)
+        WeatherBackground(scene, animate = isActive, motion = settings.animationsEnabled)
         if (data == null) {
             LoadingOrError(place, state, onRefresh)
             return@Box

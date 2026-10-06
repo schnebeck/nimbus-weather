@@ -196,6 +196,7 @@ private fun DayRow(
                 showNow = currentTemp != null,   // today only
                 curve = remember(hours, minutely, measured) { dayCurve(hours, minutely, day.date, HourAxis.dayAxisEnd(end), measured) },
                 separatePrecip = settings.separatePrecipitation,
+                measuredBy = measured?.let { measuredBy(it.hours.values, it.station) },
             )
         }
     }

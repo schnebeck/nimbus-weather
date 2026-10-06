@@ -121,7 +121,7 @@ class HourAxisTest {
      */
     @Test fun everyCursorChartKeepsLabelsUnderTheCursor() {
         val hourly = mapOf("Meteogram.kt" to "fun Meteogram(")
-        val moments = mapOf("PressureCard.kt" to "private fun PressureChart(", "GaugeCard.kt" to "val cursorAlpha")
+        val moments = mapOf("PressureCard.kt" to "private fun PressureChart(", "GaugeCharts.kt" to "val cursorAlpha")
         val ui = File("src/main/java/dev/nimbus/weather/ui")
         val withCursor = ui.walkTopDown().filter { it.extension == "kt" && "cursorAlpha" in it.readText() }.map { it.name }.toSet()
         assertEquals("charts with a cursor", withCursor, hourly.keys + moments.keys)

@@ -1,0 +1,1 @@
+• Interne Überarbeitung nach einem Code-Review: große Dateien in kleine, übersichtliche aufgeteilt, ungenutzter Code und 21 ungenutzte Texte entfernt, alle Compiler-Warnungen behoben – an der App selbst ändert sich nichts

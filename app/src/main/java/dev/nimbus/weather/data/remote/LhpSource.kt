@@ -17,6 +17,7 @@
 
 package dev.nimbus.weather.data.remote
 
+import dev.nimbus.weather.util.Geo
 import dev.nimbus.weather.data.model.AlertSeverity
 import dev.nimbus.weather.data.model.GaugeInfo
 import dev.nimbus.weather.data.model.GaugeProvider
@@ -81,7 +82,7 @@ class LhpSource(
                     uuid = "LHP:" + (f.s("id") ?: return@mapNotNull null),
                     name = p.s("name")?.trim() ?: return@mapNotNull null,
                     water = p.s("water")?.trim() ?: "",
-                    distanceKm = GaugeGeo.distanceKm(lat, lon, la, lo),
+                    distanceKm = Geo.distanceKm(lat, lon, la, lo),
                     tidal = false,
                     provider = GaugeProvider.LHP,
                     lhpClass = p.d("lhpClass")?.toInt(),
@@ -94,7 +95,7 @@ class LhpSource(
         fun parseAlerts(root: JsonElement, lat: Double, lon: Double): List<WeatherAlert> =
             features(root).mapNotNull { f ->
                 val geo = f.o("geometry") ?: return@mapNotNull null
-                if (!GaugeGeo.affects(geo, lat, lon, LINE_DISTANCE_KM)) return@mapNotNull null
+                if (!AlertAreas.affects(geo, lat, lon, LINE_DISTANCE_KM)) return@mapNotNull null
                 val p = f.o("properties") ?: f
                 val cls = (p.d("lhpClass") ?: p.s("lhpClass")?.toDoubleOrNull())?.toInt() ?: 0
                 val area = p.s("areaDesc")?.trim().orEmpty()
@@ -121,11 +122,8 @@ class LhpSource(
     }
 }
 
-/** Small geometry helpers for gauges and alert areas (lat/lon, good enough within a country). */
-object GaugeGeo {
-    fun distanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double =
-        kotlin.math.hypot((lat2 - lat1) * 111.2, (lon2 - lon1) * 111.2 * kotlin.math.cos(Math.toRadians(lat1)))
-
+/** The states' alert areas (GeoJSON rings of lon, lat): whether a place lies in one or near its line. */
+object AlertAreas {
     private fun ring(a: JsonArray): List<Pair<Double, Double>> = a.mapNotNull { p ->
         val c = p as? JsonArray ?: return@mapNotNull null
         (c.getOrNull(0).dbl() ?: return@mapNotNull null) to (c.getOrNull(1).dbl() ?: return@mapNotNull null)
@@ -158,7 +156,7 @@ object GaugeGeo {
             val dx = bx - ax; val dy = by - ay
             val t = if (dx == 0.0 && dy == 0.0) 0.0 else (-(ax * dx + ay * dy) / (dx * dx + dy * dy)).coerceIn(0.0, 1.0)
             kotlin.math.hypot(ax + t * dx, ay + t * dy) <= km
-        } || points.size == 1 && distanceKm(lat, lon, points[0].second, points[0].first) <= km
+        } || points.size == 1 && Geo.distanceKm(lat, lon, points[0].second, points[0].first) <= km
 
     fun affects(geometry: JsonObject, lat: Double, lon: Double, lineKm: Double): Boolean {
         val c = geometry.a("coordinates") ?: return false
@@ -167,7 +165,7 @@ object GaugeGeo {
             "MultiPolygon" -> c.any { (it as? JsonArray)?.let { p -> inPolygon(p, lat, lon) } == true }
             "LineString" -> nearLine(ring(c), lat, lon, lineKm)
             "MultiLineString" -> c.any { (it as? JsonArray)?.let { l -> nearLine(ring(l), lat, lon, lineKm) } == true }
-            "Point" -> ring(JsonArray(listOf(c))).firstOrNull()?.let { distanceKm(lat, lon, it.second, it.first) <= lineKm } == true
+            "Point" -> ring(JsonArray(listOf(c))).firstOrNull()?.let { Geo.distanceKm(lat, lon, it.second, it.first) <= lineKm } == true
             else -> false
         }
     }

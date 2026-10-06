@@ -38,7 +38,6 @@
 
     <!-- Header -->
     <string name="my_location">My Location</string>
-    <string name="feels_like_short">Feels like %1$s</string>
     <string name="updated_at">Updated %1$s</string>
     <string name="offline_cached">Offline – showing data from %1$s</string>
     <string name="loading">Loading weather…</string>
@@ -94,12 +93,7 @@
     <string name="show_less">Show less</string>
 
     <!-- Summaries -->
-    <string name="summary_hourly_condition">%1$s conditions expected around %2$s.</string>
-    <string name="summary_hourly_same">%1$s conditions will continue for the rest of the day.</string>
     <string name="summary_gusts">Wind gusts up to %1$s.</string>
-    <string name="summary_daily_precip">%1$s expected %2$s.</string>
-    <string name="summary_precip_today">%1$s in the last 24 h</string>
-    <string name="summary_precip_next">%1$s expected in the next 24 h.</string>
     <string name="summary_dew_point">The dew point is %1$s right now.</string>
     <string name="summary_feels_warmer">Humidity is making it feel warmer.</string>
     <string name="summary_feels_colder">Wind is making it feel colder.</string>
@@ -112,8 +106,6 @@
     <string name="summary_pressure_rising">Rising</string>
     <string name="summary_pressure_falling">Falling</string>
     <string name="summary_pressure_steady">Steady</string>
-    <string name="sunset_at">Sunset: %1$s</string>
-    <string name="sunrise_at">Sunrise: %1$s</string>
     <string name="polar_day">Sun stays up all day</string>
     <string name="polar_night">Sun stays down all day</string>
 
@@ -132,9 +124,6 @@
     <string name="aqi_detail">European AQI · PM2.5 %1$s · PM10 %2$s µg/m³</string>
 
     <string name="pollen_none">None</string>
-    <string name="pollen_low">Low</string>
-    <string name="pollen_moderate">Moderate</string>
-    <string name="pollen_high">High</string>
     <string name="pollen_alder">Alder</string>
     <string name="pollen_birch">Birch</string>
     <string name="pollen_grass">Grass</string>
@@ -160,7 +149,6 @@
     <string name="radar_error">Radar data currently unavailable</string>
     <string name="my_position">My position</string>
     <string name="close">Close</string>
-    <string name="layers">Layers</string>
 
     <!-- Places -->
     <string name="weather">Weather</string>
@@ -169,8 +157,6 @@
     <string name="add">Add</string>
     <string name="delete">Delete</string>
     <string name="places">Places</string>
-    <string name="edit">Edit</string>
-    <string name="done">Done</string>
     <string name="welcome_title">Welcome to Nimbus</string>
     <string name="welcome_text">Weather for Germany and Europe from the German Weather Service (DWD) and other open sources.</string>
     <string name="use_my_location">Use my location</string>
@@ -371,14 +357,9 @@
     <string name="history_row_gust">Strongest gust</string>
     <string name="history_model_value">Forecast %1$s</string>
     <string name="history_at">at %1$s</string>
-    <string name="history_temp_chart">Temperature</string>
     <string name="history_legend_measured">Measured</string>
     <string name="measured_word">measured</string>
     <string name="history_error_mean">Mean deviation of the forecast: %1$s</string>
-    <string name="history_precip_chart">Precipitation per Hour</string>
-    <string name="history_wind_chart">Wind</string>
-    <string name="history_legend_wind">Mean wind (%1$s)</string>
-    <string name="history_hours">Hourly Values</string>
     <string name="history_source_station">Measured: DWD station %1$s (%2$s km) · Forecast: %3$s</string>
     <string name="history_source_model">No DWD station nearby – forecast values only (%1$s)</string>
     <string name="history_loading">Loading the past days…</string>
@@ -387,9 +368,7 @@
     <string name="term_history_title">Looking Back</string>
     <string name="term_history_body">Swipe right from the current weather to see today so far, yesterday and the day before.\n\nIn Germany the values are measurements of the nearest DWD weather station (via Bright Sky). Next to them the app shows what the selected weather model had forecast for the same hours – so you can see how good the forecast was. The mean deviation is the average difference between forecast and measured temperature, hour by hour.\n\nOutside Germany, or without a station nearby, only the model values are available.\n\nThe data is loaded when you swipe and not stored permanently; it is always the current state of the sources.</string>
 
-    <string name="history_dry_day">No precipitation – measured and forecast.</string>
 
-    <string name="history_dry_day_model">No precipitation in the forecast values.</string>
 
     <string name="meteogram_hint">Long press on the chart shows the values of each hour</string>
 

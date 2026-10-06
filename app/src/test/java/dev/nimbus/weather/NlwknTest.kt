@@ -17,6 +17,7 @@
 
 package dev.nimbus.weather
 
+import dev.nimbus.weather.util.Geo
 import dev.nimbus.weather.data.model.GaugeProvider
 import dev.nimbus.weather.data.remote.NlwknSource
 import org.junit.Assert.assertEquals
@@ -32,7 +33,7 @@ class NlwknTest {
         assertEquals(52.102, heinde.lat, 0.01)   // the service swaps the field names
         assertEquals(10.025, heinde.lon, 0.01)
         // Groß Düngen lies right next to it (under a kilometre)
-        assertTrue(NlwknSource.distanceKm(52.0968, 10.0180, heinde.lat, heinde.lon) < 1.5)
+        assertTrue(Geo.distanceKm(52.0968, 10.0180, heinde.lat, heinde.lon) < 1.5)
     }
 
     @Test fun seriesWithAlertLevels() {

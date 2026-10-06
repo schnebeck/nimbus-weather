@@ -20,7 +20,7 @@ package dev.nimbus.weather
 import dev.nimbus.weather.data.model.AlertSeverity
 import dev.nimbus.weather.data.model.GaugeInfo
 import dev.nimbus.weather.data.model.GaugeProvider
-import dev.nimbus.weather.data.remote.GaugeGeo
+import dev.nimbus.weather.data.remote.AlertAreas
 import dev.nimbus.weather.data.remote.GaugeSource
 import dev.nimbus.weather.data.remote.JsonCodec
 import dev.nimbus.weather.data.remote.LhpSource
@@ -156,6 +156,6 @@ class StateGaugesTest {
         assertEquals("LHP", inside[0].source)
         assertEquals(1, LhpSource.parseAlerts(json, 50.03, 9.1).size)     // 3 km from the river section
         assertTrue(LhpSource.parseAlerts(json, 52.0, 10.0).isEmpty())
-        assertFalse(GaugeGeo.inRing(listOf(0.0 to 0.0, 1.0 to 0.0, 1.0 to 1.0, 0.0 to 1.0), 2.0, 2.0))
+        assertFalse(AlertAreas.inRing(listOf(0.0 to 0.0, 1.0 to 0.0, 1.0 to 1.0, 0.0 to 1.0), 2.0, 2.0))
     }
 }

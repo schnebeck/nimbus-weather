@@ -20,7 +20,6 @@ package dev.nimbus.weather.util
 import dev.nimbus.weather.R
 import dev.nimbus.weather.data.model.Condition
 import dev.nimbus.weather.data.model.PrecipitationUnit
-import dev.nimbus.weather.data.model.Settings
 import dev.nimbus.weather.data.model.TemperatureUnit
 import dev.nimbus.weather.data.model.WindUnit
 import java.time.Instant
@@ -173,5 +172,3 @@ object Texts {
         else -> R.string.aqi_extremely_poor
     }
 }
-
-fun Settings.effectiveTemp(c: Double?) = Units.temp(c, temperatureUnit)

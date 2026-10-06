@@ -17,6 +17,7 @@
 
 package dev.nimbus.weather.data.remote
 
+import dev.nimbus.weather.util.Geo
 import dev.nimbus.weather.data.model.AlertKind
 import dev.nimbus.weather.data.model.GaugeInfo
 import dev.nimbus.weather.data.model.GaugeProvider
@@ -85,7 +86,7 @@ class SachsenSource(
                     uuid = "SN:" + (a.d("PEG_MSTNR")?.toLong() ?: return@mapNotNull null),
                     name = a.s("PEG_NAME")?.trim() ?: return@mapNotNull null,
                     water = a.s("WLV_GEWAESSER")?.trim() ?: "",
-                    distanceKm = GaugeGeo.distanceKm(lat, lon, y, x),
+                    distanceKm = Geo.distanceKm(lat, lon, y, x),
                     tidal = false,
                     level = level,
                     levelTime = time,

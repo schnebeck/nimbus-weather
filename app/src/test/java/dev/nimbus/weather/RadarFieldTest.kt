@@ -22,6 +22,7 @@ import dev.nimbus.weather.ui.radar.RadarComposite
 import dev.nimbus.weather.ui.radar.RadarLayer
 import dev.nimbus.weather.ui.radar.FieldGeo
 import dev.nimbus.weather.ui.radar.RadarField
+import dev.nimbus.weather.ui.radar.RadarMotion
 import dev.nimbus.weather.ui.radar.ViewFrame
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -50,7 +51,7 @@ class RadarFieldTest {
 
     @Test fun motionOfAMovingCellIsFound() {
         val a = blob(80f, 70f); val b = blob(92f, 75f)
-        val flow = RadarField.motion(a, b, w, h, maxShift = 20f)
+        val flow = RadarMotion.motion(a, b, w, h, maxShift = 20f)
         val v = FloatArray(2).also { flow.at(80f, 70f, it) }
         assertEquals(12f, v[0], 2f)
         assertEquals(5f, v[1], 2f)
@@ -58,7 +59,7 @@ class RadarFieldTest {
 
     @Test fun halfwayTheCellIsHalfwayNotDoubled() {
         val a = blob(80f, 70f); val b = blob(92f, 75f)
-        val flow = RadarField.motion(a, b, w, h, maxShift = 20f)
+        val flow = RadarMotion.motion(a, b, w, h, maxShift = 20f)
         val out = IntArray(w * h)
         RadarField.render(a, b, null, 0f, w, h, null, out)
         val (x0, y0, n0) = drawn(out)
@@ -84,7 +85,7 @@ class RadarFieldTest {
     @Test fun aDissolvingCellDoesNotJumpToANewOne() {
         val a = both(blob(60f, 75f, 8f), blob(150f, 40f, 14f))
         val b = both(blob(75f, 78f, 8f), blob(152f, 40f, 14f))           // 60 gone, 75 new; the big one moved by 2
-        val flow = RadarField.motion(a, b, w, h, maxShift = 20f)
+        val flow = RadarMotion.motion(a, b, w, h, maxShift = 20f)
         val v = FloatArray(2).also { flow.at(60f, 75f, it) }
         assertTrue("dissolving cell moved by (${v[0]}, ${v[1]})", hypot(v[0], v[1]) < 5f)
         // the cell that moves is still found
@@ -111,7 +112,7 @@ class RadarFieldTest {
 
     @Test fun stillRainStaysStill() {
         val a = blob(100f, 75f)
-        val flow = RadarField.motion(a, a, w, h, maxShift = 20f)
+        val flow = RadarMotion.motion(a, a, w, h, maxShift = 20f)
         val v = FloatArray(2).also { flow.at(100f, 75f, it) }
         assertEquals(0f, v[0], 0.5f); assertEquals(0f, v[1], 0.5f)
     }

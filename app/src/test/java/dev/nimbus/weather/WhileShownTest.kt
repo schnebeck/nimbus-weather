@@ -73,9 +73,10 @@ class WhileShownTest {
     }
 
     /**
-     * Every endless loop of the screens (and their view model) runs while the app is shown – in
-     * [LaunchedWhileShown], the view model's work while shown (called off in onPause) or a
-     * lifecycle's STARTED – or waits for display frames, which do not come behind the lock screen.
+     * Every timer of the screens (and their view model) – an endless loop that waits a while
+     * between its rounds – runs while the app is shown: in [LaunchedWhileShown], the view model's
+     * work while shown (called off in onPause) or a lifecycle's STARTED – or waits for display
+     * frames, which do not come behind the lock screen.
      */
     @Test fun noScreenTimerRunsBehindTheLockScreen() {
         val ui = File("src/main/java/dev/nimbus/weather/ui")
@@ -85,7 +86,7 @@ class WhileShownTest {
             lines.indices.filter { lines[it].contains("while (true)") }.mapNotNull { i ->
                 val before = lines.subList(maxOf(0, i - 12), i).joinToString("\n")
                 val body = lines.subList(i, minOf(lines.size, i + 12)).joinToString("\n")
-                if (shown.any { it in before } || "withFrameNanos" in body) null else "${f.name}:${i + 1}"
+                if ("delay(" !in body || shown.any { it in before } || "withFrameNanos" in body) null else "${f.name}:${i + 1}"
             }
         }.toList()
         assertTrue("loops that run on behind the lock screen: $loose", loose.isEmpty())

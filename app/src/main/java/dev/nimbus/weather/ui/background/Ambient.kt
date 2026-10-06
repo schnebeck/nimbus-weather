@@ -173,7 +173,7 @@ internal fun DrawScope.drawAmbient(
                 val driftDist = (dir * 10f * tf + 120f * wd) * (0.5f + 0.6f * depth) * dp
                 val margin = 60f * dp
                 val bob = sin(t * (0.4 + 0.3 * rnd(i, 82)) + i).toFloat() * 40f * dp
-                val y = (rnd(i, 83) * h * 0.85f + t * 6f * dp * (rnd(i, 84) - 0.4f) + bob).toDouble().wrap(h.toDouble()).toFloat()
+                val y = (rnd(i, 83) * h * 0.85f + t * 6f * dp * (rnd(i, 84) - 0.4f) + bob).wrap(h.toDouble()).toFloat()
                 val x = (rnd(i, 85) * (w + margin * 2) + driftDist).toDouble().wrap((w + margin * 2).toDouble()).toFloat() - margin
                 val a = 0.75f * (1f - 0.6f * night)
                 val tilt = sin(t * 0.8 + i).toFloat() * 0.35f
@@ -208,7 +208,7 @@ internal fun DrawScope.drawAmbient(
             for (i in 0 until 60) {
                 val depth = rnd(i, 101)
                 val fall = (4f + 10f * depth) * dp
-                val y = (rnd(i, 102) * h + t * fall).toDouble().wrap(h.toDouble()).toFloat()
+                val y = (rnd(i, 102) * h + t * fall).wrap(h.toDouble()).toFloat()
                 val x = (rnd(i, 103) * w + wd * 30f * dp + sin(t * 0.5 + i).toFloat() * 10f * dp).toDouble().wrap(w.toDouble()).toFloat()
                 val tw = sin(t * (1.5 + 3 * rnd(i, 104)) + i * 1.3).toFloat()
                 val a = (tw * 1.4f - 0.3f).coerceIn(0f, 1f) * 0.9f
@@ -232,7 +232,7 @@ internal fun DrawScope.drawAmbient(
             val driftDist = (dir * 6f * tf + 90f * wd) * (0.4f + 0.8f * depth) * dp
             val wig = sin(t * (1.3 + rnd(i, 112) * 2) + i).toFloat() * 6f * dp
             val x = (rnd(i, 113) * w + driftDist + wig).toDouble().wrap(w.toDouble()).toFloat()
-            val y = (rnd(i, 114) * h + t * (3f + 4f * depth) * dp + cos(t * 0.9 + i).toFloat() * 8f * dp).toDouble().wrap(h.toDouble()).toFloat()
+            val y = (rnd(i, 114) * h + t * (3f + 4f * depth) * dp + cos(t * 0.9 + i).toFloat() * 8f * dp).wrap(h.toDouble()).toFloat()
             val a = (0.35f + 0.4f * depth) * (1f - 0.6f * night)
             drawCircle(color, (0.9f + 1.4f * depth) * dp, Offset(x, y), alpha = a)
         }

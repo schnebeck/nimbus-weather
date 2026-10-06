@@ -80,7 +80,7 @@ class NightTest {
         val main = File("src/main/java/dev/nimbus/weather/ui/main")
         val src = main.listFiles()!!.filter { it.extension == "kt" }.joinToString("\n") { it.readText() }
         assertTrue("nightsFromDaily/nightsFromFlags are gone", "nightsFromDaily" !in src && "nightsFromFlags" !in src)
-        for (f in listOf("ForecastCards.kt", "HistoryPage.kt")) {
+        for (f in listOf("DailyCard.kt", "HistoryCards.kt")) {
             val t = File(main, f).readText()
             assertTrue("$f: nights over the axis with the 24 column", Regex("""nights\([^)]*dayAxisEnd""").containsMatchIn(t))
         }

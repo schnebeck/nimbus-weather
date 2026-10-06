@@ -17,6 +17,7 @@
 
 package dev.nimbus.weather.data.remote
 
+import dev.nimbus.weather.util.Geo
 import dev.nimbus.weather.data.model.BathingCategory
 import dev.nimbus.weather.data.model.BathingQuality
 import dev.nimbus.weather.data.model.BathingSite
@@ -76,8 +77,8 @@ class BathingSource(
         val shMap = shJob.await()
         var enriched = sites.map { s ->
             when {
-                s.id.startsWith("DEBE") -> be.minByOrNull { GaugeGeo.distanceKm(s.lat, s.lon, it.lat, it.lon) }
-                    ?.takeIf { GaugeGeo.distanceKm(s.lat, s.lon, it.lat, it.lon) <= MATCH_KM }?.let { s.with(it) } ?: s
+                s.id.startsWith("DEBE") -> be.minByOrNull { Geo.distanceKm(s.lat, s.lon, it.lat, it.lon) }
+                    ?.takeIf { Geo.distanceKm(s.lat, s.lon, it.lat, it.lon) <= MATCH_KM }?.let { s.with(it) } ?: s
                 s.id.startsWith("DESH") -> shMap[s.id]?.let { s.with(it) } ?: s
                 else -> s
             }
@@ -235,7 +236,7 @@ class BathingSource(
                         else -> BathingCategory.LAKE
                     },
                     lat = la, lon = lo,
-                    distanceKm = GaugeGeo.distanceKm(lat, lon, la, lo),
+                    distanceKm = Geo.distanceKm(lat, lon, la, lo),
                     quality = when (a.s("qualityStatus")) {
                         "Excellent" -> BathingQuality.EXCELLENT
                         "Good" -> BathingQuality.GOOD

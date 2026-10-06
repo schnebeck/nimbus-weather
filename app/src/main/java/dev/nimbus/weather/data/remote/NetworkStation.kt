@@ -17,6 +17,7 @@
 
 package dev.nimbus.weather.data.remote
 
+import dev.nimbus.weather.util.Geo
 import kotlin.math.exp
 
 /** A station of a network: where it is and how high. */
@@ -28,7 +29,7 @@ object NetworkStations {
 
     /** The station nearest to the place, within [MAX_KM], and how far. */
     fun nearest(stations: List<NetworkStation>, lat: Double, lon: Double): Pair<NetworkStation, Double>? =
-        stations.map { it to GaugeGeo.distanceKm(lat, lon, it.lat, it.lon) }.filter { it.second <= MAX_KM }.minByOrNull { it.second }
+        stations.map { it to Geo.distanceKm(lat, lon, it.lat, it.lon) }.filter { it.second <= MAX_KM }.minByOrNull { it.second }
 
     /** Relative humidity from temperature and dew point (Magnus formula). */
     fun humidity(t: Double, dewPoint: Double): Double =

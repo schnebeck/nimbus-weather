@@ -1,0 +1,1 @@
+• Internal rework after a code review: large files split into small, clear ones, unused code and 21 unused texts removed, all compiler warnings fixed – the app itself does not change

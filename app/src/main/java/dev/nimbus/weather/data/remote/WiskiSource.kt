@@ -17,6 +17,7 @@
 
 package dev.nimbus.weather.data.remote
 
+import dev.nimbus.weather.util.Geo
 import dev.nimbus.weather.data.model.AlertKind
 import dev.nimbus.weather.data.model.GaugeInfo
 import dev.nimbus.weather.data.model.GaugeProvider
@@ -67,7 +68,7 @@ class WiskiSource(
     /** Stations within [radiusKm], without values yet (see [details]). */
     suspend fun candidates(lat: Double, lon: Double, radiusKm: Double, now: Long): List<GaugeInfo> {
         if (!inArea(lat, lon)) return emptyList()
-        return stations(now).map { it to GaugeGeo.distanceKm(lat, lon, it.lat, it.lon) }
+        return stations(now).map { it to Geo.distanceKm(lat, lon, it.lat, it.lon) }
             .filter { it.second <= radiusKm }
             .map { (s, d) ->
                 GaugeInfo(

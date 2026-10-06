@@ -160,8 +160,6 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
         s.getLayer(WIND)?.setProperties(PropertyFactory.visibility(if (wind) Property.VISIBLE else Property.NONE))
     }
 
-    val currentStep: Double? get() = grid?.step
-
     fun setGrid(g: WeatherGrid) {
         if (g === grid) return
         grid = g
@@ -176,7 +174,6 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
         )
     }
 
-    /** Shows the hour closest to [timeMs]; cheap if the hour did not change. */
     private val scope = kotlinx.coroutines.MainScope()
     private var job: kotlinx.coroutines.Job? = null
     /** Computed field + isolines per hour of the current grid (the loop revisits the same hours). */

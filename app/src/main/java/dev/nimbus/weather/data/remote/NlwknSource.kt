@@ -17,6 +17,7 @@
 
 package dev.nimbus.weather.data.remote
 
+import dev.nimbus.weather.util.Geo
 import dev.nimbus.weather.data.model.GaugeInfo
 import dev.nimbus.weather.data.model.GaugeProvider
 import dev.nimbus.weather.data.model.LevelSample
@@ -53,7 +54,7 @@ class NlwknSource(
         return stations(now)
             // Tide gauges come from PEGELONLINE (with the prediction); canals say nothing about the weather.
             .filter { !it.tidal && !it.water.contains("kanal", ignoreCase = true) }
-            .map { it to distanceKm(lat, lon, it.lat, it.lon) }
+            .map { it to Geo.distanceKm(lat, lon, it.lat, it.lon) }
             .filter { it.second <= radiusKm }
             .map { (st, d) -> GaugeInfo(uuid = "nlwkn-${st.id}", name = st.name, water = st.water, distanceKm = d, tidal = false, provider = GaugeProvider.NLWKN) }
     }
@@ -87,7 +88,6 @@ class NlwknSource(
         /** Lower Saxony and Bremen, generously. */
         fun inArea(lat: Double, lon: Double) = lat in 51.2..54.0 && lon in 6.5..11.7
 
-        fun distanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double) = GaugeGeo.distanceKm(lat1, lon1, lat2, lon2)
 
         /**
          * The service names its coordinates inconsistently ("Latitude" holds the longitude), so

@@ -19,9 +19,9 @@
 package dev.nimbus.weather
 
 import dev.nimbus.weather.ui.radar.FieldGeo
-import dev.nimbus.weather.ui.radar.Flow
 import dev.nimbus.weather.ui.radar.FrameBuilder
 import dev.nimbus.weather.ui.radar.RadarField
+import dev.nimbus.weather.ui.radar.RadarMotion
 import dev.nimbus.weather.ui.radar.RadarFrame
 import dev.nimbus.weather.ui.radar.RadarTimeline
 import dev.nimbus.weather.ui.radar.RvBetween
@@ -69,7 +69,7 @@ class RvStepsTest {
             return ViewFrame(dbz, wet, null)
         }
         val a = blob(20); val b = blob(30)
-        val flow = RadarField.motion(a, b, w, h, 16f)
+        val flow = RadarMotion.motion(a, b, w, h, 16f)
         val mid = RvBetween.between(a, b, flow, 0.5f, w, h)
         var sum = 0.0; var weight = 0.0
         for (y in 0 until h) for (x in 0 until w) { val c = (mid.wet[y * w + x].toInt() and 0xFF).toDouble(); sum += c * x; weight += c }

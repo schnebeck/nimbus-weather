@@ -21,7 +21,6 @@ package dev.nimbus.weather.ui.radar
 class TileGeo(private val minX: Double, private val minY: Double, private val maxX: Double, private val maxY: Double) {
     fun lonAt(fx: Double) = Math.toDegrees((minX + fx * (maxX - minX)) / R)
     fun latAt(fy: Double) = Math.toDegrees(kotlin.math.atan(kotlin.math.sinh((maxY - fy * (maxY - minY)) / R)))
-    val widthM: Double get() = maxX - minX
     val centerLat: Double get() = latAt(0.5)
 
     /** The same tile grown by [px] pixels of a [w]×[h] image on every side. */

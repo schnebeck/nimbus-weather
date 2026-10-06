@@ -63,8 +63,8 @@ class ContrastTest {
 
     /** The header is on the open sky: no half-transparent text colours there, they lose contrast first. */
     @Test fun headerUsesWhiteText() {
-        val src = java.io.File("src/main/java/dev/nimbus/weather/ui/main/WeatherPage.kt").readText()
-        val from = src.indexOf("private fun Header(")
+        val src = java.io.File("src/main/java/dev/nimbus/weather/ui/main/PageHeader.kt").readText()
+        val from = src.indexOf("internal fun PageHeader(")
         val header = src.substring(from, src.indexOf("\n@Composable", from))
         for (c in listOf("NimbusColors.Secondary", "NimbusColors.Tertiary", "Color(0xE6FFFFFF)")) assertTrue("header uses $c", c !in header)
         assertTrue("header without halo", "header.shadow" in header)

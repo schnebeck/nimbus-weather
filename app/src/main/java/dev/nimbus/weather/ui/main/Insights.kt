@@ -190,8 +190,6 @@ object Insights {
     fun uvProtectUntil(hours: List<HourlyPoint>, isSameDay: (Long) -> Boolean): Long? =
         hours.filter { isSameDay(it.time) && (it.uvIndex ?: 0.0) >= 3.0 }.maxOfOrNull { it.time }
 
-    fun next24hPrecipitation(hours: List<HourlyPoint>): Double = hours.drop(1).take(24).sumOf { it.precipitation ?: 0.0 }
-
     private val tempStops = listOf(
         -15.0 to Color(0xFF7B6CFF), -5.0 to Color(0xFF3F8CFF), 3.0 to Color(0xFF4FC3F7), 10.0 to Color(0xFF8BD66B),
         17.0 to Color(0xFFF7D548), 24.0 to Color(0xFFFFA23A), 31.0 to Color(0xFFFF5B36), 38.0 to Color(0xFFD9304F),

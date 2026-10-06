@@ -1,6 +1,6 @@
 /*
  * Nimbus - app/src/main/java/dev/nimbus/weather/ui/MainViewModel.kt
- * Screen state: places, loading, history, radar and settings navigation.
+ * The screens' controller: loading the places, their look-back and position, navigation.
  *
  *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
  *   Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
@@ -17,6 +17,7 @@
 
 package dev.nimbus.weather.ui
 
+import dev.nimbus.weather.util.Geo
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -26,13 +27,10 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import dev.nimbus.weather.NimbusApp
 import dev.nimbus.weather.BuildConfig
 import dev.nimbus.weather.R
-import dev.nimbus.weather.data.model.Condition
 import dev.nimbus.weather.data.model.ForecastModel
 import dev.nimbus.weather.data.model.modelFor
-import dev.nimbus.weather.data.model.ModelSeries
 import dev.nimbus.weather.data.model.Place
 import dev.nimbus.weather.data.model.Settings
-import dev.nimbus.weather.data.model.WeatherData
 import dev.nimbus.weather.data.repo.LocationProvider
 import dev.nimbus.weather.ui.radar.RadarPrefetcher
 import kotlinx.coroutines.Job
@@ -46,86 +44,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.job
 import kotlinx.coroutines.isActive
 import java.util.Locale
-
-data class PlaceState(
-    val data: WeatherData? = null,
-    /** The forecast being fetched (the page's spinner); the extras after it show theirs by their cards' dots. */
-    val loading: Boolean = false,
-    val error: Boolean = false,
-    val models: List<ModelSeries>? = null,
-    val history: dev.nimbus.weather.data.remote.History? = null,
-    val historyLoading: Boolean = false,
-    val historyError: Boolean = false,
-)
-
-enum class LocationStatus { UNKNOWN, LOADING, AVAILABLE, DENIED, UNAVAILABLE }
-
-sealed interface Screen {
-    data object Main : Screen
-    data object Places : Screen
-    data object Settings : Screen
-    data object Licenses : Screen
-    /** [day]: start (local midnight) of a past day from the look-back, null for the live radar. */
-    data class Radar(val placeId: String?, val day: Long? = null) : Screen
-}
-
-data class Demo(
-    val condition: Condition?,
-    val night: Boolean,
-    val season: dev.nimbus.weather.ui.background.Season? = null,
-    val wind: Float? = null,
-    val pollen: Float? = null,
-)
-
-data class UiState(
-    val initialized: Boolean = false,
-    val currentPlace: Place? = null,
-    val savedPlaces: List<Place> = emptyList(),
-    val states: Map<String, PlaceState> = emptyMap(),
-    val settings: Settings = Settings(),
-    val selectedPlaceId: String? = null,
-    val locationStatus: LocationStatus = LocationStatus.UNKNOWN,
-    /** When the position of "my location" was taken (wall clock): older than [dev.nimbus.weather.data.repo.Freshness.LOCATION_MS], its page is not current. */
-    val locationFixedAt: Long = 0L,
-    /** When the last search found no new position – the next one waits a little. */
-    val locationTriedAt: Long = 0L,
-    /** Searches in a row without a new position: the pause before the next grows. */
-    val locationMisses: Int = 0,
-    /** The device's location is switched off: no position can come until it is on again. */
-    val locationOff: Boolean = false,
-    /**
-     * The position of "my location" is asked for anew on request (reload, the pin): until it is
-     * confirmed or the new place taken, its page counts as not current and loads nothing.
-     */
-    val locationForced: Boolean = false,
-    val backStack: List<Screen> = listOf(Screen.Main),
-    val demo: Demo? = null,
-) {
-    /** Pages shown in the pager: current location first, then saved places. */
-    val pages: List<Place> get() = listOfNotNull(currentPlace) + savedPlaces.filter { it.id != currentPlace?.id }
-    val screen: Screen get() = backStack.last()
-}
-
-/**
- * Whether "my location" is on screen – its page chosen, the list of places open, or the places
- * beside the weather (tablet, [sidebar]): only then is the position looked for. For another
- * place the GPS stays off, the page of "my location" shows on its return whether it is current.
- */
-/**
- * Whether a request for [place] waits for the position: "my location" while it is looked for –
- * the search loads its data afterwards, for the place confirmed or the new one.
- */
-internal fun waitsForLocation(place: Place, st: UiState): Boolean =
-    place.isCurrentLocation && st.locationStatus == LocationStatus.LOADING
-
-/** Whether [a] and [b] are the same spot (not only the same id: "my location" keeps its id). */
-internal fun sameSpot(a: Place?, b: Place): Boolean = a != null && a.latitude == b.latitude && a.longitude == b.longitude
-
-internal fun locationWanted(st: UiState, sidebar: Boolean): Boolean {
-    val current = st.currentPlace ?: return false
-    val selected = st.pages.firstOrNull { it.id == st.selectedPlaceId } ?: st.pages.firstOrNull()
-    return selected?.id == current.id || st.screen == Screen.Places || sidebar
-}
 
 /** What the view model works with: the app's own ([of]) – or stand-ins in a test. */
 class ViewModelDeps(
@@ -196,15 +114,7 @@ class MainViewModel(
         launchWhileShown {
             dev.nimbus.weather.ui.radar.RadarPreview.cardSizeFlow.first { it != null }
             kotlinx.coroutines.delay(5_000L)            // the visible place first
-            val app = getApplication<Application>()
-            _state.value.pages.forEach { p ->
-                runCatching {
-                    dev.nimbus.weather.ui.radar.RadarPreview.prefetch(
-                        app, container.http, container.mapHttp, p.latitude, p.longitude,
-                        app.resources.displayMetrics.density, app.resources.configuration.locales[0].language,
-                    )
-                }
-            }
+            _state.value.pages.forEach { prefetchPreview(it) }
         }
         viewModelScope.launch {
             // Restore last known current location from cache for an instant start.
@@ -382,15 +292,15 @@ class MainViewModel(
             val loc = found.value
             val old = _state.value.currentPlace
             val fallbackName = getApplication<Application>().getString(R.string.my_location)
-            val moved = old == null || distanceKm(old.latitude, old.longitude, loc.latitude, loc.longitude) > 1.5
+            val moved = old == null || Geo.distanceKm(old.latitude, old.longitude, loc.latitude, loc.longitude) > 1.5
             // A place without a real name (geocoding failed last time) asks again.
             val unnamed = old != null && old.name == fallbackName
-            val place = if (moved || unnamed || old == null) {
-                val found = location.toPlace(loc, fallbackName)
+            val place = if (moved || unnamed) {
+                val named = location.toPlace(loc, fallbackName)
                 // Geocoding failed again, but we are still near the last named place: keep its name.
-                if (found.name == fallbackName && old != null && old.name != fallbackName &&
-                    distanceKm(old.latitude, old.longitude, loc.latitude, loc.longitude) < 5.0
-                ) found.copy(name = old.name, region = old.region, country = old.country, countryCode = old.countryCode) else found
+                if (named.name == fallbackName && old != null && old.name != fallbackName &&
+                    Geo.distanceKm(old.latitude, old.longitude, loc.latitude, loc.longitude) < 5.0
+                ) named.copy(name = old.name, region = old.region, country = old.country, countryCode = old.countryCode) else named
             } else old
             // an older position (the system's last one) is no success: the pause keeps growing
             val current = !dev.nimbus.weather.data.repo.Freshness.locationMissed(found.at, System.currentTimeMillis())
@@ -410,7 +320,7 @@ class MainViewModel(
             if (current) shelf.position.arrived(found.at)
             else shelf.position.stale(retryMs = dev.nimbus.weather.data.repo.Freshness.locationPauseMs(_state.value.locationMisses))
             // Only the name changed (it was missing before): show it right away, no reload needed.
-            if (!moved && old != null && place.name != old.name) {
+            if (!moved && place.name != old.name) {
                 val renamed = _state.value.states[place.id]?.data?.copy(place = place)
                 if (renamed != null) {
                     updatePlace(place.id) { it.copy(data = renamed) }
@@ -485,15 +395,7 @@ class MainViewModel(
                 maybePrefetchRadar(place, settings)
                 // Radar preview of this place, so switching to it shows a picture at once
                 // (own job: must not keep the load job of the place active; only while shown)
-                if (resumed) launchWhileShown {
-                    val app = getApplication<Application>()
-                    runCatching {
-                        dev.nimbus.weather.ui.radar.RadarPreview.prefetch(
-                            app, container.http, container.mapHttp, place.latitude, place.longitude,
-                            app.resources.displayMetrics.density, app.resources.configuration.locales[0].language,
-                        )
-                    }
-                }
+                if (resumed) launchWhileShown { prefetchPreview(place) }
             }.onFailure {
                 updatePlace(place.id) { it.copy(loading = false, error = true) }
                 // the forecast failed: everything stays out of date, asked again after a while
@@ -501,6 +403,17 @@ class MainViewModel(
             }
             // went out of date while this load ran: now
             if (dueAfter.remove(place.id)) load(place, force = false)
+        }
+    }
+
+    /** The radar preview of [place] made ahead (see [dev.nimbus.weather.ui.radar.RadarPreview.prefetch]). */
+    private suspend fun prefetchPreview(place: Place) {
+        val app = getApplication<Application>()
+        runCatching {
+            dev.nimbus.weather.ui.radar.RadarPreview.prefetch(
+                app, container.http, container.mapHttp, place.latitude, place.longitude,
+                app.resources.displayMetrics.density, app.resources.configuration.locales[0].language,
+            )
         }
     }
 
@@ -674,16 +587,6 @@ class MainViewModel(
 
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer { MainViewModel(this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as Application) }
-        }
-
-        fun distanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-            val r = 6371.0
-            val dLat = Math.toRadians(lat2 - lat1)
-            val dLon = Math.toRadians(lon2 - lon1)
-            val a = kotlin.math.sin(dLat / 2).let { it * it } +
-                kotlin.math.cos(Math.toRadians(lat1)) * kotlin.math.cos(Math.toRadians(lat2)) *
-                kotlin.math.sin(dLon / 2).let { it * it }
-            return 2 * r * kotlin.math.asin(kotlin.math.sqrt(a))
         }
     }
 }

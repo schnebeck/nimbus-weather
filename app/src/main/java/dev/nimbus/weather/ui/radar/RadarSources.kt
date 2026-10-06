@@ -52,8 +52,6 @@ object RadarSources {
             "&srs=EPSG:3857&bbox={bbox-epsg-3857}&width=512&height=512" + (time?.let { "&time=$it" } ?: "") +
             (if (layer.contains("Radar")) "&v=$TILE_VERSION&c=${RadarPalette.scheme.ordinal}" else "")
 
-    fun rainViewerTileUrl(host: String, path: String): String = "$host$path/512/{z}/{x}/{y}/2/1_1.png?v=$TILE_VERSION&c=${RadarPalette.scheme.ordinal}"
-
     /** 2026-09-28T20:40:00.000Z (the WMS time parameter). */
     fun isoTime(ms: Long): String = Instant.ofEpochMilli(ms).toString().replace("Z", "").let {
         (if (it.length == 16) "$it:00" else it.take(19)) + ".000Z"

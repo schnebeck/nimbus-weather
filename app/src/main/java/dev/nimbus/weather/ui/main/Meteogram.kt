@@ -22,15 +22,11 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -45,9 +41,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -68,13 +62,10 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.nimbus.weather.R
-import dev.nimbus.weather.data.model.Condition
-import dev.nimbus.weather.data.model.HourlyPoint
 import dev.nimbus.weather.data.model.PrecipitationUnit
 import dev.nimbus.weather.data.model.TemperatureUnit
 import dev.nimbus.weather.ui.components.WeatherIcon
 import dev.nimbus.weather.ui.theme.NimbusColors
-import dev.nimbus.weather.util.NBSP
 import dev.nimbus.weather.util.Texts
 import dev.nimbus.weather.util.Units
 import kotlinx.coroutines.delay
@@ -85,7 +76,8 @@ import kotlin.math.floor
 import kotlin.math.roundToInt
 
 /** The chance of precipitation: a white line, as in the precipitation chart. */
-private val ChanceLine = Color(0xF2FFFFFF)
+internal val ChanceLine = Color(0xF2FFFFFF)
+
 // Sunshine row (bars: HourBars.Sun) on a faint track
 private val SunTrack = Color(0x14FFFFFF)
 // Day slightly lighter, night clearly darker than the card: the two must be told apart at a glance.
@@ -93,7 +85,8 @@ internal val DayTint = Color(0x14FFFFFF)
 internal val NightShade = Color(0x47000000)
 private val GridLine = Color(0x1FFFFFFF)
 // Look-back: the forecast dashed in white next to the measured curve in the temperature colours
-private val ForecastLine = Color(0xD9FFFFFF)
+internal val ForecastLine = Color(0xD9FFFFFF)
+
 private const val CURSOR_TIMEOUT_MS = 10_000L
 
 /** Wind colour by speed (km/h): calm white → Bft 6 yellow → gale orange → storm red. */
@@ -102,89 +95,6 @@ fun windColor(kmh: Double): Color = when {
     kmh < 62 -> Color(0xFFFFE08A)
     kmh < 89 -> Color(0xFFFFA54A)
     else -> Color(0xFFFF5A4A)
-}
-
-/**
- * One hour of a meteogram. For the look back [temperature] etc. are measurements and
- * [forecastTemperature] / [forecastPrecipitation] what the model had predicted.
- */
-data class MeteoPoint(
-    val time: Long,
-    val temperature: Double,
-    val condition: Condition,
-    val isDay: Boolean,
-    val precipitation: Double?,
-    val precipitationChance: Double? = null,
-    val windSpeed: Double? = null,
-    val windDirection: Double? = null,
-    val windGust: Double? = null,
-    val humidity: Double? = null,
-    val apparentTemperature: Double? = null,
-    val forecastTemperature: Double? = null,
-    val forecastPrecipitation: Double? = null,
-    /** Minutes of sunshine in the hour before [time]. */
-    val sunshine: Double? = null,
-    /** Look-back of today: an hour still to come – only the forecast, drawn dashed and paler. */
-    val forecastOnly: Boolean = false,
-    /** Today in the forecast: an hour already over, with the station's readings in place of the forecast. */
-    val measured: Boolean = false,
-    /** Look-back: what was measured and what was forecast, kept apart for the readout table. */
-    val compare: HourCompare? = null,
-    /** [precipitation] is a reading (a block in the chart); else the forecast (a frame). */
-    val precipMeasured: Boolean = false,
-    /** [sunshine] is a reading; else the forecast. */
-    val sunMeasured: Boolean = false,
-    /** Look-back: the forecast sunshine beside the measured (a frame in front of its block). */
-    val forecastSunshine: Double? = null,
-)
-
-/** One hour of the look-back: measured (M) and forecast (F) values; null where there is none. */
-data class HourCompare(
-    val tempM: Double?, val tempF: Double?,
-    val precipM: Double?, val precipF: Double?, val chanceF: Double?,
-    val windM: Double?, val windDirM: Double?, val windF: Double?,
-    val gustM: Double?, val gustF: Double?,
-    val sunM: Double?, val sunF: Double?,
-)
-
-/**
- * The hour running at [now] (its values cover the hour before its time stamp) with the weather now
- * [condition] – the header's: now the measurement decides, the hours to come the forecast.
- */
-fun MeteoPoint.asNow(now: Long, condition: Condition?): MeteoPoint =
-    if (condition != null && time > now && time - now <= 3_600_000L) copy(condition = condition) else this
-
-fun HourlyPoint.toMeteo() = MeteoPoint(
-    time, temperature, condition, isDay, precipitation, precipitationProbability,
-    windSpeed, windDirection, windGust, humidity, apparentTemperature, sunshine = sunshine,
-)
-
-/**
- * Night between [start] and [end] at the place: wherever the sun is below the horizon (its upper
- * limb with refraction, −0.833° – sunrise and sunset as on the sun card), found every 5 minutes and
- * interpolated to the minute. One source for every day chart, across the whole axis including the
- * 24 column; also right on polar days and nights. (The hourly day/night flags of the models put
- * sunrise and sunset on full hours; the daily sunrise/sunset ended at midnight.)
- */
-fun nights(start: Long, end: Long, lat: Double, lon: Double): List<LongRange> {
-    if (end <= start) return emptyList()
-    val step = 5 * 60_000L
-    fun alt(t: Long) = dev.nimbus.weather.util.Moon.sunAltitude(t, lat, lon) + 0.833
-    val out = ArrayList<LongRange>()
-    var t = start
-    var a = alt(t)
-    var nightFrom: Long? = if (a < 0) start else null
-    while (t < end) {
-        val n = minOf(t + step, end)
-        val b = alt(n)
-        if ((a < 0) != (b < 0)) {
-            val edge = t + ((n - t) * (a / (a - b))).toLong()
-            if (b < 0) nightFrom = edge else { out += nightFrom!! until edge; nightFrom = null }
-        }
-        t = n; a = b
-    }
-    nightFrom?.let { out += it until end }
-    return out
 }
 
 /**
@@ -569,155 +479,6 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawWindGlyph(c: Of
         moveTo(x0 + 1 * u, y3); lineTo(x0 + 6 * u, y3)
         arcTo(androidx.compose.ui.geometry.Rect(Offset(x0 + 6 * u, y3 + rr), rr), -90f, 250f, false)
     }, color, style = style)
-}
-
-/** A duration in minutes as "9:54 h" / "9:54 Std." */
-@Composable
-fun hoursMinutes(minutes: Double): String {
-    val m = minutes.roundToInt()
-    return stringResource(R.string.duration_h_min, m / 60, m % 60)
-}
-
-/** A legend entry: a colour swatch (or a line) and its text; the swatch stays at the first line when the text wraps. */
-@Composable
-fun LegendItem(color: Color, text: String, line: Boolean = false, dashed: Boolean = false, frame: Boolean = false, brush: Brush? = null) = Row(verticalAlignment = Alignment.Top) {
-    val lineH = 15.sp
-    Box(Modifier.height(with(LocalDensity.current) { lineH.toDp() }), contentAlignment = Alignment.Center) {
-        Canvas(Modifier.size(if (line) 16.dp else 12.dp, 10.dp)) {
-            if (line && brush != null) drawLine(brush, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.5.dp.toPx(), StrokeCap.Round)
-            else if (line) drawLine(
-                color, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.dp.toPx(),
-                pathEffect = if (dashed) PathEffect.dashPathEffect(floatArrayOf(10f, 7f)) else null,   // as the forecast curve
-            ) else if (frame) {
-                val w = HourBars.FRAME_DP.dp.toPx()
-                drawRoundRect(color, Offset(w / 2, w / 2), Size(size.width - w, size.height - w), CornerRadius(2.dp.toPx()), style = Stroke(w))
-            } else drawRoundRect(color, cornerRadius = CornerRadius(2.dp.toPx()))
-        }
-    }
-    Spacer(Modifier.width(5.dp))
-    Text(text, fontSize = 11.sp, lineHeight = lineH, color = NimbusColors.Secondary)
-}
-
-/** Legend entries in a flowing row, as below the meteogram. */
-@Composable
-fun LegendRow(content: @Composable () -> Unit) = androidx.compose.foundation.layout.FlowRow(
-    Modifier.padding(top = 8.dp),
-    horizontalArrangement = Arrangement.spacedBy(14.dp),
-    verticalArrangement = Arrangement.spacedBy(4.dp),
-) { content() }
-
-/**
- * What the curves and bars mean, with the day's totals – readable without the cursor: the
- * temperature curve in its colours ([tempColors]: of the day's lowest and highest value) and, in
- * the look-back, the dashed forecast ([tempForecast]); sunshine ([sun], null: no sunshine row) and
- * precipitation as blocks (measured) and frames (expected), each with its total.
- */
-@Composable
-private fun BarLegend(
-    rain: HourBar, sun: HourBar?, chance: Boolean = false,
-    tempColors: Pair<Color, Color>, tempForecast: Boolean = false,
-) {
-    val s = LocalSettings.current
-    val unit = stringResource(Texts.precipUnit(s.precipitationUnit))
-    fun amount(v: Double?) = Units.precipitationNumber(v ?: 0.0, s.precipitationUnit) + NBSP + unit
-    // Temperature, sunshine, precipitation – each named, the chart shows all of them
-    LegendRow {
-        val temp = Brush.horizontalGradient(listOf(tempColors.first, tempColors.second))
-        LegendItem(tempColors.second, stringResource(R.string.legend_temperature), line = true, brush = temp)
-        if (tempForecast) LegendItem(ForecastLine, stringResource(R.string.legend_temp_forecast), line = true, dashed = true)
-        if (sun != null) BarLegendItems(
-            HourBars.Sun, sun, R.string.legend_sunshine, R.string.legend_sun_measured, R.string.legend_sun_forecast,
-        ) { hoursMinutes(it) }
-        BarLegendItems(
-            HourBars.Rain, rain, R.string.legend_precip, R.string.legend_precip_measured, R.string.legend_precip_forecast,
-        ) { amount(it) }
-        if (chance) LegendItem(ChanceLine, stringResource(R.string.legend_chance), line = true)
-    }
-}
-
-/** The three text lines of the readout for one hour. */
-/**
- * Values at the cursor position as a table – every value in its own fixed cell, so nothing
- * jumps while the cursor moves, and the table always has the same rows (the card keeps its
- * height). Look-back: measurement and forecast side by side.
- */
-@Composable
-private fun Readout(h: MeteoPoint, highlighted: Boolean, compare: Boolean) {
-    val s = LocalSettings.current
-    val tf = LocalTimeFormat.current
-    val dirs = Texts.compass.map { stringResource(it) }
-    val wUnit = stringResource(Texts.windUnit(s.windUnit))
-    val pUnit = stringResource(Texts.precipUnit(s.precipitationUnit))
-    fun t(v: Double?) = v?.let { Units.temp(it, s.temperatureUnit) } ?: NO_VALUE
-    fun p(v: Double?) = v?.let { Units.precipitationNumber(it, s.precipitationUnit) + NBSP + pUnit } ?: NO_VALUE
-    fun w(v: Double?, dir: Double? = null) =
-        v?.let { Units.windNumber(it, s.windUnit) + NBSP + wUnit + (dir?.let { d -> NBSP + dirs[Units.compassIndex(d)] } ?: "") } ?: NO_VALUE
-    fun sun(v: Double?) = v?.let { "${it.roundToInt()}" + NBSP + "min" } ?: NO_VALUE
-    fun pct(v: Double?, amount: Double?) = v?.let { (Insights.chanceText(it, amount) ?: "0") + NBSP + "%" } ?: NO_VALUE
-    val condition = stringResource(Texts.condition(h.condition, h.isDay)) + when {
-        h.forecastOnly -> " · " + stringResource(R.string.forecast)
-        h.measured -> " · " + stringResource(R.string.measured_word)
-        else -> ""
-    }
-    val lTemp = stringResource(R.string.readout_temperature)
-    val lPrecip = stringResource(R.string.precipitation)
-    val lChance = stringResource(R.string.readout_chance)
-    val lWind = stringResource(R.string.wind)
-    val lGust = stringResource(R.string.gusts)
-    val lSun = stringResource(R.string.sunshine_short)
-    // Time, symbol and weather in one line; the table below gets the full width
-    Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            // the hour the values cover (and the cursor stands on)
-            Text(
-                tf.time(h.time - 3_600_000L) + "–" + tf.time(h.time), fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
-                color = if (highlighted) Color.White else NimbusColors.Secondary,
-                style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum"),
-            )
-            Spacer(Modifier.width(8.dp))
-            WeatherIcon(h.condition, h.isDay, size = 24.dp)
-            Spacer(Modifier.width(8.dp))
-            Text(condition, Modifier.weight(1f), fontSize = 14.sp, color = Color.White, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-        }
-        Spacer(Modifier.height(4.dp))
-        Column(Modifier.fillMaxWidth()) {
-            if (compare) {
-                // Look-back: an hour still to come has the forecast only
-                val c = h.compare ?: HourCompare(
-                    null, h.temperature, null, h.precipitation, h.precipitationChance,
-                    null, null, h.windSpeed, null, h.windGust, null, h.sunshine,
-                )
-                ReadoutTable(
-                    listOf(stringResource(R.string.history_legend_measured), stringResource(R.string.forecast)),
-                    listOf(
-                        lTemp to listOf(t(c.tempM), t(c.tempF)),
-                        lPrecip to listOf(p(c.precipM), p(c.precipF)),
-                        lChance to listOf(NO_VALUE, pct(c.chanceF, c.precipF)),
-                        lWind to listOf(w(c.windM, c.windDirM), w(c.windF)),
-                        lGust to listOf(w(c.gustM), w(c.gustF)),
-                        lSun to listOf(sun(c.sunM), sun(c.sunF)),
-                    ),
-                )
-            } else {
-                ReadoutPairs(
-                    listOf(
-                        lTemp to t(h.temperature),
-                        stringResource(R.string.readout_feels) to t(h.apparentTemperature),
-                        lPrecip to p(h.precipitation ?: 0.0),
-                        lChance to pct(h.precipitationChance, h.precipitation),
-                        lWind to w(h.windSpeed, h.windDirection),
-                        lGust to w(h.windGust),
-                        lSun to sun(h.sunshine?.takeIf { h.isDay || it >= 1.0 } ?: if (h.sunshine != null) 0.0 else null),
-                        stringResource(R.string.humidity) to (h.humidity?.let { "${it.roundToInt()}" + NBSP + "%" } ?: NO_VALUE),
-                    ),
-                    // the widest values to expect, in the units set
-                    // (every compass direction; a rarer wider value, e.g. a gust of 120 km/h, still fits
-                    // its cell beside the short label – the layout never switches for it)
-                    reserve = listOf(t(-88.0), p(88.8), "100" + NBSP + "%", sun(60.0)) + (0 until 8).map { w(88.0, it * 45.0) },
-                )
-            }
-        }
-    }
 }
 
 /** Inner padding of the glass cards the meteogram may extend into (for a wider plot). */

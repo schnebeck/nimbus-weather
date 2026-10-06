@@ -23,11 +23,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import android.os.Bundle
 import android.text.format.DateFormat
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.systemGestureExclusion
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,7 +35,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
@@ -54,11 +49,6 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Slider
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.StrokeCap
-import kotlin.math.roundToInt
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -100,27 +90,15 @@ import kotlinx.coroutines.launch
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
-import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapLibreMapOptions
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.Style
-import org.maplibre.android.style.expressions.Expression
-import org.maplibre.android.style.layers.CircleLayer
-import org.maplibre.android.style.layers.Property
-import org.maplibre.android.style.layers.PropertyFactory
-import org.maplibre.android.style.layers.RasterLayer
-import org.maplibre.android.style.layers.SymbolLayer
-import org.maplibre.android.style.sources.GeoJsonSource
-import org.maplibre.android.style.sources.RasterSource
-import org.maplibre.android.style.sources.TileSet
-import org.maplibre.geojson.Point
 import java.util.TimeZone
 
 const val STYLE_URL = "https://tiles.openfreemap.org/styles/dark"
 const val RADAR_ZOOM = 6.6
-/** Time per step while playing: the live loop, and an archived day (5-minute steps, a day in ~55 s). */
 /** How long the radar waits for the temperature grid before it starts without (it follows). */
 private const val GRID_WAIT_MS = 8_000L
+/** Time per step while playing: the live loop, and an archived day (5-minute steps, a day in ~55 s). */
 private const val FRAME_MS = 450f
 private const val ARCHIVE_STEP_MS = 180f
 /** The live loop rests this long on its last frame before starting over. */
@@ -131,71 +109,6 @@ private const val RADAR_REFRESH_CHECK_MS = 60_000L
 /** Buffering of an archived day: playback starts and resumes with this many steps ready ahead. */
 private const val BUFFER_START = 6
 private const val BUFFER_RESUME = 12
-/**
- * MapLibre loads the tiles of every layer whose visibility is "visible" – even at opacity 0.
- * Layers that must not load yet are therefore switched to visibility "none".
- */
-private fun RasterLayer.state(visible: Boolean, opacity: Float) = setProperties(
-    PropertyFactory.visibility(if (visible) Property.VISIBLE else Property.NONE),
-    PropertyFactory.rasterOpacity(opacity),
-)
-
-/**
- * Holds the MapLibre objects: satellite and warning layers and the location. The radar itself is
- * one picture between them, drawn by the [RadarPlayer].
- */
-private class RadarMapController {
-    var map: MapLibreMap? = null
-    var style: Style? = null
-    var satellite = false
-    var warnings = false
-    /** First layer drawn above the radar (lines and names); overlays such as isolines go below it. */
-    var anchor: String? = null
-
-    /** Satellite and warning layers; the radar picture is inserted between them. */
-    fun installBase(style: Style, satellite: SatelliteLayer) {
-        this.style = style
-        // No animated property changes (MapLibre fades every change over 300 ms by default)
-        style.transition = org.maplibre.android.style.layers.TransitionOptions(0, 0, false)
-        // Satellite, radar and warnings between the areas and the lines: rivers, roads, borders
-        // and names stay visible on top of the (opaque) radar colours
-        val below = style.layers.firstOrNull { it is SymbolLayer || it is org.maplibre.android.style.layers.LineLayer }?.id
-        anchor = below
-        fun add(layer: RasterLayer) = if (below != null) style.addLayerBelow(layer, below) else style.addLayer(layer)
-        // the satellite: one picture of the view at the radar's time (EUMETSAT, see SatelliteLayer)
-        style.addSource(satellite.source())
-        satellite.install(style)
-        add(RasterLayer("sat", SatelliteLayer.SOURCE).withProperties(PropertyFactory.rasterOpacity(0f), PropertyFactory.rasterFadeDuration(0f), PropertyFactory.visibility(Property.NONE)))
-        style.addSource(RasterSource("warn", TileSet("2.2.0", RadarSources.dwdTileUrl(RadarSources.WARN_LAYER, null)).apply {
-            maxZoom = 10f
-            setBounds(5.5f, 47.0f, 15.5f, 55.2f)
-        }, 512).apply { prefetchZoomDelta = 0 })
-        add(RasterLayer("warn", "warn").withProperties(PropertyFactory.rasterOpacity(0f), PropertyFactory.rasterFadeDuration(0f), PropertyFactory.visibility(Property.NONE)))
-    }
-
-    fun addLocation(style: Style, place: Place) {
-        style.addSource(GeoJsonSource("me", Point.fromLngLat(place.longitude, place.latitude)))
-        style.addLayer(
-            CircleLayer("me-halo", "me").withProperties(
-                PropertyFactory.circleRadius(14f), PropertyFactory.circleColor("#3D8BFF"), PropertyFactory.circleOpacity(0.3f),
-            ),
-        )
-        style.addLayer(
-            CircleLayer("me", "me").withProperties(
-                PropertyFactory.circleRadius(6f), PropertyFactory.circleColor("#3D8BFF"),
-                PropertyFactory.circleStrokeColor("#FFFFFF"), PropertyFactory.circleStrokeWidth(2.5f),
-            ),
-        )
-    }
-
-    fun setOverlays(sat: Boolean, warn: Boolean) {
-        val s = style ?: return
-        satellite = sat
-        warnings = warn
-        (s.getLayer("sat") as? RasterLayer)?.state(sat, if (sat) 0.75f else 0f)
-        (s.getLayer("warn") as? RasterLayer)?.state(warn, if (warn) 0.55f else 0f)
-    }
-}
 
 @Composable
 fun RadarScreen(
@@ -511,44 +424,12 @@ fun RadarScreen(
         val total = timeline?.frames?.size ?: 0
         val stillLoading = timeline != null && styleReady &&
             (buffering || !player.canShow(frame.toFloat()) || loadedFrames < total)
-        val trouble = netStatus.failed > 0 || netStatus.fromCache > 0
-        if (error || stillLoading || trouble) {
-            Column(
-                Modifier.align(Alignment.TopCenter).windowInsetsPadding(WindowInsets.statusBarsStable).padding(top = 64.dp, start = 24.dp, end = 24.dp)
-                    .clip(RoundedCornerShape(12.dp)).background(Color(0xCC0B1424)).padding(horizontal = 14.dp, vertical = 10.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                if (stillLoading && !error) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(14.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            // all downloaded: the steps are being cut and smoothed for the view
-                            if (loadedFrames >= total) stringResource(R.string.radar_preparing)
-                            else stringResource(R.string.radar_loading_frames, loadedFrames, total),
-                            color = Color.White, fontSize = 13.sp,
-                        )
-                    }
-                }
-                val msg = when {
-                    error -> R.string.radar_error
-                    netStatus.failed > 0 && netStatus.fromCache > 0 -> R.string.radar_partly_cached
-                    netStatus.failed > 0 -> R.string.radar_partly_missing
-                    else -> null
-                }
-                if (msg != null) {
-                    if (stillLoading && !error) Spacer(Modifier.height(6.dp))
-                    Text(stringResource(msg), color = Color(0xFFFFD27A), fontSize = 13.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        stringResource(R.string.radar_reload), color = Color(0xFF9CC8FF), fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable {
-                            error = false; ready = false; playing = false
-                            if (styleReady) reloadKey++ else styleAttempt++
-                        }.padding(horizontal = 10.dp, vertical = 6.dp),
-                    )
-                }
-            }
+        RadarStatusHint(
+            error, stillLoading, loadedFrames, total, netStatus,
+            Modifier.align(Alignment.TopCenter).windowInsetsPadding(WindowInsets.statusBarsStable).padding(top = 64.dp, start = 24.dp, end = 24.dp),
+        ) {
+            error = false; ready = false; playing = false
+            if (styleReady) reloadKey++ else styleAttempt++
         }
 
         // Bottom controls
@@ -670,141 +551,4 @@ fun RadarScreen(
             )
         }
     }
-}
-
-
-@Composable
-private fun StepButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, enabled: Boolean, onClick: () -> Unit) {
-    IconButton(
-        onClick = onClick, enabled = enabled,
-        modifier = Modifier.clip(CircleShape).background(Color(0x26FFFFFF)).size(32.dp),
-    ) {
-        Icon(icon, label, tint = if (enabled) Color.White else Color(0x55FFFFFF), modifier = Modifier.size(22.dp))
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun TimelineSlider(
-    tl: RadarTimeline, frame: Int,
-    /** The last step that can be chosen ([lastShown]); beyond it the track is greyed out. */
-    last: Int = tl.frames.lastIndex,
-    onChange: (Int) -> Unit,
-) {
-    val n = tl.frames.size - 1
-    Slider(
-        value = frame.toFloat(),
-        onValueChange = { onChange(it.roundToInt().coerceAtMost(last)) },
-        valueRange = 0f..n.toFloat(),
-        steps = n - 1,
-        // the slider runs almost to the screen's edges: dragging it there is for the slider, not
-        // the system's back gesture (gesture navigation)
-        modifier = Modifier.height(36.dp).systemGestureExclusion(),
-        thumb = {
-            Box(Modifier.size(18.dp).clip(CircleShape).background(Color.White))
-        },
-        track = { state ->
-            Canvas(Modifier.fillMaxWidth().height(18.dp)) {
-                val y = size.height / 2
-                val h = 4.dp.toPx()
-                val pos = size.width * (state.value / n)
-                if (tl.day != null) {
-                    // Archived day: one track, a tick every 3 hours (longer every 6 hours)
-                    drawLine(Color(0x40FFFFFF), Offset(0f, y), Offset(size.width, y), h, StrokeCap.Round)
-                    drawLine(Color(0xCCFFFFFF), Offset(0f, y), Offset(pos, y), h, StrokeCap.Round)
-                    val perHour = (3_600_000L / RadarSources.ARCHIVE_STEP_MS).toInt()
-                    for (i in 0..n step 3 * perHour) {
-                        val x = size.width * i / n
-                        val long = i % (6 * perHour) == 0
-                        drawLine(Color(0x80FFFFFF), Offset(x, y + 6.dp.toPx()), Offset(x, y + (if (long) 11 else 9).dp.toPx()), 1.dp.toPx())
-                    }
-                    return@Canvas
-                }
-                val nowX = size.width * tl.nowIndex / n
-                // past = white-ish, forecast = amber – grey where the area has none to show
-                drawLine(Color(0x40FFFFFF), Offset(0f, y), Offset(nowX, y), h, StrokeCap.Round)
-                drawLine(if (last < n) ForecastOff else Color(0x66FFD27A), Offset(nowX, y), Offset(size.width, y), h, StrokeCap.Round)
-                drawLine(Color(0xCCFFFFFF), Offset(0f, y), Offset(minOf(pos, nowX), y), h, StrokeCap.Round)
-                if (pos > nowX) drawLine(Color(0xFFFFD27A), Offset(nowX, y), Offset(pos, y), h, StrokeCap.Round)
-                // ticks at full hours (24 h: every 3 hours) and the "now" marker
-                val tz = java.util.TimeZone.getDefault()
-                val every = if (tl.range.hours >= 24) 3 else 1
-                tl.frames.forEachIndexed { i, f ->
-                    val local = f.time + tz.getOffset(f.time)
-                    if (local % 3_600_000L != 0L || (local / 3_600_000L) % every != 0L) return@forEachIndexed
-                    val x = size.width * i / n
-                    drawLine(Color(0x80FFFFFF), Offset(x, y + 6.dp.toPx()), Offset(x, y + 9.dp.toPx()), 1.dp.toPx())
-                }
-                drawLine(Color.White, Offset(nowX, y - 7.dp.toPx()), Offset(nowX, y + 7.dp.toPx()), 1.5.dp.toPx())
-            }
-        },
-    )
-}
-
-/** Rain (green → yellow → red) and, where it can snow, snow (turquoise → white → violet) scales, plus the temperature scale when shown. */
-/** The forecast part of the time line where the picture area has no nowcast: there, but not to be chosen. */
-internal val ForecastOff = Color(0x1FFFFFFF)
-
-/** Land colour of the slate map style, under the legend bars. */
-private val MapLand = Color(0xFF505E6F)
-
-@Composable
-private fun Legend(showTemp: Boolean, showSnow: Boolean, unit: dev.nimbus.weather.data.model.TemperatureUnit) {
-    @Composable
-    fun Bar(label: String, colors: List<Color>, modifier: Modifier) {
-        Column(modifier) {
-            Text(label, fontSize = 10.sp, color = NimbusColors.Secondary)
-            Canvas(Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))) {
-                // On the map's land colour: the weakest, fading-in steps look exactly as on the map
-                drawRect(MapLand)
-                drawRect(Brush.horizontalGradient(colors))
-            }
-        }
-    }
-    Row(verticalAlignment = Alignment.Bottom) {
-        Bar(stringResource(R.string.legend_rain), RadarPalette.legendRain.map { Color(it) }, Modifier.weight(1f))
-        if (showSnow) {
-            Spacer(Modifier.width(10.dp))
-            Bar(stringResource(R.string.legend_snow), RadarPalette.legendSnow.map { Color(it) }, Modifier.weight(1f))
-        }
-    }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(stringResource(R.string.radar_light), fontSize = 10.sp, color = NimbusColors.Tertiary)
-        Text(stringResource(R.string.radar_heavy), fontSize = 10.sp, color = NimbusColors.Tertiary)
-    }
-    if (showTemp) {
-        Spacer(Modifier.height(4.dp))
-        // Discrete bands like on the map (areas of equal temperature), in the display unit.
-        val f = unit == dev.nimbus.weather.data.model.TemperatureUnit.FAHRENHEIT
-        val lo = if (f) -4 else -20
-        val hi = if (f) 104 else 40
-        Canvas(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp))) {
-            val n = hi - lo
-            val bw = size.width / n
-            for (k in 0 until n) {
-                drawRect(
-                    Color(WeatherOverlays.bandColor(lo + k, unit)),
-                    androidx.compose.ui.geometry.Offset(k * bw, 0f), androidx.compose.ui.geometry.Size(bw + 0.5f, size.height),
-                )
-            }
-        }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            (0..3).map { lo + (hi - lo) * it / 3 }.forEach {
-                Text("$it°", fontSize = 10.sp, color = NimbusColors.Tertiary)
-            }
-        }
-    }
-}
-
-@Composable
-private fun ToggleChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    Text(
-        label,
-        Modifier.clip(RoundedCornerShape(14.dp))
-            .background(if (selected) Color.White else Color(0x33FFFFFF))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 5.dp),
-        fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
-        color = if (selected) Color(0xFF14305E) else Color.White,
-    )
 }

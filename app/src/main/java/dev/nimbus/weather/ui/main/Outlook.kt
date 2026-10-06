@@ -163,9 +163,9 @@ fun outlookText(data: WeatherData, now: Long): String {
         // "… drizzle from around 22:00." named it already: how likely it is
         val unlikelyNamed = p0 is Outlook.Precip.Unlikely && o.change?.let { (c, t) -> c.isPrecipitation && kotlin.math.abs(t - p0.at) <= 3_600_000L } == true
         if (announced) {
-            (p0 as Outlook.Precip.Likely).chance?.let { add(str(dev.nimbus.weather.R.string.outlook_precip_chance, it)) }
+            p0.chance?.let { add(str(dev.nimbus.weather.R.string.outlook_precip_chance, it)) }
         } else if (unlikelyNamed) {
-            (p0 as Outlook.Precip.Unlikely).chance?.let { add(str(dev.nimbus.weather.R.string.outlook_precip_unlikely_named, it)) }
+            p0.chance?.let { add(str(dev.nimbus.weather.R.string.outlook_precip_unlikely_named, it)) }
         } else add(
             when (val p = p0) {
                 Outlook.Precip.Dry -> str(dev.nimbus.weather.R.string.outlook_dry)

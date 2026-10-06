@@ -17,6 +17,7 @@
 
 package dev.nimbus.weather.data.remote
 
+import dev.nimbus.weather.util.Geo
 import dev.nimbus.weather.data.model.GaugeInfo
 import dev.nimbus.weather.data.model.LevelSample
 import dev.nimbus.weather.util.Tides
@@ -219,7 +220,7 @@ class GaugeSource(
                     uuid = s.s("uuid") ?: return@mapNotNull null,
                     name = s.s("longname") ?: s.s("shortname") ?: "",
                     water = water,
-                    distanceKm = GaugeGeo.distanceKm(lat, lon, sLat, sLon),
+                    distanceKm = Geo.distanceKm(lat, lon, sLat, sLon),
                     tidal = "MThw" in marks && "MTnw" in marks,
                     gaugeZero = w.o("gaugeZero")?.d("value"),
                     level = current?.d("value"),

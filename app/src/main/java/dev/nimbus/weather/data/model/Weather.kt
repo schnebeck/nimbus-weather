@@ -28,8 +28,6 @@ enum class Condition {
 
     val isPrecipitation: Boolean
         get() = this in setOf(DRIZZLE, RAIN, HEAVY_RAIN, FREEZING_RAIN, SLEET, SNOW, HEAVY_SNOW, SHOWERS, THUNDERSTORM)
-
-    val isSnowy: Boolean get() = this == SNOW || this == HEAVY_SNOW || this == SLEET
 }
 
 @Serializable

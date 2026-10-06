@@ -18,6 +18,7 @@
 
 package dev.nimbus.weather.data.remote
 
+import dev.nimbus.weather.util.Geo
 import dev.nimbus.weather.data.model.Condition
 import dev.nimbus.weather.data.model.StationNetwork
 import kotlinx.serialization.json.JsonArray
@@ -71,7 +72,7 @@ class MetarSource(private val http: OkHttpClient, private val baseUrl: String = 
         fun parse(root: JsonElement, lat: Double, lon: Double): StationObservation? {
             val (o, km) = (root as? JsonArray)?.mapNotNull { it as? JsonObject }.orEmpty().mapNotNull { r ->
                 if (r.d("temp") == null) return@mapNotNull null
-                r to GaugeGeo.distanceKm(lat, lon, r.d("lat") ?: return@mapNotNull null, r.d("lon") ?: return@mapNotNull null)
+                r to Geo.distanceKm(lat, lon, r.d("lat") ?: return@mapNotNull null, r.d("lon") ?: return@mapNotNull null)
             }.filter { it.second <= NetworkStations.MAX_KM }.minByOrNull { it.second } ?: return null
             val t = o.d("temp")!!
             val td = o.d("dewp")

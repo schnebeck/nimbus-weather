@@ -34,7 +34,6 @@
     <string name="cond_thunderstorm">Gewitter</string>
 
     <string name="my_location">Mein Standort</string>
-    <string name="feels_like_short">Gefühlt %1$s</string>
     <string name="updated_at">Aktualisiert %1$s</string>
     <string name="offline_cached">Offline – Daten von %1$s</string>
     <string name="loading">Wetter wird geladen…</string>
@@ -87,12 +86,7 @@
     <string name="more_alerts">+%1$d weitere</string>
     <string name="show_more">Mehr anzeigen</string>
     <string name="show_less">Weniger anzeigen</string>
-    <string name="summary_hourly_condition">%1$s gegen %2$s erwartet.</string>
-    <string name="summary_hourly_same">%1$s für den Rest des Tages.</string>
     <string name="summary_gusts">Windböen bis %1$s.</string>
-    <string name="summary_daily_precip">%1$s erwartet %2$s.</string>
-    <string name="summary_precip_today">%1$s in den letzten 24 Std.</string>
-    <string name="summary_precip_next">%1$s in den nächsten 24 Std. erwartet.</string>
     <string name="summary_dew_point">Der Taupunkt liegt aktuell bei %1$s.</string>
     <string name="summary_feels_warmer">Durch die Luftfeuchtigkeit fühlt es sich wärmer an.</string>
     <string name="summary_feels_colder">Durch den Wind fühlt es sich kälter an.</string>
@@ -105,8 +99,6 @@
     <string name="summary_pressure_rising">Steigend</string>
     <string name="summary_pressure_falling">Fallend</string>
     <string name="summary_pressure_steady">Gleichbleibend</string>
-    <string name="sunset_at">Sonnenuntergang: %1$s</string>
-    <string name="sunrise_at">Sonnenaufgang: %1$s</string>
     <string name="polar_day">Die Sonne geht heute nicht unter</string>
     <string name="polar_night">Die Sonne geht heute nicht auf</string>
 
@@ -125,9 +117,6 @@
     <string name="aqi_detail">Europäischer AQI · PM2,5 %1$s · PM10 %2$s µg/m³</string>
 
     <string name="pollen_none">Keine</string>
-    <string name="pollen_low">Gering</string>
-    <string name="pollen_moderate">Mittel</string>
-    <string name="pollen_high">Hoch</string>
     <string name="pollen_alder">Erle</string>
     <string name="pollen_birch">Birke</string>
     <string name="pollen_grass">Gräser</string>
@@ -152,7 +141,6 @@
     <string name="radar_error">Radardaten derzeit nicht verfügbar</string>
     <string name="my_position">Meine Position</string>
     <string name="close">Schließen</string>
-    <string name="layers">Ebenen</string>
 
     <string name="weather">Wetter</string>
     <string name="search_hint">Nach Stadt suchen</string>
@@ -160,8 +148,6 @@
     <string name="add">Hinzufügen</string>
     <string name="delete">Löschen</string>
     <string name="places">Orte</string>
-    <string name="edit">Bearbeiten</string>
-    <string name="done">Fertig</string>
     <string name="welcome_title">Willkommen bei Nimbus</string>
     <string name="welcome_text">Wetter für Deutschland und Europa vom Deutschen Wetterdienst (DWD) und weiteren offenen Quellen.</string>
     <string name="use_my_location">Meinen Standort verwenden</string>
@@ -360,14 +346,9 @@
     <string name="history_row_gust">Stärkste Böe</string>
     <string name="history_model_value">Vorhersage %1$s</string>
     <string name="history_at">um %1$s</string>
-    <string name="history_temp_chart">Temperaturverlauf</string>
     <string name="history_legend_measured">Messung</string>
     <string name="measured_word">gemessen</string>
     <string name="history_error_mean">Mittlere Abweichung der Vorhersage: %1$s</string>
-    <string name="history_precip_chart">Niederschlag pro Stunde</string>
-    <string name="history_wind_chart">Wind</string>
-    <string name="history_legend_wind">Mittelwind (%1$s)</string>
-    <string name="history_hours">Stundenwerte</string>
     <string name="history_source_station">Gemessen: DWD-Station %1$s (%2$s km) · Vorhersage: %3$s</string>
     <string name="history_source_model">Keine DWD-Station in der Nähe – nur Vorhersagewerte (%1$s)</string>
     <string name="history_loading">Rückblick wird geladen…</string>
@@ -376,9 +357,7 @@
     <string name="term_history_title">Rückblick</string>
     <string name="term_history_body">Von der aktuellen Ansicht nach rechts wischen zeigt „Heute bisher“, „Gestern“ und „Vorgestern“.\n\nIn Deutschland sind die Werte Messungen der nächsten DWD-Wetterstation (über Bright Sky). Daneben zeigt die App, was das gewählte Wettermodell für dieselben Stunden vorhergesagt hatte – so sieht man, wie gut die Vorhersage war. Die mittlere Abweichung ist der durchschnittliche Unterschied zwischen vorhergesagter und gemessener Temperatur, Stunde für Stunde.\n\nAußerhalb Deutschlands oder ohne Station in der Nähe gibt es nur die Modellwerte.\n\nDie Daten werden beim Wischen geladen und nicht dauerhaft gespeichert; es ist immer der aktuelle Stand der Quellen.</string>
 
-    <string name="history_dry_day">Kein Niederschlag – weder gemessen noch vorhergesagt.</string>
 
-    <string name="history_dry_day_model">Kein Niederschlag in den Vorhersagewerten.</string>
 
     <string name="meteogram_hint">Lange auf das Diagramm drücken zeigt die Werte jeder Stunde</string>
 

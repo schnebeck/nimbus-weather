@@ -38,7 +38,7 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * The radar on the map is one picture of the view (a MapLibre image source), computed from the
  * [RadarStore]: per time step the view's frame ([RadarField.extract]), between two steps the
- * motion ([RadarField.motion]) – so playback moves the rain smoothly instead of jumping from step
+ * motion ([RadarMotion.motion]) – so playback moves the rain smoothly instead of jumping from step
  * to step. Panning within the picture's margin and zooming a little need nothing new; beyond
  * that the frames are cut again from the store (no download).
  */
@@ -323,15 +323,15 @@ class RadarPlayer(
         // Moving the rain only across short gaps; wider ones (finer steps still loading) are
         // blended in place – a motion guessed over an hour shifted showers to wrong places
         val (move, t) = if (fb != null) Progressive.blend(fb.time - fa.time, tSpan) else (true to 0f)
-        val flow = if (b != null && fb != null && t > 0.002f && !move) Flow.still()
-        else if (b != null && fb != null && t > 0.002f) {
-            val k = fa.id + ">" + fb.id
-            flows.getOrPut(k) {
+        val flow = when {
+            fb == null || b == null || t <= 0.002f -> null
+            !move -> Flow.still()
+            else -> flows.getOrPut(fa.id + ">" + fb.id) {
                 // fast showers move up to ~150 km/h
                 val hours = (fb.time - fa.time) / 3_600_000.0
-                RadarField.motion(a, b, g.w, g.h, (150 * hours / g.pxKm).toFloat().coerceAtLeast(2f))
+                RadarMotion.motion(a, b, g.w, g.h, (150 * hours / g.pxKm).toFloat().coerceAtLeast(2f))
             }
-        } else null
+        }
         // While the rain moves: half the resolution (four times as fast); standing still: all of it
         val step = if (flow != null) 2 else 1
         val ow = (g.w + step - 1) / step; val oh = (g.h + step - 1) / step

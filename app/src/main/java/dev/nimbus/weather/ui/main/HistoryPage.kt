@@ -1,6 +1,7 @@
 /*
  * Nimbus - app/src/main/java/dev/nimbus/weather/ui/main/HistoryPage.kt
- * The look back: measured values of the past days compared with the forecast.
+ * The look back: measured values of the past days compared with the forecast – the page with
+ * its header, its sky in the day's parts and its cards.
  *
  *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
  *   Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
@@ -19,13 +20,10 @@ package dev.nimbus.weather.ui.main
 
 import dev.nimbus.weather.ui.components.statusBarsStable
 import androidx.compose.ui.draw.alpha
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.material.icons.outlined.Map
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,30 +41,19 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Thermostat
-import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -85,21 +72,13 @@ import dev.nimbus.weather.data.model.ForecastModel
 import dev.nimbus.weather.data.model.Place
 import dev.nimbus.weather.data.model.Settings
 import dev.nimbus.weather.data.remote.DaySummary
-import dev.nimbus.weather.data.remote.History
 import dev.nimbus.weather.data.remote.HistoryDay
 import dev.nimbus.weather.ui.PlaceState
 import dev.nimbus.weather.ui.background.SkyScene
 import dev.nimbus.weather.ui.background.WeatherBackground
 import dev.nimbus.weather.ui.components.GlassCard
-import dev.nimbus.weather.ui.components.HairlineDivider
-import dev.nimbus.weather.ui.components.Term
-import dev.nimbus.weather.ui.components.WeatherIcon
 import dev.nimbus.weather.ui.theme.NimbusColors
-import dev.nimbus.weather.util.NBSP
-import dev.nimbus.weather.util.Texts
 import dev.nimbus.weather.util.TimeFormat
-import dev.nimbus.weather.util.Units
-
 
 fun modelName(m: ForecastModel) = m.part?.name ?: when (m) {
     ForecastModel.DWD_ICON -> "DWD ICON"
@@ -124,11 +103,11 @@ fun HistoryPage(
     val context = LocalContext.current
     val history = state?.history
     val day = history?.days?.getOrNull(dayIndex)
-    val summary = remember(day) { day?.takeIf { it.hours.isNotEmpty() }?.let { DaySummary.of(it, history?.fetchedAt ?: Long.MAX_VALUE) } }
+    val summary = remember(day) { day?.takeIf { it.hours.isNotEmpty() }?.let { DaySummary.of(it, history.fetchedAt) } }
     val tf = remember(history?.zone) { TimeFormat(history?.zone?.id ?: (state?.data?.timezone ?: "UTC"), DateFormat.is24HourFormat(context)) }
     // The day in parts (early … night), growing in the course of today
     val parts = remember(day, history?.fetchedAt) {
-        if (day == null || history == null) emptyList() else dev.nimbus.weather.data.remote.DayParts.of(day, history.zone, history.fetchedAt)
+        if (day == null) emptyList() else dev.nimbus.weather.data.remote.DayParts.of(day, history.zone, history.fetchedAt)
     }
     // The sky shows the parts one after the other, every 5 s – the row of the table it shows is lit
     var shown by remember(parts) { androidx.compose.runtime.mutableIntStateOf(parts.lastIndex.coerceAtLeast(0)) }
@@ -155,7 +134,7 @@ fun HistoryPage(
     // each part in its weather and in the light of its time of day (the middle of the part)
     val skies = remember(sky, parts, day?.date) {
         parts.map { p ->
-            val mid = day!!.date.atStartOfDay(history!!.zone).toInstant().toEpochMilli() + (p.part.from + p.part.to) * 1_800_000L
+            val mid = day!!.date.atStartOfDay(history.zone).toInstant().toEpochMilli() + (p.part.from + p.part.to) * 1_800_000L
             SkyScene.atTime(sky.copy(condition = p.condition), mid, place.latitude, place.longitude)
         }.ifEmpty { listOf(sky) }
     }
@@ -294,108 +273,6 @@ private fun HistoryHeader(
     }
 }
 
-/** How long the sky shows each part of the day. */
-private const val PART_SHOW_MS = 5_000L
-
-/**
- * The day in parts as a table of three columns and two rows – early, morning, forenoon above,
- * afternoon, evening, night below –, each with its name, symbol and weather, for the parts that
- * have begun; the part the sky shows now is lit, the others dimmed. One font size for all cells,
- * small enough (on narrow phones, with a large system font) that the longest single word
- * ("Überwiegend", "Nachmittags") fits its column: lines break between words only, never inside one.
- */
-@Composable
-internal fun DayPartsTable(parts: List<dev.nimbus.weather.data.remote.DayPartWeather>, shown: Int, halo: androidx.compose.ui.text.TextStyle) {
-    val labels = parts.map { stringResource(dayPartLabel(it.part)) }
-    val weathers = parts.map { stringResource(Texts.condition(it.condition, it.isDay)) }
-    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
-    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val column = minOf(maxWidth / PART_COLUMNS, 120.dp) - 4.dp
-        val density = androidx.compose.ui.platform.LocalDensity.current
-        val columnPx = with(density) { column.toPx() }
-        // the largest size (up to [max]) at which the widest of [words] fits the column: scaled,
-        // then measured again and stepped down – small sizes do not scale exactly (glyphs snap to pixels)
-        fun fit(words: List<String>, max: androidx.compose.ui.unit.TextUnit, weight: FontWeight): androidx.compose.ui.unit.TextUnit {
-            // with the density of now (the measurer keeps the one it was made with)
-            fun widest(size: Float) = words.maxOfOrNull { w ->
-                measurer.measure(w, halo.copy(fontSize = size.sp, fontWeight = weight), softWrap = false, density = density).size.width
-            } ?: 0
-            var size = max.value
-            val first = widest(size)
-            if (first <= columnPx) return max
-            size *= columnPx / first
-            while (size > 6f && widest(size) > columnPx) size -= 0.25f
-            return size.sp
-        }
-        // keyed by the density too: a larger system font needs a smaller size
-        val labelSize = remember(labels, columnPx, density) { fit(labels, 13.sp, FontWeight.Normal) }
-        val weatherSize = remember(weathers, columnPx, density) { fit(weathers.flatMap { it.split(' ') }, 13.sp, FontWeight.Medium) }
-        // a fixed grid: a row not full yet (the afternoon alone at 13:00) starts in the first column
-        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            parts.indices.chunked(PART_COLUMNS).forEach { row ->
-                Row(Modifier.width((column + 4.dp) * PART_COLUMNS)) {
-                    row.forEach { i -> DayPartCell(parts[i], labels[i], weathers[i], i == shown, column, labelSize, weatherSize, halo) }
-                }
-            }
-        }
-    }
-}
-
-/** One part of the day: name, symbol, weather (always two lines, so the rows keep their height). */
-@Composable
-private fun DayPartCell(
-    p: dev.nimbus.weather.data.remote.DayPartWeather, label: String, weather: String, lit: Boolean,
-    column: androidx.compose.ui.unit.Dp, labelSize: androidx.compose.ui.unit.TextUnit, weatherSize: androidx.compose.ui.unit.TextUnit,
-    halo: androidx.compose.ui.text.TextStyle,
-) {
-    // Every cell in full white on the glass pill of the station line – as opaque as the brightest
-    // sky behind needs (on the bare sky "Früh / Nebel" vanished on a white cloud); the part the sky
-    // shows on a darker glass with a white rim
-    val pill = dev.nimbus.weather.ui.components.LocalHeaderStyle.current.pill
-    val ground by androidx.compose.animation.animateColorAsState(dayPartGround(pill, lit), androidx.compose.animation.core.tween(600), label = "lit")
-    val rim by androidx.compose.animation.animateColorAsState(if (lit) LitRim else LitRim.copy(alpha = 0f), androidx.compose.animation.core.tween(600), label = "rim")
-    Column(
-        Modifier.width(column + 4.dp).padding(horizontal = 2.dp).clip(RoundedCornerShape(12.dp)).background(ground)
-            .border(1.5.dp, rim, RoundedCornerShape(12.dp)).padding(vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(label, fontSize = labelSize, color = Color.White, style = halo, maxLines = 1, softWrap = false)
-        Spacer(Modifier.height(2.dp))
-        WeatherIcon(p.condition, p.isDay, size = 34.dp)
-        Spacer(Modifier.height(2.dp))
-        Text(
-            weather, fontSize = weatherSize, lineHeight = weatherSize * 1.2f, color = Color.White, style = halo,
-            fontWeight = if (lit) FontWeight.Medium else FontWeight.Normal,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center, minLines = 2, maxLines = 2,
-        )
-    }
-}
-
-/**
- * The glass behind a cell of the day parts: every cell at least the station line's [pill] (the
- * contrast its small text needs on the brightest sky behind), the one the sky shows darker.
- */
-internal fun dayPartGround(pill: Color, lit: Boolean): Color =
-    if (lit) pill.copy(alpha = (pill.alpha + LIT_EXTRA).coerceAtMost(1f)) else pill
-
-/** How much darker the glass of the part the sky shows is. */
-private const val LIT_EXTRA = 0.3f
-
-/** The rim of the part the sky shows. */
-private val LitRim = Color(0xD9FFFFFF)
-
-/** Columns of the day-parts table: two rows of three. */
-private const val PART_COLUMNS = 3
-
-private fun dayPartLabel(p: dev.nimbus.weather.data.remote.DayPart) = when (p) {
-    dev.nimbus.weather.data.remote.DayPart.EARLY -> R.string.day_part_early
-    dev.nimbus.weather.data.remote.DayPart.MORNING -> R.string.day_part_morning
-    dev.nimbus.weather.data.remote.DayPart.FORENOON -> R.string.day_part_forenoon
-    dev.nimbus.weather.data.remote.DayPart.AFTERNOON -> R.string.day_part_afternoon
-    dev.nimbus.weather.data.remote.DayPart.EVENING -> R.string.day_part_evening
-    dev.nimbus.weather.data.remote.DayPart.NIGHT -> R.string.day_part_night
-}
-
 @Composable
 private fun HistoryMessage(text: String, onRetry: (() -> Unit)?) {
     GlassCard {
@@ -409,121 +286,5 @@ private fun HistoryMessage(text: String, onRetry: (() -> Unit)?) {
     }
 }
 
-@Composable
-private fun SummaryCard(sum: DaySummary, history: History, settings: Settings, tf: TimeFormat) {
-    val t = { v: Double? -> Units.temp(v, settings.temperatureUnit) }
-    val pUnit = stringResource(Texts.precipUnit(settings.precipitationUnit))
-    val wUnit = stringResource(Texts.windUnit(settings.windUnit))
-    val p = { v: Double? -> Units.precipitationNumber(v, settings.precipitationUnit) + NBSP + pUnit }
-    val model = stringResource(R.string.history_model_value, "")
-    GlassCard(title = stringResource(R.string.history_summary), icon = Icons.Outlined.History, info = Term.HISTORY) {
-        SummaryRow(
-            stringResource(R.string.history_row_temp) to stringResource(R.string.history_row_temp_short), "${t(sum.tempMax)} / ${t(sum.tempMin)}",
-            if (sum.measured && sum.modelTempMax != null) model + "${t(sum.modelTempMax)} / ${t(sum.modelTempMin)}" else null,
-        )
-        HairlineDivider(Modifier.padding(vertical = 6.dp))
-        SummaryRow(
-            stringResource(R.string.precipitation) to stringResource(R.string.precipitation_short), p(sum.precipitation),
-            if (sum.measured && sum.modelPrecipitation != null) model + p(sum.modelPrecipitation) else null,
-        )
-        sum.sunshineHours?.let {
-            HairlineDivider(Modifier.padding(vertical = 6.dp))
-            SummaryRow(stringResource(R.string.history_row_sun) to stringResource(R.string.history_row_sun_short), hoursMinutes(it * 60.0), null)
-        }
-        sum.maxGust?.let { g ->
-            HairlineDivider(Modifier.padding(vertical = 6.dp))
-            SummaryRow(
-                stringResource(R.string.history_row_gust) to stringResource(R.string.history_row_gust_short), Units.windNumber(g, settings.windUnit) + NBSP + wUnit,
-                sum.maxGustAt?.let { stringResource(R.string.history_at, tf.time(it)) },
-            )
-        }
-        Spacer(Modifier.height(8.dp))
-        // the model the look-back came from (outside its area a regional one gives way to the best match)
-        val model = modelName(ForecastModel.entries.firstOrNull { it.openMeteoId == history.modelId } ?: settings.model)
-        Text(
-            if (history.stationName != null && sum.measured) stringResource(
-                R.string.history_source_station, history.stationName,
-                Units.oneDecimal(history.stationDistanceKm ?: 0.0), model,
-            ) else if (history.stationName != null) stringResource(R.string.history_source_pending, history.stationName, model)
-            else stringResource(R.string.history_source_model, model),
-            fontSize = 11.sp, color = NimbusColors.Tertiary, lineHeight = 14.sp,
-        )
-    }
-}
-
-@Composable
-private fun SummaryRow(label: Pair<String, String>, value: String, secondary: String?) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        // the label in full, or abbreviated where it does not fit beside the value ("Niederschl.")
-        dev.nimbus.weather.ui.components.FitText(
-            label.first, label.second, Modifier.weight(1f).padding(end = 8.dp),
-            androidx.compose.ui.text.TextStyle(fontSize = 15.sp, color = NimbusColors.Secondary),
-        )
-        Column(horizontalAlignment = Alignment.End) {
-            Text(value, fontSize = 17.sp, fontWeight = FontWeight.Medium, color = Color.White)
-            if (secondary != null) Text(secondary, fontSize = 12.sp, color = NimbusColors.Tertiary)
-        }
-    }
-}
-
-/** The day as meteogram: measurement (temperature colours) against forecast (white, dashed), plus precipitation and wind. */
-@Composable
-private fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, tf: TimeFormat, history: dev.nimbus.weather.data.remote.History, place: Place) {
-    val start = day.date.atStartOfDay(tf.zone).toInstant().toEpochMilli()
-    val points = remember(day, history) { history.lookBackPoints(day, start) }
-    // The curves in the finest resolution there is: station reports every 10 minutes (SYNOP, about
-    // the last 1½ days), the model every 15 minutes; hourly values where there are no finer ones
-    val curves = remember(day, history) {
-        val from = start - 3_600_000L; val to = start + 25 * 3_600_000L
-        fun fine(m: Map<Long, Double>, step: Long) = m.filterKeys { it in from..to }.map { (t, v) -> CurvePoint(t, v, step) }
-        val measured = Curve.merge(
-            fine(history.fineMeasured, 10 * 60_000L),
-            history.chartHours(start).mapNotNull { h -> h.measured?.temperature?.let { CurvePoint(h.time, it) } },
-        )
-        val model = Curve.merge(
-            fine(history.fineModel, 15 * 60_000L),
-            history.chartHours(start).mapNotNull { h -> h.model?.temperature?.let { CurvePoint(h.time, it) } },
-        )
-        measured to model
-    }
-    GlassCard(title = stringResource(R.string.history_course), icon = Icons.Outlined.Thermostat) {
-        Meteogram(
-            points, start, start + 24 * 3_600_000L,
-            remember(start) { nights(start, HourAxis.dayAxisEnd(start + 24 * 3_600_000L), place.latitude, place.longitude) }, System.currentTimeMillis(),
-            Modifier.fillMaxWidth().bleed(CARD_BLEED),
-            curve = curves.first, forecastCurve = curves.second,
-            // "today so far": the line at the time now (the other days do not hold it)
-            showNow = true,
-            // precipitation in the same card: in the temperature chart or as a chart of its own
-            separatePrecip = settings.separatePrecipitation,
-            // the result first, then what the lines and bars mean; the press hint ends the card
-            summary = sum.tempError?.let { err ->
-                {
-                    Text(
-                        stringResource(
-                            R.string.history_error_mean,
-                            Units.oneDecimal(err) + (if (settings.temperatureUnit == dev.nimbus.weather.data.model.TemperatureUnit.CELSIUS) "${NBSP}K" else "${NBSP}°F"),
-                        ),
-                        fontSize = 13.sp, color = Color.White, modifier = Modifier.padding(top = 6.dp),
-                    )
-                }
-            },
-        )
-    }
-}
-
-/** Entry to the radar of the shown day (look-back). */
-@Composable
-private fun RadarDayCard(dayStart: Long, tf: TimeFormat, onOpen: () -> Unit) {
-    dev.nimbus.weather.ui.components.GlassCard(
-        title = stringResource(R.string.history_radar_title), icon = Icons.Outlined.Map, onClick = onOpen,
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.history_radar_text, tf.weekdayLong(dayStart)), fontSize = 15.sp, color = Color.White, lineHeight = 20.sp)
-                Text(stringResource(R.string.history_radar_hint), fontSize = 12.sp, color = NimbusColors.Secondary, lineHeight = 16.sp)
-            }
-            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = NimbusColors.Secondary)
-        }
-    }
-}
+/** How long the sky shows each part of the day. */
+private const val PART_SHOW_MS = 5_000L

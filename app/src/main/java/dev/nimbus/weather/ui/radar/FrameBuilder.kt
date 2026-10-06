@@ -69,7 +69,7 @@ class FrameBuilder(
         val b = rvField(p.after)
         val flow = rvFlows.getOrPut("${p.before}>${p.after}") {
             // fast showers move up to ~150 km/h (as playback looks for)
-            RadarField.motion(a, b, g.w, g.h, (150 * p.gapMs / 3_600_000.0 / g.pxKm).toFloat().coerceAtLeast(2f))
+            RadarMotion.motion(a, b, g.w, g.h, (150 * p.gapMs / 3_600_000.0 / g.pxKm).toFloat().coerceAtLeast(2f))
         }
         return RvBetween.between(a, b, flow, p.t, g.w, g.h)
     }

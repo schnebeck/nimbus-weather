@@ -1,0 +1,1 @@
+• Radar: under load (a busy phone) the radar loop could fail to load at all on opening – when the time steps came before the map area, no download started. Now loading begins as soon as both are there.

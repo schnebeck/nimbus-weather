@@ -202,6 +202,9 @@ class RadarPlayer(
     private fun restartDownloader() {
         val tl = timeline ?: return
         downloader?.cancel()
+        // no picture area yet: nothing to download – the area starts it ([setView]); started
+        // without one, the downloader passed every step by and ended, and the area started none
+        if (geo == null) { downloader = null; return }
         failed.clear()
         downloader = scope.launch(Dispatchers.Default) {
             withContext(Dispatchers.IO) {

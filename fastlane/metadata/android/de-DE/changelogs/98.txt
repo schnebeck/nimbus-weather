@@ -1,0 +1,1 @@
+• Radar: Unter Last (beschäftigtes Handy) konnte die Radarschleife beim Öffnen gar nicht laden – kamen die Zeitschritte vor dem Kartenausschnitt an, startete kein Download. Jetzt beginnt das Laden, sobald beides da ist.

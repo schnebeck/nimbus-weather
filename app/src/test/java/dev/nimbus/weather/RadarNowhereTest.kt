@@ -103,4 +103,22 @@ class RadarNowhereTest {
             }
         } finally { first.cancel(); second.cancel() }
     }
+
+    /**
+     * The time line before the picture area (the screen's two effects in either order): the
+     * downloader, started without an area, ran through every step with nothing to do and ended –
+     * the area that came then started none, and no step was ever loaded.
+     */
+    @Test fun theTimeLineBeforeItsAreaStillLoads() {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        try {
+            val t0 = latest - 4 * 24 * 3_600_000L    // steps of their own
+            val tl = RadarTimeline((-24..0).map { k -> RadarFrame(t0 + k * step, false, null, null) }, 24, "")
+            val p = RadarPlayer(scope, offline, maxSide = 128)
+            p.setTimeline(tl)
+            Thread.sleep(500)                         // the downloader has run without an area
+            p.setView(51.9, 52.9, 8.7, 10.7, 1080)
+            waitFor("all steps after the area came") { tl.frames.indices.all { p.isLoaded(it) } }
+        } finally { scope.cancel() }
+    }
 }

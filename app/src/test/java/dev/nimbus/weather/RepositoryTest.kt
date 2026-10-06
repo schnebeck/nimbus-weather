@@ -205,12 +205,13 @@ class RepositoryTest {
         assertTrue(dev.nimbus.weather.data.model.DataPart.FORECAST !in core!!.stale)
     }
 
+    /** Only the forecast due: the extras are not asked for and keep their values with their own times. */
     @Test
-    fun `the background refresh asks the forecast only and keeps the extras`() = runTest {
+    fun `only the forecast due asks the forecast only and keeps the extras`() = runTest {
         val first = repo(fixtureNow).load(berlin, Settings(), german = true)
         synchronized(requested) { requested.clear() }
         val later = fixtureNow + 3_600_000L
-        val bg = repo(later).load(berlin, Settings(), german = true, previous = first, extras = false)
+        val bg = repo(later).load(berlin, Settings(), german = true, previous = first, refresh = setOf(dev.nimbus.weather.data.model.DataPart.FORECAST))
         // forecast, station and warnings – nothing else
         assertTrue(requested.toString(), requested.none { it.startsWith("/airrohr") || it.startsWith("/v1/air-quality") || it.startsWith("/pollen") || it.startsWith("/wms") })
         assertTrue(requested.any { it.startsWith("/v1/forecast") })

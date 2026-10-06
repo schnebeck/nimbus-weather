@@ -106,4 +106,26 @@ class OpenMeteoParserTest {
         assertEquals("bad", ex?.message)
         assertNull(runCatching { OpenMeteoSource.parseForecast(err) }.getOrNull())
     }
+
+    /**
+     * The chance of a day with the clock change (25 hours, 25 Oct.): its last hour counts to it –
+     * a day ends where the next begins, not 24 hours after it began.
+     */
+    @Test
+    fun `the chance of the day the clock goes back`() {
+        val zone = java.time.ZoneId.of("Europe/Berlin")
+        val d1 = java.time.LocalDate.of(2026, 10, 25).atStartOfDay(zone).toInstant().toEpochMilli()
+        val d2 = java.time.LocalDate.of(2026, 10, 26).atStartOfDay(zone).toInstant().toEpochMilli()
+        val h = 3_600_000L
+        val hours = (0 until 25).map { k ->
+            dev.nimbus.weather.data.model.HourlyPoint(d1 + k * h, 10.0, condition = dev.nimbus.weather.data.model.Condition.CLOUDY, isDay = true)
+        }
+        fun day(t: Long) = dev.nimbus.weather.data.model.DailyPoint(t, dev.nimbus.weather.data.model.Condition.CLOUDY, 12.0, 8.0)
+        val f = dev.nimbus.weather.data.remote.ModelForecast("Europe/Berlin", 3600, null, hours, listOf(day(d1), day(d2)), emptyList())
+        // 23:00–24:00 of the 25th: 25 hours after its midnight minus one
+        val last = d2 - h
+        assertEquals(24 * h, last - d1)
+        val merged = OpenMeteoSource.withChance(f, hours.associate { it.time to if (it.time == last) 90.0 else 10.0 })
+        assertEquals(90.0, merged.daily[0].precipitationProbability!!, 1e-9)
+    }
 }

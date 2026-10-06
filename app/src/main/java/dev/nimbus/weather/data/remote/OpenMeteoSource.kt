@@ -243,18 +243,17 @@ class OpenMeteoSource(
 
         /**
          * Replaces the chance of precipitation where [chance] has a value, and recomputes the daily
-         * maximum from the hours, so hourly and daily view agree.
+         * maximum from the hours, so hourly and daily view agree. A day ends where the next begins:
+         * the days of the clock change have 23 and 25 hours.
          */
         fun withChance(f: ModelForecast, chance: Map<Long, Double>): ModelForecast {
             if (chance.isEmpty()) return f
             val hourly = f.hourly.map { h -> chance[h.time]?.let { h.copy(precipitationProbability = it) } ?: h }
-            val daily = f.daily.map { d ->
-                val covered = hourly.filter { it.time >= d.date && it.time < d.date + 24 * 3_600_000L && chance.containsKey(it.time) }
-                if (covered.isEmpty()) d
-                else {
-                    val all = hourly.filter { it.time >= d.date && it.time < d.date + 24 * 3_600_000L }.mapNotNull { it.precipitationProbability }
-                    d.copy(precipitationProbability = all.maxOrNull() ?: d.precipitationProbability)
-                }
+            val daily = f.daily.mapIndexed { i, d ->
+                val end = f.daily.getOrNull(i + 1)?.date ?: (d.date + 24 * HOUR_MS)
+                val hours = hourly.filter { it.time >= d.date && it.time < end }
+                if (hours.none { chance.containsKey(it.time) }) d
+                else d.copy(precipitationProbability = hours.mapNotNull { it.precipitationProbability }.maxOrNull() ?: d.precipitationProbability)
             }
             return f.copy(hourly = hourly, daily = daily)
         }

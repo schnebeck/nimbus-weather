@@ -1,0 +1,3 @@
+• Battery: radar and look-back no longer work on behind the lock screen (the radar asked for new pictures every minute, the look-back changed its sky every 5 s) – timers run only while Nimbus is shown
+• Day of the clock change: the day's chance of precipitation counts its last hour too
+• Leftovers of the removed background refresh are gone

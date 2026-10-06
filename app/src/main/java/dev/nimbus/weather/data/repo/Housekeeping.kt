@@ -84,8 +84,7 @@ object Housekeeping {
     fun due(last: Long, now: Long): Boolean = now - last >= SWEEP_EVERY_MS
 
     /**
-     * Sweeps when one is due (at most once a day): on the app's start and in the hourly
-     * background refresh. Call off the main thread.
+     * Sweeps when one is due (at most once a day): on the app's start. Call off the main thread.
      */
     fun runIfDue(context: Context, placeIds: Collection<String>, now: Long = System.currentTimeMillis()) {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)

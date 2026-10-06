@@ -132,8 +132,9 @@ fun HistoryPage(
     }
     // The sky shows the parts one after the other, every 5 s – the row of the table it shows is lit
     var shown by remember(parts) { androidx.compose.runtime.mutableIntStateOf(parts.lastIndex.coerceAtLeast(0)) }
-    LaunchedEffect(parts, isActive) {
-        if (!isActive || parts.size < 2) return@LaunchedEffect
+    // (while the app is shown: behind the lock screen it went on every 5 s)
+    dev.nimbus.weather.ui.components.LaunchedWhileShown(parts, isActive) {
+        if (!isActive || parts.size < 2) return@LaunchedWhileShown
         while (true) {
             kotlinx.coroutines.delay(PART_SHOW_MS)
             shown = (shown + 1) % parts.size

@@ -17,6 +17,7 @@
 
 package dev.nimbus.weather.ui.radar
 
+import dev.nimbus.weather.ui.components.LaunchedWhileShown
 import dev.nimbus.weather.ui.components.statusBarsStable
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -373,14 +374,14 @@ fun RadarScreen(
     LaunchedEffect(frame, timeline) {
         timeline?.let { tl -> overlays.update(tl.frames[frame.coerceIn(0, tl.frames.lastIndex)].time) }
     }
-    // Live radar left open: once a minute (while the screen is visible) ask the DWD for its newest
-    // analysis; when it starts a new step of the loop (10 minutes in the 2-hour range), the time
-    // line is rebuilt – playback goes on, the frames already loaded come from the cache.
-    LaunchedEffect(range, styleReady, archive) {
-        if (archive || !styleReady) return@LaunchedEffect
+    // Live radar left open: once a minute (while the app is shown – behind the lock screen it slept
+    // through every minute) ask the DWD for its newest analysis; when it starts a new step of the
+    // loop (10 minutes in the 2-hour range), the time line is rebuilt – playback goes on, the frames
+    // already loaded come from the cache.
+    LaunchedWhileShown(range, styleReady, archive) {
+        if (archive || !styleReady) return@LaunchedWhileShown
         while (true) {
             delay(RADAR_REFRESH_CHECK_MS)
-            if (!lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) continue
             val tl = timeline ?: continue
             val latest = RadarLatest.check(container.http, anchor) ?: continue
             val shown = tl.frames[tl.nowIndex].time

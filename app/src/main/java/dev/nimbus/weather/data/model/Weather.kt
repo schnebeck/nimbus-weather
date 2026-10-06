@@ -170,8 +170,8 @@ data class WeatherData(
     /**
      * When each part was fetched – each has its own shelf life ([dev.nimbus.weather.data.repo.Freshness.lifeMs]).
      * The forecast missing here (data stored before) counts as fetched at [fetchedAt]; an extra
-     * missing here is of unknown age: expired (stored before, the background refresh had kept the
-     * extras of an earlier time under a newer [fetchedAt]).
+     * missing here is of unknown age: expired (stored by an earlier version, whose background
+     * refresh kept the extras of an earlier time under a newer [fetchedAt]).
      */
     val partsAt: Map<DataPart, Long> = emptyMap(),
 ) {

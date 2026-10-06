@@ -69,10 +69,8 @@ class WeatherRepository(
     suspend fun load(
         place: Place, settings: Settings, german: Boolean,
         previous: WeatherData? = null,
-        /** False (the hourly background refresh): the core only – the extras keep [previous]'s with their own times. */
-        extras: Boolean = true,
         /**
-         * The extras to load anew – the ones past their shelf life ([Freshness.dueParts]); the
+         * The extras to load anew – the ones past their shelf life ([Shelf.due]); the
          * others keep [previous]'s values and times, nothing is asked for them.
          */
         refresh: Set<DataPart> = DataPart.entries.toSet(),
@@ -121,10 +119,9 @@ class WeatherRepository(
         // The extras: each an answer (its value may be "nothing here") – or null when it failed or
         // took too long; then the place's last value stays (a refresh does not empty a card).
         // Only the ones asked for: a part still current keeps its value and is not asked again.
-        val wanted = if (extras) refresh else emptySet()
-        val aqJob = async { if (DataPart.AIR_QUALITY !in wanted) null else fetch(SOURCE_TIMEOUT_MS, "air quality") { openMeteo.airQuality(lat, lon) } }
+        val aqJob = async { if (DataPart.AIR_QUALITY !in refresh) null else fetch(SOURCE_TIMEOUT_MS, "air quality") { openMeteo.airQuality(lat, lon) } }
         val communityJob = async {
-            if (DataPart.COMMUNITY !in wanted) null
+            if (DataPart.COMMUNITY !in refresh) null
             else if (!settings.shows(dev.nimbus.weather.data.model.WeatherCard.COMMUNITY)) Fetched(null)
             else {
                 // the sensors at the place's height: the forecast knows it
@@ -132,21 +129,21 @@ class WeatherRepository(
                 fetch(SOURCE_TIMEOUT_MS, "citizen sensors") { community.nearby(lat, lon, elevation) }
             }
         }
-        val pollenJob = async { if (DataPart.POLLEN !in wanted) null else fetch(SOURCE_TIMEOUT_MS, "pollen") { pollen.forecast(lat, lon, inDwdArea) } }
+        val pollenJob = async { if (DataPart.POLLEN !in refresh) null else fetch(SOURCE_TIMEOUT_MS, "pollen") { pollen.forecast(lat, lon, inDwdArea) } }
         // Water levels and state flood alerts (Germany). Optional – never fail the forecast.
         val gaugeJob = async {
-            if (DataPart.GAUGES !in wanted) null
+            if (DataPart.GAUGES !in refresh) null
             else if (gauges == null || !inDwdArea || !settings.shows(dev.nimbus.weather.data.model.WeatherCard.GAUGES)) Fetched(emptyList())
             else fetch(SOURCE_TIMEOUT_MS, "gauges") { gauges.nearby(lat, lon) }
         }
         // Bathing waters (EEA, Europe-wide) – only when the card is shown; optional like the gauges
         val bathingJob = async {
-            if (DataPart.BATHING !in wanted) null
+            if (DataPart.BATHING !in refresh) null
             else if (bathing == null || !settings.shows(dev.nimbus.weather.data.model.WeatherCard.BATHING)) Fetched(emptyList())
             else fetch(SOURCE_TIMEOUT_MS, "bathing waters") { bathing.nearby(lat, lon, settings.bathingRadiusKm, settings.bathingFavorites) }
         }
         val floodJob = async {
-            if (DataPart.FLOOD !in wanted) null
+            if (DataPart.FLOOD !in refresh) null
             else if (gauges?.lhp == null || !inDwdArea) Fetched(emptyList())
             else fetch(SOURCE_TIMEOUT_MS, "flood alerts") { gauges.lhp.alerts(lat, lon) }
         }
@@ -232,7 +229,7 @@ class WeatherRepository(
             put(DataPart.FORECAST, coreAt)
             for (part in DataPart.entries - DataPart.FORECAST) (arrivedAt[part] ?: keep?.fetchedAt(part))?.let { put(part, it) }
         }
-        val asked = wanted - DataPart.FORECAST
+        val asked = refresh - DataPart.FORECAST
         onProgress(
             data(
                 keep?.airQuality, keep?.community, keep?.pollen, keep?.gauges.orEmpty(), keep?.bathing.orEmpty(),
@@ -282,7 +279,7 @@ class WeatherRepository(
                         if (dev.nimbus.weather.BuildConfig.DEBUG) {
                             android.util.Log.d("NimbusLoad", "$part ${if (r == null) "old value" else "new"} after ${(System.nanoTime() - started) / 1_000_000} ms")
                         }
-                        if (extras) onProgress(snapshot())
+                        onProgress(snapshot())
                     }
                 }
             }

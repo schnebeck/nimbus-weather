@@ -1,0 +1,3 @@
+• Akku: Radar und Rückblick arbeiten hinter dem Sperrbildschirm nicht mehr weiter (das Radar fragte jede Minute nach neuen Bildern, der Rückblick wechselte alle 5 s den Himmel) – Zeitgeber laufen nur, solange Nimbus zu sehen ist
+• Tag der Zeitumstellung: die Regenwahrscheinlichkeit des Tages zählt auch seine letzte Stunde
+• Reste der abgeschafften Hintergrund-Aktualisierung entfernt

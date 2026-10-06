@@ -254,10 +254,6 @@ class MainViewModel(
     private val german: Boolean
         get() = getApplication<Application>().resources.configuration.locales[0].language == Locale.GERMAN.language
 
-    /** Refreshes the radar cache of the shown place while the app is open (Wi-Fi only). */
-    private var radarTicker: kotlinx.coroutines.Job? = null
-
-
     /**
      * A record went out of date (its time was up, or a failed one is to be asked again): fetched
      * anew – while the app is in front; brought back, [onResume] fetches what went out of date.
@@ -289,15 +285,13 @@ class MainViewModel(
 
     fun onPause() {
         resumed = false
-        radarTicker?.cancel()
-        radarTicker = null
         whileShown.toList().forEach { it.cancel() }
     }
 
     fun onResume() {
         resumed = true
-        radarTicker?.cancel()
-        radarTicker = viewModelScope.launch {
+        // the radar cache of the shown place refreshed while the app is shown (Wi-Fi only)
+        launchWhileShown {
             while (true) {
                 kotlinx.coroutines.delay(RADAR_REFRESH_MS)
                 val st = _state.value
@@ -308,20 +302,9 @@ class MainViewModel(
         if (!_state.value.initialized) return
         // what went out of date while the app was away: at once, before anything is fetched
         shelf.checkAll()
-        viewModelScope.launch {
-            // Take over what the hourly background refresh stored in the meantime.
-            _state.value.pages.forEach { p ->
-                val cached = store.cachedWeather(p.id) ?: return@forEach
-                val current = _state.value.states[p.id]?.data
-                if (current == null || cached.fetchedAt > current.fetchedAt) {
-                    updatePlace(p.id) { it.copy(data = cached) }
-                    shelf.take(cached)
-                }
-            }
-            // the position only while "my location" is shown (the first one always: it makes the place)
-            if (_state.value.currentPlace == null || locationWanted(_state.value, sidebar)) refreshLocation()
-            refreshExpired()
-        }
+        // the position only while "my location" is shown (the first one always: it makes the place)
+        if (_state.value.currentPlace == null || locationWanted(_state.value, sidebar)) refreshLocation()
+        refreshExpired()
     }
 
     /**
@@ -630,6 +613,9 @@ class MainViewModel(
     fun removePlace(place: Place) {
         // a load still running would bring its weather back (a copy discarded right after it was made)
         jobs.remove(place.id)?.cancel()
+        jobSpots.remove(place.id)
+        dueAfter.remove(place.id)
+        historyWaiting.remove(place.id)
         viewModelScope.launch {
             store.updatePlaces { list -> list.filterNot { it.id == place.id } }
             store.deleteCache(place.id)

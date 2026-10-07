@@ -33,8 +33,8 @@ und KNMI. Keine Werbung, kein Konto, keine Google-Dienste.
 <table>
   <tr>
     <td align="center" width="33%"><img src="docs/screenshots/main.png" width="240" alt="Wetterseite"><br><sub><b>Wetterseite</b><br>Messwerte der nächsten Wetterstation, Kurzvorhersage, Stunden und 10 Tage</sub></td>
-    <td align="center" width="33%"><img src="docs/screenshots/meteogram.png" width="240" alt="Meteogramm"><br><sub><b>Meteogramm</b><br>Temperatur, Regen, Sonnenschein und Wind je Stunde – mit Schieber</sub></td>
-    <td align="center" width="33%"><img src="docs/screenshots/history.png" width="240" alt="Rückblick"><br><sub><b>Rückblick</b><br>Was war gemessen, was war vorhergesagt? Einfach nach rechts wischen</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/meteogram.png" width="240" alt="Meteogramm"><br><sub><b>Meteogramm</b><br>Temperatur, Regen, Sonnenschein und Wind je Stunde – Erwartetes als Rahmen</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/history.png" width="240" alt="Rückblick"><br><sub><b>Rückblick</b><br>Gemessen gegen erwartet – Regen vom Radar, Sonne vom Satelliten über dem Ort</sub></td>
   </tr>
   <tr>
     <td align="center"><img src="docs/screenshots/radar.png" width="240" alt="Regenradar"><br><sub><b>Regenradar</b><br>DWD-Radar mit Vorhersage, Temperatur- und Windebene</sub></td>
@@ -85,10 +85,10 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   Nachtschattierung, Legende mit Tagessummen. Die 10-Minuten-Messwerte der Station als
   30-Minuten-Mittel, die Vorhersage schließt ohne Sprung an die letzte Messung an. Niederschlag wahlweise im Temperaturdiagramm oder als
   eigenes Diagramm darunter, mit der Wahrscheinlichkeit als Linie (auch im Rückblick). Langes Drücken
-  blendet einen Cursor mit allen Werten der Stunde ein, in den Spalten „gemessen | erwartet“. Gemessenes
+  blendet einen Cursor mit allen Werten der Stunde ein, in den Spalten „gemessen | erwartet“; an künftigen Tagen steht ohne Cursor die Übersicht des ganzen Tages. Gemessenes
   steht als gefüllter Balken, Erwartetes als Rahmen – Niederschlag violett, Sonne orange. Heute zeigen
   Meteogramm, Niederschlag und Luftdruck für die vergangenen Stunden die Messwerte, danach die
-  Vorhersage; eine Stunde ohne Messung bleibt leer, die Legende sagt „nicht gemessen“. Niederschlag
+  Vorhersage; eine Stunde, deren Messung noch unterwegs ist, zeigt bis dahin den Rahmen der Vorhersage, eine Stunde ohne Messung bleibt leer, die Legende sagt „nicht gemessen“. Niederschlag
   misst das DWD-Radar über dem Ort, Sonnenschein der Satellit – nicht eine Station 20–40 km entfernt
   ([docs/STATIONS.md](docs/STATIONS.md)); unter dem Diagramm steht, woher die Messungen stammen.
 - **Rückblick** per Wischen nach rechts: heute bisher, gestern, vorgestern – DWD-Messwerte im
@@ -269,8 +269,9 @@ Jede Datei trägt ihren Lizenzhinweis im Kopf oder in `REUSE.toml` (geprüft mit
   MET Norway), DWD, Copernicus, GeoSphere Austria, MeteoSwiss, DMI und KNMI unter CC BY 4.0, METAR
   (US-Regierung) gemeinfrei, Sensor.Community und Nominatim unter ODbL 1.0, Pegeldaten nach den
   Bedingungen ihrer Herausgeber – im Einzelnen in `REUSE.toml`
-- Screenshots in `docs/screenshots/`: CC BY 4.0, mit Wetter-, Radar- und Kartendaten von DWD,
-  Open-Meteo, RainViewer, OpenFreeMap, OpenMapTiles und OpenStreetMap-Mitwirkenden (ODbL)
+- Screenshots in `docs/screenshots/`: CC BY 4.0, mit Wetter-, Radar-, Satelliten- und Kartendaten von
+  DWD (Sonnenschein aus EUMETSAT-Daten), Open-Meteo, RainViewer, OpenFreeMap, OpenMapTiles und
+  OpenStreetMap-Mitwirkenden (ODbL)
 
 Idee, Entscheidungen und Tests: Thorsten Schnebeck. Geschrieben von Anthropic Claude Opus 5.5
 (KI-generierter Inhalt).

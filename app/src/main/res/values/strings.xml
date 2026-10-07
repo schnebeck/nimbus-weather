@@ -600,6 +600,9 @@
     <string name="readout_temperature">Temperature</string>
     <string name="readout_feels">Feels like</string>
     <string name="readout_chance">Chance</string>
+    <string name="readout_whole_day">Whole day</string>
+    <string name="readout_high">High</string>
+    <string name="readout_low">Low</string>
     <string name="readout_time">Time</string>
     <string name="radar_step_back">5 minutes back</string>
     <string name="radar_step_forward">5 minutes forward</string>

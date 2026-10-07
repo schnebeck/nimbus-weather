@@ -50,6 +50,7 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import dev.nimbus.weather.data.model.Condition
 import dev.nimbus.weather.data.model.Settings
 import dev.nimbus.weather.ui.main.CurvePoint
+import dev.nimbus.weather.ui.main.DayOverview
 import dev.nimbus.weather.ui.main.HourCompare
 import dev.nimbus.weather.ui.main.LocalSettings
 import dev.nimbus.weather.ui.main.LocalTimeFormat
@@ -284,6 +285,41 @@ class LookTest {
         // the bars stand in the chart below the temperature: under the chance line's top
         assertTrue("bars below the temperature chart", bitmap().barRow(separate = true) > chance.first())
         compose.onRoot().captureRoboImage("src/test/screenshots/meteogram_separate.png")
+    }
+
+    /**
+     * „Wenn ich in der 10-Tage-vorhersage nicht heute sondern morgen (oder einen anderen zukünfigen
+     * Tag) auswähle, dann wird mir eine Stundenvorhersage 11-12.00 Uhr angezeigt, aber heine
+     * Tagesvorhersage?!“ – a day to come shows its whole day until the cursor is set, the hour's
+     * values while it stands, the day again once it has faded; the card keeps its height.
+     */
+    @Test fun aDayToComeShowsTheWholeDayUntilTheCursor() {
+        val overview = DayOverview(Condition.RAIN, high = 18.0, low = 6.0, precipitation = 9.4, chance = 60.0, wind = 12.0, windDirection = 250.0, gust = 30.0, sunMinutes = 260.0, uv = 3.0)
+        compose.setContent { Card { Meteogram(forecastDay(), day, day + 24 * h, emptyList(), day - 30 * h, dayOverview = overview) } }
+        compose.waitForIdle()
+        val whole = ctx().getString(R.string.readout_whole_day)
+        val noon = tf.time(day + 11 * h) + "–" + tf.time(day + 12 * h)
+        compose.onNodeWithText(whole).assertExists()
+        compose.onNodeWithText(ctx().getString(R.string.readout_high)).assertExists()
+        compose.onNodeWithText(noon).assertDoesNotExist()
+        val height = bitmap().height
+        compose.onRoot().captureRoboImage("src/test/screenshots/meteogram_whole_day.png")
+        pressAt(0.37f, 0.35f)
+        compose.onNodeWithText(whole).assertDoesNotExist()
+        compose.onNodeWithText(ctx().getString(R.string.readout_feels)).assertExists()
+        assertEquals("the card's height with the cursor", height, bitmap().height)
+        // the cursor fades out: the whole day again
+        compose.mainClock.advanceTimeBy(12_000)
+        compose.onNodeWithText(whole).assertExists()
+        assertEquals("the card's height after the cursor", height, bitmap().height)
+    }
+
+    /** Today and the look-back: the hour as before (no day overview given). */
+    @Test fun withoutADayOverviewTheHour() {
+        compose.setContent { Card { Meteogram(forecastDay(), day, day + 24 * h, emptyList(), day - 30 * h) } }
+        compose.waitForIdle()
+        compose.onNodeWithText(ctx().getString(R.string.readout_whole_day)).assertDoesNotExist()
+        compose.onNodeWithText(tf.time(day + 11 * h) + "–" + tf.time(day + 12 * h)).assertExists()
     }
 
     @Test fun combinedChartHasNoChanceLine() {

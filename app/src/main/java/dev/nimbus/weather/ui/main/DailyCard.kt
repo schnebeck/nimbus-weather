@@ -197,6 +197,7 @@ private fun DayRow(
                 curve = remember(hours, minutely, measured) { dayCurve(hours, minutely, day.date, HourAxis.dayAxisEnd(end), measured) },
                 separatePrecip = settings.separatePrecipitation,
                 measuredBy = measured?.let { measuredBy(it.hours.values, it.station) },
+                dayOverview = if (currentTemp == null) remember(day, hours) { DayOverview.of(day, hours) } else null,
             )
         }
     }

@@ -1,0 +1,3 @@
+• Andere Tage: Unter dem Tagesdiagramm steht jetzt die Tagesübersicht – Höchst/Tiefst, Niederschlag und Sonne gesamt, Wind, Böen, UV-Index. Ein langer Druck zeigt wie bisher die Stunde
+• Heute: Eine Stunde, deren Messung noch unterwegs ist (der Satellit liefert rund 20 Minuten später), zeigt bis dahin den Prognose-Rahmen statt eines leeren Felds
+• Rückblick: Antworten Radar oder Satellit nicht binnen 8 Sekunden, lädt er mit den Stationswerten

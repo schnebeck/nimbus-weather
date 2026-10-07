@@ -22,6 +22,7 @@ import dev.nimbus.weather.data.model.Representative
 import dev.nimbus.weather.data.model.WeatherCodes
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -102,13 +103,22 @@ class HistorySource(
     private val brightSkyUrl: String = "https://api.brightsky.dev",
     /** Precipitation and sunshine measured over the place itself (null: the station's only). */
     private val spot: SpotSource? = null,
+    /**
+     * How long the look-back waits for the radar and the satellite: the DWD's point request took
+     * from one second to fifty, and the look-back waited for it. Late, the station's values stand
+     * this time – the next load asks again.
+     */
+    private val spotWaitMs: Long = SPOT_WAIT_MS,
 ) {
     suspend fun load(lat: Double, lon: Double, model: String, inGermany: Boolean, now: Long = System.currentTimeMillis()): History =
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { coroutineScope {
         val modelJob = async { runCatching { http.getJson(modelUrl(lat, lon, model)) } }
         // over the place itself: the radar's precipitation (Germany), the satellite's sunshine (Europe)
-        val radarJob = async { if (spot == null || !inGermany) emptyMap() else spot.radarPrecipitation(lat, lon, now - SPOT_BACK_MS, now) }
-        val sunJob = async { spot?.satelliteSunshine(lat, lon, pastDays = 2).orEmpty() }
+        val radarJob = async {
+            if (spot == null || !inGermany) emptyMap()
+            else withTimeoutOrNull(spotWaitMs) { spot.radarPrecipitation(lat, lon, now - SPOT_BACK_MS, now) }.orEmpty()
+        }
+        val sunJob = async { spot?.let { withTimeoutOrNull(spotWaitMs) { it.satelliteSunshine(lat, lon, pastDays = 2) } }.orEmpty() }
         val obsJob = async {
             if (!inGermany) null else runCatching {
                 // Zone is not known before the model answer; Germany is always Europe/Berlin.
@@ -165,6 +175,8 @@ class HistorySource(
         const val BEST_MATCH = "best_match"
         /** How far back the radar is asked (it keeps a day; the look-back reaches into the day before yesterday). */
         private const val SPOT_BACK_MS = 3 * 24 * 3_600_000L
+        /** See [spotWaitMs]. */
+        const val SPOT_WAIT_MS = 8_000L
 
         data class Observations(val byTime: Map<Long, HistoryHour.Measured>, val station: String?, val distanceKm: Double?)
 

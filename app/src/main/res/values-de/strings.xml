@@ -589,6 +589,9 @@
     <string name="readout_temperature">Temperatur</string>
     <string name="readout_feels">Gefühlt</string>
     <string name="readout_chance">Wahrsch.</string>
+    <string name="readout_whole_day">Ganzer Tag</string>
+    <string name="readout_high">Höchst</string>
+    <string name="readout_low">Tiefst</string>
     <string name="readout_time">Zeit</string>
     <string name="radar_step_back">5 Minuten zurück</string>
     <string name="radar_step_forward">5 Minuten vor</string>

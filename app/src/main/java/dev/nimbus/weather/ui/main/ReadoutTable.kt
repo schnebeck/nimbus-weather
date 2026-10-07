@@ -66,15 +66,19 @@ fun ReadoutTable(columns: List<String>, rows: List<Pair<String, List<String>>>, 
 /**
  * Label/value pairs, two per row ("Temperature 15° | Feels like 14°") – or one per row when two
  * do not fit (narrow phones, large font). The choice depends on the width, the labels and
- * [reserve] (the widest values to expect, e.g. "88 km/h NW"), never on the values shown now:
+ * [reserve] (the widest values to expect, e.g. "88 km/h NW") and [labels], never on the values shown now:
  * moving the cursor never switches the layout.
  */
 @Composable
-fun ReadoutPairs(pairs: List<Pair<String, String>>, reserve: List<String>, modifier: Modifier = Modifier) {
+fun ReadoutPairs(
+    pairs: List<Pair<String, String>>, reserve: List<String>, modifier: Modifier = Modifier,
+    /** Labels to make room for besides those shown (another set taking the same cells). */
+    labels: List<String> = pairs.map { it.first },
+) {
     val measurer = androidx.compose.ui.text.rememberTextMeasurer()
     val density = androidx.compose.ui.platform.LocalDensity.current
     androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth()) {
-        val labelW = pairs.maxOf { measurer.measure(it.first, Label).size.width }
+        val labelW = (labels + pairs.map { it.first }).maxOf { measurer.measure(it, Label).size.width }
         // the reserve only – a wider value now would switch the layout while the cursor moves
         val valueW = reserve.maxOf { measurer.measure(it, Value).size.width }
         val pairW = with(density) { (labelW + valueW).toDp() } + 12.dp

@@ -99,6 +99,30 @@ class BarSourcesTest {
         }
     }
 
+    /**
+     * „da stimmt was nicht mit den Sonnenstunden in der Tagesvorhersage?! Da fehlt ein Feld!“ – the
+     * satellite's newest hour comes some 20 minutes late: an hour over after the last reading shows
+     * the forecast's frame until its reading is in; an hour missing between readings stays empty.
+     */
+    @Test fun anHourStillOnItsWayShowsTheForecast() {
+        val hist = History(
+            listOf(HistoryDay(today, (0..24).map { k ->
+                val sun = if (k == 6 || k == 12) null else 10.0   // 06: missing, 12: not in yet
+                HistoryHour(t0 + k * h, if (k <= 12) reading(k, 0.8, sun) else null, modelled())
+            })),
+            "Hannover", 5.0, "icon_seamless", zone, 0L,
+        )
+        val pts = today(hist)
+        val at = { k: Int -> pts.first { it.time == t0 + k * h } }
+        assertEquals(HourBar(null, 40.0), at(12).sunBar())
+        assertEquals(HourBar(null, null), at(6).sunBar())
+        assertEquals(HourBar(10.0, null), at(11).sunBar())
+        // the rain gauge is up to date: its hours are blocks
+        assertEquals(HourBar(0.8, null), at(12).rainBar())
+        // the legend: the hour on its way counts as expected
+        assertEquals(40.0, pts.filter { it.time > t0 && it.time <= now }.barTotals { it.sunBar() }.expected!!, 1e-9)
+    }
+
     /** Rain gauge but no sunshine sensor: precipitation measured, sunshine expected – each on its own. */
     @Test fun eachQuantityByItsOwnReadings() {
         val past = today(history(rain = 0.0, sun = null)).filter { it.time in t0 + h..now }

@@ -61,6 +61,8 @@ path = ["docs/screenshots/*.png", "docs/screenshots/en/*.png"]
 SPDX-FileCopyrightText = [
     "(C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>",
     "Weather data: Deutscher Wetterdienst (DWD), Open-Meteo.com",
+    "Precipitation over the place: Deutscher Wetterdienst (DWD), RADOLAN",
+    "Sunshine from the satellite: Deutscher Wetterdienst (DWD), from EUMETSAT data, via Open-Meteo.com",
 ]
 SPDX-License-Identifier = "CC-BY-4.0"
 
@@ -101,6 +103,7 @@ path = ["fastlane/metadata/android/*/images/featureGraphic.png", "fastlane/metad
 SPDX-FileCopyrightText = [
     "(C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>",
     "Radar and weather data: Deutscher Wetterdienst (DWD), KNMI, RainViewer, Open-Meteo.com",
+    "Sunshine from the satellite: Deutscher Wetterdienst (DWD), from EUMETSAT data, via Open-Meteo.com",
     "Map: OpenFreeMap, OpenMapTiles, OpenStreetMap contributors",
 ]
 SPDX-License-Identifier = "CC-BY-4.0 AND ODbL-1.0"

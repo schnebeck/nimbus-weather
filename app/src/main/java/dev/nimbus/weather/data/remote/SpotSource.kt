@@ -42,7 +42,8 @@ class SpotSource(
 ) {
     /** Precipitation (mm) at the place, by the hour's end, for the hours ending [from] … [to]; empty outside the radar's area. */
     suspend fun radarPrecipitation(lat: Double, lon: Double, from: Long, to: Long): Map<Long, Double> = coroutineScope {
-        val rw = async { runCatching { http.getJson(pointUrl(RW, lat, lon, from, to)) }.getOrNull()?.let(::series) }
+        // RW keeps a day: asked for more, the service took seconds longer
+        val rw = async { runCatching { http.getJson(pointUrl(RW, lat, lon, maxOf(from, to - RW_SPAN_MS), to)) }.getOrNull()?.let(::series) }
         val ry = async { runCatching { http.getJson(pointUrl(RY, lat, lon, maxOf(from, to - RY_SPAN_MS), to)) }.getOrNull()?.let(::series) }
         hourly(rw.await().orEmpty(), ry.await().orEmpty())
     }
@@ -78,6 +79,8 @@ class SpotSource(
         const val SATELLITE_MODEL = "dwd_sis_europe_africa_v4"
         private const val HOUR_MS = 3_600_000L
         private const val STEP_MS = 5 * 60_000L
+        /** What RW keeps: a day (and an hour to spare). */
+        private const val RW_SPAN_MS = 25 * HOUR_MS
         /** RY is asked for the last hours only: those RW does not have yet. */
         private const val RY_SPAN_MS = 3 * HOUR_MS
         /** RW every 10 minutes for a day, RY every 5 minutes for three hours – and room to spare. */

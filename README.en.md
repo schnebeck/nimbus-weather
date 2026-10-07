@@ -33,8 +33,8 @@ the DWD and the KNMI. No ads, no account, no Google services. The app speaks Eng
 <table>
   <tr>
     <td align="center" width="33%"><img src="docs/screenshots/en/main.png" width="240" alt="Weather page"><br><sub><b>Weather page</b><br>readings of the nearest weather station, outlook, hourly and 10 days</sub></td>
-    <td align="center" width="33%"><img src="docs/screenshots/en/meteogram.png" width="240" alt="Meteogram"><br><sub><b>Meteogram</b><br>temperature, rain, sunshine and wind per hour, with a slider</sub></td>
-    <td align="center" width="33%"><img src="docs/screenshots/en/history.png" width="240" alt="Look back"><br><sub><b>Look back</b><br>measured versus forecast – just swipe right</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/en/meteogram.png" width="240" alt="Meteogram"><br><sub><b>Meteogram</b><br>temperature, rain, sunshine and wind per hour – expected values as frames</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/en/history.png" width="240" alt="Look back"><br><sub><b>Look back</b><br>measured versus expected – rain by the radar, sunshine by the satellite over the place</sub></td>
   </tr>
   <tr>
     <td align="center"><img src="docs/screenshots/en/radar.png" width="240" alt="Rain radar"><br><sub><b>Rain radar</b><br>DWD radar with nowcast, temperature and wind layers</sub></td>
@@ -84,10 +84,10 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
   day's totals. The station's 10-minute readings as 30-minute means, the forecast continuing from the
   last reading without a step. Precipitation in the temperature chart or as a chart of its own below,
   with the chance as a line (in the look-back too). A long press shows a cursor with all values of
-  the hour, in the columns "measured | expected". What was measured stands as a filled bar, what is
+  the hour, in the columns "measured | expected"; on days to come the whole day's overview stands there without the cursor. What was measured stands as a filled bar, what is
   expected as a frame – precipitation violet, sunshine orange. Today the meteogram, precipitation and
-  pressure show the readings for the hours already over, the forecast after them; an hour without a
-  reading stays empty, the legend says "not measured". Precipitation is measured by the DWD radar
+  pressure show the readings for the hours already over, the forecast after them; an hour whose
+  reading is still on its way shows the forecast's frame until then, an hour without a reading stays empty, the legend says "not measured". Precipitation is measured by the DWD radar
   over the place, sunshine by the satellite – not by a station 20–40 km away
   ([docs/STATIONS.en.md](docs/STATIONS.en.md)); below the chart it says where the measurements come from.
 - **Look back** by swiping right: today so far, yesterday, the day before – DWD readings against the
@@ -266,8 +266,9 @@ Every file states its licence in its header or in `REUSE.toml` (checked with
   DWD, Copernicus, GeoSphere Austria, MeteoSwiss, DMI and KNMI under CC BY 4.0, METAR (US government)
   in the public domain, Sensor.Community and Nominatim under ODbL 1.0, gauge data by their
   publishers' terms – in detail in `REUSE.toml`
-- Screenshots in `docs/screenshots/`: CC BY 4.0, with weather, radar and map data of DWD, Open-Meteo,
-  RainViewer, OpenFreeMap, OpenMapTiles and OpenStreetMap contributors (ODbL)
+- Screenshots in `docs/screenshots/`: CC BY 4.0, with weather, radar, satellite and map data of DWD
+  (sunshine from EUMETSAT data), Open-Meteo, RainViewer, OpenFreeMap, OpenMapTiles and OpenStreetMap
+  contributors (ODbL)
 
 Idea, decisions and testing: Thorsten Schnebeck. Written by Anthropic Claude Opus 5.5 (AI generated
 content).

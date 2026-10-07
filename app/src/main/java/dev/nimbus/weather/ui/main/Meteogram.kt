@@ -127,6 +127,8 @@ fun Meteogram(
     separatePrecip: Boolean = false,
     /** Where the measured values come from (station, radar, satellite) – a line under the legend. */
     measuredBy: String? = null,
+    /** A day to come: its figures under the chart while no cursor is set. */
+    dayOverview: DayOverview? = null,
 ) {
     val s = LocalSettings.current
     val tf = LocalTimeFormat.current
@@ -212,10 +214,11 @@ fun Meteogram(
     val sunTotals = dayPts.barTotals { it.sunBar() }
     val rainTotals = dayPts.barTotals { it.rainBar() }
     val sunShown = sunTotals.measured != null || sunTotals.expected != null
-    // the hours over (today, the look-back): a quantity measured in none of them is said so
+    // the hours over (today, the look-back): a quantity measured in none of them – nor on its way
+    // (the forecast's frame until its reading comes) – is said so
     val over = dayPts.filter { it.compare != null && it.time <= now }
-    val rainNotMeasured = over.isNotEmpty() && over.none { it.precipMeasured }
-    val sunNotMeasured = over.isNotEmpty() && over.none { it.sunMeasured }
+    val rainNotMeasured = over.isNotEmpty() && over.none { it.precipMeasured || it.rainBar().expected != null }
+    val sunNotMeasured = over.isNotEmpty() && over.none { it.sunMeasured || it.sunBar().expected != null }
     val axisR = with(density) {
         listOf(
             (0..2).maxOf { measurer.measure(precipLabel(it), labelStyle).size.width },
@@ -448,7 +451,7 @@ fun Meteogram(
                 temperature = tm ?: sel.temperature,
                 compare = sel.compare?.let { c -> c.copy(tempM = if (c.tempM != null) tm ?: c.tempM else null, tempF = tfc ?: c.tempF) },
             )
-            Readout(shown, highlighted = cursorOn, compare = compare, extraRows = pts.any { it.compare?.feelsF != null || it.compare?.humidityF != null })
+            Readout(shown, highlighted = cursorOn, compare = compare, extraRows = pts.any { it.compare?.feelsF != null || it.compare?.humidityF != null }, day = dayOverview)
             summary?.invoke()
             BarLegend(
                 rainTotals, sunTotals.takeIf { sunShown }, chance = separatePrecip,

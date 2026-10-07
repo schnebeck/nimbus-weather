@@ -35,6 +35,8 @@ import dev.nimbus.weather.ui.radar.DwdRadar
 import dev.nimbus.weather.ui.radar.RadarFrame
 import dev.nimbus.weather.ui.radar.RadarPrefetcher
 import dev.nimbus.weather.ui.radar.RadarTimeline
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
@@ -116,6 +118,14 @@ class LessDataTest {
             store.updatePlaces { listOf(shown, other) }
         }
         val vm = MainViewModel(app, ViewModelDeps(store, repo, LocationProvider(app), HistorySource(http, base, base), offline, offline))
+        try { lookBackOfTheShownOnly(vm, store, shown, other) } finally {
+            // the store is one per process: the next test finds it as it was, and this view model works no more
+            vm.viewModelScope.cancel()
+            runBlocking { store.updatePlaces { emptyList() }; store.updateSettings { Settings() } }
+        }
+    }
+
+    private fun lookBackOfTheShownOnly(vm: MainViewModel, store: Store, shown: Place, other: Place) {
         until("started") { vm.state.value.initialized && vm.state.value.selectedPlaceId == shown.id }
         vm.onResume()
         vm.loadHistory(shown.id)

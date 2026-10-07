@@ -133,6 +133,8 @@ internal fun Readout(
     h: MeteoPoint, highlighted: Boolean, compare: Boolean,
     /** Today's chart: the forecast's feels-like temperature and humidity in rows of their own. */
     extraRows: Boolean = false,
+    /** A day to come: while no cursor is set, the whole day's figures instead of an hour's. */
+    day: DayOverview? = null,
 ) {
     val s = LocalSettings.current
     val tf = LocalTimeFormat.current
@@ -146,7 +148,8 @@ internal fun Readout(
     fun sun(v: Double?) = v?.let { "${it.roundToInt()}" + NBSP + "min" } ?: NO_VALUE
     fun pct(v: Double?, amount: Double?) = v?.let { (Insights.chanceText(it, amount) ?: "0") + NBSP + "%" } ?: NO_VALUE
     // measured or expected: the columns say it (look-back, today); a day to come is all forecast
-    val condition = stringResource(Texts.condition(h.condition, h.isDay))
+    val whole = day?.takeIf { !highlighted && !compare }
+    val condition = stringResource(if (whole != null) Texts.condition(whole.condition, true) else Texts.condition(h.condition, h.isDay))
     val lTemp = stringResource(R.string.readout_temperature)
     val lPrecip = stringResource(R.string.precipitation)
     val lChance = stringResource(R.string.readout_chance)
@@ -158,12 +161,12 @@ internal fun Readout(
         Row(verticalAlignment = Alignment.CenterVertically) {
             // the hour the values cover (and the cursor stands on)
             Text(
-                tf.time(h.time - 3_600_000L) + "–" + tf.time(h.time), fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
+                if (whole != null) stringResource(R.string.readout_whole_day) else tf.time(h.time - 3_600_000L) + "–" + tf.time(h.time), fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
                 color = if (highlighted) Color.White else NimbusColors.Secondary,
                 style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum"),
             )
             Spacer(Modifier.width(8.dp))
-            WeatherIcon(h.condition, h.isDay, size = 24.dp)
+            if (whole != null) WeatherIcon(whole.condition, true, size = 24.dp) else WeatherIcon(h.condition, h.isDay, size = 24.dp)
             Spacer(Modifier.width(8.dp))
             Text(condition, Modifier.weight(1f), fontSize = 14.sp, color = Color.White, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         }
@@ -190,21 +193,38 @@ internal fun Readout(
                     ),
                 )
             } else {
-                ReadoutPairs(
+                val hour = listOf(
+                    lTemp to t(h.temperature),
+                    stringResource(R.string.readout_feels) to t(h.apparentTemperature),
+                    lPrecip to p(h.precipitation ?: 0.0),
+                    lChance to pct(h.precipitationChance, h.precipitation),
+                    lWind to w(h.windSpeed, h.windDirection),
+                    lGust to w(h.windGust),
+                    lSun to sun(h.sunshine?.takeIf { h.isDay || it >= 1.0 } ?: if (h.sunshine != null) 0.0 else null),
+                    stringResource(R.string.humidity) to (h.humidity?.let { "${it.roundToInt()}" + NBSP + "%" } ?: NO_VALUE),
+                )
+                // The day in the same eight cells: the card keeps its height when the cursor comes or goes
+                val dayPairs = day?.let { d ->
                     listOf(
-                        lTemp to t(h.temperature),
-                        stringResource(R.string.readout_feels) to t(h.apparentTemperature),
-                        lPrecip to p(h.precipitation ?: 0.0),
-                        lChance to pct(h.precipitationChance, h.precipitation),
-                        lWind to w(h.windSpeed, h.windDirection),
-                        lGust to w(h.windGust),
-                        lSun to sun(h.sunshine?.takeIf { h.isDay || it >= 1.0 } ?: if (h.sunshine != null) 0.0 else null),
-                        stringResource(R.string.humidity) to (h.humidity?.let { "${it.roundToInt()}" + NBSP + "%" } ?: NO_VALUE),
-                    ),
+                        stringResource(R.string.readout_high) to t(d.high),
+                        stringResource(R.string.readout_low) to t(d.low),
+                        lPrecip to p(d.precipitation ?: 0.0),
+                        lChance to pct(d.chance, d.precipitation),
+                        lWind to w(d.wind, d.windDirection),
+                        lGust to w(d.gust),
+                        lSun to (d.sunMinutes?.let { hoursMinutes(it) } ?: NO_VALUE),
+                        stringResource(R.string.uv_index) to (d.uv?.let { "${it.roundToInt()}" } ?: NO_VALUE),
+                    )
+                }
+                ReadoutPairs(
+                    dayPairs?.takeIf { whole != null } ?: hour,
                     // the widest values to expect, in the units set
                     // (every compass direction; a rarer wider value, e.g. a gust of 120 km/h, still fits
                     // its cell beside the short label – the layout never switches for it)
-                    reserve = listOf(t(-88.0), p(88.8), "100" + NBSP + "%", sun(60.0)) + (0 until 8).map { w(88.0, it * 45.0) },
+                    reserve = listOf(t(-88.0), p(88.8), "100" + NBSP + "%", sun(60.0)) + (0 until 8).map { w(88.0, it * 45.0) } +
+                        listOfNotNull(day?.let { hoursMinutes(14 * 60.0 + 59) }),
+                    // both sets of labels: the layout is the same with and without cursor
+                    labels = hour.map { it.first } + dayPairs.orEmpty().map { it.first },
                 )
             }
         }

@@ -1,0 +1,3 @@
+• Other days: the day chart now shows the whole day below it – high/low, precipitation and sunshine in all, wind, gusts, UV index. A long press shows the hour as before
+• Today: an hour whose reading is still on its way (the satellite's comes about 20 minutes late) shows the forecast's frame until then instead of an empty field
+• Look-back: if the radar or the satellite takes longer than 8 seconds, it loads with the station's values

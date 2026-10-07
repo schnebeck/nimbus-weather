@@ -86,7 +86,7 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   30-Minuten-Mittel, die Vorhersage schließt ohne Sprung an die letzte Messung an. Niederschlag wahlweise im Temperaturdiagramm oder als
   eigenes Diagramm darunter, mit der Wahrscheinlichkeit als Linie (auch im Rückblick). Langes Drücken
   blendet einen Cursor mit allen Werten der Stunde ein, in den Spalten „gemessen | erwartet“; an künftigen Tagen steht ohne Cursor die Übersicht des ganzen Tages. Gemessenes
-  steht als gefüllter Balken, Erwartetes als Rahmen – Niederschlag violett, Sonne orange. Heute zeigen
+  steht als gefüllter Balken, Erwartetes als Rahmen – Niederschlag blau, Sonne orange. Heute zeigen
   Meteogramm, Niederschlag und Luftdruck für die vergangenen Stunden die Messwerte, danach die
   Vorhersage; eine Stunde, deren Messung noch unterwegs ist, zeigt bis dahin den Rahmen der Vorhersage, eine Stunde ohne Messung bleibt leer, die Legende sagt „nicht gemessen“. Niederschlag
   misst das DWD-Radar über dem Ort, Sonnenschein der Satellit – nicht eine Station 20–40 km entfernt

@@ -97,7 +97,7 @@ class BarLookTest {
 
     private fun Bitmap.rgb(x: Int, y: Int): Triple<Int, Int, Int> = getPixel(x, y).let { Triple((it shr 16) and 255, (it shr 8) and 255, it and 255) }
     private fun rainBlock(r: Int, g: Int, b: Int) = b > 170 && b - r > 60 && g in 140..190
-    private fun rainFrame(r: Int, g: Int, b: Int) = abs(r - 155) <= 8 && abs(g - 77) <= 8 && abs(b - 255) <= 8
+    private fun rainFrame(r: Int, g: Int, b: Int) = abs(r - 107) <= 8 && abs(g - 122) <= 8 && abs(b - 255) <= 8
     private fun sunBlock(r: Int, g: Int, b: Int) = abs(r - 195) < 12 && abs(g - 201) < 12 && abs(b - 210) < 12
     private fun sunFrame(r: Int, g: Int, b: Int) = abs(r - 255) <= 8 && abs(g - 181) <= 8 && abs(b - 71) <= 8
 
@@ -154,7 +154,9 @@ class BarLookTest {
 
     /**
      * The two frames apart from each other and from the blocks they stand in front of – the blocks
-     * as they are seen, on the card (the precipitation's is see-through).
+     * as they are seen, on the card (the precipitation's is see-through). „3 nehmen, als 1.37.3
+     * umsetzen und bauen“: the strong blue of the precipitation's frame is nearer its block in
+     * colour – its line is wider instead (2 dp).
      */
     @Test fun framesStandOut() {
         val rain = dev.nimbus.weather.ui.main.HourBars.Rain
@@ -163,7 +165,10 @@ class BarLookTest {
         fun seen(c: Color) = c.compositeOver(card)
         fun dist(a: Color, b: Color) = abs(a.red - b.red) + abs(a.green - b.green) + abs(a.blue - b.blue)
         assertTrue("rain frame vs sun frame", dist(rain.frame, sun.frame) > 0.6f)
-        assertTrue("rain frame vs its block", dist(rain.frame, seen(rain.fill)) > 0.6f)
+        assertTrue("rain frame vs its block", dist(rain.frame, seen(rain.fill)) > 0.35f)
+        assertEquals(Color(0xFF6B7AFF), rain.frame)
+        // a frame near its block in colour stands out by its line
+        listOf(rain, sun).filter { dist(it.frame, seen(it.fill)) < 0.6f }.forEach { assertTrue(it.frameDp >= 2f) }
         assertTrue("sun frame vs its block", dist(sun.frame, seen(sun.fill)) > 0.6f)
     }
 }

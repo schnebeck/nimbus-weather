@@ -72,7 +72,8 @@ class ActivityLogTest {
             server.start()
             call(server, OkHttpClient.Builder().eventListenerFactory(ActivityLog.events).build(), "/v1/forecast?latitude=52.3759&longitude=9.732")
         }
-        val line = lines().single { "/v1/forecast" in it }
+        // the version in the path is masked too ("v#"): every number is
+        val line = lines().single { "/forecast" in it }
         assertTrue(line, " 200 " in line && "↓4.9kB" in line)
         assertFalse(line, "52.37" in line || "latitude" in line)
     }

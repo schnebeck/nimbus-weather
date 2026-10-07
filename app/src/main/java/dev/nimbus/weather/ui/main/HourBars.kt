@@ -27,8 +27,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 
-/** One quantity's bars: [fill] for a measured hour, an unfilled frame in [frame] for an expected one. */
-class BarLook(val fill: Color, val frame: Color)
+/** One quantity's bars: [fill] for a measured hour, an unfilled frame in [frame], [frameDp] wide, for an expected one. */
+class BarLook(val fill: Color, val frame: Color, val frameDp: Float = 1.5f)
 
 /**
  * Measured hours are filled blocks, expected ones (the forecast) unfilled frames of the bar's size –
@@ -38,13 +38,13 @@ class BarLook(val fill: Color, val frame: Color)
  */
 object HourBars {
     /**
-     * Precipitation: light blue, the forecast framed in violet – dark and saturated enough to stand
-     * out in front of the light blue block as on the dark glass.
+     * Precipitation: light blue, the forecast framed in a strong blue – darker and more saturated
+     * than the block; near it in colour, so its line is wider, to stand out in front of the block
+     * as on the dark glass.
      */
-    val Rain = BarLook(fill = Color(0xB38FD3FF), frame = Color(0xFF9B4DFF))
+    val Rain = BarLook(fill = Color(0xB38FD3FF), frame = Color(0xFF6B7AFF), frameDp = 2f)
     /** Sunshine: light grey (the temperature curve has the warm colours), the forecast framed in orange. */
     val Sun = BarLook(fill = Color(0xFFC3C9D2), frame = Color(0xFFFFB547))
-    const val FRAME_DP = 1.5f
 }
 
 /** What an hour's bar shows of a quantity: the [measured] amount (block) and the [expected] one (frame). */
@@ -74,12 +74,13 @@ fun DrawScope.hourBar(look: BarLook, bar: HourBar, left: Float, width: Float, bo
     bar.measured?.takeIf { it > least }?.let { m ->
         drawRoundRect(look.fill, Offset(left, top(m)), Size(width, bottom - top(m)), CornerRadius(corner))
     }
-    bar.expected?.takeIf { it > least }?.let { e -> frame(look.frame, left, top(e), width, bottom, corner) }
+    bar.expected?.takeIf { it > least }?.let { e -> frame(look, left, top(e), width, bottom, corner) }
 }
 
 /** An unfilled frame of a bar ([left], [top] … [bottom], [width] wide), the line inside its edges. */
-private fun DrawScope.frame(color: Color, left: Float, top: Float, width: Float, bottom: Float, corner: Float) {
-    val w = HourBars.FRAME_DP * density
+private fun DrawScope.frame(look: BarLook, left: Float, top: Float, width: Float, bottom: Float, corner: Float) {
+    val color = look.frame
+    val w = look.frameDp * density
     if (bottom - top < w) {
         // (almost) nothing expected: a thin line on the axis
         drawLine(color, Offset(left, bottom - w / 2), Offset(left + width, bottom - w / 2), w)
@@ -101,13 +102,13 @@ fun BarLegendItems(
     when {
         totals.measured != null -> {
             LegendItem(look.fill, stringResource(measured, amount(totals.measured)))
-            if (totals.expected != null) LegendItem(look.frame, stringResource(expected, amount(totals.expected)), frame = true)
+            if (totals.expected != null) LegendItem(look.frame, stringResource(expected, amount(totals.expected)), frameDp = look.frameDp)
         }
         notMeasured != null -> {
             // no block in the chart: a faint one in the legend
             LegendItem(look.fill.copy(alpha = 0.25f), stringResource(notMeasured))
-            if (totals.expected != null) LegendItem(look.frame, stringResource(expected, amount(totals.expected)), frame = true)
+            if (totals.expected != null) LegendItem(look.frame, stringResource(expected, amount(totals.expected)), frameDp = look.frameDp)
         }
-        else -> LegendItem(look.frame, stringResource(plain, amount(totals.expected ?: 0.0)), frame = true)
+        else -> LegendItem(look.frame, stringResource(plain, amount(totals.expected ?: 0.0)), frameDp = look.frameDp)
     }
 }

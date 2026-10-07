@@ -85,7 +85,7 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
   last reading without a step. Precipitation in the temperature chart or as a chart of its own below,
   with the chance as a line (in the look-back too). A long press shows a cursor with all values of
   the hour, in the columns "measured | expected"; on days to come the whole day's overview stands there without the cursor. What was measured stands as a filled bar, what is
-  expected as a frame – precipitation violet, sunshine orange. Today the meteogram, precipitation and
+  expected as a frame – precipitation blue, sunshine orange. Today the meteogram, precipitation and
   pressure show the readings for the hours already over, the forecast after them; an hour whose
   reading is still on its way shows the forecast's frame until then, an hour without a reading stays empty, the legend says "not measured". Precipitation is measured by the DWD radar
   over the place, sunshine by the satellite – not by a station 20–40 km away

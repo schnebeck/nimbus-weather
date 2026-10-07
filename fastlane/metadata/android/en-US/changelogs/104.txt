@@ -1,0 +1,1 @@
+• The precipitation forecast is now framed in a strong blue instead of violet – closer to the colour of rain. Its line is a little wider, so in the look-back it still stands out from the light blue block of what was measured.

@@ -137,13 +137,13 @@ class LookTest {
 
     /**
      * Horizontal runs of bar colour in the row [y]: (first, last) x. A light blue block or the
-     * violet frame (#9B4DFF, close: the curve's smoothed edges come near other colours).
+     * blue frame (#6B7AFF, close: the curve's smoothed edges come near other colours).
      */
     private fun Bitmap.barRuns(y: Int): List<IntRange> {
         val out = ArrayList<IntRange>(); var s = -1
         for (x in 0 until width) {
             val (r, g, b) = rgb(x, y)
-            val bar = (b > 150 && b - r > 40 && g > 110) || (abs(r - 155) <= 8 && abs(g - 77) <= 8 && abs(b - 255) <= 8)
+            val bar = (b > 150 && b - r > 40 && g > 110) || (abs(r - 107) <= 8 && abs(g - 122) <= 8 && abs(b - 255) <= 8)
             if (bar && s < 0) s = x
             if (!bar && s >= 0) { out += s until x; s = -1 }
         }
@@ -193,11 +193,11 @@ class LookTest {
         compose.setContent { Card { Meteogram(lookBackDay(), day, day + 24 * h, emptyList(), day + 30 * h) } }
         compose.waitForIdle()
         val img = bitmap()
-        // violet frame pixels (the forecast of precipitation) – in every hour that has one
-        val violet = (0 until img.width).count { x ->
-            (0 until img.height).any { y -> val (r, g, b) = img.rgb(x, y); abs(r - 155) <= 8 && abs(g - 77) <= 8 && abs(b - 255) <= 8 }
+        // blue frame pixels (the forecast of precipitation) – in every hour that has one
+        val frames = (0 until img.width).count { x ->
+            (0 until img.height).any { y -> val (r, g, b) = img.rgb(x, y); abs(r - 107) <= 8 && abs(g - 122) <= 8 && abs(b - 255) <= 8 }
         }
-        assertTrue("forecast frames not visible ($violet columns)", violet > 100)
+        assertTrue("forecast frames not visible ($frames columns)", frames > 100)
         compose.onRoot().captureRoboImage("src/test/screenshots/meteogram_lookback.png")
     }
 

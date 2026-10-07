@@ -62,9 +62,9 @@ fun hoursMinutes(minutes: Double): String {
     return stringResource(R.string.duration_h_min, m / 60, m % 60)
 }
 
-/** A legend entry: a colour swatch (or a line) and its text; the swatch stays at the first line when the text wraps. */
+/** A legend entry: a colour swatch (or a line, or a frame [frameDp] wide) and its text; the swatch stays at the first line when the text wraps. */
 @Composable
-fun LegendItem(color: Color, text: String, line: Boolean = false, dashed: Boolean = false, frame: Boolean = false, brush: Brush? = null) = Row(verticalAlignment = Alignment.Top) {
+fun LegendItem(color: Color, text: String, line: Boolean = false, dashed: Boolean = false, frameDp: Float? = null, brush: Brush? = null) = Row(verticalAlignment = Alignment.Top) {
     val lineH = 15.sp
     Box(Modifier.height(with(LocalDensity.current) { lineH.toDp() }), contentAlignment = Alignment.Center) {
         Canvas(Modifier.size(if (line) 16.dp else 12.dp, 10.dp)) {
@@ -72,8 +72,8 @@ fun LegendItem(color: Color, text: String, line: Boolean = false, dashed: Boolea
             else if (line) drawLine(
                 color, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.dp.toPx(),
                 pathEffect = if (dashed) PathEffect.dashPathEffect(floatArrayOf(10f, 7f)) else null,   // as the forecast curve
-            ) else if (frame) {
-                val w = HourBars.FRAME_DP.dp.toPx()
+            ) else if (frameDp != null) {
+                val w = frameDp.dp.toPx()
                 drawRoundRect(color, Offset(w / 2, w / 2), Size(size.width - w, size.height - w), CornerRadius(2.dp.toPx()), style = Stroke(w))
             } else drawRoundRect(color, cornerRadius = CornerRadius(2.dp.toPx()))
         }

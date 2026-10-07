@@ -197,6 +197,13 @@
     <string name="settings_language">Sprache</string>
     <string name="settings_language_desc">Folgt der Systemsprache (Englisch oder Deutsch). Ab Android 13 kann sie in den Systemeinstellungen pro App gewählt werden.</string>
     <string name="settings_about">Über</string>
+    <string name="settings_diagnostics">Diagnose</string>
+    <string name="activity_log">Aktivitätsprotokoll</string>
+    <string name="activity_log_desc">Schreibt mit, was die App tut – Netzabrufe mit ihren Mengen, sichtbar oder nicht, Bildschirm, Rechenzeit – für Akku- und Datenanalysen. Ohne Koordinaten und Ortsnamen; es bleibt auf dem Handy, bis du es teilst.</string>
+    <string name="activity_log_share">Protokoll teilen</string>
+    <string name="activity_log_clear">Löschen</string>
+    <string name="activity_log_empty">Noch nichts protokolliert</string>
+    <string name="activity_log_cleared">Protokoll gelöscht</string>
     <string name="settings_about_text">Nimbus ist eine freie Wetter-App ohne Werbung und Tracking. Daten: Deutscher Wetterdienst (DWD) über Open-Meteo und Bright Sky, ECMWF, Météo-France, MET Norway, KNMI, DMI, UK Met Office, MeteoSwiss, GeoSphere Austria, ItaliaMeteo und weitere nationale Wetterdienste über Open-Meteo, CAMS-Luftqualität, RainViewer, EUMETSAT (Meteosat), Sensor.Community. Karten © OpenFreeMap, OpenMapTiles, OpenStreetMap-Mitwirkende.</string>
     <string name="version">Version %1$s</string>
 

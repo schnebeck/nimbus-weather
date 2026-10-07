@@ -178,6 +178,7 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                     Text(stringResource(R.string.settings_language_desc), fontSize = 14.sp, color = NimbusColors.Secondary)
                 }
             }
+            item { ActivityLogSection(snackbar) }
             item {
                 Section(stringResource(R.string.settings_about)) {
                     Text(stringResource(R.string.settings_about_text), fontSize = 13.sp, color = NimbusColors.Secondary, lineHeight = 18.sp)

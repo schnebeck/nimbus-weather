@@ -1,0 +1,1 @@
+• Neu: Aktivitätsprotokoll (Einstellungen › Diagnose, standardmäßig aus) für Akku- und Datenanalysen. Es schreibt Netzabrufe mit ihren Mengen mit, ob die App sichtbar ist, den Bildschirm und die Rechenzeit – ohne Koordinaten und Ortsnamen. Es bleibt auf dem Handy, bis man es teilt.

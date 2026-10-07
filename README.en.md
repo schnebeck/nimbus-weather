@@ -159,7 +159,9 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
 - **Places, settings**: my location and saved places (long press to sort and delete); the forecast
   model (preset: Automatic – the finest model for each place and time, named with its grid in the
   data sources), units (on first start to suit the country), station values, animations, order and
-  visibility of the cards.
+  visibility of the cards. Under "Diagnostics" an activity log (off until switched on): network calls
+  with their amounts, shown or not, screen and CPU time, for battery and data analyses – without
+  coordinates or place names, on the phone until shared.
 - **A model per place**: in the list of places (long press) each place first gets "As in the app
   settings" or "A model of its own for this place", then the model – regional ones too, like MET
   Nordic (1 km) or KNMI Harmonie (2 km); outside their area and after their last hours "Automatic"

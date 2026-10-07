@@ -1,0 +1,1 @@
+• New: activity log (Settings › Diagnostics, off by default) for battery and data analyses. It notes network calls with their amounts, whether the app is shown, the screen and the CPU time – without coordinates or place names. It stays on the phone until shared.

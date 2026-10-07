@@ -162,7 +162,10 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
 - **Orte, Einstellungen**: Standort und gespeicherte Orte (lange drücken zum Sortieren und Löschen);
   Vorhersagemodell (voreingestellt: Automatisch – das feinste Modell je Ort und Zeitraum, die
   Datenquellen nennen es mit seiner Auflösung), Einheiten (beim ersten Start passend zum Land),
-  Stationswerte, Animationen, Reihenfolge und Sichtbarkeit der Kacheln.
+  Stationswerte, Animationen, Reihenfolge und Sichtbarkeit der Kacheln. Unter „Diagnose“ ein
+  Aktivitätsprotokoll (aus, bis man es einschaltet): Netzabrufe mit ihren Mengen, sichtbar oder nicht,
+  Bildschirm und Rechenzeit, für Akku- und Datenanalysen – ohne Koordinaten und Ortsnamen, auf dem
+  Handy, bis man es teilt.
 - **Modell je Ort**: In der Ortsliste (lange drücken) wählt man für jeden Ort zuerst „Wie in den
   App-Einstellungen“ oder „Eigenes Modell für diesen Ort“, dann das Modell – auch regionale wie MET
   Nordic (1 km) oder KNMI Harmonie (2 km); außerhalb ihres Gebiets und nach ihren letzten Stunden

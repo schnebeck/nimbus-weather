@@ -43,6 +43,8 @@ class NimbusApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // first: the log sees the app's first calls too (when switched on)
+        dev.nimbus.weather.util.ActivityLog.init(this)
         container = AppContainer(this)
         dev.nimbus.weather.ui.radar.WeatherGridStore.cacheDir = java.io.File(cacheDir, "grid")
         dev.nimbus.weather.ui.radar.RadarLatest.dir = java.io.File(cacheDir, "radar")
@@ -76,6 +78,8 @@ class AppContainer(app: Application) {
         .readTimeout(20, TimeUnit.SECONDS)
         .cache(Cache(File(app.cacheDir, "http"), 20L * 1024 * 1024))
         .retryOnConnectionFailure(true)
+        // every call of the app (and of the map, built from this) for the activity log
+        .eventListenerFactory(dev.nimbus.weather.util.ActivityLog.events)
         .build()
 
     /** Client used by MapLibre: the base map, the DWD's warnings, the satellite picture (the radar comes from [dev.nimbus.weather.ui.radar.RadarStore]). */

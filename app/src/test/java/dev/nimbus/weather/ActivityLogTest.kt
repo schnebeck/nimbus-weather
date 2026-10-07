@@ -79,8 +79,17 @@ class ActivityLogTest {
 
     /** Map tiles: the numbers of their path say where one looks – masked. */
     @Test fun tileNumbersMasked() {
-        assertEquals("tiles.openfreemap.org/planet/20251001_001001_pt/#/#/#",
+        assertEquals("tiles.openfreemap.org/planet/#_#_pt/#/#/#.pbf",
             ActivityLog.where("https://tiles.openfreemap.org/planet/20251001_001001_pt/12/2150/1350.pbf".toHttpUrl()))
+    }
+
+    /**
+     * Found on the emulator with 1.37.1: Sensor.Community takes the coordinates in the path
+     * ("filter/area=47.4090,10.2790,4") – every number in the path is masked.
+     */
+    @Test fun coordinatesInThePathMasked() {
+        val where = ActivityLog.where("https://data.sensor.community/airrohr/v1/filter/area=47.4090,10.2790,4".toHttpUrl())
+        assertEquals("data.sensor.community/airrohr/v#/filter/area=#.#,#.#,#", where)
     }
 
     @Test fun switchedOffNothing() {

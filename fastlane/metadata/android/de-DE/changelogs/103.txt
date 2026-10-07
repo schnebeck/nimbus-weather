@@ -1,0 +1,1 @@
+• Aktivitätsprotokoll: Es blendet jetzt jede Zahl im Pfad einer Adresse aus. Ein Dienst (Sensor.Community) übergibt die Koordinaten im Pfad statt in den Parametern; in 1.37.1 standen sie bei eingeschaltetem Protokoll darin.

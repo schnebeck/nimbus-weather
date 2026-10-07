@@ -133,9 +133,12 @@ object ActivityLog {
         dir?.listFiles()?.forEach { it.delete() }
     }
 
-    /** Host and path – the query left out, numbers in the path (map tiles: where one looks) masked. */
-    fun where(url: HttpUrl) = url.host + url.pathSegments.joinToString("/", prefix = "/") { if (NUMBER.matches(it)) "#" else it }
-    private val NUMBER = Regex("[-0-9._]+(\\.[a-z0-9]+)?")
+    /**
+     * Host and path – the query left out, every number in the path masked: map tiles say there where
+     * one looks, some services (Sensor.Community) take the coordinates in the path.
+     */
+    fun where(url: HttpUrl) = url.host + url.pathSegments.joinToString("/", prefix = "/") { it.replace(DIGITS, "#") }
+    private val DIGITS = Regex("[0-9]+")
 
     /** Sees every call of the client it is given to; while the log is off, none. */
     val events = EventListener.Factory { call -> if (enabled) CallLog() else EventListener.NONE }

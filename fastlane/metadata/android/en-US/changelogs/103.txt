@@ -1,0 +1,1 @@
+• Activity log: it now masks every number in an address's path. One service (Sensor.Community) takes the coordinates in the path instead of the parameters; with the log switched on, 1.37.1 noted them.

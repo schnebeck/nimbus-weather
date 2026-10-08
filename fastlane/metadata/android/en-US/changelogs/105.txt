@@ -1,0 +1,1 @@
+• Radar: temperature and wind now fill the whole map, zoomed far out too (before only a rectangle around the map's centre, about the size of Germany). Still one request of 99 points.

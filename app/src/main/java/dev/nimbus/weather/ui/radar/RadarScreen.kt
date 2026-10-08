@@ -311,13 +311,17 @@ fun RadarScreen(
             }
         }
     }
-    // After panning or zooming: a grid that matches the zoom and covers the view. Finer grids are
-    // only fetched while an overlay is shown (each costs 99 API calls); otherwise the coarse one.
+    // After panning or zooming: a grid that matches the zoom and spans the view. Finer (and, zoomed
+    // far out, coarser) grids are only fetched while an overlay is shown (each costs 99 API calls);
+    // otherwise the 1° one.
     LaunchedEffect(gridCheck, showTemp, showWind, styleReady) {
         if (!styleReady) return@LaunchedEffect
         val cam = controller.map?.cameraPosition ?: return@LaunchedEffect
         val c = cam.target ?: return@LaunchedEffect
-        val step = if (showTemp || showWind) WeatherGrid.stepForZoom(cam.zoom) else WeatherGrid.STEP
+        val view = controller.map?.projection?.visibleRegion?.latLngBounds
+        val step = if (!showTemp && !showWind) WeatherGrid.STEP
+        else view?.let { WeatherGrid.stepForView(cam.zoom, it.latitudeSouth, it.latitudeNorth, it.longitudeWest, it.longitudeEast) }
+            ?: WeatherGrid.stepForZoom(cam.zoom)
         WeatherGridStore.ensure(container.http, c.latitude, c.longitude, step, from = archiveDay)?.let {
             overlays.setGrid(it)
             timeline?.let { tl -> overlays.update(tl.frames[frame.coerceIn(0, tl.frames.lastIndex)].time) }

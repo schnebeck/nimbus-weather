@@ -1,0 +1,1 @@
+• Radar: Temperatur und Wind füllen jetzt die ganze Karte, auch weit herausgezoomt (vorher nur ein Rechteck um die Kartenmitte, etwa so groß wie Deutschland). Weiterhin eine einzige Abfrage mit 99 Punkten.

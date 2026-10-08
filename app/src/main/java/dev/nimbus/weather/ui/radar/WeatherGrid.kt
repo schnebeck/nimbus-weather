@@ -130,6 +130,13 @@ class WeatherGrid(
         const val HALF_ROWS = 5     // 11 rows
         const val HALF_COLS = 4     // 9 columns
 
+        /**
+         * Coarser spacings for a map zoomed out beyond Germany: 2° covers ~20° x 16°, 4° ~40° x 32°,
+         * 8° the widest view (zoom 3, its points still ~90 dp apart) – the same 99 points, so the
+         * field fills the view.
+         */
+        val WIDE_STEPS = listOf(2.0, 4.0, 8.0)
+
         /** Spacing that puts grid points roughly 100–200 dp apart at the given MapLibre zoom. */
         fun stepForZoom(zoom: Double): Double = when {
             zoom < 7.1 -> 1.0
@@ -138,10 +145,22 @@ class WeatherGrid(
             else -> 0.125
         }
 
-        /** Grid centre snapped to the grid spacing so nearby places share one grid. */
+        /**
+         * Spacing for the view [south]..[north], [west]..[east] at [zoom]: as fine as the zoom allows
+         * ([stepForZoom]), but coarse enough that the grid spans the whole view – a finer one covered
+         * only a rectangle around the map's centre. The coarsest where none does.
+         */
+        fun stepForView(zoom: Double, south: Double, north: Double, west: Double, east: Double): Double {
+            val lonSpan = if (east >= west) east - west else east + 360 - west
+            // the centre is snapped to the spacing: up to half a step off on each side
+            fun spans(step: Double) = 2 * HALF_ROWS * step >= north - south + step && 2 * HALF_COLS * step >= lonSpan + step
+            return (STEPS + WIDE_STEPS).filter { it >= stepForZoom(zoom) }.sorted().firstOrNull(::spans) ?: WIDE_STEPS.last()
+        }
+
+        /** Grid centre snapped to the grid spacing so nearby places share one grid; the grid within the globe. */
         fun origin(lat: Double, lon: Double, step: Double = STEP): Pair<Double, Double> {
-            val cLat = (lat / step).roundToInt() * step
-            val cLon = (lon / step).roundToInt() * step
+            val cLat = ((lat / step).roundToInt() * step).coerceIn(-90 + HALF_ROWS * step, 90 - HALF_ROWS * step)
+            val cLon = ((lon / step).roundToInt() * step).coerceIn(-180 + HALF_COLS * step, 180 - HALF_COLS * step)
             return (cLat - HALF_ROWS * step) to (cLon - HALF_COLS * step)
         }
 

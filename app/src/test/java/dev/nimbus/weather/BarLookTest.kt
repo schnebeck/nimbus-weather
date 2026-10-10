@@ -52,9 +52,8 @@ import org.robolectric.annotation.GraphicsMode
 import kotlin.math.abs
 
 /**
- * „Sonne und niederschlag müssen aber in allen Kachel-Darstellungsformen korrekt zwischen erwartet
- * und gemessen unterscheiden können“ – „nimm für die Vorhersagen zwei Rahmenfarben mit Kontrast,
- * die auch in der Rückschau sich vom Ist-Block absetzen“. Hours 1–12 are measured, 13–24 expected;
+ * Sunshine and precipitation tell measured from expected in every form of the cards, with frame
+ * colours that stand out from the measured block in the look-back too. Hours 1–12 are measured, 13–24 expected;
  * each hour's column must show a block exactly where measured and a frame exactly where expected
  * (the look-back: the forecast's frame in front of the block as well).
  */
@@ -154,9 +153,8 @@ class BarLookTest {
 
     /**
      * The two frames apart from each other and from the blocks they stand in front of – the blocks
-     * as they are seen, on the card (the precipitation's is see-through). „3 nehmen, als 1.37.3
-     * umsetzen und bauen“: the strong blue of the precipitation's frame is nearer its block in
-     * colour – its line is wider instead (2 dp).
+     * as they are seen, on the card (the precipitation's is see-through). The strong blue of the
+     * precipitation's frame is near its block in colour – its line is wider instead (2 dp).
      */
     @Test fun framesStandOut() {
         val rain = dev.nimbus.weather.ui.main.HourBars.Rain

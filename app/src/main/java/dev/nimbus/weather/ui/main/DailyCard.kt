@@ -150,7 +150,7 @@ private fun DayRow(
 ) {
     val settings = LocalSettings.current
     // Opened by a tap: once unfolded, the day is brought into view – a day open above it closes at
-    // the same time and pulled it up out of the screen
+    // the same time and pulls it up out of the screen
     val bring = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
     var tapped by remember { mutableStateOf(false) }
     var height by remember { mutableIntStateOf(0) }
@@ -197,7 +197,7 @@ private fun DayRow(
             TemperatureRangeBar(day.tempMin, day.tempMax, min, max, currentTemp, Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 4.dp))
         }
         // Unfolds downwards from its row and is clipped while it does (unclipped and growing from
-        // the bottom it was drawn over the rows above). The whole animation reaches into the
+        // the bottom it would be drawn over the rows above). The whole animation reaches into the
         // card's padding (bleed), so the clip leaves the meteogram's axis labels there.
         androidx.compose.animation.AnimatedVisibility(
             visible = expanded && hours.size >= 2,

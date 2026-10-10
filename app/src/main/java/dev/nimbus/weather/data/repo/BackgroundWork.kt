@@ -1,7 +1,6 @@
 /*
  * Nimbus - app/src/main/java/dev/nimbus/weather/data/repo/BackgroundWork.kt
- * Nimbus works only while it is shown: the periodic background work of earlier versions is
- * called off.
+ * Nimbus works only while it is shown: periodic background work still scheduled is called off.
  *
  *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
  *   Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
@@ -22,14 +21,13 @@ import android.content.Context
 import androidx.work.WorkManager
 
 /**
- * Earlier versions refreshed the weather every hour and the radar loop every 15 minutes in the
- * background – for nobody: the app shows no notifications and has no widget, and opened it loads
- * what is out of date anyway. Measured on a phone over 15 hours: 19 radar and 8 weather runs,
- * and most of 169 MB over Wi-Fi. Now it works only while it is shown; the work scheduled by an
- * earlier version is called off at the start.
+ * Work in the background serves nobody: the app shows no notifications and has no widget, and
+ * opened it loads what is out of date anyway – while hourly weather and 15-minute radar runs cost
+ * battery and data. The app works only while it is shown; work still scheduled under [NAMES] (an
+ * installation updated in place keeps it) is called off at the start.
  */
 object BackgroundWork {
-    /** The names the earlier versions scheduled their work under. */
+    /** The names background work was scheduled under – called off wherever it is still there. */
     val formerNames = listOf("hourly-refresh", "radar-prefetch")
 
     fun stopAll(context: Context) {

@@ -147,7 +147,7 @@ class WeatherGrid(
 
         /**
          * Spacing for the view [south]..[north], [west]..[east] at [zoom]: as fine as the zoom allows
-         * ([stepForZoom]), but coarse enough that the grid spans the whole view – a finer one covered
+         * ([stepForZoom]), but coarse enough that the grid spans the whole view – a finer one covers
          * only a rectangle around the map's centre. The coarsest where none does.
          */
         fun stepForView(zoom: Double, south: Double, north: Double, west: Double, east: Double): Double {
@@ -251,8 +251,8 @@ object WeatherGridStore {
         val rows = 2 * WeatherGrid.HALF_ROWS + 1
         val cols = 2 * WeatherGrid.HALF_COLS + 1
         // A day that is over: its values do not change any more – a grid holding the whole day
-        // serves however old it is (until the day leaves the four days of the look-back); it was
-        // fetched anew every hour when the look-back was browsed
+        // serves however old it is (until the day leaves the four days of the look-back) – no new
+        // one every hour while the look-back is browsed
         if (from != null && from + DAY_MS <= now) {
             grids.firstOrNull { it.second.step == step && it.second.contains(lat, lon, margin = 2 * step) && it.second.holds(from, from + DAY_MS) }
                 ?.let { return it.second }

@@ -290,7 +290,7 @@ private fun TopBarRow(
             // Time position: history pages as small dots, "now" as a larger dot on the right.
             if (dots) PageDots(count, current)
         }
-        // A labelled pill – a bare map icon was not recognisable as "rain radar".
+        // A labelled pill – a bare map icon is not recognisable as "rain radar".
         Row(
             Modifier.clip(RoundedCornerShape(20.dp)).background(Color(0x4D0A1A33))
                 .border(0.6.dp, Color(0x40FFFFFF), RoundedCornerShape(20.dp)).clickable(onClick = onRadar)

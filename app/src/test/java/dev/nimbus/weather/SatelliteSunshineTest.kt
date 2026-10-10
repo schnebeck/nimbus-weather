@@ -22,20 +22,23 @@ import dev.nimbus.weather.data.remote.JsonCodec
 import dev.nimbus.weather.data.remote.SatelliteHour
 import dev.nimbus.weather.data.remote.SatelliteSunshine
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
 import java.time.Instant
 
 /**
- * „Aber wir vergleichen doch eigentlich nicht Monate oder Jahreszeiten sondern Wetterlagen
- * unabhängig von ihrer Lage und Zeit und suchen darin nach Korrekturmustern, oder?“ – „ja, als 1.38
- * umsetzen und bauen“: the trees learnt by tools/sunshine_calibration.py from the weather of the
- * hour (no month, no place) give in the app what they gave where they were learnt.
+ * The trees learnt by tools/sunshine_calibration.py from the weather of the hour (no month, no
+ * place): the app reads them wherever its classes end up and gives what the tool gave.
  */
 class SatelliteSunshineTest {
-    private val trees = SatelliteSunshine.Trees.parse(JsonCodec.parseToJsonElement(
-        javaClass.getResourceAsStream("/dev/nimbus/weather/data/remote/sunshine_model.json")!!.bufferedReader().readText(),
-    ))
+    private val trees = requireNotNull(SatelliteSunshine.model)
+
+    /** Found from a class of another package too – the release build moves the app's classes. */
+    @Test fun theModelIsFoundFromAnywhere() {
+        assertNotNull(GridSpanTest::class.java.getResourceAsStream(SatelliteSunshine.MODEL))
+        assertNotNull(SatelliteSunshine.model)
+    }
 
     /** Open-Meteo's sunshine, direct and global against a clear sky, diffuse share, sun height, low cloud – as the tool evaluated them. */
     @Test fun theSameAnswersAsTheTool() {

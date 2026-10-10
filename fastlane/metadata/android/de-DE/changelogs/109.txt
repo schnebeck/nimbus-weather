@@ -1,0 +1,1 @@
+• Rückblick: lädt wieder in der installierten App – das Sonnenschein-Modell wurde dort nicht gefunden. Fehlt es einmal, gilt der Sonnenschein von Open-Meteo, der Rückblick bleibt

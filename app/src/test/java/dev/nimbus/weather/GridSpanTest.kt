@@ -23,9 +23,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * „Doch noch einen Bug gefunden - gild auch für wind“ – the radar map zoomed out over Germany and
- * Scandinavia: the temperature field (and the wind arrows) filled only a rectangle around the
- * map's centre, from Brandenburg to Trondheim. The grid of 11 x 9 points was 1° apart at most.
+ * The temperature field and the wind arrows fill the whole visible map, zoomed out over Germany
+ * and Scandinavia too: a grid of 11 x 9 points at most 1° apart covers only a rectangle around the
+ * map's centre, so the spacing follows the view.
  */
 class GridSpanTest {
     private fun spans(zoom: Double, south: Double, north: Double, west: Double, east: Double): Boolean {

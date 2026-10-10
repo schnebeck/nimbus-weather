@@ -61,7 +61,7 @@ class RadarPreviewTest {
 
     private fun pixels(b: Bitmap) = IntArray(b.width * b.height).also { b.getPixels(it, 0, b.width, 0, 0, b.width, b.height) }
 
-    /** "Kleine Vorschau … auf das Gitter umstellen": the very picture of the radar loop, the preview's size. */
+    /** The small preview from the grid: the very picture of the radar loop, the preview's size. */
     @Test fun thePreviewIsTheLoopsPicture() = runBlocking {
         val g = RadarPreview.geo(52.3759, 9.732, 380, 220)
         val still = RadarPicture.still(offline, timeline, frame, g) { c, w -> if (c == DwdRadar) DwdRadar.cut(shower, w) else null }!!

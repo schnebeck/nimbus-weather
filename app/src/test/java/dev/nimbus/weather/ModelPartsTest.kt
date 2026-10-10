@@ -33,9 +33,8 @@ class ModelPartsTest {
     private fun at(day: Int, hour: Int) = ZonedDateTime.of(2026, 10, day, hour, 0, 0, 0, berlin).toInstant().toEpochMilli()
 
     /**
-     * "Bekommt man die Info, was Best Match lokal auswählt?" – "wir sollte aber nicht nur das Modell
-     * benennen, sondern auch noch die Modellauflösung mit angeben": in Norden the Dutch model
-     * first, the European one of ECMWF later.
+     * The best match names the models it takes for the place, each with its grid: in Norden the
+     * Dutch model first, the European one of ECMWF later.
      */
     @Test fun inNordenKnmiFirstThenEcmwf() {
         val parts = OpenMeteoSource.bestMatchParts(Fixtures.json("openmeteo_parts_norden.json"))

@@ -109,10 +109,7 @@ class PlaceListTest {
         assertEquals("berlin#2" to ForecastModel.KNMI, chosen)
     }
 
-    /**
-     * "Jeder gespeicherte Ort bekommt optional ein eigenes Modell, z. B. per langem Druck auf den Ort
-     * in der Ortsliste": in the edit mode under its name, tapped – the choice.
-     */
+    /** A saved place may have a model of its own: in the edit mode under its name, tapped – the choice. */
     @Test fun aPlaceGetsAModelOfItsOwn() {
         var chosen: Pair<String, ForecastModel?>? = null
         places(listOf(berlin), onSetModel = { p, m -> chosen = p.id to m })
@@ -134,9 +131,8 @@ class PlaceListTest {
     }
 
     /**
-     * "zuerst zwischen Globale App einstellung oder die Lokalen Einstellungen wählen … aktuell ist
-     * Standard auf gleicher ebene wie die anderen": first the app's setting or a model of its own,
-     * the models only beneath the latter – switching to it alone changes nothing.
+     * First the app's setting or a model of its own, the models only beneath the latter – switching
+     * to it alone changes nothing.
      */
     @Test fun firstAppSettingOrItsOwnThenTheModel() {
         var chosen: Pair<String, ForecastModel?>? = null
@@ -157,10 +153,7 @@ class PlaceListTest {
         assertTrue("$model not beneath $own", model.left > own.left && model.top > own.top)
     }
 
-    /**
-     * "Kopie ohne Wahl … Besser wäre: Ohne Wahl wird die Kopie wieder verworfen": the copy's sheet
-     * closed without a model – the copy goes; with one, it stays.
-     */
+    /** The copy's sheet closed without a model – the copy goes; with one, it stays. */
     @Test fun aCopyClosedWithoutAModelIsDiscarded() {
         val removed = mutableListOf<String>()
         var chosen: Pair<String, ForecastModel?>? = null
@@ -180,8 +173,8 @@ class PlaceListTest {
     }
 
     /**
-     * "Ruhiger wäre es, wenn die Liste von der Trennlinie aus nach unten aufklappt": while it
-     * unfolds the models stand where they end up – beneath the choice, nothing sliding up from below.
+     * The list unfolds downwards from the divider: while it unfolds the models stand where they end
+     * up – beneath the choice, nothing sliding up from below.
      */
     @Test fun theModelsUnfoldDownwardsFromTheLine() {
         places(listOf(berlin))

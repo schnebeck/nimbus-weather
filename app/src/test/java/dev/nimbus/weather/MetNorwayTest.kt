@@ -153,10 +153,7 @@ class MetNorwayTest {
         assertEquals(16.2, data.current.temperature, 0.01)
     }
 
-    /**
-     * "mach mal die weiteren Modelle - kommen wir an die niederländer auch ran?": Norden on KNMI
-     * Harmonie, named with its grid.
-     */
+    /** Norden on KNMI Harmonie, named with its grid. */
     @Test fun nordenOnKnmiHarmonie() = runTest {
         val norden = Place("n", "Norden", latitude = 53.596, longitude = 7.206, model = ForecastModel.KNMI)
         val data = repo().load(norden, Settings(), german = true)
@@ -176,7 +173,7 @@ class MetNorwayTest {
         }
     }
 
-    /** "auto-Select ganz oben anordnen und als default-Wert nehmen". */
+    /** "Automatic" heads the list of models and is the default. */
     @Test fun automaticIsFirstAndTheDefault() {
         assertEquals(ForecastModel.BEST_MATCH, Settings().model)
         assertEquals(ForecastModel.BEST_MATCH, dev.nimbus.weather.ui.settings.ModelChoices.first().first)

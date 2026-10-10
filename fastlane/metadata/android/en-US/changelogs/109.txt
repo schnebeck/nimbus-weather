@@ -1,0 +1,1 @@
+• Look-back: loads again in the installed app – the sunshine model was not found there. Should it ever be missing, Open-Meteo's sunshine stands and the look-back stays

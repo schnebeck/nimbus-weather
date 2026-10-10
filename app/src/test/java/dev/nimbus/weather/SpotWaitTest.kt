@@ -33,9 +33,8 @@ import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 /**
- * „alle drei Punkte als 1.37.0 umsetzen“ – the third: the DWD's point request for the radar took
- * from one second to fifty, and the look-back waited for it. Now it waits a set time; late, the
- * station's precipitation and sunshine stand.
+ * The DWD's point request for the radar takes from one second to fifty: the look-back waits for it
+ * a set time only; late, the station's precipitation and sunshine stand.
  */
 class SpotWaitTest {
     private val now = Instant.parse("2026-09-29T10:20:00Z").toEpochMilli()

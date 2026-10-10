@@ -1,6 +1,6 @@
 /*
  * Nimbus - app/src/test/java/dev/nimbus/weather/RadarPreviewSpeedTest.kt
- * "warum ist es langsamer": the preview fetches only its area's cells, no composite it does
+ * A fast preview: it fetches only its area's cells, no composite it does
  * not show, RainViewer coarser – and the places' previews one after the other.
  *
  *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
@@ -67,7 +67,7 @@ class RadarPreviewSpeedTest {
     }
 
     /**
-     * "wo die Komposite den Ausschnitt abdecken": the KNMI's rectangle reaches into the area, but
+     * Only where the composites cover the area: the KNMI's rectangle reaches into the area, but
      * where the DWD's radars cover every pixel it shows none – not fetched. Where they leave
      * pixels, it is.
      */
@@ -81,10 +81,7 @@ class RadarPreviewSpeedTest {
         assertEquals(listOf<RadarComposite>(KnmiRadar), RadarPicture.shown(mapOf(KnmiRadar to all), n))
     }
 
-    /**
-     * "RainViewer in der Vorschau höchstens Zoom 5 … das ergibt nur 1–4 Kacheln": four at most – at
-     * 6, since at 5 its rain showed as blocks (1.33.2).
-     */
+    /** RainViewer's tiles in the preview: four at most – at zoom 6, since at 5 its rain shows as blocks. */
     @Test fun rainViewerCoarserForThePreview() {
         assertEquals(7, RadarPicture.rvZoom(hannover))
         assertEquals(6, RadarPicture.rvZoom(hannover, RadarPicture.STILL_RV_ZOOM))

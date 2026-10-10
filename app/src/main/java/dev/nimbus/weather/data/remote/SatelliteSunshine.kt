@@ -30,16 +30,19 @@ data class SatelliteHour(val sunshine: Double?, val direct: Double?, val global:
 /**
  * The sunshine of an hour from what the satellite says of it – Open-Meteo's own sunshine, the
  * direct and the global irradiance against a clear sky's, the diffuse share – and the model's low
- * cloud, with the sun's height: gradient-boosted trees learnt from 18 DWD stations measuring
- * sunshine (`sunshine_model.json`, written by tools/sunshine_calibration.py). Open-Meteo's
- * sunshine alone counted an hour of passing showers as sunny; with every month left out of the
- * learning once and judged on stations not learnt from, the error of an hour fell from 11.8 to
- * 7.1 minutes, that of a day from 88 to 53 (docs/STATIONS.md).
+ * cloud, with the sun's height. Open-Meteo's sunshine counts an hour of passing showers as sunny
+ * once the hour's mean direct irradiance is high; the weather of the hour as a whole tells how
+ * long the sun shone. Gradient-boosted trees learnt from DWD stations measuring sunshine read it
+ * ([MODEL], written and checked by tools/sunshine_calibration.py, see docs/STATIONS.md); they know
+ * neither month nor place, so they hold for any of them.
  */
 object SatelliteSunshine {
-    /** Minutes of sunshine in the hour ending [hourEnd]; Open-Meteo's where the radiation is missing or the sun down. */
+    /** Absolute: the release build renames this class and its package, a relative path would not find the file. */
+    const val MODEL = "/dev/nimbus/weather/data/remote/sunshine_model.json"
+
+    /** Minutes of sunshine in the hour ending [hourEnd]; Open-Meteo's where the radiation is missing, the sun down or the model unreadable. */
     fun minutes(hour: SatelliteHour, hourEnd: Long, lat: Double, lon: Double, lowCloud: Double?): Double? =
-        features(hour, hourEnd, lat, lon, lowCloud)?.let(model::minutes) ?: hour.sunshine
+        model?.let { m -> features(hour, hourEnd, lat, lon, lowCloud)?.let(m::minutes) } ?: hour.sunshine
 
     /** The hours of [hours] in minutes of sunshine; [lowCloud]: the model's low cloud (%) of the hour ending at a time. */
     fun minutes(hours: Map<Long, SatelliteHour>, lat: Double, lon: Double, lowCloud: (Long) -> Double? = { null }): Map<Long, Double> =
@@ -66,11 +69,13 @@ object SatelliteSunshine {
         )
     }
 
-    private val model by lazy {
-        Trees.parse(JsonCodec.parseToJsonElement(
-            requireNotNull(SatelliteSunshine::class.java.getResourceAsStream("sunshine_model.json")) { "sunshine model missing" }
-                .bufferedReader().use { it.readText() },
-        ))
+    /** Null if unreadable: the sunshine is then Open-Meteo's – the look-back must not fail for it. */
+    internal val model: Trees? by lazy {
+        runCatching {
+            Trees.parse(JsonCodec.parseToJsonElement(
+                requireNotNull(SatelliteSunshine::class.java.getResourceAsStream(MODEL)) { "$MODEL missing" }.bufferedReader().use { it.readText() },
+            ))
+        }.onFailure { android.util.Log.w("Nimbus", "sunshine model unreadable: ${it.message}") }.getOrNull()
     }
 
     /** The learnt trees: each a list of nodes; a leaf has no left child (−1). */

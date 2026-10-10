@@ -53,11 +53,10 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 
 /**
- * „Können wir nicht Spaltentitel "gemessen" und "erwartet" haben?“ – the hour 16–17 measured at
- * 17:32: temperature from the station, the sunshine not (yet): the readout put "60 min" under
- * "· gemessen" while the chart had the forecast's frame. Now the sunshine's measured cell is
- * empty and its expected one holds the 60 minutes; a station without sunshine shows none for
- * the hours over and says so in the legend.
+ * The readout in columns "measured" and "expected": the hour 16–17 at 17:32, temperature from the
+ * station, the sunshine not (yet) – its measured cell is empty, its expected one holds the
+ * 60 minutes the chart shows as a frame; a station without sunshine shows none for the hours over
+ * and says so in the legend.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)

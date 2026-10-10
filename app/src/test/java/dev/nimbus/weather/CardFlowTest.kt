@@ -1,6 +1,6 @@
 /*
  * Nimbus - app/src/test/java/dev/nimbus/weather/CardFlowTest.kt
- * "Im Landscape-mode fließen die Kacheln nicht so richtig in die Lücken": in columns the cards
+ * Cards flow into the gaps: in columns the cards
  * fill whichever column is shorter – no column empty beside a long card while cards follow.
  *
  *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>

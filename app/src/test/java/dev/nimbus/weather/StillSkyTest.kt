@@ -42,8 +42,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * „Wäre es evtl besser den Animationslayer grafisch auszublenden? So kann ein Starkregen im
- * hintergund eingefroren sein - keine Animation sollte auch keine Animationsgrafiken bedeuten“.
+ * No animation, no animated graphics: a still sky shows no frozen rain, snow, lightning or leaves.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)

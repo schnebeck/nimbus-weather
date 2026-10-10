@@ -290,7 +290,7 @@ class MyLocationTest {
         until("the air quality's card green") { state(dev.nimbus.weather.data.model.DataPart.AIR_QUALITY) == dev.nimbus.weather.data.repo.RecordState.CURRENT }
     }
 
-    /** "Kacheln mit 120s Timeout": each extra source may take two minutes, on any network. */
+    /** Each extra source may take two minutes, on any network: its card waits for it. */
     @Test fun eachSourceHasTwoMinutes() {
         assertEquals(120_000L, WeatherRepository.SOURCE_TIMEOUT_MS)
     }

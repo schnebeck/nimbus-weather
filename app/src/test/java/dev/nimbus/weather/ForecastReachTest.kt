@@ -1,7 +1,6 @@
 /*
  * Nimbus - app/src/test/java/dev/nimbus/weather/ForecastReachTest.kt
- * "Könnte man eigentlich die Vorschau beim niederschlagsradar abschalten, wenn das Feature in den
- * angezeigten Radardaten nicht vorhanden ist?": without a nowcast in the area the loop ends at now,
+ * The radar's forecast only where there is one: without a nowcast in the area the loop ends at now,
  * the forecast cannot be chosen.
  *
  *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>

@@ -1,6 +1,6 @@
 /*
  * Nimbus - app/src/test/java/dev/nimbus/weather/OutlookTextTest.kt
- * "ab etwa 22:00 Nieselregen … Kein Niederschlag in Sicht": the short forecast never calls dry
+ * The short forecast never calls dry
  * what an hour's symbol shows as precipitation.
  *
  *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>

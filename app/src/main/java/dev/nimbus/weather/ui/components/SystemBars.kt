@@ -86,8 +86,8 @@ fun SystemBarsVisibility(fullscreen: Boolean) {
                 controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
                 controller.hide(WindowInsetsCompat.Type.systemBars())
             } else {
-                // back to the default: with the full screen's behaviour kept, the system offered
-                // no rotate button any more (manual rotation) – the bars counted as hidden
+                // back to the default: with the full screen's behaviour kept, the system offers
+                // no rotate button (manual rotation) – the bars count as hidden
                 controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
                 controller.show(WindowInsetsCompat.Type.systemBars())
             }

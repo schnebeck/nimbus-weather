@@ -1,7 +1,6 @@
 /*
  * Nimbus - app/src/test/java/dev/nimbus/weather/SkyNowTest.kt
- * "Die DWD-Station sagt 18°C, bewölkt und die Prognose sagt 18° und sonnig": the sky now by the
- * same rule as the hours, the station's sunshine first – and where each value comes from. Norden,
+ * Station and forecast never disagree on the sky now: the sky now by the same rule as the hours, the station's sunshine first – and where each value comes from. Norden,
  * 5 October 2026, 16:30 (MET Nordic: overcast under a veil, an hour of sun).
  *
  *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
@@ -56,7 +55,7 @@ class SkyNowTest {
         assertEquals("Norderney", station.stationName)
     }
 
-    /** "Für „jetzt“ gilt die Messung, auch beim Himmel": the station's full sunshine – sunny, as the hour. */
+    /** "Now" is the measurement, the sky too: the station's full sunshine – sunny, as the hour. */
     @Test fun theStationsSunshineDecidesTheSky() {
         val c = NowWeather.mergeObservation(model.current!!, station)
         assertEquals(Condition.CLEAR, c.condition)
@@ -71,14 +70,14 @@ class SkyNowTest {
         assertEquals(Condition.CLOUDY, NowWeather.withModelSunshine(c, model.hourly, now).condition)
     }
 
-    /** "Ohne Messung die Sonnenscheindauer der laufenden Modellstunde": sunny, as that hour. */
+    /** Without a measurement, the sunshine of the model's hour running now: sunny, as that hour. */
     @Test fun withoutAMeasurementTheModelsSunshine() {
         val running = NowWeather.runningHour(model.hourly, now)!!
         assertEquals(57.4, running.sunshine!!, 0.1)
         val c = NowWeather.withModelSunshine(model.current!!, model.hourly, now)
         assertEquals(Condition.CLEAR, c.condition)
         assertEquals(SkyBasis.MODEL_SUNSHINE, c.sky)
-        // "Kopfzeile und laufende Stunde nutzen dieselbe Regel"
+        // the header and the hour running now follow the same rule
         assertEquals(running.condition, c.condition)
     }
 
@@ -91,8 +90,8 @@ class SkyNowTest {
     }
 
     /**
-     * "Dann stehen „Jetzt“ im Diagramm und die Kopfzeile nie mehr gegeneinander": the hour running
-     * now (16:00–17:00, its values at 17:00) shows the header's sky, the others the forecast's.
+     * "Now" in the chart and the header always agree: the hour running now (16:00–17:00, its values
+     * at 17:00) shows the header's sky, the others the forecast's.
      */
     @Test fun theHourRunningNowShowsTheHeader() {
         val points: List<MeteoPoint> = model.hourly.map { it.toMeteo().copy(condition = Condition.CLOUDY) }.map { it.asNow(now, Condition.RAIN) }
@@ -101,7 +100,7 @@ class SkyNowTest {
         assertTrue(points.filter { it !== running }.all { it.condition == Condition.CLOUDY })
     }
 
-    /** "Der Hinweis „Gemessen an …“ zeigt in der Infoansicht pro Wert, woher er kommt." */
+    /** The "measured at …" note tells in the info view, value by value, where each comes from. */
     @Test fun eachValueWithItsSource() {
         val c = NowWeather.mergeObservation(model.current!!, station.copy(humidity = null))
         var text = ""

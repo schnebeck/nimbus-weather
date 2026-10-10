@@ -90,7 +90,7 @@ object WeatherCodes {
     /**
      * An hour of a model: its [code] matched with what else the model says of the hour.
      * - Precipitation without an amount ([precipitation] 0.0 – traces the code names, rounded
-     *   away): the sky by the [cloudCover] – the symbol showed rain where the bar showed none.
+     *   away): the sky by the [cloudCover] – a rain symbol over an hour without a bar misleads.
      * - Rain or drizzle with [sunshineMinutes] from [PARTLY_SUNNY_MINUTES] on: showers (sun and
      *   rain in the same hour).
      * - The sky with the sunshine ([withSunshine]). Thunder stays as it is.

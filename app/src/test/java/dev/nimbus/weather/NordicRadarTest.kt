@@ -1,7 +1,6 @@
 /*
  * Nimbus - app/src/test/java/dev/nimbus/weather/NordicRadarTest.kt
- * "Es wäre durchaus interessant ein MET Norway Komposit zu nutzen" – "MET-Norway-Nordic darf dann aber
- * ja nur in einer entsprechenden Zoomstufe genutzt werden": the Nordic composite read from MET
+ * MET Norway's Nordic composite, used at the zoom it suits: read from MET
  * Norway's answers of 5 October 2026, 19:50 UTC, in two grids by scale.
  *
  *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>

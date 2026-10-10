@@ -50,7 +50,7 @@ class RvStepsTest {
     @Test fun ownBetweenNearNone() {
         val tl = timeline()
         assertEquals(RvPlan.Own("/v2/radar/p0"), RvSteps.plan(tl, 0))
-        // :05 – the frame of :00 it used to copy: now half the way from :00 to :10
+        // :05 – not a copy of the frame of :00: half the way from :00 to :10
         assertEquals(RvPlan.Between("/v2/radar/p0", "/v2/radar/p1", 0.5f, 10 * m), RvSteps.plan(tl, 1))
         assertEquals(RvPlan.Own("/v2/radar/p1"), RvSteps.plan(tl, 2))
         // the newest past steps after the newest frame: the nearest (nothing later to move to), then none

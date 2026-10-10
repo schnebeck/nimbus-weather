@@ -1,8 +1,7 @@
 /*
  * Nimbus - app/src/test/java/dev/nimbus/weather/NoBackgroundWorkTest.kt
- * "Nimbus [hat] keine Eigenschaften, für die es überhaupt bei ausgeschaltetem Bildschirm noch
- * weiterarbeiten sollte. Es muss beim reaktivieren eh alle Daten aktualisieren": no work in the
- * background, the radar resting while not shown.
+ * Nothing needs Nimbus to work on with the screen off, and opened it renews what is out of date
+ * anyway: no work in the background, the radar resting while not shown.
  *
  *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
  *   Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
@@ -49,12 +48,12 @@ import java.util.concurrent.TimeUnit
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], application = android.app.Application::class)
 class NoBackgroundWorkTest {
-    /** Stands in for the workers of earlier versions (scheduled under their names). */
+    /** Stands in for background workers scheduled under BackgroundWork's names. */
     class Former(context: Context, params: WorkerParameters) : Worker(context, params) {
         override fun doWork() = Result.success()
     }
 
-    /** The hourly weather and the 15-minute radar work an earlier version scheduled: called off at the start. */
+    /** Hourly weather and 15-minute radar work still scheduled: called off at the start. */
     @Test fun formerWorkIsCalledOff() {
         val ctx = RuntimeEnvironment.getApplication()
         WorkManager.initialize(ctx, Configuration.Builder().setExecutor(Executors.newSingleThreadExecutor()).build())

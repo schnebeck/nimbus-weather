@@ -49,7 +49,7 @@ class KnmiRadarTest {
         assertTrue("no dry cell", (0 until codes.size).any { codes[it].toInt() == 0 })
     }
 
-    /** "passt da unsere bisherige visuelle Dateninterpolation zu?": its cells are the DWD grid's. */
+    /** The KNMI's cells fit the smoothing made for the DWD's: they are the DWD grid's. */
     @Test fun itsCellsAreTheDwdGrids() {
         assertEquals(DwdRadar.lon0, KnmiRadar.lon0, 1e-9)
                 for (lat in listOf(49.125, 51.505, 53.005, 55.905)) {           // cell centres
@@ -84,8 +84,7 @@ class KnmiRadarTest {
     }
 
     /**
-     * "die DWD-Radardaten von der Radardatenverarbeitung entkoppeln": the processing takes the
-     * composites in order – where the first covers a spot it shows it, dry or not; where it does
+     * The processing does not depend on the DWD's data: it takes the composites in order – where the first covers a spot it shows it, dry or not; where it does
      * not cover it, the next one.
      */
     @Test fun theFirstCompositeCoveringASpotShowsIt() {

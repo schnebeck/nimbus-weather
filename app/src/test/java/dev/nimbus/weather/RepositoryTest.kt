@@ -248,7 +248,7 @@ class RepositoryTest {
         assertTrue(expired(data, later).isEmpty())
     }
 
-    /** Data stored by an earlier version: no time per part – the extras count as expired, the forecast has its time. */
+    /** Data stored without a time per part: the extras count as expired, the forecast has its time. */
     @Test
     fun `stored data without times per part`() = runTest {
         val old = repo(fixtureNow).load(berlin, Settings(), german = true).copy(partsAt = emptyMap())

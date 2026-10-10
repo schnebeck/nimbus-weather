@@ -32,9 +32,8 @@ import org.junit.Test
 import java.time.Instant
 
 /**
- * „Eigentlich müsste man zwischen den Stationen triangulieren …“ – „setze gleich alles für eine
- * 1.36.0 um und führe gleich die quellenprüfung mit durch“: precipitation by the DWD's radar over
- * the place (RADOLAN RW, adjusted to the gauges; RY for the newest hour), sunshine by the satellite
+ * Measured over the place itself rather than at a station 20–40 km away: precipitation by the
+ * DWD's radar (RADOLAN RW, adjusted to the gauges; RY for the newest hour), sunshine by the satellite
  * (the DWD's from EUMETSAT MTG, via Open-Meteo). Recorded on 6 Oct 2026: rain over the Bay of
  * Kiel, Bad Salzdetfurth in the sun.
  */
@@ -79,12 +78,8 @@ class SpotSourceTest {
     }
 
     /**
-     * „wie schafft es das Wetter mit einer prognose von 60min Sonnenschein 1,2mm Niederschlag zu
-     * generieren?“ – „generell finde ich die lokalere Prognose aufgrund der Sattelitendaten zu
-     * ermitteln die bessere Methode … schön wäre es, wenn du die Anpassung mit sagen wir 100 Alt-Daten
-     * über verschiedene Orte zu zurückligenden Zeiten/Jahreszeiten prüfen würdest und daran sogar dein
-     * Modell optimieren könntest“: Norden, 10 Oct 2026, showers – Open-Meteo's sunshine gave the
-     * full hour 12–13 h (and 337 minutes the day), the stations 12 km away 11 (and 135).
+     * An hour of passing showers is not fully sunny: Norden, 10 Oct 2026 – Open-Meteo's sunshine
+     * gives the full hour 12–13 h (and 337 minutes the day), the stations 12 km away 11 (and 135).
      */
     @Test fun theSatellitesSunshineByItsDirectIrradiance() {
         val sun = SpotSource.sunshine(Fixtures.json("satellite_sun_norden_showers.json"), 53.5964, 7.2061)

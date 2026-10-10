@@ -234,7 +234,7 @@ private fun SunChart(
             val xm = x(mark)
             drawLine(Color(0x1FFFFFFF), Offset(xm, top), Offset(xm, bottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
             val lt = measurer.measure(if (mark == end) tf.hourEnd(mark) else tf.hour(mark), labelStyle)
-            // inside the chart: "12 AM" is wider than the "24" the margins are made for (it was cut off)
+            // inside the chart: "12 AM" is wider than the "24" the margins are made for (it would be cut off)
             drawText(lt, topLeft = Offset(axisLabelLeft(xm, lt.size.width, size.width), bottom + 4.dp.toPx()))
             mark += 6 * 3_600_000L
         }

@@ -241,11 +241,9 @@ class LookTest {
     }
 
     /**
-     * "Die Stundenzeitanzeige (oben, 00.00 - 24.00) und der Slider stehen auf der vollen Stunden …
-     * Also sollte die aktuelle Zeitanzeige auch zur Uhrzeit oben und zum Slider passen": the bar of
-     * 12–13 stands under the 12 (11:30–12:30 on the clock), the slider of that hour on its middle –
-     * at 12:00 the "now" line stands there too (it stood an hour early, on the bar of 11–12), at
-     * 12:30 half way to the next bar.
+     * The "now" line fits the hour labels and the slider: the bar of 12–13 stands under the 12
+     * (11:30–12:30 on the clock), the slider of that hour on its middle – at 12:00 the "now" line
+     * stands there too, not on the bar of 11–12, at 12:30 half way to the next bar.
      */
     @Test fun nowLineStandsOnTheClock() {
         var shown by mutableStateOf(false)
@@ -289,9 +287,7 @@ class LookTest {
     }
 
     /**
-     * „Wenn ich in der 10-Tage-vorhersage nicht heute sondern morgen (oder einen anderen zukünfigen
-     * Tag) auswähle, dann wird mir eine Stundenvorhersage 11-12.00 Uhr angezeigt, aber heine
-     * Tagesvorhersage?!“ – a day to come shows its whole day until the cursor is set, the hour's
+     * A day to come shows its whole day until the cursor is set, the hour's
      * values while it stands, the day again once it has faded; the card keeps its height.
      */
     @Test fun aDayToComeShowsTheWholeDayUntilTheCursor() {
@@ -371,7 +367,7 @@ class LookTest {
 
     /**
      * Opening a day of the 10-day card: the chart unfolds below its row – nothing of it is drawn
-     * over the rows above, at no moment of the animation (it grew from the bottom, over them).
+     * over the rows above, at no moment of the animation (growing from the bottom, it would be).
      */
     @Test fun dayChartUnfoldsBelowItsRow() {
         compose.setContent { Card { dev.nimbus.weather.ui.main.DailyCard(cardData(), day + 10 * h) } }
@@ -408,9 +404,8 @@ class LookTest {
     }
 
     /**
-     * „Wenn ich in der 10-Tage-Vorhersage auf ein einen Tag-button drücke, dann öffnet sich der Tag
-     * irgendwie nach oben, und man muss erst nach oben rollen, um die neuen Daten zu sehen.“ – today
-     * open above, scrolled down to the days after it: the day tapped is in view once it has unfolded.
+     * A day tapped comes into view once it has unfolded – a day open above it closes at the same
+     * time and pulls it up out of the screen. Today open above, scrolled down to the days after it.
      */
     @Test fun aTappedDayComesIntoView() {
         val list = androidx.compose.foundation.lazy.LazyListState()

@@ -1,7 +1,7 @@
 /*
  * Nimbus - app/src/test/java/dev/nimbus/weather/RadarNowhereTest.kt
- * "Wenn wir in die Vorhersage kommen, gibt es keine Daten … die Seite in der Vorhersage aufwecke,
- * dann hängt nach Laden": steps nobody has anything for in the area play as empty ones.
+ * A radar loop never hangs on steps without data: steps nobody has anything for in the area play
+ * as empty ones.
  *
  *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
  *   Produced by Thorsten Schnebeck - the idea, the decisions, the testing.

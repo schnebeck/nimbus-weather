@@ -25,9 +25,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * „Manchmal werden regenwolken angezeigt und es gibt dann eine Regenwahrscheinlichkeit aber keine
- * Niederschlagsprognose“ – „müsste man dann nicht auch noch die Sonnenscheinprognose-Daten auch
- * kleich in die Korrektur mit eifließen lassen?“ – „beides als 1.37.5 umsetzen und bauen“.
+ * An hour's symbol agrees with its amount and its sunshine: no rain cloud over an hour without
+ * precipitation, showers for rain with sun in the same hour.
  */
 class HourSymbolTest {
     private val wet = setOf(

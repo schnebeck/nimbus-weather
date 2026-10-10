@@ -36,9 +36,8 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 /**
- * „Wieso ist hier schon gefallener niederschlag im diagramm vermerkt??“ – „Sonne und niederschlag
- * müssen aber in allen Kachel-Darstellungsformen korrekt zwischen erwartet und gemessen
- * unterscheiden können“: a reading is a block, the forecast a frame – per quantity and per hour.
+ * Measured and expected apart in every chart: a reading is a block, the forecast a frame – per
+ * quantity and per hour; what has not fallen yet is never drawn as fallen.
  */
 class BarSourcesTest {
     private val zone = ZoneId.of("Europe/Berlin")
@@ -81,8 +80,7 @@ class BarSourcesTest {
     }
 
     /**
-     * „wenn eine Station gar keinen Parameter meldet, sollte die Grafik den dann einfach auch gar
-     * nicht visualisieren“: without rain gauge and sunshine sensor the hours over show no bar
+     * A quantity no station measures is not drawn: without rain gauge and sunshine sensor the hours over show no bar
      * (their forecast is in the readout's second column) – the hours to come the forecast's frames.
      */
     @Test fun theHoursOverWithoutAReadingShowNothing() {
@@ -100,8 +98,7 @@ class BarSourcesTest {
     }
 
     /**
-     * „da stimmt was nicht mit den Sonnenstunden in der Tagesvorhersage?! Da fehlt ein Feld!“ – the
-     * satellite's newest hour comes some 20 minutes late: an hour over after the last reading shows
+     * No hole in today's chart: the satellite's newest hour comes some 20 minutes late: an hour over after the last reading shows
      * the forecast's frame until its reading is in; an hour missing between readings stays empty.
      */
     @Test fun anHourStillOnItsWayShowsTheForecast() {

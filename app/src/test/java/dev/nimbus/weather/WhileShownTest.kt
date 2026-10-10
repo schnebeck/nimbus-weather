@@ -35,9 +35,8 @@ import org.robolectric.annotation.Config
 import java.io.File
 
 /**
- * „meiner Meinnug nach, hat Bis auf ein paar wetterwarnungen Nimbus keine Eigenschaften, für die es
- * überhaupt bei ausgeschaltetem Bildschirm noch weiterarbeiten sollte“ – the screens too: the
- * radar asking for a newer analysis every minute, the look-back's sky changing its part every 5 s.
+ * Nothing works on with the screen off – the screens' timers neither: the radar asking for a newer
+ * analysis every minute, the look-back's sky changing its part every 5 s.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], application = android.app.Application::class)

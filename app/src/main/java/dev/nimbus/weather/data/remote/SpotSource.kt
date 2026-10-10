@@ -42,7 +42,7 @@ class SpotSource(
 ) {
     /** Precipitation (mm) at the place, by the hour's end, for the hours ending [from] … [to]; empty outside the radar's area. */
     suspend fun radarPrecipitation(lat: Double, lon: Double, from: Long, to: Long): Map<Long, Double> = coroutineScope {
-        // RW keeps a day: asked for more, the service took seconds longer
+        // RW keeps a day: asked for more, the service takes seconds longer
         val rw = async { runCatching { http.getJson(pointUrl(RW, lat, lon, maxOf(from, to - RW_SPAN_MS), to)) }.getOrNull()?.let(::series) }
         val ry = async { runCatching { http.getJson(pointUrl(RY, lat, lon, maxOf(from, to - RY_SPAN_MS), to)) }.getOrNull()?.let(::series) }
         hourly(rw.await().orEmpty(), ry.await().orEmpty())

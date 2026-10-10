@@ -28,7 +28,7 @@ import org.junit.Test
 class PlaceTwinsTest {
     private val cux = Place("geo-2939623", "Cuxhaven", latitude = 53.871, longitude = 8.694)
 
-    /** "Eine etwas freakyge Sonderfunktion … dreimal den gleichen Ort mit unterschiedlichen lokalen modellen": ids of their own. */
+    /** The same place three times, each with another model: ids of their own. */
     @Test fun eachCopyItsOwnId() {
         val second = PlaceTwins.copyOf(cux, listOf(cux))
         assertEquals("geo-2939623#2", second.id)

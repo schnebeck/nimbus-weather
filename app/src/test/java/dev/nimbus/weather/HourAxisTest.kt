@@ -42,8 +42,8 @@ class HourAxisTest {
 
     /**
      * The labels are a clock: "12" at 12:00. A moment stands at its time on it – the temperature
-     * of 13:00 under the 13, "now" at 12:09 just right of the 12 (it stood an hour early, just
-     * right of the 11); the bar of 12–13 under the 12, from 11:30 to 12:30 on the clock.
+     * of 13:00 under the 13, "now" at 12:09 just right of the 12 (not of the 11); the bar of 12–13
+     * under the 12, from 11:30 to 12:30 on the clock.
      */
     @Test fun momentsStandOnTheClockOfTheLabels() {
         val noon = start + 12 * h

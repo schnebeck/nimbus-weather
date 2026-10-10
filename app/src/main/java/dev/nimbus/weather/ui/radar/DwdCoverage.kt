@@ -20,10 +20,9 @@ package dev.nimbus.weather.ui.radar
 import okhttp3.OkHttpClient
 
 /**
- * Past radar frames used to stack two layers – DWD and RainViewer, each at 85 % – so over
- * Germany, where both show the same rain, the past looked more opaque than the forecast (DWD
- * only). The area the DWD composite covers is read once from a DWD image (its "no data" grey
- * surrounds it) and kept on disk; inside it RainViewer pixels are dropped.
+ * DWD and RainViewer stacked, each at 85 %, show the same rain over Germany twice as opaque as
+ * the forecast (DWD only). The area the DWD composite covers is read once from a DWD image (its
+ * "no data" grey surrounds it) and kept on disk; inside it RainViewer pixels are dropped.
  */
 internal object DwdCoverage {
     // Lat/lon grid over the DWD bounds, 0.025° per pixel

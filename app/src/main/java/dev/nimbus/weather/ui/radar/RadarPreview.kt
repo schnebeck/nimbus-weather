@@ -33,9 +33,9 @@ import kotlin.math.ln
 import kotlin.math.tan
 
 /**
- * The preview used to render the whole map (roads, labels, radar) off-screen for every new radar
- * frame – 3 to 12 seconds per place. Now the base map is rendered once per place and size and
- * kept on disk (it never changes); the radar picture of exactly the preview area is drawn as in
+ * Rendering the whole map (roads, labels, radar) off-screen for every new radar frame takes 3 to
+ * 12 seconds per place. The base map is therefore rendered once per place and size and kept on
+ * disk (it never changes); the radar picture of exactly the preview area is drawn as in
  * the radar loop ([RadarPicture.still]: the composites, RainViewer beyond them), refreshed when a
  * new step is out. Both are shown from disk at once, so switching places shows the last picture
  * immediately – anywhere.

@@ -125,7 +125,7 @@ def dataset(low_name='low', model='best_match'):
 
 
 def share_07(X, clear):
-    """1.37.6: 60 × DNI / (0.7 × clear DNI); Open-Meteo's value where 0.7 × clear DNI < 120 W/m²."""
+    """The share of the direct irradiance: 60 × DNI / (0.7 × clear DNI); Open-Meteo's value where 0.7 × clear DNI < 120 W/m²."""
     return np.where(0.7 * clear < 120, X[:, 0], np.clip(60 * X[:, 1] / 0.7, 0, 60))
 
 

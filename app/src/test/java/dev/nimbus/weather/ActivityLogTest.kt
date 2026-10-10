@@ -44,9 +44,8 @@ import org.robolectric.annotation.Config
 import java.io.File
 
 /**
- * „sollte man ein schlankes Debugging einbauen, was die tatsächlichen Tätigkeiten loggt?“ – „ok,
- * als 1.37.1 umsetzen mit schalter zum aktivien des Debuggings und bauen“: one line per network
- * call (without coordinates), per app shown or hidden and screen on or off – only while switched on.
+ * The activity log: one line per network call (without coordinates), per app shown or hidden and
+ * per screen on or off – only while switched on in the settings.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], application = android.app.Application::class)
@@ -85,8 +84,8 @@ class ActivityLogTest {
     }
 
     /**
-     * Found on the emulator with 1.37.1: Sensor.Community takes the coordinates in the path
-     * ("filter/area=47.4090,10.2790,4") – every number in the path is masked.
+     * Sensor.Community takes the coordinates in the path ("filter/area=47.4090,10.2790,4"):
+     * every number in the path is masked.
      */
     @Test fun coordinatesInThePathMasked() {
         val where = ActivityLog.where("https://data.sensor.community/airrohr/v1/filter/area=47.4090,10.2790,4".toHttpUrl())

@@ -55,8 +55,9 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * „Würdest du nach der Akkuanalyse noch maßnahmen ergreifen wollen?“ – „ja, als 1.36.1 umsetzen“:
- * 60 MB a day over Wi-Fi with 22 minutes of use, the radio awake after every opening.
+ * Little data and battery: the radar loop loaded ahead without the nowcast and only for whoever
+ * uses the radar, the look-back renewed for the place shown only – loading ahead cost 60 MB a day
+ * over Wi-Fi with 22 minutes of use, the radio awake after every opening.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], application = android.app.Application::class)

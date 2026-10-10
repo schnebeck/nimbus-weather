@@ -133,8 +133,8 @@ class WeatherGridTest {
 
     /**
      * A day of the look-back that is over: its values do not change – the grid stored two days
-     * ago, holding that day from start to end, serves without a request (it was fetched anew
-     * every hour while the look-back was browsed).
+     * ago, holding that day from start to end, serves without a request (no new one every hour
+     * while the look-back is browsed).
      */
     @Test fun aPastDayKeepsItsGrid() = kotlinx.coroutines.runBlocking {
         val h = 3_600_000L

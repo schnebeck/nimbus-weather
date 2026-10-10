@@ -341,8 +341,8 @@ class OpenMeteoSource(
                         time = time * 1000,
                         temperature = tt,
                         apparentTemperature = app.at(i),
-                        // the hour's sunshine corrects a sky that is only "cloudy" by its cloud cover
-                        condition = WeatherCodes.withSunshine(WeatherCodes.fromWmo(wc.at(i)?.toInt(), pr.at(i)), sun.at(i)?.div(60.0)),
+                        // the code matched with the hour's amount, cloud cover and sunshine
+                        condition = WeatherCodes.forHour(wc.at(i)?.toInt(), pr.at(i), cc.at(i), sun.at(i)?.div(60.0)),
                         isDay = (day.at(i) ?: 1.0) > 0.5,
                         precipitation = pr.at(i),
                         precipitationProbability = pp.at(i),

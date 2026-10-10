@@ -188,13 +188,13 @@ class HistorySource(
             val temp = h.doubles("temperature_2m"); val pr = h.doubles("precipitation"); val wc = h.doubles("weather_code")
             val day = h.doubles("is_day"); val ws = h.doubles("wind_speed_10m"); val wg = h.doubles("wind_gusts_10m")
             val sun = h.doubles("sunshine_duration"); val pp = h.doubles("precipitation_probability")
-            val wd = h.doubles("wind_direction_10m")
+            val wd = h.doubles("wind_direction_10m"); val cc = h.doubles("cloud_cover")
             val map = t.indices.mapNotNull { i ->
                 val time = (t[i] ?: return@mapNotNull null) * 1000
                 time to HistoryHour.Modelled(
                     temperature = temp.at(i), precipitation = pr.at(i), windSpeed = ws.at(i), windGust = wg.at(i),
                     sunshineMinutes = sun.at(i)?.div(60.0),
-                    condition = WeatherCodes.withSunshine(WeatherCodes.fromWmo(wc.at(i)?.toInt(), pr.at(i)), sun.at(i)?.div(60.0)),
+                    condition = WeatherCodes.forHour(wc.at(i)?.toInt(), pr.at(i), cc.at(i), sun.at(i)?.div(60.0)),
                     isDay = (day.at(i) ?: 1.0) > 0.5, chance = pp.at(i), windDirection = wd.at(i),
                 )
             }.toMap()

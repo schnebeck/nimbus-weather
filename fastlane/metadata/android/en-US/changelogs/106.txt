@@ -1,0 +1,2 @@
+• The hours' weather symbols agree with the amount: where the model names rain but the hour has 0.0 mm, the app shows the sky by cloud cover and sunshine instead of a rain cloud without a bar
+• Rain with sun in the same hour (15 minutes and more) shows as showers

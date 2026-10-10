@@ -81,6 +81,30 @@ object WeatherCodes {
         return if (bySky.indexOf(bySun) < bySky.indexOf(c)) bySun else c
     }
 
+    /** Precipitation the model's code may name although the hour's amount is nothing. */
+    private val wet = setOf(
+        Condition.DRIZZLE, Condition.RAIN, Condition.HEAVY_RAIN, Condition.SHOWERS, Condition.FREEZING_RAIN,
+        Condition.SLEET, Condition.SNOW, Condition.HEAVY_SNOW,
+    )
+
+    /**
+     * An hour of a model: its [code] matched with what else the model says of the hour.
+     * - Precipitation without an amount ([precipitation] 0.0 – traces the code names, rounded
+     *   away): the sky by the [cloudCover] – the symbol showed rain where the bar showed none.
+     * - Rain or drizzle with [sunshineMinutes] from [PARTLY_SUNNY_MINUTES] on: showers (sun and
+     *   rain in the same hour).
+     * - The sky with the sunshine ([withSunshine]). Thunder stays as it is.
+     */
+    fun forHour(code: Int?, precipitation: Double?, cloudCover: Double?, sunshineMinutes: Double?): Condition {
+        val c = fromWmo(code, precipitation)
+        val matched = when {
+            c in wet && precipitation != null && precipitation < 0.05 -> sky(cloudCover ?: 100.0)
+            (c == Condition.RAIN || c == Condition.DRIZZLE) && (sunshineMinutes ?: 0.0) >= PARTLY_SUNNY_MINUTES -> Condition.SHOWERS
+            else -> c
+        }
+        return withSunshine(matched, sunshineMinutes)
+    }
+
     /** WMO 96/99: thunderstorm with hail (forecast for Central Europe). */
     fun isHail(code: Int?): Boolean = code == 96 || code == 99
 
@@ -110,12 +134,14 @@ object WeatherCodes {
             }
         }
         if (fog) return Condition.FOG
-        val c = cloudCover ?: 50.0
-        return when {
-            c < 12.5 -> Condition.CLEAR
-            c < 37.5 -> Condition.MOSTLY_CLEAR
-            c < 75.0 -> Condition.PARTLY_CLOUDY
-            else -> Condition.CLOUDY
-        }
+        return sky(cloudCover ?: 50.0)
+    }
+
+    /** The sky by the cloud cover (%). */
+    private fun sky(cloudCover: Double) = when {
+        cloudCover < 12.5 -> Condition.CLEAR
+        cloudCover < 37.5 -> Condition.MOSTLY_CLEAR
+        cloudCover < 75.0 -> Condition.PARTLY_CLOUDY
+        else -> Condition.CLOUDY
     }
 }

@@ -1,0 +1,2 @@
+• Wettersymbole der Stunden passen zur Menge: Nennt das Modell Regen, die Stunde hat aber 0,0 mm, zeigt die App den Himmel nach Bewölkung und Sonnenschein statt einer Regenwolke ohne Balken
+• Regen mit Sonne in derselben Stunde (ab 15 Minuten) erscheint als Schauer

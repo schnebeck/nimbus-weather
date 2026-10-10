@@ -87,6 +87,28 @@ Temperature and wind still come from the station. Below the chart it says where 
 come from. An hour without a measurement shows no bar; the forecast stands in the value table's
 "expected" column.
 
+### Sunshine from the direct irradiance
+
+The sunshine duration Open-Meteo derives from the satellite data counts an hour with passing
+showers as fully sunny once the hour's mean direct irradiance is high enough. Nimbus therefore
+works it out itself: the sun shone for the share of the hour that the satellite's mean direct
+irradiance is of a clear sky's (Meinel's model by the sun's height, times 0.7). With the sun low –
+below 120 W/m² of clear direct irradiance, the WMO's limit for sunshine – Open-Meteo's value stands.
+
+Checked against 18 DWD stations measuring sunshine, from Arkona to the Zugspitze, from 20 February
+(the start of the archive) to 9 October 2026, the satellite right at each station – 59,000 hours with the sun above the horizon.
+The factor 0.7 was fitted on 9 stations; the figures are those of the other 9:
+
+| | Open-Meteo | Nimbus |
+|---|---|---|
+| mean error of an hour | 11.8 min | 8.7 min |
+| systematically too much | +6.4 min/h | +0.8 min/h |
+| mean error of a day | 87 min | 61 min |
+
+Every one of the 18 stations and every season gets better (all stations, spring: error of the day 103 → 65 min,
+summer 81 → 57, autumn 60 → 48). There are no data for the winter yet. The script of the check:
+[tools/sunshine_calibration.py](../tools/sunshine_calibration.py).
+
 ## Checked, not built in
 
 | Network | Finding |

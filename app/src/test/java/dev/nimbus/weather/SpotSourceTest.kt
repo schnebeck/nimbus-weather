@@ -26,6 +26,7 @@ import mockwebserver3.MockWebServer
 import mockwebserver3.RecordedRequest
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
+import kotlin.math.abs
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
@@ -70,10 +71,30 @@ class SpotSourceTest {
     }
 
     @Test fun theSatellitesSunshine() {
-        val sun = SpotSource.sunshine(Fixtures.json("satellite_sun_salzdetfurth.json"))
+        val sun = SpotSource.sunshine(Fixtures.json("satellite_sun_salzdetfurth.json"), 52.06, 10.0)
         // 11:00–12:00 UTC (13–14 h) clouds over the place, 12–13 UTC 14 minutes
         assertEquals(0.0, sun.getValue(at("2026-10-06T11:00:00Z")), 1e-9)
         assertEquals(868.94 / 60, sun.getValue(at("2026-10-06T12:00:00Z")), 1e-6)
+        assertTrue(sun.values.all { it in 0.0..60.0 })
+    }
+
+    /**
+     * „wie schafft es das Wetter mit einer prognose von 60min Sonnenschein 1,2mm Niederschlag zu
+     * generieren?“ – „generell finde ich die lokalere Prognose aufgrund der Sattelitendaten zu
+     * ermitteln die bessere Methode … schön wäre es, wenn du die Anpassung mit sagen wir 100 Alt-Daten
+     * über verschiedene Orte zu zurückligenden Zeiten/Jahreszeiten prüfen würdest und daran sogar dein
+     * Modell optimieren könntest“: Norden, 10 Oct 2026, showers – Open-Meteo's sunshine gave the
+     * full hour 12–13 h (and 337 minutes the day), the stations 12 km away 11 (and 135).
+     */
+    @Test fun theSatellitesSunshineByItsDirectIrradiance() {
+        val sun = SpotSource.sunshine(Fixtures.json("satellite_sun_norden_showers.json"), 53.5964, 7.2061)
+        val raw = SpotSource.sunshine(Fixtures.json("satellite_sun_norden_showers.json").toString()
+            .replace("direct_normal_irradiance", "unused").let { dev.nimbus.weather.data.remote.JsonCodec.parseToJsonElement(it) }, 53.5964, 7.2061)
+        val noon = at("2026-10-10T11:00:00Z")          // 12–13 h CEST
+        assertEquals(60.0, raw.getValue(noon), 0.1)
+        assertTrue("12–13 h: ${sun.getValue(noon)} min", sun.getValue(noon) in 15.0..35.0)
+        val station = 135.0
+        assertTrue("the day: ${sun.values.sum()} min", abs(sun.values.sum() - station) < abs(raw.values.sum() - station) / 2)
         assertTrue(sun.values.all { it in 0.0..60.0 })
     }
 

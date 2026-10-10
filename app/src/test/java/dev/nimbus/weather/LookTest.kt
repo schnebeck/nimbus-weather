@@ -21,6 +21,7 @@ package dev.nimbus.weather
 import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -404,6 +405,32 @@ class LookTest {
         // the open chart keeps its axis labels in the card's padding (the clip does not cut them)
         compose.onRoot().captureRoboImage("src/test/screenshots/daily_open.png")
         toggleAndWatch("closing")
+    }
+
+    /**
+     * „Wenn ich in der 10-Tage-Vorhersage auf ein einen Tag-button drücke, dann öffnet sich der Tag
+     * irgendwie nach oben, und man muss erst nach oben rollen, um die neuen Daten zu sehen.“ – today
+     * open above, scrolled down to the days after it: the day tapped is in view once it has unfolded.
+     */
+    @Test fun aTappedDayComesIntoView() {
+        val list = androidx.compose.foundation.lazy.LazyListState()
+        compose.setContent {
+            androidx.compose.foundation.lazy.LazyColumn(Modifier.height(640.dp), state = list) {
+                item { Card { dev.nimbus.weather.ui.main.DailyCard(cardData(), day + 10 * h) } }
+                item { Box(Modifier.height(900.dp)) }
+            }
+        }
+        compose.waitForIdle()
+        val third = TimeFormat("UTC", true).weekdayShort(day + 48 * h)
+        // today's chart mostly scrolled away, the next days at the bottom
+        compose.runOnIdle { list.dispatchRawDelta(with(compose.density) { 520.dp.toPx() }) }
+        compose.waitForIdle()
+        compose.onNodeWithText(third).performTouchInput { click(Offset(width / 2f, 25.dp.toPx())) }
+        compose.waitForIdle()
+        // the day's own top (its bounds in the root are cut to the view)
+        val top = compose.onNodeWithText(third).fetchSemanticsNode().positionInRoot.y
+        val viewport = with(compose.density) { 640.dp.toPx() }
+        assertTrue("the tapped day's row at $top, the view 0..$viewport", top >= 0f && top < viewport / 2)
     }
 
     // ---- the readout while the finger slides --------------------------------------------------

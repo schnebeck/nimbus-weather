@@ -1,0 +1,2 @@
+• 10-Tage-Vorhersage: Ein angetippter Tag wird nach dem Aufklappen ins Bild gerückt
+• Sonnenschein vom Satelliten: Nimbus rechnet ihn jetzt aus der direkten Strahlung. Bei Schauern zählte eine Stunde sonst schnell als voll sonnig. Geprüft an 18 DWD-Stationen (Feb.–Okt. 2026): Tagesfehler 87 → 61 Minuten

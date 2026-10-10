@@ -1,0 +1,2 @@
+• 10-day forecast: a day tapped is brought into view once it has unfolded
+• Sunshine from the satellite: Nimbus now works it out from the direct irradiance. With showers an hour otherwise soon counted as fully sunny. Checked against 18 DWD stations (Feb–Oct 2026): error of a day 87 → 61 minutes

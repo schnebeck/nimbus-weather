@@ -27,15 +27,19 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -43,6 +47,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -61,6 +66,7 @@ import dev.nimbus.weather.ui.components.WeatherIcon
 import dev.nimbus.weather.ui.theme.NimbusColors
 import dev.nimbus.weather.util.NBSP
 import dev.nimbus.weather.util.Units
+import kotlinx.coroutines.flow.first
 
 @Composable
 fun DailyCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) {
@@ -143,7 +149,18 @@ private fun DayRow(
     nowCondition: dev.nimbus.weather.data.model.Condition? = null,
 ) {
     val settings = LocalSettings.current
-    Column(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+    // Opened by a tap: once unfolded, the day is brought into view – a day open above it closes at
+    // the same time and pulled it up out of the screen
+    val bring = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
+    var tapped by remember { mutableStateOf(false) }
+    var height by remember { mutableIntStateOf(0) }
+    val window = androidx.compose.ui.platform.LocalWindowInfo.current.containerSize.height
+    Column(
+        Modifier.fillMaxWidth()
+            .bringIntoViewRequester(bring)
+            .onSizeChanged { height = it.height }
+            .clickable { if (!expanded) tapped = true; onClick() },
+    ) {
         if (!columns.stacked) Row(Modifier.fillMaxWidth().heightIn(min = 50.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(label, Modifier.width(columns.label), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1, softWrap = false)
             Column(Modifier.width(columns.symbol), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -188,6 +205,13 @@ private fun DayRow(
             enter = androidx.compose.animation.expandVertically(expandFrom = Alignment.Top) + androidx.compose.animation.fadeIn(),
             exit = androidx.compose.animation.shrinkVertically(shrinkTowards = Alignment.Top) + androidx.compose.animation.fadeOut(),
         ) {
+            if (tapped) LaunchedEffect(Unit) {
+                // unfolded (at once without animations): its row and as much of the chart as fits
+                // in a screen – the row at the top where the whole day is taller than that
+                snapshotFlow { transition.currentState }.first { it == androidx.compose.animation.EnterExitState.Visible }
+                bring.bringIntoView(androidx.compose.ui.geometry.Rect(0f, 0f, 1f, minOf(height, window * 3 / 5).toFloat()))
+                tapped = false
+            }
             val end = day.date + 24 * 3_600_000L
             Meteogram(
                 hours.map { h -> h.toMeteo().let { measured?.apply(it, now) ?: it }.asNow(now, nowCondition) }, day.date, end,

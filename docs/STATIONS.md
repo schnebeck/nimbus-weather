@@ -87,6 +87,29 @@ Temperatur und Wind kommen weiter von der Station. Unter dem Diagramm steht, woh
 stammen. Eine Stunde, für die es keine Messung gibt, zeigt keinen Balken; die Prognose steht in der
 Werte-Tabelle in der Spalte „erwartet“.
 
+### Sonnenschein aus der direkten Strahlung
+
+Die Sonnenscheindauer, die Open-Meteo aus den Satellitendaten ableitet, zählt eine Stunde mit
+durchziehenden Schauern schon als voll sonnig, sobald das Stundenmittel der direkten Strahlung
+hoch genug ist. Nimbus rechnet deshalb selbst: Die Sonne schien den Anteil der Stunde, den die
+mittlere direkte Strahlung des Satelliten an der eines klaren Himmels hat (Meinel-Modell nach dem
+Sonnenstand, mal 0,7). Bei tiefer Sonne – unter 120 W/m² klarer direkter Strahlung, der Grenze der
+WMO für Sonnenschein – gilt der Wert von Open-Meteo.
+
+Geprüft an 18 DWD-Stationen mit Sonnenscheinmessung, von Arkona bis zur Zugspitze, vom 20. Februar
+(Beginn des Archivs) bis 9. Oktober 2026, der Satellit genau am Ort der Station – 59.000 Stunden mit Sonne über dem Horizont.
+Der Faktor 0,7 wurde an 9 Stationen bestimmt, die Zahlen gelten für die 9 anderen:
+
+| | Open-Meteo | Nimbus |
+|---|---|---|
+| mittlere Abweichung einer Stunde | 11,8 min | 8,7 min |
+| systematisch zu viel | +6,4 min/h | +0,8 min/h |
+| mittlere Abweichung eines Tages | 87 min | 61 min |
+
+Jede der 18 Stationen und jede Jahreszeit wird besser (alle Stationen, Frühjahr: Tagesfehler 103 → 65 min, Sommer
+81 → 57, Herbst 60 → 48). Für den Winter gibt es noch keine Daten. Das Skript zur Prüfung:
+[tools/sunshine_calibration.py](../tools/sunshine_calibration.py).
+
 ## Geprüft, aber nicht eingebaut
 
 | Netz | Befund |

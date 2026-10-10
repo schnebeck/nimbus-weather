@@ -1,0 +1,1 @@
+• Sunshine from the satellite, learnt from the weather: a model of the satellite's radiation, the sun's height and low cloud estimates each hour's minutes of sunshine. Checked against 18 DWD stations, every month left out once: error of an hour 11.8 → 7.1 minutes, of a day 88 → 53 – without the former bias from month to month

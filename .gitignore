@@ -28,3 +28,6 @@ docs/REQUIREMENTS.md
 
 # Project brief for the assistant: kept locally
 CLAUDE.md
+
+# Python byte code (tools/)
+__pycache__/

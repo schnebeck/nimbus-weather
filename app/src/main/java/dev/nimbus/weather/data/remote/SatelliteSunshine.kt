@@ -1,6 +1,6 @@
 /*
  * Nimbus - app/src/main/java/dev/nimbus/weather/data/remote/SatelliteSunshine.kt
- * The hour's sunshine from the satellite's direct irradiance, calibrated against DWD stations.
+ * The hour's sunshine from the satellite's radiation and the model's low cloud, learnt from DWD stations.
  *
  *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
  *   Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
@@ -18,35 +18,94 @@
 package dev.nimbus.weather.data.remote
 
 import dev.nimbus.weather.util.Moon
+import kotlinx.serialization.json.JsonElement
 import kotlin.math.PI
-import kotlin.math.min
+import kotlin.math.exp
 import kotlin.math.pow
 import kotlin.math.sin
 
+/** An hour of the satellite at a place: Open-Meteo's sunshine (minutes) and the radiation (W/m², hour means). */
+data class SatelliteHour(val sunshine: Double?, val direct: Double?, val global: Double?, val diffuse: Double?)
+
 /**
- * The sunshine of an hour from the satellite's mean direct normal irradiance (DNI): the sun shone
- * for the share of the hour that this mean is of the DNI under a clear sky. Open-Meteo's own
- * sunshine counts an hour with a passing shower as fully sunny once its mean DNI is high enough –
- * against 18 DWD stations (Feb–Oct 2026, 59,000 hours) it gave 6 minutes an hour too many; on
- * the 9 stations not used for the fit this estimate cuts the error of an hour from 11.8 to 8.7
- * minutes and that of a day from 87 to 61 (docs/STATIONS.md, tools/sunshine_calibration.py).
+ * The sunshine of an hour from what the satellite says of it – Open-Meteo's own sunshine, the
+ * direct and the global irradiance against a clear sky's, the diffuse share – and the model's low
+ * cloud, with the sun's height: gradient-boosted trees learnt from 18 DWD stations measuring
+ * sunshine (`sunshine_model.json`, written by tools/sunshine_calibration.py). Open-Meteo's
+ * sunshine alone counted an hour of passing showers as sunny; with every month left out of the
+ * learning once and judged on stations not learnt from, the error of an hour fell from 11.8 to
+ * 7.1 minutes, that of a day from 88 to 53 (docs/STATIONS.md).
  */
 object SatelliteSunshine {
-    /** The clear sky's DNI the satellite reaches at most (haze, its 2.5 km pixel): fitted. */
-    const val CLEAR_SHARE = 0.7
-    /** WMO: sunshine is direct irradiance from 120 W/m² on – below it no estimate by the share. */
-    private const val WMO_MIN = 120.0
+    /** Minutes of sunshine in the hour ending [hourEnd]; Open-Meteo's where the radiation is missing or the sun down. */
+    fun minutes(hour: SatelliteHour, hourEnd: Long, lat: Double, lon: Double, lowCloud: Double?): Double? =
+        features(hour, hourEnd, lat, lon, lowCloud)?.let(model::minutes) ?: hour.sunshine
 
-    /** Minutes of sunshine in the hour ending [hourEnd]; [openMeteo] where the share tells nothing (sun low, DNI missing). */
-    fun minutes(openMeteo: Double?, dni: Double?, hourEnd: Long, lat: Double, lon: Double): Double? {
-        val clear = clearSkyDni(hourEnd, lat, lon) * CLEAR_SHARE
-        if (dni == null || clear < WMO_MIN) return openMeteo
-        return 60 * min(1.0, dni / clear)
+    /** The hours of [hours] in minutes of sunshine; [lowCloud]: the model's low cloud (%) of the hour ending at a time. */
+    fun minutes(hours: Map<Long, SatelliteHour>, lat: Double, lon: Double, lowCloud: (Long) -> Double? = { null }): Map<Long, Double> =
+        hours.mapNotNull { (t, h) -> minutes(h, t, lat, lon, lowCloud(t))?.let { t to it } }.toMap()
+
+    /** In the order of the model's features (see the tool); null: no estimate. */
+    internal fun features(h: SatelliteHour, hourEnd: Long, lat: Double, lon: Double, lowCloud: Double?): DoubleArray? {
+        val sun = h.sunshine ?: return null
+        val direct = h.direct ?: return null
+        val global = h.global ?: return null
+        val diffuse = h.diffuse ?: return null
+        // the sun's height in six steps through the hour (radians)
+        val heights = DoubleArray(6) { k -> Moon.sunAltitude(hourEnd - (5 + 10 * k) * 60_000L, lat, lon) * PI / 180 }
+        if (heights.max() <= 0) return null
+        val clearDirect = heights.sumOf { if (it <= 0.01) 0.0 else 1367 * 0.7.pow((1 / sin(it)).pow(0.678)) } / 6
+        val clearGlobal = heights.sumOf { if (it <= 0.01) 0.0 else 1098 * sin(it) * exp(-0.057 / sin(it)) } / 6
+        return doubleArrayOf(
+            sun,
+            if (clearDirect > 0) direct / clearDirect else 0.0,
+            if (clearGlobal > 0) global / clearGlobal else 0.0,
+            if (global > 0) diffuse / global else 1.0,
+            heights.average() * 180 / PI,
+            lowCloud ?: Double.NaN,
+        )
     }
 
-    /** Mean DNI of a clear sky over the hour ending [hourEnd] (W/m², Meinel's model, six steps). */
-    fun clearSkyDni(hourEnd: Long, lat: Double, lon: Double): Double = (0 until 6).sumOf { k ->
-        val e = Moon.sunAltitude(hourEnd - (5 + 10 * k) * 60_000L, lat, lon) * PI / 180
-        if (e <= 0.01) 0.0 else 1367 * 0.7.pow((1 / sin(e)).pow(0.678))
-    } / 6
+    private val model by lazy {
+        Trees.parse(JsonCodec.parseToJsonElement(
+            requireNotNull(SatelliteSunshine::class.java.getResourceAsStream("sunshine_model.json")) { "sunshine model missing" }
+                .bufferedReader().use { it.readText() },
+        ))
+    }
+
+    /** The learnt trees: each a list of nodes; a leaf has no left child (−1). */
+    internal class Trees(
+        private val baseline: Double, private val feature: Array<IntArray>, private val threshold: Array<DoubleArray>,
+        private val left: Array<IntArray>, private val right: Array<IntArray>, private val missingLeft: Array<BooleanArray>,
+        private val value: Array<DoubleArray>,
+    ) {
+        fun minutes(x: DoubleArray): Double {
+            var total = baseline
+            for (t in feature.indices) {
+                var i = 0
+                while (left[t][i] >= 0) {
+                    val v = x[feature[t][i]]
+                    i = if (if (v.isNaN()) missingLeft[t][i] else v <= threshold[t][i]) left[t][i] else right[t][i]
+                }
+                total += value[t][i]
+            }
+            return total.coerceIn(0.0, 60.0)
+        }
+
+        companion object {
+            val FEATURES = listOf("sunshine", "direct", "global", "diffuse", "elevation", "low")
+
+            fun parse(root: JsonElement): Trees {
+                val o = requireNotNull(root.obj())
+                require(o.a("features")?.map { it.str() } == FEATURES) { "the model's features differ" }
+                val trees = requireNotNull(o.a("trees")).map { requireNotNull(it.obj()) }
+                fun ints(k: String) = Array(trees.size) { t -> trees[t].doubles(k).map { requireNotNull(it).toInt() }.toIntArray() }
+                fun reals(k: String) = Array(trees.size) { t -> trees[t].doubles(k).map { requireNotNull(it) }.toDoubleArray() }
+                return Trees(
+                    requireNotNull(o.d("baseline")), ints("f"), reals("t"), ints("l"), ints("r"),
+                    Array(trees.size) { t -> trees[t].doubles("m").map { it == 1.0 }.toBooleanArray() }, reals("v"),
+                )
+            }
+        }
+    }
 }

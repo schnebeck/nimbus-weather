@@ -48,18 +48,18 @@ class SpotSource(
         hourly(rw.await().orEmpty(), ry.await().orEmpty())
     }
 
-    /** Sunshine (minutes) at the place, by the hour's end, for the last [pastDays] days and today. */
-    suspend fun satelliteSunshine(lat: Double, lon: Double, pastDays: Int): Map<Long, Double> = runCatching {
+    /** The satellite's hours at the place, by the hour's end, for the last [pastDays] days and today ([SatelliteSunshine]). */
+    suspend fun satelliteHours(lat: Double, lon: Double, pastDays: Int): Map<Long, SatelliteHour> = runCatching {
         val url = "$satellite/v1/archive".toHttpUrl().newBuilder()
             .addQueryParameter("latitude", OpenMeteoSource.fmt(lat))
             .addQueryParameter("longitude", OpenMeteoSource.fmt(lon))
-            .addQueryParameter("hourly", "sunshine_duration,direct_normal_irradiance")
+            .addQueryParameter("hourly", "sunshine_duration,direct_normal_irradiance,shortwave_radiation,diffuse_radiation")
             .addQueryParameter("models", SATELLITE_MODEL)
             .addQueryParameter("timeformat", "unixtime")
             .addQueryParameter("past_days", pastDays.toString())
             .addQueryParameter("forecast_days", "1")
             .build().toString()
-        sunshine(http.getJson(url), lat, lon)
+        satelliteHours(http.getJson(url))
     }.getOrDefault(emptyMap())
 
     /** The values of [layer] at the place from [from] to [to] (GetFeatureInfo with a time range). */
@@ -112,14 +112,18 @@ class SpotSource(
         }
 
         /** Open-Meteo's satellite answer: the hour's end → minutes of sunshine (null hours left out). */
-        /** The satellite's hours at [lat]/[lon]: sunshine by its direct irradiance ([SatelliteSunshine]). */
-        fun sunshine(root: JsonElement, lat: Double, lon: Double): Map<Long, Double> {
+        fun satelliteHours(root: JsonElement): Map<Long, SatelliteHour> {
             val h = root.obj()?.o("hourly") ?: return emptyMap()
             val t = h.longs("time"); val s = h.doubles("sunshine_duration"); val dni = h.doubles("direct_normal_irradiance")
+            val ghi = h.doubles("shortwave_radiation"); val dif = h.doubles("diffuse_radiation")
             return t.indices.mapNotNull { i ->
                 val time = (t[i] ?: return@mapNotNull null) * 1000
-                SatelliteSunshine.minutes(s.at(i)?.div(60.0), dni.at(i), time, lat, lon)?.let { time to it }
+                time to SatelliteHour(s.at(i)?.div(60.0), dni.at(i), ghi.at(i), dif.at(i))
             }.toMap()
         }
+
+        /** The satellite's hours at [lat]/[lon] in minutes of sunshine ([SatelliteSunshine]). */
+        fun sunshine(root: JsonElement, lat: Double, lon: Double, lowCloud: (Long) -> Double? = { null }): Map<Long, Double> =
+            SatelliteSunshine.minutes(satelliteHours(root), lat, lon, lowCloud)
     }
 }

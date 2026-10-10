@@ -88,11 +88,12 @@ class SpotSourceTest {
      */
     @Test fun theSatellitesSunshineByItsDirectIrradiance() {
         val sun = SpotSource.sunshine(Fixtures.json("satellite_sun_norden_showers.json"), 53.5964, 7.2061)
+        // the radiation left out: Open-Meteo's own sunshine
         val raw = SpotSource.sunshine(Fixtures.json("satellite_sun_norden_showers.json").toString()
             .replace("direct_normal_irradiance", "unused").let { dev.nimbus.weather.data.remote.JsonCodec.parseToJsonElement(it) }, 53.5964, 7.2061)
         val noon = at("2026-10-10T11:00:00Z")          // 12–13 h CEST
         assertEquals(60.0, raw.getValue(noon), 0.1)
-        assertTrue("12–13 h: ${sun.getValue(noon)} min", sun.getValue(noon) in 15.0..35.0)
+        assertTrue("12–13 h: ${sun.getValue(noon)} min", sun.getValue(noon) in 15.0..30.0)
         val station = 135.0
         assertTrue("the day: ${sun.values.sum()} min", abs(sun.values.sum() - station) < abs(raw.values.sum() - station) / 2)
         assertTrue(sun.values.all { it in 0.0..60.0 })

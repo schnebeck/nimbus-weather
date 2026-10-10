@@ -1,0 +1,1 @@
+• Sonnenschein vom Satelliten, aus der Wetterlage gelernt: Ein Modell aus Satellitenstrahlung, Sonnenstand und tiefen Wolken schätzt die Sonnenminuten jeder Stunde. Geprüft an 18 DWD-Stationen, jeder Monat einmal ausgelassen: Fehler einer Stunde 11,8 → 7,1 Minuten, eines Tages 88 → 53 Minuten – ohne die frühere Schieflage von Monat zu Monat

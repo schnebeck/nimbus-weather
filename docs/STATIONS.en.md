@@ -87,26 +87,38 @@ Temperature and wind still come from the station. Below the chart it says where 
 come from. An hour without a measurement shows no bar; the forecast stands in the value table's
 "expected" column.
 
-### Sunshine from the direct irradiance
+### Sunshine: learnt from the weather of the hour
 
 The sunshine duration Open-Meteo derives from the satellite data counts an hour with passing
 showers as fully sunny once the hour's mean direct irradiance is high enough. Nimbus therefore
-works it out itself: the sun shone for the share of the hour that the satellite's mean direct
-irradiance is of a clear sky's (Meinel's model by the sun's height, times 0.7). With the sun low –
-below 120 W/m² of clear direct irradiance, the WMO's limit for sunshine – Open-Meteo's value stands.
+estimates the minutes of sunshine from what the satellite and the model say of the hour – with
+no month and no place:
 
-Checked against 18 DWD stations measuring sunshine, from Arkona to the Zugspitze, from 20 February
-(the start of the archive) to 9 October 2026, the satellite right at each station – 59,000 hours with the sun above the horizon.
-The factor 0.7 was fitted on 9 stations; the figures are those of the other 9:
+| Feature | From |
+|---|---|
+| Open-Meteo's sunshine duration (of worth as "sun or not") | satellite |
+| direct and global irradiance against a clear sky's | satellite, the sun's height |
+| share of diffuse irradiance (haze, veils of cloud) | satellite |
+| height of the sun | computed |
+| low cloud (fog, stratus) | forecast model |
 
-| | Open-Meteo | Nimbus |
-|---|---|---|
-| mean error of an hour | 11.8 min | 8.7 min |
-| systematically too much | +6.4 min/h | +0.8 min/h |
-| mean error of a day | 87 min | 61 min |
+A gradient-boosting model (100 small decision trees) learnt it from 18 DWD stations measuring
+sunshine, from Arkona to the Zugspitze, from 20 February (the start of the satellite archive) to
+9 October 2026, the satellite right at each station – 59,000 hours with the sun above the
+horizon. It was checked so that neither place nor season give anything away: every month left
+out of the learning once and judged only on the 9 stations the model never saw.
 
-Every one of the 18 stations and every season gets better (all stations, spring: error of the day 103 → 65 min,
-summer 81 → 57, autumn 60 → 48). There are no data for the winter yet. The script of the check:
+| | Open-Meteo | share of the direct irradiance (1.37.6) | learnt model |
+|---|---|---|---|
+| mean error of an hour | 11.8 min | 8.7 min | 7.1 min |
+| systematically too much | +6.4 min/h | +0.7 min/h | −0.5 min/h |
+| mean error of a day | 88 min | 61 min | 53 min |
+| bias of the months Feb … Oct | +12 … +1 min/h | +6.5 … −4.0 min/h | +2.0 … −2.1 min/h |
+
+The bias that moved from month to month with a fixed share lies in the weather: clear winter
+air, hazy summer air, fog. With ICON's low cloud instead of the preset model the result stays
+the same (7.0 min an hour). There are no satellite data for the winter (November to January) yet.
+The tool that fetches the data, checks and writes the model:
 [tools/sunshine_calibration.py](../tools/sunshine_calibration.py).
 
 ## Checked, not built in

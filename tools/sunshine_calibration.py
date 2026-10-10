@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 #
 # Nimbus - tools/sunshine_calibration.py
-# Checks the sunshine from the satellite against DWD stations: Open-Meteo's own sunshine and the
-# estimate by the direct irradiance (SatelliteSunshine.kt), fitted on half the stations.
+# Learns the sunshine of an hour from the satellite's radiation and the model's low cloud,
+# checked against DWD stations, and writes the model the app evaluates (SatelliteSunshine.kt).
 #
 #   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
 #   Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
@@ -16,23 +16,32 @@
 # SPDX-FileContributor: Anthropic Claude Opus 5.5 (AI generated content)
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Usage: tools/sunshine_calibration.py [cache-dir] [first-day] [last-day]
-# Station hours from Bright Sky (DWD), satellite hours from Open-Meteo (dwd_sis_europe_africa_v4,
-# archived from 20 Feb 2026). Both hour-ending; the satellite is asked at the station's position.
+# Usage: tools/sunshine_calibration.py [cache-dir] [first-day] [last-day]   (needs numpy, scikit-learn)
+# Station hours: Bright Sky (DWD). Satellite hours: Open-Meteo, dwd_sis_europe_africa_v4 (archived
+# from 20 Feb 2026), at the station's position. Low cloud: Open-Meteo's archived forecasts
+# (best_match, as the app's look-back asks by default). All hour-ending, UTC.
+# The check: every month is left out of the learning once and judged on the stations not learnt
+# from – the model knows neither the month nor the place, only the weather of the hour.
 
 import collections, datetime, json, math, os, subprocess, sys, time
+import numpy as np
+from sklearn.ensemble import HistGradientBoostingRegressor
 
 STATIONS = ['01975', '03379', '01420', '02932', '02667', '03631', '00183', '01684', '05705',
             '02290', '02712', '01358', '04271', '01048', '03668', '01443', '05906', '05792']
 CACHE = sys.argv[1] if len(sys.argv) > 1 else 'sunshine-cache'
 FIRST = datetime.date.fromisoformat(sys.argv[2] if len(sys.argv) > 2 else '2026-02-20')
 LAST = datetime.date.fromisoformat(sys.argv[3] if len(sys.argv) > 3 else '2026-10-09')
+MODEL = os.path.join(os.path.dirname(__file__), '..', 'app/src/main/resources/dev/nimbus/weather/data/remote/sunshine_model.json')
+FEATURES = ['sunshine', 'direct', 'global', 'diffuse', 'elevation', 'low']
+PARAMS = dict(max_iter=100, learning_rate=0.1, max_leaf_nodes=15, min_samples_leaf=60,
+              l2_regularization=1.0, early_stopping=False)
 
 
 def get(url):
     for _ in range(4):
         try:
-            return json.loads(subprocess.check_output(['curl', '-s', '--max-time', '90', url]))
+            return json.loads(subprocess.check_output(['curl', '-s', '--max-time', '120', url]))
         except Exception:
             time.sleep(3)
     raise SystemExit('no answer: ' + url)
@@ -74,69 +83,112 @@ def sun_altitude(ts, lat, lon):
     return math.asin(math.sin(phi) * math.sin(dec) + math.cos(phi) * math.cos(dec) * math.cos(ha))
 
 
-def clear_sky_dni(hour_end, lat, lon):
-    """Mean DNI of a clear sky over the hour (Meinel), six steps – as SatelliteSunshine.clearSkyDni."""
-    total = 0.0
-    for k in range(6):
-        e = sun_altitude(hour_end - (5 + 10 * k) * 60, lat, lon)
-        total += 0.0 if e <= 0.01 else 1367 * 0.7 ** ((1 / math.sin(e)) ** 0.678)
-    return total / 6
+def features(hour_end, lat, lon, sd, dni, ghi, dif, low):
+    """As SatelliteSunshine.features: the hour's sun heights in six steps, clear sky by Meinel and Haurwitz."""
+    els = [sun_altitude(hour_end - (5 + 10 * k) * 60, lat, lon) for k in range(6)]
+    if max(els) <= 0:
+        return None
+    clear_dni = sum(0.0 if e <= 0.01 else 1367 * 0.7 ** ((1 / math.sin(e)) ** 0.678) for e in els) / 6
+    clear_ghi = sum(0.0 if e <= 0.01 else 1098 * math.sin(e) * math.exp(-0.057 / math.sin(e)) for e in els) / 6
+    return [sd / 60, dni / clear_dni if clear_dni > 0 else 0.0, ghi / clear_ghi if clear_ghi > 0 else 0.0,
+            dif / ghi if ghi > 0 else 1.0, math.degrees(sum(els) / 6), np.nan if low is None else low], clear_dni
 
 
-def estimate(r, share):
-    clear = r['cs'] * share
-    return r['sd'] if clear < 120 else 60 * min(1.0, r['dni'] / clear)
+def low_cloud(h):
+    """Model low cloud (%) of the hour ending at t: the mean of t − 1 h and t."""
+    v = dict(zip(h['time'], h['cloud_cover_low']))
+    return lambda t: (lambda a, b: None if a is None or b is None else (a + b) / 2)(v.get(t - 3600), v.get(t))
 
 
-def errors(rows, pred):
-    hours, bias, n, days = 0.0, 0.0, 0, collections.defaultdict(lambda: [0.0, 0.0])
-    for r in rows:
-        p, s = pred(r), r['st']
-        day = days[(r['sid'], r['t'] // 86400)]
-        day[0] += p
-        day[1] += s
-        if p > 0 or s > 0:
-            hours += abs(p - s)
-            bias += p - s
-            n += 1
-    return hours / n, bias / n, sum(abs(a - b) for a, b in days.values()) / len(days)
-
-
-def main():
-    rows = []
+def dataset(low_name='low', model='best_match'):
+    X, y, sid_of, t_of, clear = [], [], [], [], []
     for sid in STATIONS:
         b = cached(f'bs_{sid}.json', lambda: station(sid))
         lat, lon = b['src']['lat'], b['src']['lon']
         sat = cached(f'sat_{sid}.json', lambda: get(
             'https://satellite-api.open-meteo.com/v1/archive'
-            f'?latitude={lat}&longitude={lon}&hourly=sunshine_duration,direct_normal_irradiance'
+            f'?latitude={lat}&longitude={lon}&hourly=sunshine_duration,direct_normal_irradiance,shortwave_radiation,diffuse_radiation'
             f'&models=dwd_sis_europe_africa_v4&start_date={FIRST}&end_date={LAST}&timeformat=unixtime'))['hourly']
+        low = low_cloud(cached(f'{low_name}_{sid}.json', lambda: get(
+            'https://historical-forecast-api.open-meteo.com/v1/forecast'
+            f'?latitude={lat}&longitude={lon}&start_date={FIRST}&end_date={LAST}&hourly=cloud_cover_low'
+            f'&models={model}&timezone=UTC&timeformat=unixtime'))['hourly'])
         measured = {int(datetime.datetime.fromisoformat(x['t']).timestamp()): x['sun'] for x in b['recs']}
-        for t, sd, dni in zip(sat['time'], sat['sunshine_duration'], sat['direct_normal_irradiance']):
-            if sd is None or dni is None or measured.get(t) is None:
+        for t, sd, dni, ghi, dif in zip(sat['time'], sat['sunshine_duration'], sat['direct_normal_irradiance'],
+                                        sat['shortwave_radiation'], sat['diffuse_radiation']):
+            if None in (sd, dni, ghi, dif) or measured.get(t) is None:
                 continue
-            if max(sun_altitude(t - m * 60, lat, lon) for m in (5, 30, 55)) <= 0:
-                continue
-            rows.append({'sid': sid, 't': t, 'sd': sd / 60, 'dni': dni, 'st': measured[t],
-                         'cs': clear_sky_dni(t, lat, lon)})
-    fit = set(STATIONS[0::2])
-    train = [r for r in rows if r['sid'] in fit]
-    test = [r for r in rows if r['sid'] not in fit]
-    share = min((x / 100 for x in range(45, 96, 5)),
-                key=lambda f: (lambda e: e[0] + e[2] / 60)(errors(train, lambda r: estimate(r, f))))
-    print(f'{len(rows)} hours, share of the clear sky fitted on {len(fit)} stations: {share:.2f}')
-    for name, pred in (('Open-Meteo', lambda r: r['sd']), ('estimate', lambda r: estimate(r, share))):
-        h, b, d = errors(test, pred)
-        print(f'{name:11} other stations: hour {h:5.2f} min, bias {b:+5.2f} min/h, day {d:4.0f} min')
-    for season, months in (('spring', (2, 3, 4, 5)), ('summer', (6, 7, 8)), ('autumn', (9, 10, 11))):
-        part = [r for r in rows if datetime.datetime.fromtimestamp(r['t'], datetime.UTC).month in months]
-        if part:
-            day = [errors(part, pred)[2] for pred in (lambda r: r['sd'], lambda r: estimate(r, share))]
-            print(f'{season:6} all stations: day {day[0]:4.0f} -> {day[1]:4.0f} min')
-    for sid in STATIONS:
-        part = [r for r in rows if r['sid'] == sid]
-        day = [errors(part, pred)[2] for pred in (lambda r: r['sd'], lambda r: estimate(r, share))]
-        print(f'{sid}{" (fit)" if sid in fit else "      "} day {day[0]:4.0f} -> {day[1]:4.0f} min')
+            f = features(t, lat, lon, sd, dni, ghi, dif, low(t))
+            if f:
+                X.append(f[0]); clear.append(f[1]); y.append(measured[t]); sid_of.append(sid); t_of.append(t)
+    return np.array(X), np.array(y, float), np.array(sid_of), np.array(t_of), np.array(clear)
+
+
+def share_07(X, clear):
+    """1.37.6: 60 × DNI / (0.7 × clear DNI); Open-Meteo's value where 0.7 × clear DNI < 120 W/m²."""
+    return np.where(0.7 * clear < 120, X[:, 0], np.clip(60 * X[:, 1] / 0.7, 0, 60))
+
+
+def errors(p, y, sids, ts):
+    p = np.clip(p, 0, 60)
+    sel = (p > 0) | (y > 0)
+    days = collections.defaultdict(lambda: [0.0, 0.0])
+    for a, b, s, t in zip(p, y, sids, ts):
+        days[(s, t // 86400)][0] += a
+        days[(s, t // 86400)][1] += b
+    return np.abs(p - y)[sel].mean(), (p - y)[sel].mean(), np.mean([abs(a - b) for a, b in days.values()])
+
+
+def export(model):
+    trees = []
+    for (pred,) in model._predictors:
+        n = pred.nodes
+        trees.append({'f': [int(x) for x in n['feature_idx']], 't': [float('%.6g' % x) for x in n['num_threshold']],
+                      'l': [int(x) if not leaf else -1 for x, leaf in zip(n['left'], n['is_leaf'])],
+                      'r': [int(x) for x in n['right']], 'm': [int(x) for x in n['missing_go_to_left']],
+                      'v': [round(float(x), 5) for x in n['value']]})
+    return {'features': FEATURES, 'baseline': round(float(model._baseline_prediction.ravel()[0]), 5), 'trees': trees}
+
+
+def evaluate(m, x):
+    total = m['baseline']
+    for tr in m['trees']:
+        i = 0
+        while tr['l'][i] >= 0:
+            v = x[tr['f'][i]]
+            left = tr['m'][i] == 1 if math.isnan(v) else v <= tr['t'][i]
+            i = tr['l'][i] if left else tr['r'][i]
+        total += tr['v'][i]
+    return min(60.0, max(0.0, total))
+
+
+def main():
+    X, y, sids, ts, clear = dataset()
+    months = np.array([datetime.datetime.fromtimestamp(t, datetime.UTC).month for t in ts])
+    fit = np.isin(sids, STATIONS[0::2])
+    print(f'{len(y)} daylight hours at {len(STATIONS)} stations, {FIRST} – {LAST}')
+    rows = collections.defaultdict(list)
+    for mo in sorted(set(months)):
+        learn, judge = fit & (months != mo), ~fit & (months == mo)
+        model = HistGradientBoostingRegressor(**PARAMS).fit(X[learn], y[learn])
+        for name, p in (('Open-Meteo', X[judge, 0]), ('share 0.7', share_07(X[judge], clear[judge])), ('model', model.predict(X[judge]))):
+            rows[name].append((errors(p, y[judge], sids[judge], ts[judge]), judge.sum()))
+        print(f'month {mo:2d}: ' + ' | '.join(f'{n} bias {r[-1][0][1]:+5.2f}' for n, r in rows.items()))
+    for name, r in rows.items():
+        n = sum(k for _, k in r)
+        h, b, d = (sum(e[i] * k for e, k in r) / n for i in range(3))
+        print(f'{name:10} (month left out, other stations): hour {h:5.2f} min, bias {b:+5.2f} min/h, day {d:4.0f} min')
+    # the low cloud of another model than the one learnt from (ICON chosen in the settings)
+    Xi, yi, si, ti, _ = dataset('lowicon', 'icon_seamless')
+    learn = HistGradientBoostingRegressor(**PARAMS).fit(X[fit], y[fit])
+    judge = ~np.isin(si, STATIONS[0::2])
+    print('ICON low cloud, other stations: hour %5.2f min, bias %+5.2f, day %4.0f' % errors(learn.predict(Xi[judge]), yi[judge], si[judge], ti[judge]))
+    final = HistGradientBoostingRegressor(**PARAMS).fit(X, y)
+    m = export(final)
+    gap = max(abs(evaluate(m, X[i]) - min(60, max(0, final.predict(X[i:i + 1])[0]))) for i in range(0, len(X), 97))
+    os.makedirs(os.path.dirname(MODEL), exist_ok=True)
+    json.dump(m, open(MODEL, 'w'), separators=(',', ':'))
+    print(f'model written: {os.path.normpath(MODEL)} ({os.path.getsize(MODEL) // 1024} KB), exported vs learnt: {gap:.4f} min')
 
 
 if __name__ == '__main__':

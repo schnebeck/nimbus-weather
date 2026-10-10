@@ -118,7 +118,7 @@ class HistorySource(
             if (spot == null || !inGermany) emptyMap()
             else withTimeoutOrNull(spotWaitMs) { spot.radarPrecipitation(lat, lon, now - SPOT_BACK_MS, now) }.orEmpty()
         }
-        val sunJob = async { spot?.let { withTimeoutOrNull(spotWaitMs) { it.satelliteSunshine(lat, lon, pastDays = 2) } }.orEmpty() }
+        val sunJob = async { spot?.let { withTimeoutOrNull(spotWaitMs) { it.satelliteHours(lat, lon, pastDays = 2) } }.orEmpty() }
         val obsJob = async {
             if (!inGermany) null else runCatching {
                 // Zone is not known before the model answer; Germany is always Europe/Berlin.
@@ -154,7 +154,8 @@ class HistorySource(
                 parseSynop(http.getJson(url.toString()))
             }.getOrNull()
         }.orEmpty()
-        combine(modelRoot, obsRoot, used, now, synop, radarJob.await(), sunJob.await())
+        // the satellite's sunshine needs the model's low cloud of the same hours
+        combine(modelRoot, obsRoot, used, now, synop, radarJob.await(), SatelliteSunshine.minutes(sunJob.await(), lat, lon, lowCloud(modelRoot)))
     } }
 
     private fun modelUrl(lat: Double, lon: Double, model: String) = "$openMeteoUrl/v1/forecast".toHttpUrl().newBuilder()
@@ -166,7 +167,7 @@ class HistorySource(
         .addQueryParameter("timezone", "auto")
         .addQueryParameter("timeformat", "unixtime")
         .addQueryParameter("wind_speed_unit", "kmh")
-        .addQueryParameter("hourly", "temperature_2m,precipitation,precipitation_probability,weather_code,is_day,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover,sunshine_duration")
+        .addQueryParameter("hourly", "temperature_2m,precipitation,precipitation_probability,weather_code,is_day,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover,cloud_cover_low,sunshine_duration")
         .addQueryParameter("minutely_15", "temperature_2m")
         .build().toString()
 
@@ -177,6 +178,13 @@ class HistorySource(
         private const val SPOT_BACK_MS = 3 * 24 * 3_600_000L
         /** See [spotWaitMs]. */
         const val SPOT_WAIT_MS = 8_000L
+
+        /** The model's low cloud (%) of the hour ending at a time: the mean of its start and its end. */
+        fun lowCloud(modelRoot: JsonElement): (Long) -> Double? {
+            val h = modelRoot.obj()?.o("hourly") ?: return { null }
+            val byTime = h.longs("time").zip(h.doubles("cloud_cover_low")).mapNotNull { (t, v) -> if (t == null || v == null) null else t * 1000 to v }.toMap()
+            return { end -> byTime[end - 3_600_000L]?.let { a -> byTime[end]?.let { b -> (a + b) / 2 } } }
+        }
 
         data class Observations(val byTime: Map<Long, HistoryHour.Measured>, val station: String?, val distanceKm: Double?)
 

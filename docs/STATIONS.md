@@ -87,28 +87,40 @@ Temperatur und Wind kommen weiter von der Station. Unter dem Diagramm steht, woh
 stammen. Eine Stunde, für die es keine Messung gibt, zeigt keinen Balken; die Prognose steht in der
 Werte-Tabelle in der Spalte „erwartet“.
 
-### Sonnenschein aus der direkten Strahlung
+### Sonnenschein: aus der Wetterlage der Stunde gelernt
 
 Die Sonnenscheindauer, die Open-Meteo aus den Satellitendaten ableitet, zählt eine Stunde mit
 durchziehenden Schauern schon als voll sonnig, sobald das Stundenmittel der direkten Strahlung
-hoch genug ist. Nimbus rechnet deshalb selbst: Die Sonne schien den Anteil der Stunde, den die
-mittlere direkte Strahlung des Satelliten an der eines klaren Himmels hat (Meinel-Modell nach dem
-Sonnenstand, mal 0,7). Bei tiefer Sonne – unter 120 W/m² klarer direkter Strahlung, der Grenze der
-WMO für Sonnenschein – gilt der Wert von Open-Meteo.
+hoch genug ist. Nimbus schätzt die Sonnenminuten deshalb aus dem, was der Satellit und das Modell
+über die Stunde sagen – ohne Monat und ohne Ort:
 
-Geprüft an 18 DWD-Stationen mit Sonnenscheinmessung, von Arkona bis zur Zugspitze, vom 20. Februar
-(Beginn des Archivs) bis 9. Oktober 2026, der Satellit genau am Ort der Station – 59.000 Stunden mit Sonne über dem Horizont.
-Der Faktor 0,7 wurde an 9 Stationen bestimmt, die Zahlen gelten für die 9 anderen:
+| Merkmal | Herkunft |
+|---|---|
+| Sonnenscheindauer von Open-Meteo (als „Sonne ja oder nein“ wertvoll) | Satellit |
+| direkte und globale Strahlung im Verhältnis zum klaren Himmel | Satellit, Sonnenstand |
+| Anteil der diffusen Strahlung (Dunst, Schleierwolken) | Satellit |
+| Sonnenhöhe | berechnet |
+| tiefe Wolken (Hochnebel, Stratus) | Vorhersagemodell |
 
-| | Open-Meteo | Nimbus |
-|---|---|---|
-| mittlere Abweichung einer Stunde | 11,8 min | 8,7 min |
-| systematisch zu viel | +6,4 min/h | +0,8 min/h |
-| mittlere Abweichung eines Tages | 87 min | 61 min |
+Gelernt hat das ein Gradient-Boosting-Modell (100 kleine Entscheidungsbäume) aus 18 DWD-Stationen
+mit Sonnenscheinmessung, von Arkona bis zur Zugspitze, vom 20. Februar (Beginn des
+Satellitenarchivs) bis 9. Oktober 2026, der Satellit genau am Ort der Station – 59.000 Stunden mit
+Sonne über dem Horizont. Geprüft wurde so, dass Ort und Jahreszeit nichts verraten: jeder Monat
+einmal aus dem Lernen herausgenommen und nur an den 9 Stationen bewertet, die das Modell nie
+gesehen hat.
 
-Jede der 18 Stationen und jede Jahreszeit wird besser (alle Stationen, Frühjahr: Tagesfehler 103 → 65 min, Sommer
-81 → 57, Herbst 60 → 48). Für den Winter gibt es noch keine Daten. Das Skript zur Prüfung:
-[tools/sunshine_calibration.py](../tools/sunshine_calibration.py).
+| | Open-Meteo | Anteil der direkten Strahlung (1.37.6) | gelerntes Modell |
+|---|---|---|---|
+| mittlere Abweichung einer Stunde | 11,8 min | 8,7 min | 7,1 min |
+| systematisch zu viel | +6,4 min/h | +0,7 min/h | −0,5 min/h |
+| mittlere Abweichung eines Tages | 88 min | 61 min | 53 min |
+| Schieflage der Monate Feb. … Okt. | +12 … +1 min/h | +6,5 … −4,0 min/h | +2,0 … −2,1 min/h |
+
+Die Schieflage, die mit einem festen Anteil von Monat zu Monat wanderte, steckt in der Wetterlage:
+klare Winterluft, dunstige Sommerluft, Hochnebel. Mit den tiefen Wolken von ICON statt des
+voreingestellten Modells bleibt das Ergebnis gleich (7,0 min je Stunde). Für den Winter
+(November bis Januar) gibt es noch keine Satellitendaten. Das Werkzeug, das die Daten holt, prüft
+und das Modell schreibt: [tools/sunshine_calibration.py](../tools/sunshine_calibration.py).
 
 ## Geprüft, aber nicht eingebaut
 

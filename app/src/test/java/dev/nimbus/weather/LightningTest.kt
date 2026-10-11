@@ -174,6 +174,44 @@ class LightningTest {
         server.close()
     }
 
+    /**
+     * Playing (a day of the look-back: a quarter hour every 250 ms here, each picture 400 ms on its
+     * way): the flashes keep up – one picture per quarter hour, the next ones loaded ahead. As
+     * before (three pictures per step, nothing ahead) not one came in time.
+     */
+    @Test fun theFlashesKeepUpWithPlayback() {
+        val png = java.io.ByteArrayOutputStream().also {
+            Bitmap.createBitmap(4, 4, Bitmap.Config.ARGB_8888).apply { eraseColor(android.graphics.Color.WHITE) }.compress(Bitmap.CompressFormat.PNG, 100, it)
+        }.toByteArray()
+        val server = MockWebServer()
+        server.dispatcher = object : mockwebserver3.Dispatcher() {
+            override fun dispatch(request: mockwebserver3.RecordedRequest): MockResponse {
+                Thread.sleep(400)
+                return MockResponse.Builder().code(200).setHeader("Content-Type", "image/png").body(okio.Buffer().write(png)).build()
+            }
+        }
+        server.start()
+        val quarter = 15 * 60_000L
+        fun play(base: Long, playing: Boolean, ahead: Int): Int {
+            val layer = LightningLayer(kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined), OkHttpClient(), server.url("/wms").toString())
+            layer.setView(52.0, 54.0, 6.0, 9.0)
+            var inTime = 0
+            for (k in 0 until 24) {
+                val step = base + k * quarter
+                layer.show(step, playing, (1..ahead).map { step + it * quarter })
+                Thread.sleep(250)
+                if (k >= 4 && layer.shownStep == step) inTime++
+            }
+            return inTime
+        }
+        val a = Instant.parse("2026-10-11T08:00:00Z").toEpochMilli()
+        val kept = play(a, playing = true, ahead = 6)
+        assertTrue("shown in time: $kept of 20", kept >= 16)
+        val before = play(a + 24 * 3_600_000L, playing = false, ahead = 0)
+        assertEquals("as before: none in time", 0, before)
+        server.close()
+    }
+
     /** The three steps in one bright colour, the newest strongest, the oldest faintest. */
     @Test fun theNewestBrightest() {
         fun step(x: Int) = Bitmap.createBitmap(3, 1, Bitmap.Config.ARGB_8888).apply { setPixel(x, 0, 0xFF00FF00.toInt()) }

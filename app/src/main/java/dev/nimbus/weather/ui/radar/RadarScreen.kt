@@ -109,6 +109,8 @@ private const val RADAR_REFRESH_CHECK_MS = 60_000L
 /** Buffering of an archived day: playback starts and resumes with this many steps ready ahead. */
 private const val BUFFER_START = 6
 private const val BUFFER_RESUME = 12
+/** Lightning pictures loaded ahead of playback: a step shows about half a second, a picture takes one or two. */
+private const val LIGHTNING_AHEAD = 6
 
 @Composable
 fun RadarScreen(
@@ -371,14 +373,20 @@ fun RadarScreen(
     // every third step only (a picture takes the DWD seconds)
     val lightStep = timeline?.let { tl ->
         val t = tl.frames[frame.coerceIn(0, tl.frames.lastIndex)].time
-        LightningLayer.stepFor(if (playing) Math.floorDiv(t, 3 * LightningLayer.STEP_MS) * 3 * LightningLayer.STEP_MS else t, System.currentTimeMillis())
+        if (playing) LightningLayer.playStep(t, System.currentTimeMillis()) else LightningLayer.stepFor(t, System.currentTimeMillis())
     }
-    LaunchedEffect(lightning, lightStep, satView, styleReady) {
+    LaunchedEffect(lightning, lightStep, playing, satView, styleReady) {
         if (!styleReady) return@LaunchedEffect
         controller.setLightning(lightning)
-        if (!lightning || timeline == null) return@LaunchedEffect
+        val tl = timeline
+        if (!lightning || tl == null) return@LaunchedEffect
         if (satView == 0) controller.map?.projection?.visibleRegion?.latLngBounds?.let { b -> light.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast) }
-        light.show(lightStep)
+        // playing: the steps it comes to next (round the loop), loaded before it does
+        val now = System.currentTimeMillis()
+        val ahead = if (!playing) emptyList() else (1..tl.frames.size).asSequence()
+            .mapNotNull { LightningLayer.playStep(tl.frames[(frame + it) % tl.frames.size].time, now) }
+            .distinct().filter { it != lightStep }.take(LIGHTNING_AHEAD).toList()
+        light.show(lightStep, playing, ahead)
     }
     // Playback runs continuously: the position moves on with every display frame and the player
     // draws the rain moved between the steps – no jumping from step to step.

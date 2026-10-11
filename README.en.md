@@ -65,7 +65,8 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
   rain, snow and thunderstorms. Wind and gusts move clouds, precipitation and particles; in dry
   weather blossoms, seeds, leaves or ice crystals drift by the season, pollen by the real load.
 - **Weather page**: combined symbol, temperature with unit and max/min, a short forecast for the
-  next hours, DWD alerts, "Precipitation today" on top (amount, next 3 hours, highest chance; on dry
+  next hours, DWD alerts, lightning nearby (the nearest flash of the last 15 minutes within 50 km,
+  tapped the radar with the lightning), "Precipitation today" on top (amount, next 3 hours, highest chance; on dry
   days one line with the next precipitation, or hidden), hourly and 10-day forecast with the chance
   of precipitation, tiles for feels-like, UV, wind, humidity, visibility and pressure. The forecast
   appears at once, tiles with slower sources follow as soon as their data is there; a dot per tile
@@ -122,8 +123,9 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
   one) is loaded once, turned into reflectivity and kept locally until it expires (analyses ~3½ days),
   panning and zooming need no network; opaque colours, roads, borders and names above the radar;
   temperature (with isotherms) and wind layers, satellite (Meteosat, every 10 minutes, at the time of
-  the radar image), warning map, look-back up to 24 h. The radar of a day in the look-back shows
-  temperature, wind and satellite too. For someone who opened the radar within the last week, the app
+  the radar image), lightning (from the satellite, all of Europe: where it struck in the 15 minutes up
+  to the radar image, the newest brightest), warning map, look-back up to 24 h. The radar of a day in
+  the look-back shows temperature, wind, satellite and lightning too. For someone who opened the radar within the last week, the app
   loads the past images of the current place's 2-hour loop ahead on Wi-Fi while it is open (the radar
   forecast is fetched by the radar itself – it is new every 5 minutes). The radar resolution follows the device's memory. Without a connection the radar shows the
   stored images; nothing waits forever. The precipitation map on the weather page shows the same
@@ -184,6 +186,7 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
 | Measured over the place | Precipitation: DWD radar RADOLAN (RW, RY), Germany · sunshine: DWD from EUMETSAT MTG satellite data via [Open-Meteo](https://open-meteo.com/en/docs/satellite-radiation-api), Europe |
 | Radar, warning map | DWD GeoServer, [KNMI](https://english.knmidata.nl/open-data) (Netherlands), [MET Norway](https://www.met.no/en/free-meteorological-data) (Nordic composite); rest of Europe: [RainViewer](https://www.rainviewer.com/api.html) |
 | Satellite | Meteosat (MTG, GeoColour) via [EUMETView](https://view.eumetsat.int) – "Contains modified EUMETSAT Meteosat data", CC BY 4.0 |
+| Lightning | DWD GeoServer: flashes of Meteosat Third Generation's Lightning Imager (EUMETSAT), Europe and Africa |
 | Air quality, pollen in Europe | Copernicus CAMS via Open-Meteo |
 | Pollen in Germany | [DWD pollen hazard index](https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json) |
 | Citizen sensors | [Sensor.Community](https://sensor.community) |

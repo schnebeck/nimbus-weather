@@ -127,6 +127,21 @@
     <string name="radar">Radar</string>
     <string name="radar_title">Niederschlagsradar</string>
     <string name="satellite">Satellit</string>
+    <string name="lightning">Blitze</string>
+    <string name="lightning_attribution">Blitze: DWD, aus EUMETSAT-MTG-Daten – die letzten 15 min, die jüngsten am hellsten</string>
+    <string name="lightning_near">Blitze in der Nähe</string>
+    <string name="lightning_nearest_km">nächster %1$d km entfernt</string>
+    <string name="lightning_overhead">über dem Ort (unter 5 km)</string>
+    <string name="lightning_just_now">gerade eben</string>
+    <string name="lightning_minutes_ago">vor %1$d min</string>
+    <plurals name="lightning_flashes_more">
+        <item quantity="one">mehr als %d Blitz in 15 min</item>
+        <item quantity="other">mehr als %d Blitze in 15 min</item>
+    </plurals>
+    <plurals name="lightning_flashes">
+        <item quantity="one">%d Blitz in 15 min</item>
+        <item quantity="other">%d Blitze in 15 min</item>
+    </plurals>
     <string name="warnings">Warnungen</string>
     <string name="play">Abspielen</string>
     <string name="pause">Pause</string>

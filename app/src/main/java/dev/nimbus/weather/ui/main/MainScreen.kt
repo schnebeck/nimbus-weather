@@ -94,6 +94,8 @@ fun MainScreen(
     onRefresh: (String) -> Unit,
     onOpenRadar: (String?) -> Unit,
     onOpenRadarDay: (String, Long) -> Unit,
+    /** The radar with its lightning switched on (the note of lightning nearby). */
+    onOpenLightning: (String?) -> Unit = onOpenRadar,
     onOpenPlaces: () -> Unit,
     onRequestModels: (String) -> Unit,
     onRequestHistory: (String) -> Unit,
@@ -153,6 +155,7 @@ fun MainScreen(
                     isActive = pagerState.currentPage == page,
                     onRefresh = { onRefresh(place.id) },
                     onOpenRadar = { onOpenRadar(place.id) },
+                    onOpenLightning = { onOpenLightning(place.id) },
                     onRequestModels = { onRequestModels(place.id) },
                     onRequestHistory = { onRequestHistory(place.id) },
                     location = location,

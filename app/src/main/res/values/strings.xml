@@ -135,6 +135,21 @@
     <string name="radar">Radar</string>
     <string name="radar_title">Precipitation Radar</string>
     <string name="satellite">Satellite</string>
+    <string name="lightning">Lightning</string>
+    <string name="lightning_attribution">Lightning: DWD, from EUMETSAT MTG data – the last 15 min, the newest brightest</string>
+    <string name="lightning_near">Lightning nearby</string>
+    <string name="lightning_nearest_km">nearest %1$d km away</string>
+    <string name="lightning_overhead">overhead (within 5 km)</string>
+    <string name="lightning_just_now">just now</string>
+    <string name="lightning_minutes_ago">%1$d min ago</string>
+    <plurals name="lightning_flashes_more">
+        <item quantity="one">more than %d flash in 15 min</item>
+        <item quantity="other">more than %d flashes in 15 min</item>
+    </plurals>
+    <plurals name="lightning_flashes">
+        <item quantity="one">%d flash in 15 min</item>
+        <item quantity="other">%d flashes in 15 min</item>
+    </plurals>
     <string name="warnings">Warnings</string>
     <string name="play">Play</string>
     <string name="pause">Pause</string>

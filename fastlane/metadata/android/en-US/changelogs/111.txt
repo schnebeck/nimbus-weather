@@ -1,0 +1,2 @@
+• Lightning live: a new radar layer shows where lightning struck in the 15 minutes up to the radar image – from the satellite, all of Europe, the newest brightest
+• Lightning nearby: with flashes within 50 km, the weather page names the nearest one's distance and time on top; tapped, the radar opens with the lightning

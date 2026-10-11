@@ -144,6 +144,8 @@ fun WeatherPage(
     location: LocationMark? = null,
     /** The model, for a place in the list more than once ([dev.nimbus.weather.ui.places.PlaceTwins.label]). */
     modelLabel: String? = null,
+    /** The radar with its lightning switched on. */
+    onOpenLightning: () -> Unit = onOpenRadar,
 ) {
     val context = LocalContext.current
     val now = rememberNow()
@@ -172,7 +174,7 @@ fun WeatherPage(
             dev.nimbus.weather.ui.components.LocalCardFill provides scene.cardFill,
             dev.nimbus.weather.ui.components.LocalHeaderStyle provides dev.nimbus.weather.ui.components.HeaderStyle(scene.headerHalo, scene.headerPill),
         ) {
-            WeatherContent(data, state ?: PlaceState(data), now, onRefresh, onOpenRadar, onRequestModels, location, modelLabel)
+            WeatherContent(data, state ?: PlaceState(data), now, onRefresh, onOpenRadar, onOpenLightning, onRequestModels, location, modelLabel)
         }
     }
 }
@@ -185,6 +187,7 @@ private fun WeatherContent(
     now: Long,
     onRefresh: () -> Unit,
     onOpenRadar: () -> Unit,
+    onOpenLightning: () -> Unit,
     onRequestModels: () -> Unit,
     location: LocationMark?,
     modelLabel: String?,
@@ -236,6 +239,8 @@ private fun WeatherContent(
     val progress by remember(columns, expandedPx, collapsedPx) {
         derivedStateOf { if (expandedPx <= collapsedPx) 0f else (scrolled / (expandedPx - collapsedPx)).coerceIn(0f, 1f) }
     }
+    // lightning near the place, while the page is shown
+    val lightning = rememberLightningNearby(data.place)
     val raining = data.current.condition.isPrecipitation
     val tfToday = LocalTimeFormat.current
     val todayMeasured = remember(state.history, now / 600_000L) { TodayMeasured.of(state.history, tfToday.zoned(now).toLocalDate()) }
@@ -253,6 +258,7 @@ private fun WeatherContent(
         // the sky above the cards: double-tapping it switches full screen (the header drawn over it has no touch of its own)
         add(PageItem("header-space", true) { Spacer(Modifier.fillMaxWidth().height(with(density) { expandedPx.toDp() } - 12.dp).fullscreenByDoubleTap()) })
         if (stale) add(PageItem("offline", true) { OfflineBanner(data) })
+        lightning?.let { n -> add(PageItem("lightning", true) { LightningNote(n, onOpenLightning) }) }
         if (data.alerts.isNotEmpty() && cards.shows(WeatherCard.ALERTS)) add(PageItem("alerts", true) { AlertsCard(data.alerts) })
         // The cards in the order chosen in the settings (Settings → Cards)
         cards.orderedCards().filter { cards.shows(it) }.forEach { card ->

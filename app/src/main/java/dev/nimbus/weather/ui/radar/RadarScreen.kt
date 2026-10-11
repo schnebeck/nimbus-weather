@@ -115,6 +115,8 @@ fun RadarScreen(
     place: Place?, temperatureUnit: dev.nimbus.weather.data.model.TemperatureUnit,
     /** Start (local midnight) of a past day to show in full, from the look-back; null = live radar. */
     archiveDay: Long? = null,
+    /** Opened for the lightning (the note of lightning nearby): its layer switched on. */
+    lightningFirst: Boolean = false,
     onBack: () -> Unit,
 ) {
     val archive = archiveDay != null
@@ -124,6 +126,7 @@ fun RadarScreen(
     val scope = rememberCoroutineScope()
     val controller = remember { RadarMapController() }
     val sat = remember { SatelliteLayer(scope, container.http) }
+    val light = remember { LightningLayer(scope, container.http) }
     // a new picture area for the satellite after panning or zooming
     var satView by remember { mutableIntStateOf(0) }
     val player = remember {
@@ -147,6 +150,7 @@ fun RadarScreen(
     var buffering by remember { mutableStateOf(false) }
     var satellite by rememberSaveable { mutableStateOf(false) }
     var warnings by rememberSaveable { mutableStateOf(false) }
+    var lightning by rememberSaveable { mutableStateOf(lightningFirst) }
     var showTemp by rememberSaveable { mutableStateOf(false) }
     var showWind by rememberSaveable { mutableStateOf(false) }
     val overlays = remember { WeatherOverlays(temperatureUnit) }
@@ -205,7 +209,7 @@ fun RadarScreen(
             map.setMaxZoomPreference(10.0)
             map.setMinZoomPreference(3.0)
             map.setStyle(styleBuilder) { style ->
-                controller.installBase(style, sat)
+                controller.installBase(style, sat, light)
                 overlays.install(style, fieldBelow = "sat", linesBelow = controller.anchor)
                 overlays.setVisible(showTemp, showWind)
                 // The radar picture: one image between satellite and warnings
@@ -217,11 +221,13 @@ fun RadarScreen(
                     map.projection.visibleRegion.latLngBounds.let { b ->
                         player.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast, mapView.width)
                         sat.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast)
+                        light.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast)
                     }
                     satView++
                 }
                 place?.let { controller.addLocation(style, it) }
                 controller.setOverlays(satellite, warnings)
+                controller.setLightning(lightning)
                 // "fully" = every tile of every visible layer is loaded (MapLibre render flag).
                 styleReady = true
                 if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "style ready after ${System.currentTimeMillis() - openedAt} ms")
@@ -358,6 +364,19 @@ fun RadarScreen(
         if (!satellite || !styleReady || satTime == null) return@LaunchedEffect
         if (satView == 0) controller.map?.projection?.visibleRegion?.latLngBounds?.let { b -> sat.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast) }
         sat.show(satTime, if (playing) satTime + SatelliteLayer.PLAY_STEP_MS else null)
+    }
+    // The flashes of the 15 minutes up to the radar's time – none in its forecast; while playing,
+    // every third step only (a picture takes the DWD seconds)
+    val lightStep = timeline?.let { tl ->
+        val t = tl.frames[frame.coerceIn(0, tl.frames.lastIndex)].time
+        LightningLayer.stepFor(if (playing) Math.floorDiv(t, 3 * LightningLayer.STEP_MS) * 3 * LightningLayer.STEP_MS else t, System.currentTimeMillis())
+    }
+    LaunchedEffect(lightning, lightStep, satView, styleReady) {
+        if (!styleReady) return@LaunchedEffect
+        controller.setLightning(lightning)
+        if (!lightning || timeline == null) return@LaunchedEffect
+        if (satView == 0) controller.map?.projection?.visibleRegion?.latLngBounds?.let { b -> light.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast) }
+        light.show(lightStep)
     }
     // Playback runs continuously: the position moves on with every display frame and the player
     // draws the rain moved between the steps – no jumping from step to step.
@@ -535,13 +554,15 @@ fun RadarScreen(
                 Spacer(Modifier.height(4.dp))
                 Legend(showTemp, snowLegend, temperatureUnit)
                 Spacer(Modifier.height(8.dp))
-                // Temperature, wind and satellite for a past day too; the warnings are live only
+                // Temperature, wind, satellite and lightning for a past day too; the warnings are live only
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
                     ToggleChip(stringResource(R.string.overlay_temperature), showTemp) { showTemp = !showTemp }
                     Spacer(Modifier.width(6.dp))
                     ToggleChip(stringResource(R.string.overlay_wind), showWind) { showWind = !showWind }
                     Spacer(Modifier.width(6.dp))
                     ToggleChip(stringResource(R.string.satellite), satellite) { satellite = !satellite }
+                    Spacer(Modifier.width(6.dp))
+                    ToggleChip(stringResource(R.string.lightning), lightning) { lightning = !lightning }
                     if (!archive) {
                         Spacer(Modifier.width(6.dp))
                         ToggleChip(stringResource(R.string.warnings), warnings) { warnings = !warnings }
@@ -550,6 +571,7 @@ fun RadarScreen(
             }
             Spacer(Modifier.height(6.dp))
             Text(stringResource(R.string.radar_attribution), fontSize = 9.sp, color = NimbusColors.Tertiary, maxLines = 2)
+            if (lightning) Text(stringResource(R.string.lightning_attribution), fontSize = 9.sp, color = NimbusColors.Tertiary, maxLines = 1)
             // the satellite's licence (CC BY 4.0) asks for this line while its picture is shown
             if (satellite && satTime != null) Text(
                 String.format(java.util.Locale.ROOT, SatelliteLayer.ATTRIBUTION, java.time.Instant.ofEpochMilli(satTime).atZone(java.time.ZoneOffset.UTC).year),

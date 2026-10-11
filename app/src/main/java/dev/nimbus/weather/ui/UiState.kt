@@ -42,7 +42,7 @@ sealed interface Screen {
     data object Settings : Screen
     data object Licenses : Screen
     /** [day]: start (local midnight) of a past day from the look-back, null for the live radar. */
-    data class Radar(val placeId: String?, val day: Long? = null) : Screen
+    data class Radar(val placeId: String?, val day: Long? = null, val lightning: Boolean = false) : Screen
 }
 
 data class Demo(

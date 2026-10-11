@@ -66,7 +66,8 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   trockenem Wetter treiben je nach Jahreszeit Blüten, Samen, Blätter oder Eiskristalle, Pollen nach
   der echten Belastung.
 - **Wetterseite**: Kombisymbol, Temperatur mit Einheit und Max/Min, Kurzvorhersage für die nächsten
-  Stunden, DWD-Warnungen, „Niederschlag heute“ obenauf (Menge, nächste 3 Stunden, höchste
+  Stunden, DWD-Warnungen, Blitze in der Nähe (nächster Blitz der letzten 15 Minuten im Umkreis von
+  50 km, angetippt das Radar mit Blitzen), „Niederschlag heute“ obenauf (Menge, nächste 3 Stunden, höchste
   Wahrscheinlichkeit; an trockenen Tagen eine Zeile mit dem nächsten Niederschlag oder ausgeblendet),
   Stunden- und 10-Tage-Vorhersage mit Niederschlagswahrscheinlichkeit, Kacheln für Gefühlt, UV, Wind,
   Luftfeuchte, Sichtweite und Luftdruck. Die Vorhersage erscheint sofort, Kacheln mit langsameren
@@ -123,8 +124,9 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   Deutschland, die Niederlande in einem) wird einmal geladen, zu Reflektivität aufbereitet und bis zum Verfall lokal gehalten
   (Analysen ~3½ Tage), Verschieben und Zoomen brauchen kein Netz; deckende Farben, Straßen, Grenzen
   und Namen über dem Radar; Temperatur- (mit Isothermen) und Windebene, Satellit (Meteosat, alle
-  10 Minuten, zur Zeit des Radarbilds), Warnkarte, Rückblick bis 24 h. Auch das Radar eines Tages
-  im Rückblick zeigt Temperatur, Wind und Satellit. Wer das Radar in der letzten Woche geöffnet hat,
+  10 Minuten, zur Zeit des Radarbilds), Blitze (vom Satelliten, ganz Europa: wo es in den 15 Minuten
+  bis zum Radarbild geblitzt hat, die jüngsten am hellsten), Warnkarte, Rückblick bis 24 h. Auch das
+  Radar eines Tages im Rückblick zeigt Temperatur, Wind, Satellit und Blitze. Wer das Radar in der letzten Woche geöffnet hat,
   dem lädt die App im WLAN die vergangenen Bilder der 2-Stunden-Schleife des aktuellen Orts vor,
   solange sie geöffnet ist (die Radarvorhersage holt das Radar selbst – sie ist alle 5 Minuten neu). Die Auflösung des
   Radarbilds richtet sich nach dem Speicher des Geräts. Ohne Verbindung zeigt das Radar die
@@ -188,6 +190,7 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
 | Gemessen über dem Ort | Niederschlag: DWD-Radar RADOLAN (RW, RY), Deutschland · Sonnenschein: DWD aus EUMETSAT-MTG-Satellitendaten via [Open-Meteo](https://open-meteo.com/en/docs/satellite-radiation-api), Europa |
 | Radar, Warnkarte | DWD GeoServer, [KNMI](https://english.knmidata.nl/open-data) (Niederlande), [MET Norway](https://www.met.no/en/free-meteorological-data) (Nordic-Komposit); übriges Europa: [RainViewer](https://www.rainviewer.com/api.html) |
 | Satellit | Meteosat (MTG, GeoColour) via [EUMETView](https://view.eumetsat.int) – „Contains modified EUMETSAT Meteosat data“, CC BY 4.0 |
+| Blitze | DWD GeoServer: Blitze des Lightning Imagers von Meteosat Third Generation (EUMETSAT), Europa und Afrika |
 | Luftqualität, Pollen Europa | Copernicus CAMS via Open-Meteo |
 | Pollenflug Deutschland | [DWD-Pollenflug-Gefahrenindex](https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json) |
 | Bürger-Messnetz | [Sensor.Community](https://sensor.community) |

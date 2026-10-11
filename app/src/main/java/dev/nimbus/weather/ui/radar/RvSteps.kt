@@ -43,6 +43,14 @@ object RvSteps {
     /** Two RainViewer frames at most this far apart are moved between. */
     const val MAX_GAP_MS = 20 * 60_000L
 
+    /** RainViewer's frames step [i] is made of. */
+    fun paths(tl: RadarTimeline, i: Int): List<String> = when (val p = plan(tl, i)) {
+        is RvPlan.Own -> listOf(p.path)
+        is RvPlan.Near -> listOf(p.path)
+        is RvPlan.Between -> listOf(p.before, p.after)
+        RvPlan.None -> emptyList()
+    }
+
     fun plan(tl: RadarTimeline, i: Int): RvPlan {
         val f = tl.frames.getOrNull(i) ?: return RvPlan.None
         // RainViewer has no forecast: a nowcast step never shows its last past frame

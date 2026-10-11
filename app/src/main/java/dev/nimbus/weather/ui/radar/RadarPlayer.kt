@@ -64,6 +64,13 @@ class RadarPlayer(
     private val stored = ConcurrentHashMap.newKeySet<String>()
     /** Steps the DWD did not deliver this time: done for the progress (the motion bridges them). */
     private val failed = ConcurrentHashMap.newKeySet<String>()
+    /** What each frame was built from (composites, RainViewer frames complete): a source come since builds it again. */
+    private val parts = ConcurrentHashMap<String, Set<String>>()
+    /** Steps a source beside the main one has come for since their frame was built. */
+    private val dirty = ConcurrentHashMap.newKeySet<String>()
+    /** The sources beside the area's own: asked with a short time limit, left out a while when they fail. */
+    private val sideHttp = http.newBuilder().callTimeout(SIDE_TIMEOUT_S, java.util.concurrent.TimeUnit.SECONDS).build()
+    private val health = SourceHealth()
 
     private val _loaded = MutableStateFlow(0)
     /** Steps of the time line in the store (downloaded) – the loading progress. */
@@ -184,6 +191,8 @@ class RadarPlayer(
         covered = null
         frames.clear()
         flows.clear()
+        parts.clear()
+        dirty.clear()
         // a composite loaded in windows of the area: its steps of the new area are others
         val windowed = RadarComposites.all.any { it.windowed && it.serves(want) && it.overlaps(want.west, want.east, want.south, want.north) }
         if (windowed) stored.clear()
@@ -220,27 +229,67 @@ class RadarPlayer(
             val queue = Channel<Int>(Channel.UNLIMITED)
             order.forEach { queue.trySend(it) }
             queue.close()
+            // The sources beside the area's own (another composite, RainViewer) in a lane of their own
+            val besides = Channel<Pair<Int, RadarComposite?>>(Channel.UNLIMITED)
+            val rvAsked = HashSet<String>()
+            val rvNeeded = geo?.let { RadarPicture.needsRainViewer(RadarPicture.coverage(it), it.w * it.h) } == true
             kotlinx.coroutines.coroutineScope {
-                repeat(DOWNLOAD_WORKERS) {
+                launch {
+                    kotlinx.coroutines.coroutineScope {
+                        repeat(DOWNLOAD_WORKERS) {
+                            launch {
+                                for (i in queue) {
+                                    val f = tl.frames[i]
+                                    val k = f.id
+                                    val g = geo ?: continue
+                                    val needed = RadarPicture.composites(f, g)
+                                    val own = mainOf(needed, g)
+                                    // RainViewer's frames of the step: in the main lane where it is the area's own source
+                                    if (rvNeeded) for (path in RvSteps.paths(tl, i)) if (synchronized(rvAsked) { rvAsked.add(path) }) {
+                                        if (own == null) { RadarPicture.mosaic(http, tl.rainViewerHost, path, g); dirtyFor(tl, path) } else besides.trySend(i to null)
+                                    }
+                                    if (k in stored) continue
+                                    needed.filter { it !== own }.forEach { besides.trySend(i to it) }
+                                    // the area's own source counts: the step plays with it, the others come on their own
+                                    if (own == null) stored += k
+                                    else if (RadarStore.forArea(http, own, f, g) != null) stored += k else failed += k
+                                    wake.trySend(Unit)
+                                    countStored(tl)
+                                }
+                            }
+                        }
+                    }
+                    besides.close()
+                }
+                repeat(SIDE_WORKERS) {
                     launch {
-                        for (i in queue) {
+                        for ((i, c) in besides) {
                             val f = tl.frames[i]
-                            val k = f.id
-                            if (k in stored) continue
                             val g = geo ?: continue
-                            val needed = RadarPicture.composites(f, g)
-                            if (needed.isEmpty()) continue
-                            // all composites of the step, then it counts – stored if any of them could be had
-                            val got = needed.map { c -> RadarStore.forArea(http, c, f, g) }
-                            if (got.any { it != null }) stored += k else failed += k
-                            // either way the step can be drawn now (without what failed)
-                            wake.trySend(Unit)
-                            countStored(tl)
+                            val source = c?.id ?: RAINVIEWER
+                            if (!health.usable(source)) continue
+                            val ok = if (c == null) {
+                                RvSteps.paths(tl, i).all { path -> RadarPicture.mosaic(sideHttp, tl.rainViewerHost, path, g, side = true).complete.also { if (it) dirtyFor(tl, path) } }
+                            } else RadarStore.forArea(sideHttp, c, f, g, side = true) != null
+                            if (ok) { health.answered(source); dirty += f.id; wake.trySend(Unit) } else health.failed(source)
                         }
                     }
                 }
             }
         }
+    }
+
+    /**
+     * The area's own source among [needed]: the composite at the middle of the area (the place's,
+     * as the radar opens there) – null where none covers it: RainViewer's then.
+     */
+    private fun mainOf(needed: List<RadarComposite>, g: FieldGeo): RadarComposite? =
+        needed.firstOrNull { it.covers((g.south + g.north) / 2, (g.west + g.east) / 2) }
+
+    /** Every step made of RainViewer's frame [path]: built again with it. */
+    private fun dirtyFor(tl: RadarTimeline, path: String) {
+        tl.frames.indices.filter { path in RvSteps.paths(tl, it) }.forEach { dirty += tl.frames[it].id }
+        wake.trySend(Unit)
     }
 
     private fun countStored(tl: RadarTimeline) {
@@ -288,15 +337,24 @@ class RadarPlayer(
                     if (i !in lo..hi && i !in keepSteps) continue
                     val f = tl.frames[i]
                     val k = f.id
-                    if (frames.containsKey(k)) continue
+                    if (frames.containsKey(k) && k !in dirty) continue
                     val needed = RadarPicture.composites(f, g)
                     val layers = withContext(Dispatchers.IO) {
                         needed.mapNotNull { c -> RadarStore.peekArea(c, f, g)?.let { (codes, w) -> RadarLayer(c, codes, covered?.get(c), w) } }
                     }
-                    // not downloaded yet: a later pass (one the service did not deliver: without it)
-                    if (needed.isNotEmpty() && layers.isEmpty() && k !in failed) continue
+                    // the area's own source not downloaded yet: a later pass (one it did not deliver: without it)
+                    val own = mainOf(needed, g)
+                    if (own != null && layers.none { it.composite === own } && k !in failed) continue
+                    if (own == null && k !in stored) continue
+                    val have = layers.map { it.composite.id }.toSet() + builder.rvPaths(i).filter { RadarPicture.rvAtHand(it, g) }
+                    dirty.remove(k)
+                    // come again for a source already in it: nothing new
+                    if (frames.containsKey(k) && parts[k] == have) continue
+                    frames.remove(k)
+                    flows.keys.filter { it.substringBefore('>') == k || it.substringAfter('>') == k }.forEach { flows.remove(it) }
                     val t0 = System.nanoTime()
                     val vf = builder.build(i, layers)
+                    parts[k] = have
                     if (dev.nimbus.weather.BuildConfig.DEBUG) android.util.Log.d("NimbusPlayer", "frame $i ${g.w}x${g.h} extract ${(System.nanoTime() - t0) / 1_000_000} ms")
                     if (gen != generation) return@launch
                     frames[k] = vf
@@ -361,6 +419,11 @@ class RadarPlayer(
         const val SOURCE = "radar-picture"
         /** Parallel downloads of time steps (one image of all of Germany each, ~200 kB). */
         private const val DOWNLOAD_WORKERS = 6
+        /** Downloads at a time for the sources beside the area's own. */
+        private const val SIDE_WORKERS = 2
+        /** Time limit for one answer of a source beside the area's own. */
+        private const val SIDE_TIMEOUT_S = 8L
+        private const val RAINVIEWER = "rainviewer"
         /** Up to this many frames are all kept (live loop); more (a day of 288) use a window. */
         private const val MAX_ALL = 60
 

@@ -130,7 +130,9 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   und Namen über dem Radar; Temperatur- (mit Isothermen) und Windebene, Satellit (Meteosat, alle
   10 Minuten, zur Zeit des Radarbilds), Blitze (vom Satelliten, ganz Europa: wo es in den 15 Minuten
   bis zum Radarbild geblitzt hat, die jüngsten am hellsten), Warnkarte, Rückblick bis 24 h. Auch das
-  Radar eines Tages im Rückblick zeigt Temperatur, Wind, Satellit und Blitze. Welche Ebenen beim
+  Radar eines Tages im Rückblick zeigt Temperatur, Wind, Satellit und Blitze. Die Schleife wartet nur
+  auf die Quelle der Bildmitte; Nachbarländer und RainViewer kommen in eigener Spur dazu und ergänzen
+  das Bild, eine Quelle ohne Antwort setzt ein paar Minuten aus. Welche Ebenen beim
   Öffnen an sind, legen die Einstellungen fest. Abgespielt wird mit 20 Bildern/s; nach 2 Minuten ohne
   Berührung schließt das Radar und kehrt dorthin zurück, wo es geöffnet wurde. Wer das Radar in der
   letzten Woche geöffnet hat, dem lädt die App die vergangenen Bilder der 2-Stunden-Schleife des

@@ -1,0 +1,1 @@
+• Radar lädt schneller: Die Schleife wartet nur noch auf die Quelle des Ortes (z. B. DWD). Nachbarländer und RainViewer kommen nebenher dazu und ergänzen das Bild; eine Quelle ohne Antwort hält nicht mehr jeden Schritt 20 s auf, sondern setzt ein paar Minuten aus

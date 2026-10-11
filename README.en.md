@@ -129,7 +129,9 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
   temperature (with isotherms) and wind layers, satellite (Meteosat, every 10 minutes, at the time of
   the radar image), lightning (from the satellite, all of Europe: where it struck in the 15 minutes up
   to the radar image, the newest brightest), warning map, look-back up to 24 h. The radar of a day in
-  the look-back shows temperature, wind, satellite and lightning too. Which layers are on when it
+  the look-back shows temperature, wind, satellite and lightning too. The loop waits only for the
+  source of the picture's middle; neighbouring countries and RainViewer come in a lane of their own
+  and complete the picture, a source that does not answer rests a few minutes. Which layers are on when it
   opens is set in the settings. It plays at 20 pictures per second; after 2 minutes untouched the
   radar closes and goes back where it was opened. For someone who opened the radar within the last
   week, the app loads the past images of the 2-hour loop of the place last seen on the radar ahead –

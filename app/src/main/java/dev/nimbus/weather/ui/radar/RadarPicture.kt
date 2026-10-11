@@ -21,6 +21,8 @@ package dev.nimbus.weather.ui.radar
 import android.graphics.Bitmap
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import kotlin.math.floor
 import kotlin.math.ln
@@ -71,17 +73,35 @@ object RadarPicture {
         (ln(2 * Math.PI * FieldGeo.R / (512 * g.pxM)) / ln(2.0)).roundToInt().coerceIn(3, maxZoom)
 
     /** RainViewer's tiles of the area at [rvZoom]; [preview]: in the small requests' lane ([RadarStore.rvTile]). */
-    suspend fun mosaic(http: OkHttpClient, host: String, path: String, g: FieldGeo, maxZoom: Int = 7, preview: Boolean = false): RvMosaic {
+    suspend fun mosaic(
+        http: OkHttpClient, host: String, path: String, g: FieldGeo, maxZoom: Int = 7, preview: Boolean = false,
+        /** Only the tiles at hand (memory, disk) – no download; [RvMosaic.complete] says whether all are. */
+        atHand: Boolean = false,
+        /** Downloads in the lane of the sources beside the place's own. */
+        side: Boolean = false,
+    ): RvMosaic {
         val z = rvZoom(g, maxZoom)
         val size = 2 * O / (1 shl z)
         val x0 = floor((g.minX + O) / size).toInt(); val x1 = floor((g.maxX + O) / size).toInt()
         val y0 = floor((O - g.maxY) / size).toInt(); val y1 = floor((O - g.minY) / size).toInt()
         val tiles = HashMap<Long, ByteArray>()
+        var all = true
         for (y in y0..y1) for (x in x0..x1) {
             if (x !in 0 until (1 shl z) || y !in 0 until (1 shl z)) continue
-            RadarStore.rvTile(http, host, path, z, x, y, preview)?.let { tiles[RvMosaic.key(x, y)] = it }
+            val t = if (atHand) withContext(Dispatchers.IO) { RadarStore.peek(RadarStore.rvKey(path, z, x, y)) }
+            else RadarStore.rvTile(http, host, path, z, x, y, preview, side)
+            if (t != null) tiles[RvMosaic.key(x, y)] = t else all = false
         }
-        return RvMosaic(z, tiles)
+        return RvMosaic(z, tiles, all)
+    }
+
+    /** Whether every tile of RainViewer's frame [path] over [g] is in the store (no download). */
+    fun rvAtHand(path: String, g: FieldGeo, maxZoom: Int = 7): Boolean {
+        val z = rvZoom(g, maxZoom)
+        val size = 2 * O / (1 shl z)
+        val x0 = floor((g.minX + O) / size).toInt(); val x1 = floor((g.maxX + O) / size).toInt()
+        val y0 = floor((O - g.maxY) / size).toInt(); val y1 = floor((O - g.minY) / size).toInt()
+        return (y0..y1).all { y -> (x0..x1).all { x -> x !in 0 until (1 shl z) || y !in 0 until (1 shl z) || RadarStore.has(RadarStore.rvKey(path, z, x, y)) } }
     }
 
     /** Snow share from the 2 m temperature for every pixel, per hour of the grid. */

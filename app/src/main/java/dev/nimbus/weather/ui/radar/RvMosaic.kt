@@ -23,7 +23,7 @@ import kotlin.math.floor
  * RainViewer cells (Europe): one 512 × 512 tile per entry, keyed by [key], one byte per pixel –
  * dBZ, plus [SNOW] where the source marks snow, 0 where dry. Missing tiles count as dry.
  */
-class RvMosaic(val z: Int, val tiles: Map<Long, ByteArray>) {
+class RvMosaic(val z: Int, val tiles: Map<Long, ByteArray>, /** Every tile of the area there (else some still to come). */ val complete: Boolean = true) {
     private val size = 2 * O / (1 shl z)
 
     /** Code at a Mercator position, -1 outside the tiles held. */

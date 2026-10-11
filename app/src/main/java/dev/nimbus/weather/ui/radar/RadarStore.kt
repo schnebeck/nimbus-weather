@@ -62,6 +62,8 @@ object RadarStore {
     private val downloads = Semaphore(4)
     /** The preview's small requests: a lane of their own, never behind a queue of whole grids. */
     private val small = Semaphore(4)
+    /** The sources beside the place's own one: a lane of their own, never taking the place's places. */
+    private val besides = Semaphore(2)
 
     fun rvKey(path: String, z: Int, x: Int, y: Int) = "rv_${path.trim('/').replace('/', '-')}_${z}_${x}_$y"
 
@@ -71,8 +73,8 @@ object RadarStore {
     fun has(key: String) = memory.get(key) != null || file(key)?.exists() == true
 
     /** The step [frame] of [composite] (one byte per cell of its grid), null if it cannot be had. */
-    suspend fun grid(http: OkHttpClient, composite: RadarComposite, frame: RadarFrame): ByteArray? =
-        get(composite.key(frame), composite.w * composite.h, downloads) { composite.fetch(http, frame) }
+    suspend fun grid(http: OkHttpClient, composite: RadarComposite, frame: RadarFrame, side: Boolean = false): ByteArray? =
+        get(composite.key(frame), composite.w * composite.h, if (side) besides else downloads) { composite.fetch(http, frame) }
             ?: composite.stalePrefix(frame)?.let { newest(it) }
 
     /**
@@ -104,10 +106,10 @@ object RadarStore {
         if (c.windowed) "${c.key(f)}_w${window.col0}_${window.row0}_${window.w}x${window.h}" else c.key(f)
 
     /** The step [f] of [c] for the picture area [g] – the whole grid, or its window – with that window; null if it cannot be had. */
-    suspend fun forArea(http: OkHttpClient, c: RadarComposite, f: RadarFrame, g: FieldGeo): Pair<ByteArray, GridWindow>? {
+    suspend fun forArea(http: OkHttpClient, c: RadarComposite, f: RadarFrame, g: FieldGeo, side: Boolean = false): Pair<ByteArray, GridWindow>? {
         val w = areaWindow(c, g) ?: return null
-        if (!c.windowed) return grid(http, c, f)?.let { it to w }
-        return get(areaKey(c, f, w), w.size, downloads) { c.fetch(http, f, w) }?.let { it to w }
+        if (!c.windowed) return grid(http, c, f, side)?.let { it to w }
+        return get(areaKey(c, f, w), w.size, if (side) besides else downloads) { c.fetch(http, f, w) }?.let { it to w }
     }
 
     /** [forArea] if it is at hand (memory or disk) – no download. */
@@ -117,8 +119,8 @@ object RadarStore {
     fun hasArea(c: RadarComposite, f: RadarFrame, g: FieldGeo): Boolean = areaWindow(c, g)?.let { has(areaKey(c, f, it)) } == true
 
     /** A RainViewer tile (512 × 512 bytes), null if it cannot be had; [preview]: in the small requests' lane. */
-    suspend fun rvTile(http: OkHttpClient, host: String, path: String, z: Int, x: Int, y: Int, preview: Boolean = false): ByteArray? =
-        get(rvKey(path, z, x, y), 512 * 512, if (preview) small else downloads) {
+    suspend fun rvTile(http: OkHttpClient, host: String, path: String, z: Int, x: Int, y: Int, preview: Boolean = false, side: Boolean = false): ByteArray? =
+        get(rvKey(path, z, x, y), 512 * 512, if (preview) small else if (side) besides else downloads) {
             RadarDecode.png(
                 http, "$host$path/512/$z/$x/$y/2/1_1.png", 512, 512, RadarPalette.Source.RAINVIEWER,
                 if (preview) Dispatchers.Default else RadarDecode.decoding,

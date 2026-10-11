@@ -1,0 +1,1 @@
+• Radar loads faster: the loop waits only for the source of the place (e.g. the DWD). Neighbouring countries and RainViewer come alongside and complete the picture; a source that does not answer no longer holds up every step for 20 s, it rests a few minutes

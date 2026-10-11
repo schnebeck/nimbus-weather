@@ -24,7 +24,8 @@ import kotlin.math.ceil
 /**
  * Builds the frames of one picture area [g] of the time line [tl]; [covered]: where each composite
  * reaches into it. Keeps RainViewer's frames of the area and the motion between them, so the step
- * between two (every other one) costs only the moving.
+ * between two (every other one) costs only the moving. RainViewer only as far as its tiles are
+ * at hand: they come in a lane of their own, the frame is built again then ([rvPaths]).
  */
 class FrameBuilder(
     private val http: OkHttpClient,
@@ -58,19 +59,26 @@ class FrameBuilder(
             RvPlan.None -> if (layers.isEmpty()) RvBetween.empty(n) else RadarField.extract(g, layers, null, minSmooth = minSmooth)
         }
 
-    private suspend fun mosaic(path: String) = RadarPicture.mosaic(http, tl.rainViewerHost, path, g)
+    private suspend fun mosaic(path: String) = RadarPicture.mosaic(http, tl.rainViewerHost, path, g, atHand = true)
 
-    /** RainViewer alone in the area (its frame [path]). */
-    private suspend fun rvField(path: String): ViewFrame =
-        rvFields[path] ?: RadarField.extract(g, emptyList(), mosaic(path), minSmooth = minSmooth).also { rvFields[path] = it }
+    /** RainViewer's frames step [i] is made of (none where it is not needed). */
+    fun rvPaths(i: Int): List<String> = if (needsRv) RvSteps.paths(tl, i) else emptyList()
+
+    /** RainViewer alone in the area (its frame [path]); kept once all its tiles are there. */
+    private suspend fun rvField(path: String): Pair<ViewFrame, Boolean> {
+        rvFields[path]?.let { return it to true }
+        val m = mosaic(path)
+        val f = RadarField.extract(g, emptyList(), m, minSmooth = minSmooth)
+        if (m.complete) rvFields[path] = f
+        return f to m.complete
+    }
 
     private suspend fun between(p: RvPlan.Between): ViewFrame {
-        val a = rvField(p.before)
-        val b = rvField(p.after)
-        val flow = rvFlows.getOrPut("${p.before}>${p.after}") {
-            // fast showers move up to ~150 km/h (as playback looks for)
-            RadarMotion.motion(a, b, g.w, g.h, (150 * p.gapMs / 3_600_000.0 / g.pxKm).toFloat().coerceAtLeast(2f))
-        }
+        val (a, aAll) = rvField(p.before)
+        val (b, bAll) = rvField(p.after)
+        // fast showers move up to ~150 km/h (as playback looks for)
+        fun motion() = RadarMotion.motion(a, b, g.w, g.h, (150 * p.gapMs / 3_600_000.0 / g.pxKm).toFloat().coerceAtLeast(2f))
+        val flow = if (aAll && bAll) rvFlows.getOrPut("${p.before}>${p.after}") { motion() } else motion()
         return RvBetween.between(a, b, flow, p.t, g.w, g.h)
     }
 

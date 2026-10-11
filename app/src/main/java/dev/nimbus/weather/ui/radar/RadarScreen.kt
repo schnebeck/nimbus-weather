@@ -60,12 +60,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -117,6 +117,8 @@ fun RadarScreen(
     archiveDay: Long? = null,
     /** Opened for the lightning (the note of lightning nearby): its layer switched on. */
     lightningFirst: Boolean = false,
+    /** Layers on when it opens (settings). */
+    overlays: Set<dev.nimbus.weather.data.model.RadarOverlay> = emptySet(),
     onBack: () -> Unit,
 ) {
     val archive = archiveDay != null
@@ -148,11 +150,11 @@ fun RadarScreen(
     var playing by remember { mutableStateOf(false) }
     /** Archived day: playback holds until enough frames ahead are loaded. */
     var buffering by remember { mutableStateOf(false) }
-    var satellite by rememberSaveable { mutableStateOf(false) }
-    var warnings by rememberSaveable { mutableStateOf(false) }
-    var lightning by rememberSaveable { mutableStateOf(lightningFirst) }
-    var showTemp by rememberSaveable { mutableStateOf(false) }
-    var showWind by rememberSaveable { mutableStateOf(false) }
+    var satellite by rememberSaveable { mutableStateOf(dev.nimbus.weather.data.model.RadarOverlay.SATELLITE in overlays) }
+    var warnings by rememberSaveable { mutableStateOf(dev.nimbus.weather.data.model.RadarOverlay.WARNINGS in overlays) }
+    var lightning by rememberSaveable { mutableStateOf(lightningFirst || dev.nimbus.weather.data.model.RadarOverlay.LIGHTNING in overlays) }
+    var showTemp by rememberSaveable { mutableStateOf(dev.nimbus.weather.data.model.RadarOverlay.TEMPERATURE in overlays) }
+    var showWind by rememberSaveable { mutableStateOf(dev.nimbus.weather.data.model.RadarOverlay.WIND in overlays) }
     val overlays = remember { WeatherOverlays(temperatureUnit) }
     var gridCheck by remember { mutableIntStateOf(0) }
     var snowLegend by remember { mutableStateOf(true) }
@@ -352,7 +354,7 @@ fun RadarScreen(
         RadarPrefetcher.paused = true
         RadarPrefetcher.cancelRunning()
         // someone who opens the radar: its loop is loaded ahead from now on (see usedRecently)
-        RadarPrefetcher.radarOpened(context)
+        RadarPrefetcher.radarOpened(context, place)
         onDispose { RadarPrefetcher.paused = false }
     }
 
@@ -386,6 +388,8 @@ fun RadarScreen(
         val last = tl.lastShown(nowcastHere)
         if (frame > last) { frame = last; player.position = last.toFloat() }
     }
+    // the map's surface asks for no more frames than the pictures there are (Android 11 on)
+    LaunchedEffect(playing) { mapView.frameRateHint(if (playing) Playback.PICTURES_PER_SECOND.toFloat() else 0f) }
     LaunchedEffect(playing, timeline, nowcastHere) {
         val tl = timeline ?: return@LaunchedEffect
         if (!playing) { buffering = false; player.playing = false; player.position = frame.toFloat(); return@LaunchedEffect }
@@ -396,9 +400,13 @@ fun RadarScreen(
         // where no nowcast reaches into the area: the loop ends at "now"
         val lastIndex = tl.lastShown(nowcastHere)
         var state = Playback.State(frame.coerceAtMost(lastIndex).toFloat(), buffering = !player.canShow(minOf(frame + BUFFER_START, lastIndex).toFloat()))
-        var last = withFrameNanos { it }
+        // on the pictures' beat, not the display's: between them nothing asks for a frame
+        var last = System.nanoTime()
+        var due = last
         while (playing) {
-            val now = withFrameNanos { it }
+            due = Playback.nextDue(System.nanoTime(), due)
+            delay(((due - System.nanoTime()) / 1_000_000L).coerceAtLeast(0L))
+            val now = System.nanoTime()
             val dt = (now - last) / 1_000_000f
             last = now
             // Live loop and archived day alike: buffer (with the hint) instead of standing still
@@ -410,7 +418,20 @@ fun RadarScreen(
         }
     }
 
-    Box(Modifier.fillMaxSize().background(Color(0xFF15181D))) {
+    // two minutes untouched: back where it was opened from (counted while shown, anew when shown again)
+    val idle = remember { IdleClose() }
+    LaunchedWhileShown(Unit) {
+        idle.touched()
+        idle.awaitIdle()
+        onBack()
+    }
+
+    Box(
+        Modifier.fillMaxSize().background(Color(0xFF15181D)).pointerInput(Unit) {
+            // every touch, seen before the map and the controls take it
+            awaitPointerEventScope { while (true) { awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial); idle.touched() } }
+        },
+    ) {
         AndroidView({ mapView }, Modifier.fillMaxSize())
 
         // Top bar
@@ -579,4 +600,14 @@ fun RadarScreen(
             )
         }
     }
+}
+
+/** The frame rate the map's drawing surface wants (0: none in particular) – a hint the system may follow. */
+private fun android.view.View.frameRateHint(fps: Float) {
+    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R) return
+    if (this is android.view.SurfaceView) {
+        holder.surface.takeIf { it.isValid }?.setFrameRate(fps, android.view.Surface.FRAME_RATE_COMPATIBILITY_DEFAULT)
+        return
+    }
+    if (this is android.view.ViewGroup) for (i in 0 until childCount) getChildAt(i).frameRateHint(fps)
 }

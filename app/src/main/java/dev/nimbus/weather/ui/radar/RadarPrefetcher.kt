@@ -67,10 +67,22 @@ object RadarPrefetcher {
     const val USED_WITHIN_MS = 7 * 24 * 3_600_000L
     private const val PREFS = "radar"
     private const val OPENED_AT = "openedAt"
+    private const val LAT = "lat"
+    private const val LON = "lon"
 
-    /** The radar screen was opened (now). */
-    fun radarOpened(context: Context, now: Long = System.currentTimeMillis()) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putLong(OPENED_AT, now).apply()
+    /** The radar screen was opened (now), around [place]: the place the background keeps loaded. */
+    fun radarOpened(context: Context, place: Place?, now: Long = System.currentTimeMillis()) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putLong(OPENED_AT, now).apply {
+            if (place != null) putString(LAT, place.latitude.toString()).putString(LON, place.longitude.toString())
+        }.apply()
+    }
+
+    /** Where the radar was last opened; null: not yet. */
+    fun lastPlace(context: Context): Pair<Double, Double>? {
+        val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val lat = p.getString(LAT, null)?.toDoubleOrNull() ?: return null
+        val lon = p.getString(LON, null)?.toDoubleOrNull() ?: return null
+        return lat to lon
     }
 
     /** Whether the radar was opened within [USED_WITHIN_MS] before [now]. */
@@ -91,6 +103,32 @@ object RadarPrefetcher {
         return cm.activeNetwork != null && !cm.isActiveNetworkMetered
     }
 
+    /** A network to load ahead over: Wi-Fi, or any with [mobile] (setting). */
+    fun networkAllows(context: Context, mobile: Boolean): Boolean {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        return if (mobile) cm.activeNetwork != null else isUnmetered(context)
+    }
+
+    /**
+     * The past steps of the radar at [lat]/[lon] into the store, with the temperature and wind
+     * grid – what the screen needs besides the nowcast; false without a time line.
+     */
+    suspend fun loadSteps(context: Context, lat: Double, lon: Double): Boolean {
+        val container = (context.applicationContext as dev.nimbus.weather.NimbusApp).container
+        WeatherGridStore.ensure(container.mapHttp, lat, lon)
+        val anchor = RadarComposites.anchorFor(lat, lon)
+        val tl = runCatching { RadarSources.timeline(container.mapHttp, HistoryRange.H2, anchor = anchor) }.getOrNull() ?: return false
+        kotlinx.coroutines.coroutineScope {
+            // the steps of every composite the place lies in (a windowed one only for a picture
+            // area – the radar view loads it); raw images through the plain client (the map
+            // client recolours them)
+            val here = RadarComposites.all.filter { it.covers(lat, lon) && !it.windowed }
+            stepsAhead(tl, here).map { (c, f) -> this.async { RadarStore.grid(container.http, c, f) } }.forEach { it.await() }
+        }
+        withContext(Dispatchers.IO) { RadarStore.prune() }
+        return true
+    }
+
     suspend fun prefetch(context: Context, http: OkHttpClient, place: Place) {
         if (paused || !usedRecently(context)) return
         val key = "%.2f,%.2f".format(place.latitude, place.longitude)
@@ -104,20 +142,7 @@ object RadarPrefetcher {
         }
         withTimeoutOrNull(30_000L) { previewReady.await() }
         if (paused) return
-        WeatherGridStore.ensure(http, place.latitude, place.longitude)
-        val anchor = RadarComposites.anchorFor(place.latitude, place.longitude)
-        val tl = runCatching { RadarSources.timeline(http, HistoryRange.H2, anchor = anchor) }.getOrNull() ?: return
-        // The radar steps: raw images through the plain client (the map client recolours them)
-        val raw = (context.applicationContext as dev.nimbus.weather.NimbusApp).container.http
-        kotlinx.coroutines.coroutineScope {
-            // the steps of every composite the place lies in
-            // (a windowed one only for a picture area – the radar view loads it)
-            val here = RadarComposites.all.filter { it.covers(place.latitude, place.longitude) && !it.windowed }
-            val steps = stepsAhead(tl, here).map { (c, f) -> this.async { RadarStore.grid(raw, c, f) } }
-            steps.forEach { it.await() }
-        }
-        withContext(Dispatchers.IO) { RadarStore.prune() }
-        if (paused) return
+        if (!loadSteps(context, place.latitude, place.longitude) || paused) return
         // The base map of the radar view (no radar layers: the radar comes from the store)
         val style = MapStyle.builder(http, context.resources.configuration.locales[0].language)
         withContext(Dispatchers.Main) {

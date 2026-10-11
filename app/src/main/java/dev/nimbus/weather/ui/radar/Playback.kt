@@ -115,6 +115,18 @@ object Progressive {
 object Playback {
     data class State(val position: Float, val buffering: Boolean = false, val restedMs: Float = 0f, val playing: Boolean = true)
 
+    /**
+     * Pictures per second while playing: the position moves on and the rain between the steps is
+     * drawn this often – not with every display frame. The motion looks the same; between the
+     * pictures nothing asks for a frame, so the display may lower its rate and the processor
+     * keeps time for loading.
+     */
+    const val PICTURES_PER_SECOND = 20
+    private const val PICTURE_NS = 1_000_000_000L / PICTURES_PER_SECOND
+
+    /** The next picture's time after the one [due], at [now] (ns): on the beat, anew after a pause of a beat or more. */
+    fun nextDue(now: Long, due: Long) = if (now - due >= PICTURE_NS) now + PICTURE_NS else due + PICTURE_NS
+
     fun step(
         s: State, dtMs: Float, last: Int, loop: Boolean, stepMs: Float, canShow: (Float) -> Boolean,
         resumeAhead: Int = 12, restMs: Float = 1400f,

@@ -297,7 +297,7 @@
     <string name="legend_snow">Snow</string>
 
     <string name="settings_preload_radar">Preload radar</string>
-    <string name="settings_preload_radar_desc">Keep the radar loop of the current place up to date on Wi-Fi while the app is open (about every 15 minutes), so it opens instantly</string>
+    <string name="settings_preload_radar_desc">Load the radar loop of the place last seen on the radar ahead, so it opens instantly: about every 15 minutes while the app is open, otherwise about every 30 minutes in the background while the battery is not low</string>
 
     <string name="precip_title">Precipitation today</string>
     <string name="precip_today_amount">%1$s today</string>
@@ -752,4 +752,8 @@
     <string name="day_afternoon">%3$s by day, %2$s %1$s</string>
     <string name="day_overnight">%2$s %1$s, %3$s by day</string>
     <string name="day_otherwise">%3$s %1$s, %2$s otherwise</string>
+    <string name="settings_radar_overlays">Layers on opening</string>
+    <string name="settings_radar_overlays_desc">These layers are on when the radar opens – still switched there as before.</string>
+    <string name="settings_preload_radar_mobile">Over mobile data too</string>
+    <string name="settings_preload_radar_mobile_desc">Otherwise Wi-Fi only; about 1–2 MB each time</string>
 </resources>

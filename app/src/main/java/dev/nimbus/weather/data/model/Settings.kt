@@ -80,6 +80,10 @@ enum class WeatherCard {
 @Serializable
 enum class RadarColors { CONTRAST, BLUE }
 
+/** Layers over the radar that can be on when it opens. */
+@Serializable
+enum class RadarOverlay { TEMPERATURE, WIND, SATELLITE, LIGHTNING, WARNINGS }
+
 @Serializable
 data class Settings(
     /** Open-Meteo's best match unless chosen otherwise: it takes the finest model for each place. */
@@ -93,8 +97,13 @@ data class Settings(
     val fullscreen: Boolean = false,
     /** A full-screen button in the top bar as well (off: the double-tap only). */
     val fullscreenButton: Boolean = false,
-    /** Load the radar loop in the background once the location is known (Wi-Fi only). */
+    /**
+     * Keep the radar loop of the place last seen on the radar loaded ahead: while the app is
+     * shown, and about every half hour in the background while the battery is not low.
+     */
     val preloadRadar: Boolean = true,
+    /** … over mobile data too (off: Wi-Fi only). */
+    val preloadRadarMobile: Boolean = false,
     /** Pollen types shown in the pollen card (at least one). */
     val pollenTypes: Set<PollenType> = PollenType.entries.toSet(),
     /** Cards the user switched off. */
@@ -106,6 +115,8 @@ data class Settings(
     /** Own order of the small tiles (see [orderedTiles]); empty = default. */
     val tileOrder: List<WeatherCard> = emptyList(),
     val radarColors: RadarColors = RadarColors.CONTRAST,
+    /** Layers on when the radar opens (each can be switched there as before). */
+    val radarOverlays: Set<RadarOverlay> = emptySet(),
     /**
      * Precipitation as a chart of its own under the temperature (10-day forecast, look-back):
      * amount and chance; off, the bars stay in the temperature chart (one combined chart).

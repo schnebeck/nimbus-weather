@@ -129,17 +129,21 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
   temperature (with isotherms) and wind layers, satellite (Meteosat, every 10 minutes, at the time of
   the radar image), lightning (from the satellite, all of Europe: where it struck in the 15 minutes up
   to the radar image, the newest brightest), warning map, look-back up to 24 h. The radar of a day in
-  the look-back shows temperature, wind, satellite and lightning too. For someone who opened the radar within the last week, the app
-  loads the past images of the current place's 2-hour loop ahead on Wi-Fi while it is open (the radar
-  forecast is fetched by the radar itself – it is new every 5 minutes). The radar resolution follows the device's memory. Without a connection the radar shows the
+  the look-back shows temperature, wind, satellite and lightning too. Which layers are on when it
+  opens is set in the settings. It plays at 20 pictures per second; after 2 minutes untouched the
+  radar closes and goes back where it was opened. For someone who opened the radar within the last
+  week, the app loads the past images of the 2-hour loop of the place last seen on the radar ahead –
+  about every 15 minutes while it is open, otherwise about every 30 minutes in the background while
+  the battery is not low; on Wi-Fi or, if so set, over mobile data too (the radar forecast is fetched
+  by the radar itself – it is new every 5 minutes). The radar resolution follows the device's memory. Without a connection the radar shows the
   stored images; nothing waits forever. The precipitation map on the weather page shows the same
   picture for its area around the place, loading only that area's radar cells, in a lane of its own
   beside the radar loop.
 - **Battery**: the animated sky runs at 30 frames/s (rain, snow: 60), after a minute without touch at
   15; in the system's battery saver, with the system's animations off or the animation switched off it
-  stands still – without rain, snow, lightning and leaves. Nimbus works only while it is shown: no
-  update in the background, no timers behind the lock screen, and the radar stops too when the phone
-  is locked. On opening the app loads what has expired – until then it shows the last data with a
+  stands still – without rain, snow, lightning and leaves. Nimbus works only while it is shown –
+  apart from loading the radar ahead (can be switched off): no weather update in the background, no
+  timers behind the lock screen, and the radar stops too when the phone is locked. On opening the app loads what has expired – until then it shows the last data with a
   yellow dot –, the look-back for the place shown only.
 - **Accessibility**: large system font up to 200 % and small displays from 320 dp – nothing overlaps
   or is cut off, long words are hyphenated or shortened; the 10-day rows go to two lines with a large

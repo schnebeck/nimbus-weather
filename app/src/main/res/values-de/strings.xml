@@ -286,7 +286,7 @@
     <string name="legend_snow">Schnee</string>
 
     <string name="settings_preload_radar">Radar vorladen</string>
-    <string name="settings_preload_radar_desc">Radarschleife für den aktuellen Ort im WLAN aktuell halten, solange die App geöffnet ist (etwa alle 15 Minuten), damit sie sofort erscheint</string>
+    <string name="settings_preload_radar_desc">Radarschleife für den zuletzt im Radar gezeigten Ort vorladen, damit sie sofort erscheint: bei offener App etwa alle 15 Minuten, sonst etwa alle 30 Minuten im Hintergrund, solange der Akku nicht knapp ist</string>
 
     <string name="precip_title">Niederschlag heute</string>
     <string name="precip_today_amount">%1$s heute</string>
@@ -741,4 +741,8 @@
     <string name="day_afternoon">tagsüber %3$s, %1$s %2$s</string>
     <string name="day_overnight">%1$s %2$s, tagsüber %3$s</string>
     <string name="day_otherwise">%1$s %3$s, sonst %2$s</string>
+    <string name="settings_radar_overlays">Ebenen beim Öffnen</string>
+    <string name="settings_radar_overlays_desc">Diese Ebenen sind an, wenn das Radar öffnet – dort weiter ein- und ausschaltbar.</string>
+    <string name="settings_preload_radar_mobile">Auch über mobile Daten</string>
+    <string name="settings_preload_radar_mobile_desc">Sonst nur im WLAN; je Vorladen etwa 1–2 MB</string>
 </resources>

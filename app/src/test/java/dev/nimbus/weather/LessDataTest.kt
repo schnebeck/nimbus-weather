@@ -81,7 +81,7 @@ class LessDataTest {
         assertFalse(RadarPrefetcher.usedRecently(now - 8 * 24 * 3_600_000L, now))
         val app = RuntimeEnvironment.getApplication()
         assertFalse(RadarPrefetcher.usedRecently(app, now))
-        RadarPrefetcher.radarOpened(app, now)
+        RadarPrefetcher.radarOpened(app, null, now)
         assertTrue(RadarPrefetcher.usedRecently(app, now + 3_600_000L))
     }
 

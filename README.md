@@ -130,9 +130,13 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   und Namen über dem Radar; Temperatur- (mit Isothermen) und Windebene, Satellit (Meteosat, alle
   10 Minuten, zur Zeit des Radarbilds), Blitze (vom Satelliten, ganz Europa: wo es in den 15 Minuten
   bis zum Radarbild geblitzt hat, die jüngsten am hellsten), Warnkarte, Rückblick bis 24 h. Auch das
-  Radar eines Tages im Rückblick zeigt Temperatur, Wind, Satellit und Blitze. Wer das Radar in der letzten Woche geöffnet hat,
-  dem lädt die App im WLAN die vergangenen Bilder der 2-Stunden-Schleife des aktuellen Orts vor,
-  solange sie geöffnet ist (die Radarvorhersage holt das Radar selbst – sie ist alle 5 Minuten neu). Die Auflösung des
+  Radar eines Tages im Rückblick zeigt Temperatur, Wind, Satellit und Blitze. Welche Ebenen beim
+  Öffnen an sind, legen die Einstellungen fest. Abgespielt wird mit 20 Bildern/s; nach 2 Minuten ohne
+  Berührung schließt das Radar und kehrt dorthin zurück, wo es geöffnet wurde. Wer das Radar in der
+  letzten Woche geöffnet hat, dem lädt die App die vergangenen Bilder der 2-Stunden-Schleife des
+  zuletzt im Radar gezeigten Orts vor – bei offener App etwa alle 15 Minuten, sonst etwa alle 30
+  Minuten im Hintergrund, solange der Akku nicht knapp ist; im WLAN oder, wenn eingestellt, auch über
+  mobile Daten (die Radarvorhersage holt das Radar selbst – sie ist alle 5 Minuten neu). Die Auflösung des
   Radarbilds richtet sich nach dem Speicher des Geräts. Ohne Verbindung zeigt das Radar die
   gespeicherten Bilder; nichts wartet endlos. Die Niederschlagskarte auf der Wetterseite zeigt dasselbe
   Bild für ihren Ausschnitt um den Ort; sie lädt nur dessen Radarzellen, in eigener Spur neben der
@@ -140,8 +144,9 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
 - **Akku**: Der animierte Himmel läuft mit 30 Bildern/s (Regen, Schnee: 60), nach einer Minute ohne
   Berührung mit 15; im Energiesparmodus des Systems, bei abgeschalteten System-Animationen oder
   abgeschalteter Animation steht er still – ohne Regen, Schnee, Blitze und Blätter. Nimbus arbeitet
-  nur, solange es zu sehen ist: keine Aktualisierung im Hintergrund, keine Zeitgeber hinter dem
-  Sperrbildschirm, beim Sperren hält auch das Radar an. Beim Öffnen lädt die App, was abgelaufen ist –
+  nur, solange es zu sehen ist – bis auf das Vorladen des Radars (abschaltbar): keine Aktualisierung
+  des Wetters im Hintergrund, keine Zeitgeber hinter dem Sperrbildschirm, beim Sperren hält auch das
+  Radar an. Beim Öffnen lädt die App, was abgelaufen ist –
   bis dahin zeigt sie die letzten Daten mit gelbem Punkt –, den Rückblick nur für den sichtbaren Ort.
 - **Barrierefreiheit**: große Systemschrift bis 200 % und kleine Displays ab 320 dp – nichts überlappt
   oder wird abgeschnitten, lange Wörter werden getrennt oder abgekürzt; die 10-Tage-Zeilen werden

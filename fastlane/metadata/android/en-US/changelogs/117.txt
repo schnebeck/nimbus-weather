@@ -1,0 +1,4 @@
+• Radar plays at 20 pictures per second: less processor load, loading gets on faster
+• Setting: radar layers on opening (e.g. lightning, satellite)
+• The radar closes after 2 minutes untouched
+• Radar loaded ahead in the background too, about every 30 minutes while the battery is not low; optionally over mobile data

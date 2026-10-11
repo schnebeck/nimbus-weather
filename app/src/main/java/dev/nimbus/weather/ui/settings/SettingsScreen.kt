@@ -131,6 +131,11 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                     ToggleRow(stringResource(R.string.settings_preload_radar), stringResource(R.string.settings_preload_radar_desc), settings.preloadRadar) { v ->
                         onChange { it.copy(preloadRadar = v) }
                     }
+                    if (settings.preloadRadar) {
+                        ToggleRow(stringResource(R.string.settings_preload_radar_mobile), stringResource(R.string.settings_preload_radar_mobile_desc), settings.preloadRadarMobile) { v ->
+                            onChange { it.copy(preloadRadarMobile = v) }
+                        }
+                    }
                 }
             }
             item {
@@ -155,6 +160,8 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                     ) { i -> onChange { it.copy(radarColors = dev.nimbus.weather.data.model.RadarColors.entries[i]) } }
                     Spacer(Modifier.size(10.dp))
                     RadarScalePreview(settings.radarColors)
+                    Spacer(Modifier.size(14.dp))
+                    RadarOverlaysOnOpening(settings.radarOverlays) { o -> onChange { it.copy(radarOverlays = o) } }
                 }
             }
             item {

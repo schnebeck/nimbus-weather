@@ -130,6 +130,7 @@ class MainViewModel(
             }
             combine(store.settings, store.places) { s, p -> s to p }.collect { (settings, places) ->
                 dev.nimbus.weather.ui.radar.RadarPalette.scheme = settings.radarColors
+                dev.nimbus.weather.data.repo.BackgroundWork.radarAhead(getApplication(), settings.preloadRadar, settings.preloadRadarMobile)
                 val first = !_state.value.initialized
                 val prev = lastSettings
                 lastSettings = settings
@@ -425,7 +426,7 @@ class MainViewModel(
     private fun maybePrefetchRadar(place: Place, settings: Settings) {
         val app = getApplication<Application>()
         val selected = _state.value.selectedPlaceId
-        if (!resumed || !settings.preloadRadar || (selected != null && selected != place.id) || !RadarPrefetcher.isUnmetered(app)) return
+        if (!resumed || !settings.preloadRadar || (selected != null && selected != place.id) || !RadarPrefetcher.networkAllows(app, settings.preloadRadarMobile)) return
         launchWhileShown {
             kotlinx.coroutines.delay(2_000)      // let the page settle first
             runCatching { RadarPrefetcher.prefetch(app, container.mapHttp, place) }

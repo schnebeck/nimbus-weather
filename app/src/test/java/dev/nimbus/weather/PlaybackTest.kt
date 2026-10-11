@@ -87,4 +87,21 @@ class PlaybackTest {
         assertEquals(12f, held.position, 0.01f)
         assertTrue(held.buffering)
     }
+
+    /** 20 pictures a second, whatever the display's rate; a late wake-up keeps the beat, a pause starts it anew. */
+    @Test fun twentyPicturesASecond() {
+        var now = 0L
+        var due = 0L
+        var pictures = 0
+        val jitter = longArrayOf(0, 3_000_000, 1_000_000, 7_000_000)
+        while (true) {
+            due = Playback.nextDue(now, due)
+            now = due + jitter[pictures % jitter.size]
+            if (now > 1_025_000_000L) break                          // the pictures of one second (50 ms … 1 s)
+            pictures++
+        }
+        assertEquals(Playback.PICTURES_PER_SECOND, pictures)
+        // back after a pause: the next picture a beat from now, not a burst to catch up
+        assertEquals(5_050_000_000L, Playback.nextDue(5_000_000_000L, 1_000_000_000L))
+    }
 }

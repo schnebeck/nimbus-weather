@@ -20,8 +20,12 @@ package dev.nimbus.weather.ui.settings
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -39,11 +43,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.nimbus.weather.R
 import dev.nimbus.weather.data.model.ForecastModel
+import dev.nimbus.weather.data.model.RadarOverlay
+import dev.nimbus.weather.ui.radar.ToggleChip
 import dev.nimbus.weather.ui.theme.NimbusColors
 
 @Composable
@@ -125,5 +132,23 @@ internal fun ModelChoice(selected: Boolean, title: String, description: String, 
             Text(title, fontSize = 16.sp, color = Color.White)
             Text(description, fontSize = 13.sp, color = NimbusColors.Secondary)
         }
+    }
+}
+
+/** The layers on when the radar opens, switched as on the radar itself. */
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+internal fun RadarOverlaysOnOpening(on: Set<RadarOverlay>, onChange: (Set<RadarOverlay>) -> Unit) {
+    Text(stringResource(R.string.settings_radar_overlays), fontSize = 16.sp, color = Color.White)
+    Text(stringResource(R.string.settings_radar_overlays_desc), fontSize = 13.sp, color = NimbusColors.Secondary, lineHeight = 18.sp)
+    Spacer(Modifier.size(8.dp))
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf(
+            RadarOverlay.TEMPERATURE to R.string.overlay_temperature,
+            RadarOverlay.WIND to R.string.overlay_wind,
+            RadarOverlay.SATELLITE to R.string.satellite,
+            RadarOverlay.LIGHTNING to R.string.lightning,
+            RadarOverlay.WARNINGS to R.string.warnings,
+        ).forEach { (o, label) -> ToggleChip(stringResource(label), o in on) { onChange(if (o in on) on - o else on + o) } }
     }
 }

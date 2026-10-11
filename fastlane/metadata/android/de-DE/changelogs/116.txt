@@ -1,0 +1,4 @@
+• Stundenleiste: „17“ zeigt die Stunde 17–18, wie das Diagramm; der Kurztext nennt Stunden mit ihrem Beginn und sieht in einer trockenen Stunde zwischen Regen keinen Wetterwechsel
+• Höchste/tiefste Regenwahrscheinlichkeit nur an Hoch- oder Tiefpunkten
+• Heute: gleiche Erwartung in Vorhersage und Tagesverlauf; Kurve auch aus stündlichen Stationsmeldungen
+• Blitze: im Radar nur zu ihrer Zeit, Minuten laufen mit der Uhr

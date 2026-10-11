@@ -44,7 +44,7 @@ class OutlookTextTest {
     private val now = 1_791_219_600_000L        // 5 Oct. 2026, 20:20 in Norden
     private val drizzleAt = (now / h + 2) * h    // 22:00
 
-    /** Norden that evening: cloudy, at 22:00 the symbol drizzle – a trace, a chance below 10 %. */
+    /** Norden that evening: cloudy, the hour 21–22 (the point at 22:00) drizzle – a trace, a chance below 10 %. */
     private fun norden(): WeatherData {
         val hourly = (0..14).map { k ->
             val t = (now / h + k) * h
@@ -58,7 +58,7 @@ class OutlookTextTest {
 
     @Test fun drizzleShownIsNotDry() {
         val p = Outlook.from(norden(), now, isAfternoon = false).precipitation
-        assertEquals(Outlook.Precip.Unlikely(Condition.DRIZZLE, drizzleAt, "<10"), p)
+        assertEquals(Outlook.Precip.Unlikely(Condition.DRIZZLE, drizzleAt - h, "<10"), p)
     }
 
     @Test fun theTextSaysHowLikelyTheDrizzleIs() {
@@ -67,7 +67,8 @@ class OutlookTextTest {
         compose.waitForIdle()
         assertTrue(text, "Nieselregen" in text)
         assertFalse(text, "Kein Niederschlag in Sicht" in text)
-        assertTrue(text, "Die Wahrscheinlichkeit dafür ist gering (<10 %)." in text)
+        // a single hour of drizzle is no change of the weather: named with how likely it is
+        assertTrue(text, "ist Nieselregen möglich, aber wenig wahrscheinlich (<10 %)." in text)
     }
 
     /** No hour shows any: dry as before. */

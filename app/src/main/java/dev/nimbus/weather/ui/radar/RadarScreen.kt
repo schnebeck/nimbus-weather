@@ -119,6 +119,9 @@ private fun radarTime(tl: RadarTimeline, position: Float): Long {
     return tl.frames.getOrNull(i + 1)?.let { b -> a + ((b.time - a) * (position - i)).toLong() } ?: a
 }
 
+/** Where the live loop's forecast begins ("now"); null for a day of the look-back. */
+private fun forecastFrom(tl: RadarTimeline): Long? = if (tl.day == null) tl.frames.getOrNull(tl.nowIndex)?.time else null
+
 /** The satellite pictures' distance while playing: the live loop every 10 minutes, a day of the look-back every 30. */
 private fun satStep(tl: RadarTimeline) = if (tl.day != null) SatelliteLayer.DAY_STEP_MS else SatelliteLayer.STEP_MS
 
@@ -384,12 +387,17 @@ fun RadarScreen(
     LaunchedEffect(satellite, warnings) { controller.setOverlays(satellite, warnings && !archive) }
     // The satellite at the radar's time: standing its 10-minute picture; playing, blended between
     // pictures 10 minutes apart (a day of the look-back: 30) – live and on a past day
-    val satTime = timeline?.let { tl -> SatelliteLayer.timeFor(tl.frames[frame.coerceIn(0, tl.frames.lastIndex)].time, System.currentTimeMillis()) }
+    // (in the radar's forecast none: no picture, no attribution)
+    val satTime = timeline?.let { tl ->
+        val t = tl.frames[frame.coerceIn(0, tl.frames.lastIndex)].time
+        if (forecastFrom(tl)?.let { t > it } == true) null else SatelliteLayer.timeFor(t, System.currentTimeMillis())
+    }
     LaunchedEffect(satellite, frame, playing, satView, styleReady) {
         val tl = timeline
         if (!satellite || !styleReady || tl == null) return@LaunchedEffect
         if (satView == 0) controller.map?.projection?.visibleRegion?.latLngBounds?.let { b -> sat.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast) }
-        sat.at(radarTime(tl, frame.toFloat()), playing, satStep(tl))
+        val t = radarTime(tl, frame.toFloat())
+        sat.at(t, playing, satStep(tl), shows = SatelliteLayer.fade(t, forecastFrom(tl), playing))
     }
     LaunchedEffect(lightning, frame, playing, satView, styleReady) {
         if (!styleReady) return@LaunchedEffect
@@ -437,7 +445,7 @@ fun RadarScreen(
             if (!state.playing) { playing = false; break }
             player.position = state.position
             if (lightning) light.at(lightningTime(tl, state.position))
-            if (satellite) sat.at(radarTime(tl, state.position), true, satStep(tl))
+            if (satellite) radarTime(tl, state.position).let { t -> sat.at(t, true, satStep(tl), shows = SatelliteLayer.fade(t, forecastFrom(tl), true)) }
             if (state.position.toInt() != frame) frame = state.position.toInt()
         }
     }

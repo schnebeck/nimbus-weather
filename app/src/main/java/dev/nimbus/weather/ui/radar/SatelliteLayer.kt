@@ -106,11 +106,18 @@ class SatelliteLayer(
      * Shows the radar's time [time]: standing, its 10-minute picture; [playing], the pictures
      * [stepMs] apart around it blended by where it lies between them – the clouds pass over
      * instead of jumping – and the next ones loaded ahead. A picture not there yet keeps the one
-     * before on the map.
+     * before on the map. [shows]: how much the satellite shows at all ([fade]; 0 in the radar's
+     * forecast, where there is no picture).
      */
-    fun at(time: Long, playing: Boolean, stepMs: Long, now: Long = System.currentTimeMillis()) {
+    fun at(time: Long, playing: Boolean, stepMs: Long, now: Long = System.currentTimeMillis(), shows: Float = 1f) {
         val g = geo ?: return
-        last = { at(time, playing, stepMs, now) }
+        last = { at(time, playing, stepMs, now, shows) }
+        (style?.getLayer(LAYER_ID) as? RasterLayer)?.setProperties(PropertyFactory.rasterOpacity(OPACITY * shows))
+        if (shows <= 0f) {
+            (style?.getLayer(LAYER_NEXT) as? RasterLayer)?.setProperties(PropertyFactory.rasterOpacity(0f))
+            shown = null
+            return
+        }
         val b = blend(time, now, playing, stepMs)
         listOfNotNull(b.before, b.after).forEach { fetch(g, it) }
         if (playing) (2..AHEAD).map { b.before + it * stepMs }.filter { it <= newest(now) }.forEach { fetch(g, it) }
@@ -119,7 +126,7 @@ class SatelliteLayer(
         val later = b.after?.let { picture(g, it) }
         if (later != null) put(1, g, key(g, b.after), later)
         val f = if (later != null) b.f else 0f
-        (style?.getLayer(LAYER_NEXT) as? RasterLayer)?.setProperties(PropertyFactory.rasterOpacity(OPACITY * f))
+        (style?.getLayer(LAYER_NEXT) as? RasterLayer)?.setProperties(PropertyFactory.rasterOpacity(OPACITY * f * shows))
         shown = Blend(b.before, b.after.takeIf { later != null }, f)
     }
 
@@ -177,6 +184,8 @@ class SatelliteLayer(
     companion object {
         const val SOURCE = "sat"
         const val SOURCE_NEXT = "sat-next"
+        /** The earlier picture's map layer. */
+        const val LAYER_ID = "sat"
         /** The later picture's layer (over the earlier one, "sat"). */
         const val LAYER_NEXT = "sat-next"
         /** The satellite's opacity over the map. */
@@ -195,6 +204,20 @@ class SatelliteLayer(
         const val LATENCY_MS = 20 * 60_000L
         /** Longest side of the picture, in pixels (the map scales it). */
         private const val MAX_SIDE = 1024
+
+        /** Into the radar's forecast the satellite fades out within this (radar time) while playing. */
+        const val FADE_MS = 10 * 60_000L
+
+        /**
+         * How much the satellite shows at the radar's time [time]: fully up to [forecastFrom] (the
+         * live loop's "now"; null: no forecast), in the forecast nothing – there is no picture of
+         * it, only the newest one standing still –, playing faded out within [FADE_MS].
+         */
+        fun fade(time: Long, forecastFrom: Long?, playing: Boolean): Float = when {
+            forecastFrom == null || time <= forecastFrom -> 1f
+            !playing -> 0f
+            else -> 1f - ((time - forecastFrom).toFloat() / FADE_MS).coerceIn(0f, 1f)
+        }
 
         /** The newest picture there is at [now]. */
         fun newest(now: Long) = Math.floorDiv(now - LATENCY_MS, STEP_MS) * STEP_MS

@@ -127,15 +127,6 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                     ToggleRow(stringResource(R.string.settings_animations), stringResource(R.string.settings_animations_desc), settings.animationsEnabled) { v ->
                         onChange { it.copy(animationsEnabled = v) }
                     }
-                    Spacer(Modifier.size(8.dp))
-                    ToggleRow(stringResource(R.string.settings_preload_radar), stringResource(R.string.settings_preload_radar_desc), settings.preloadRadar) { v ->
-                        onChange { it.copy(preloadRadar = v) }
-                    }
-                    if (settings.preloadRadar) {
-                        ToggleRow(stringResource(R.string.settings_preload_radar_mobile), stringResource(R.string.settings_preload_radar_mobile_desc), settings.preloadRadarMobile) { v ->
-                            onChange { it.copy(preloadRadarMobile = v) }
-                        }
-                    }
                 }
             }
             item {
@@ -151,7 +142,20 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                 }
             }
             item {
-                Section(stringResource(R.string.settings_radar_colors)) {
+                // everything of the radar in one place: what is on when it opens, loading ahead, colours
+                Section(stringResource(R.string.settings_radar)) {
+                    RadarOverlaysOnOpening(settings.radarOverlays) { o -> onChange { it.copy(radarOverlays = o) } }
+                    Spacer(Modifier.size(14.dp))
+                    ToggleRow(stringResource(R.string.settings_preload_radar), stringResource(R.string.settings_preload_radar_desc), settings.preloadRadar) { v ->
+                        onChange { it.copy(preloadRadar = v) }
+                    }
+                    if (settings.preloadRadar) {
+                        ToggleRow(stringResource(R.string.settings_preload_radar_mobile), stringResource(R.string.settings_preload_radar_mobile_desc), settings.preloadRadarMobile) { v ->
+                            onChange { it.copy(preloadRadarMobile = v) }
+                        }
+                    }
+                    Spacer(Modifier.size(14.dp))
+                    Text(stringResource(R.string.settings_radar_colors), fontSize = 16.sp, color = Color.White)
                     Text(stringResource(R.string.settings_radar_colors_desc), fontSize = 13.sp, color = NimbusColors.Secondary, lineHeight = 18.sp)
                     Spacer(Modifier.size(10.dp))
                     Segmented(
@@ -160,8 +164,6 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                     ) { i -> onChange { it.copy(radarColors = dev.nimbus.weather.data.model.RadarColors.entries[i]) } }
                     Spacer(Modifier.size(10.dp))
                     RadarScalePreview(settings.radarColors)
-                    Spacer(Modifier.size(14.dp))
-                    RadarOverlaysOnOpening(settings.radarOverlays) { o -> onChange { it.copy(radarOverlays = o) } }
                 }
             }
             item {

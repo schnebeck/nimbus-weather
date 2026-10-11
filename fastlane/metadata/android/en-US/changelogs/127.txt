@@ -1,0 +1,2 @@
+• Satellite on the radar blended while playing – live loop every 10, look-back every 30 minutes; in the radar's forecast it fades out (no picture of it)
+• Settings: a new group "Radar" with the layers on opening, loading ahead and the radar colours

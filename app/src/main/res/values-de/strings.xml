@@ -745,4 +745,5 @@
     <string name="settings_radar_overlays_desc">Diese Ebenen sind an, wenn das Radar öffnet – dort weiter ein- und ausschaltbar.</string>
     <string name="settings_preload_radar_mobile">Auch über mobile Daten</string>
     <string name="settings_preload_radar_mobile_desc">Sonst nur im WLAN; je Vorladen etwa 1–2 MB</string>
+    <string name="settings_radar">Radar</string>
 </resources>

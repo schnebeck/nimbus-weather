@@ -1,0 +1,2 @@
+• Satellit im Radar beim Abspielen überblendet – Live-Schleife alle 10, Rückblick alle 30 Minuten; in der Radarvorhersage blendet er aus (kein Bild davon)
+• Einstellungen: neue Gruppe „Radar“ mit Ebenen beim Öffnen, Vorladen und Radarfarben

@@ -129,7 +129,7 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   (Analysen ~3½ Tage), Verschieben und Zoomen brauchen kein Netz; deckende Farben, Straßen, Grenzen
   und Namen über dem Radar; Temperatur- (mit Isothermen) und Windebene, Satellit (Meteosat, alle
   10 Minuten, zur Zeit des Radarbilds; beim Abspielen zwischen den Bildern überblendet, im Rückblick
-  alle 30 Minuten), Blitze (vom Satelliten, ganz Europa: jeder Blitz ein Punkt
+  alle 30 Minuten; in der Radarvorhersage aus – es gibt kein Bild davon), Blitze (vom Satelliten, ganz Europa: jeder Blitz ein Punkt
   an seinem Ort, der ab seiner Minute schrumpft und in 15 Minuten verblasst – beim Abspielen fließend), Warnkarte, Rückblick bis 24 h. Auch das
   Radar eines Tages im Rückblick zeigt Temperatur, Wind, Satellit und Blitze. Die Schleife wartet nur
   auf die Quelle der Bildmitte; Nachbarländer und RainViewer kommen in eigener Spur dazu und ergänzen

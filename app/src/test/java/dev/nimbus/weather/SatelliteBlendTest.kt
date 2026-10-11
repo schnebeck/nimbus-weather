@@ -68,6 +68,9 @@ class SatelliteBlendTest {
         assertEquals(SatelliteLayer.Blend(t("2026-10-11T14:30:00Z"), t("2026-10-11T14:40:00Z"), 0.5f), layer.shown)
         // and the next pictures, up to 40 minutes on
         assertTrue(asked.toString(), listOf("14:30", "14:40", "14:50", "15:00", "15:10").all { hm -> asked.any { "T$hm:00" in it } })
+        // in the radar's forecast: nothing shown (no picture of it)
+        layer.at(time, playing = true, stepMs = SatelliteLayer.STEP_MS, now = now, shows = 0f)
+        assertEquals(null, layer.shown)
         // standing again: the picture alone
         layer.at(time, playing = false, stepMs = SatelliteLayer.STEP_MS, now = now)
         assertEquals(SatelliteLayer.Blend(t("2026-10-11T14:30:00Z"), null, 0f), layer.shown)

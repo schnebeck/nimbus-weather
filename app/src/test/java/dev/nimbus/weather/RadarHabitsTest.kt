@@ -100,4 +100,16 @@ class RadarHabitsTest {
         assertEquals(52.62 to 10.08, dev.nimbus.weather.ui.radar.RadarPrefetcher.lastPlace(ctx))
         assertFalse(Settings().preloadRadarMobile)
     }
+
+    /** Everything of the radar in the settings' group "Radar": the layers on opening, loading ahead, the colours. */
+    @Test @Config(qualifiers = "de-w411dp-h4000dp") fun theRadarsSettingsTogether() {
+        compose.setContent { dev.nimbus.weather.ui.settings.SettingsScreen(Settings(), {}, {}, {}) }
+        compose.waitForIdle()
+        fun top(text: String) = compose.onNodeWithText(text).fetchSemanticsNode().boundsInRoot.top
+        val radar = top("RADAR")
+        val next = top("BADEGEWÄSSER")
+        for (t in listOf("Ebenen beim Öffnen", "Radar vorladen", "Radarfarben")) {
+            assertTrue("$t in the radar's group", top(t) in radar..next)
+        }
+    }
 }

@@ -39,6 +39,21 @@ class SatelliteTest {
     }
 
     /**
+     * In the radar's forecast there is no satellite picture: up to "now" it shows, standing on a
+     * forecast step it is off, playing it fades out within 10 minutes of radar time; a day of the
+     * look-back has no forecast.
+     */
+    @Test fun noSatelliteInTheForecast() {
+        val from = t("2026-10-11T19:50:00Z")
+        assertEquals(1f, SatelliteLayer.fade(from, from, playing = true), 0f)
+        assertEquals(1f, SatelliteLayer.fade(from - 60_000L, from, playing = false), 0f)
+        assertEquals(0f, SatelliteLayer.fade(from + 5 * 60_000L, from, playing = false), 0f)
+        assertEquals(0.5f, SatelliteLayer.fade(from + 5 * 60_000L, from, playing = true), 1e-6f)
+        assertEquals(0f, SatelliteLayer.fade(from + 30 * 60_000L, from, playing = true), 0f)
+        assertEquals(1f, SatelliteLayer.fade(from + 30 * 60_000L, null, playing = true), 0f)
+    }
+
+    /**
      * Playing, the clouds pass over instead of jumping: between the pictures 10 minutes apart (a day
      * of the look-back: 30) the later one shows by where the radar's time lies between them;
      * standing, the picture alone; at the newest one, nothing after it.

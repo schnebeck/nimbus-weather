@@ -756,4 +756,5 @@
     <string name="settings_radar_overlays_desc">These layers are on when the radar opens – still switched there as before.</string>
     <string name="settings_preload_radar_mobile">Over mobile data too</string>
     <string name="settings_preload_radar_mobile_desc">Otherwise Wi-Fi only; about 1–2 MB each time</string>
+    <string name="settings_radar">Radar</string>
 </resources>

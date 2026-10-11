@@ -127,8 +127,8 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
   one) is loaded once, turned into reflectivity and kept locally until it expires (analyses ~3½ days),
   panning and zooming need no network; opaque colours, roads, borders and names above the radar;
   temperature (with isotherms) and wind layers, satellite (Meteosat, every 10 minutes, at the time of
-  the radar image), lightning (from the satellite, all of Europe: where it struck in the 15 minutes up
-  to the radar image, the newest brightest), warning map, look-back up to 24 h. The radar of a day in
+  the radar image), lightning (from the satellite, all of Europe: each flash a point
+  where it struck, shrinking from its minute on and fading within 15 minutes – smoothly while playing), warning map, look-back up to 24 h. The radar of a day in
   the look-back shows temperature, wind, satellite and lightning too. The loop waits only for the
   source of the picture's middle; neighbouring countries and RainViewer come in a lane of their own
   and complete the picture, a source that does not answer rests a few minutes. Which layers are on when it

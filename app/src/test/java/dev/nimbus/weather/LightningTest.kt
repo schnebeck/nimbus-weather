@@ -108,117 +108,98 @@ class LightningTest {
         } finally { server.close() }
     }
 
-    /** The radar's time: the newest step ending before it (the flashes a minute or two late); none ahead of now. */
+    private val norden = Instant.parse("2026-10-11T13:30:00Z").toEpochMilli()      // the quarter of the fixture
+
+    /** A server answering the quarter of the fixture (any other: none), each answer [delayMs] late. */
+    private fun server(delayMs: Long = 0): MockWebServer = MockWebServer().apply {
+        val csv = Fixtures.text("lightning_groups_norden.csv")
+        val empty = csv.lineSequence().first() + "\n"
+        dispatcher = object : mockwebserver3.Dispatcher() {
+            override fun dispatch(request: mockwebserver3.RecordedRequest): MockResponse {
+                if (delayMs > 0) Thread.sleep(delayMs)
+                val ours = "2026-10-11T13:30:00Z/" in (request.url.queryParameter("cql_filter") ?: "")
+                return MockResponse.Builder().code(200).body(if (ours) csv else empty).build()
+            }
+        }
+        start()
+    }
+
+    private fun layer(server: MockWebServer) =
+        LightningLayer(kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined), OkHttpClient(), server.url("/ows").toString())
+            .apply { setView(52.0, 54.5, 5.5, 9.5) }
+
+    /** The radar's time up to now (the flashes a minute or two late); none ahead of now; the request of a quarter hour. */
     @Test fun theStepOfTheRadarsTime() {
         val t = Instant.parse("2026-10-11T00:20:00Z").toEpochMilli()
-        assertEquals(Instant.parse("2026-10-11T00:15:00Z").toEpochMilli(), LightningLayer.stepFor(t, t + 60_000L))
-        assertEquals(Instant.parse("2026-10-11T00:20:00Z").toEpochMilli(), LightningLayer.stepFor(t, t + 5 * 60_000L))
-        assertEquals(Instant.parse("2026-10-10T22:05:00Z").toEpochMilli(), LightningLayer.stepFor(Instant.parse("2026-10-10T22:08:00Z").toEpochMilli(), t))
-        // the radar's forecast: no lightning is forecast
-        assertNull(LightningLayer.stepFor(t + 30 * 60_000L, t))
-        val url = LightningLayer.url(dev.nimbus.weather.ui.radar.FieldGeo.forView(50.0, 54.0, 6.0, 12.0), t)
-        assertTrue(url, "time=2026-10-11T00:15:01.000Z/2026-10-11T00:20:00.000Z" in url && "crs=EPSG:3857" in url && "transparent=true" in url)
+        assertEquals(t, LightningLayer.timeFor(t, t + 60_000L))
+        assertEquals(null, LightningLayer.timeFor(t + 30 * 60_000L, t))
+        val l = LightningLayer(kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined), OkHttpClient())
+        val g = dev.nimbus.weather.ui.radar.FieldGeo.forView(52.0, 54.5, 5.5, 9.5, maxSide = 256, minPxKm = 0.0)
+        val url = java.net.URLDecoder.decode(l.url(g, norden), "UTF-8")
+        assertTrue(url, "outputFormat=csv" in url && "srsName=CRS:84" in url && "sortBy=GROUP_END_TIME DESC" in url)
+        assertTrue(url, "GROUP_END_TIME DURING 2026-10-11T13:30:00Z/2026-10-11T13:45:00Z" in url && "'CRS:84'" in url)
     }
 
     /**
-     * The flashes stand for their own time only: a new time takes them away at once, its own come
-     * when loaded; a time loaded before (the loop played again) comes at once, and a time passed
-     * by while playing goes on loading for the next round.
+     * Each flash a point where its first group lit, at that minute – 20 flashes of 67 groups that
+     * quarter around Norden; the newest the largest and brightest, nothing left after 15 minutes.
      */
+    @Test fun theNewestBrightest() {
+        val flashes = LightningLayer.flashes(Fixtures.text("lightning_groups_norden.csv"))!!
+        assertEquals(20, flashes.size)
+        assertTrue(flashes.all { it.lat in 52.0..54.5 && it.lon in 5.5..9.5 && it.time in norden..norden + 15 * 60_000L })
+        assertNull(LightningLayer.flashes("<ServiceExceptionReport/>"))
+        assertEquals(LightningLayer.RADIUS_DP to 1f, LightningLayer.look(0))
+        assertEquals(0f to 0f, LightningLayer.look(LightningLayer.FADE_MS))
+        val half = LightningLayer.look(LightningLayer.FADE_MS / 2)
+        assertTrue("$half", half.first in 1f..LightningLayer.RADIUS_DP - 1 && half.second in 0.3f..0.7f)
+    }
+
+    /** At a time only the flashes of the 15 minutes before it: none struck later, none older. */
     @Test fun anotherTimeTakesTheFlashesAway() {
-        val png = java.io.ByteArrayOutputStream().also {
-            Bitmap.createBitmap(4, 4, Bitmap.Config.ARGB_8888).apply { eraseColor(android.graphics.Color.WHITE) }.compress(Bitmap.CompressFormat.PNG, 100, it)
-        }.toByteArray()
-        val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
-        val slow = java.util.concurrent.atomic.AtomicBoolean(false)
-        val server = MockWebServer()
-        server.dispatcher = object : mockwebserver3.Dispatcher() {
-            override fun dispatch(request: mockwebserver3.RecordedRequest): MockResponse {
-                asked += request.url.queryParameter("time")!!
-                if (slow.get()) Thread.sleep(600)
-                return MockResponse.Builder().code(200).setHeader("Content-Type", "image/png").body(okio.Buffer().write(png)).build()
-            }
-        }
-        server.start()
-        val layer = LightningLayer(kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined), OkHttpClient(), server.url("/wms").toString())
-        layer.setView(50.0, 54.0, 6.0, 12.0)
-        fun until(step: Long?) {
-            val end = System.currentTimeMillis() + 5000
-            while (layer.shownStep != step && System.currentTimeMillis() < end) Thread.sleep(20)
-            assertEquals(step, layer.shownStep)
-        }
-        val a = Instant.parse("2026-10-11T00:15:00Z").toEpochMilli()
-        val b = a - 15 * 60_000L
-        val c = b - 15 * 60_000L
-        layer.show(a)
-        until(a)
-        slow.set(true)
-        layer.show(b)
-        assertNull("the flashes of the time before stay", layer.shownStep)
-        until(b)
-        val n = asked.size
-        layer.show(a)
-        assertEquals(a, layer.shownStep)
-        // passed by: its steps load on
-        layer.show(c)
-        layer.show(a)
-        val end = System.currentTimeMillis() + 5000
-        while (asked.size < n + 3 && System.currentTimeMillis() < end) Thread.sleep(20)
-        Thread.sleep(1000)
-        layer.show(c)
-        until(c)
-        assertEquals(n + 3, asked.size)
-        // a time ahead (the radar's forecast): none
-        layer.show(null)
-        assertNull(layer.shownStep)
+        val server = server()
+        val layer = layer(server)
+        val t = norden + 15 * 60_000L
+        layer.at(t, now = t + 3_600_000L)
+        val until = System.currentTimeMillis() + 5000
+        while (!layer.ready(t) && System.currentTimeMillis() < until) Thread.sleep(20)
+        val at = layer.flashesAt(t)
+        val all = LightningLayer.flashes(Fixtures.text("lightning_groups_norden.csv"))!!
+        // those of the last 15 minutes (one struck at 13:30 is 15 minutes old at 13:45: gone)
+        assertEquals(all.count { t - it.time in 0 until LightningLayer.FADE_MS }, at.size)
+        assertTrue("${at.size}", at.size in 10 until all.size)
+        // half an hour later: all of them gone; before them: none yet
+        assertTrue(layer.flashesAt(t + 30 * 60_000L).isEmpty())
+        assertTrue(layer.flashesAt(norden - 60_000L).isEmpty())
+        // a time ahead of now (the radar's forecast): none
+        layer.at(null)
+        assertNull(layer.shownTime)
         server.close()
     }
 
     /**
-     * Playing (a day of the look-back: a quarter hour every 250 ms here, each picture 400 ms on its
-     * way): the flashes keep up – one picture per quarter hour, the next ones loaded ahead. As
-     * before (three pictures per step, nothing ahead) not one came in time.
+     * Playing (a quarter hour every 250 ms, each answer 400 ms late): the quarters come before
+     * playback reaches them – loaded ahead; asked only when reached, not one in time.
      */
     @Test fun theFlashesKeepUpWithPlayback() {
-        val png = java.io.ByteArrayOutputStream().also {
-            Bitmap.createBitmap(4, 4, Bitmap.Config.ARGB_8888).apply { eraseColor(android.graphics.Color.WHITE) }.compress(Bitmap.CompressFormat.PNG, 100, it)
-        }.toByteArray()
-        val server = MockWebServer()
-        server.dispatcher = object : mockwebserver3.Dispatcher() {
-            override fun dispatch(request: mockwebserver3.RecordedRequest): MockResponse {
-                Thread.sleep(400)
-                return MockResponse.Builder().code(200).setHeader("Content-Type", "image/png").body(okio.Buffer().write(png)).build()
-            }
-        }
-        server.start()
+        val server = server(delayMs = 400)
         val quarter = 15 * 60_000L
-        fun play(base: Long, playing: Boolean, ahead: Int): Int {
-            val layer = LightningLayer(kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined), OkHttpClient(), server.url("/wms").toString())
-            layer.setView(52.0, 54.0, 6.0, 9.0)
+        fun play(base: Long, ahead: Boolean): Int {
+            val layer = layer(server)
             var inTime = 0
             for (k in 0 until 24) {
-                val step = base + k * quarter
-                layer.show(step, playing, (1..ahead).map { step + it * quarter })
+                val t = base + k * quarter
+                layer.at(t, now = base + 2 * 24 * 3_600_000L)
+                if (ahead) layer.ahead((1..4).map { t + it * quarter }, now = base + 2 * 24 * 3_600_000L)
                 Thread.sleep(250)
-                if (k >= 4 && layer.shownStep == step) inTime++
+                if (k >= 4 && layer.ready(t)) inTime++
             }
             return inTime
         }
-        val a = Instant.parse("2026-10-11T08:00:00Z").toEpochMilli()
-        val kept = play(a, playing = true, ahead = 6)
-        assertTrue("shown in time: $kept of 20", kept >= 16)
-        val before = play(a + 24 * 3_600_000L, playing = false, ahead = 0)
-        assertEquals("as before: none in time", 0, before)
+        val kept = play(norden - 24 * 3_600_000L, ahead = true)
+        assertTrue("ready in time: $kept of 20", kept >= 16)
+        assertEquals("asked only when reached: none in time", 0, play(norden - 48 * 3_600_000L, ahead = false))
         server.close()
-    }
-
-    /** The three steps in one bright colour, the newest strongest, the oldest faintest. */
-    @Test fun theNewestBrightest() {
-        fun step(x: Int) = Bitmap.createBitmap(3, 1, Bitmap.Config.ARGB_8888).apply { setPixel(x, 0, 0xFF00FF00.toInt()) }
-        val out = LightningLayer.compose(listOf(step(0), step(1), step(2)))
-        val alpha = (0..2).map { out.getPixel(it, 0) ushr 24 }
-        assertTrue("$alpha", alpha[0] > alpha[1] && alpha[1] > alpha[2] && alpha[2] > 0)
-        assertEquals(0xFFFFF176.toInt() and 0xFFFFFF, out.getPixel(0, 0) and 0xFFFFFF)
     }
 
     /** The minutes go on with the clock between the askings; past the window the lightning is over. */

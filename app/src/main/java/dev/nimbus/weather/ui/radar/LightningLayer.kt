@@ -1,6 +1,6 @@
 /*
  * Nimbus - app/src/main/java/dev/nimbus/weather/ui/radar/LightningLayer.kt
- * Lightning over the radar: the flashes of the last 15 minutes, seen from the satellite, the newest brightest.
+ * Lightning on the radar as points: each flash where it struck, shrinking and fading from its minute on.
  *
  *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
  *   Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
@@ -17,209 +17,220 @@
 
 package dev.nimbus.weather.ui.radar
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffColorFilter
-import android.util.LruCache
-import kotlinx.coroutines.CompletableDeferred
+import dev.nimbus.weather.data.remote.LightningSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import org.maplibre.android.geometry.LatLng
-import org.maplibre.android.geometry.LatLngQuad
-import org.maplibre.android.maps.Style
-import org.maplibre.android.style.sources.ImageSource
-import java.util.Locale
+import org.maplibre.android.style.expressions.Expression
+import org.maplibre.android.style.layers.CircleLayer
+import org.maplibre.android.style.layers.Property
+import org.maplibre.android.style.layers.PropertyFactory
+import org.maplibre.android.style.sources.GeoJsonSource
+import org.maplibre.geojson.Feature
+import org.maplibre.geojson.FeatureCollection
+import org.maplibre.geojson.Point
+import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.math.max
 
 /**
- * Where lightning struck in the 15 minutes up to the radar's time: the flashes the Lightning
- * Imager of Meteosat Third Generation saw, as the DWD serves them (all of Europe, a minute or two
- * late). The DWD's own colours tell nothing here – each 5-minute step is drawn in one bright
- * colour instead, the older ones fainter, as one picture of the view (like the satellite's): no
- * blank tiles while the time moves on. A picture stands only for its own time: on a new time the
- * old flashes go at once, the new ones come when loaded – once loaded, at once.
+ * Where lightning struck, as points: each flash the Lightning Imager of Meteosat Third Generation
+ * saw (as the DWD serves it) at the middle of its first group, from its minute on a white-yellow
+ * dot that shrinks to nothing and fades within [FADE_MS]. The map draws them from the radar's time
+ * ([at]) – playback moves them smoothly, nothing is drawn into pictures. Loaded per quarter hour of
+ * the view's area; the quarters playback comes to next ahead ([ahead]).
  */
 class LightningLayer(
     /** Runs on the main thread (the map's). */
     private val scope: CoroutineScope,
     private val http: OkHttpClient,
-    private val wms: String = WMS,
+    private val wfs: String = LightningSource.WFS,
 ) {
-    private var style: Style? = null
-    @Volatile private var geo: FieldGeo? = null
-    private var appliedGeo: FieldGeo? = null
-    private var shownKey: String? = null
-    private var shownGeo: FieldGeo? = null
-    private var shownPicture: Bitmap = EMPTY
-    private var wanted: String? = null
-    private var job: Job? = null
-    /** The DWD's pictures as it sent them (PNG, mostly empty: a few kB each) – a whole day of them fits. */
-    private val images = object : LruCache<String, ByteArray>(8 * 1024 * 1024) {
-        override fun sizeOf(key: String, value: ByteArray) = value.size
-    }
-    /** The pictures as shown, by the radar's step: the last ones at once again. */
-    private val pictures = object : LruCache<String, Bitmap>(12 * 1024 * 1024) {
-        override fun sizeOf(key: String, value: Bitmap) = value.byteCount
-    }
-    /** Pictures on their way: one passed by while playing still loads, for the next round. */
-    private val loading = ConcurrentHashMap<String, Deferred<ByteArray?>>()
+    /** A flash: where its first group lit, and when (the minute). */
+    data class Flash(val lat: Double, val lon: Double, val time: Long)
 
-    /** The step whose flashes are on the map; null: none. */
-    internal var shownStep: Long? = null
+    /** A quarter hour of flashes in the area; [complete]: over (and delivered) when it was asked. */
+    private class Quarter(val flashes: List<Flash>, val asked: Long, val complete: Boolean)
+
+    private var source: GeoJsonSource? = null
+    private var layer: CircleLayer? = null
+    @Volatile private var geo: FieldGeo? = null
+    private val quarters = ConcurrentHashMap<String, Quarter>()
+    private val loading = ConcurrentHashMap<String, Deferred<Quarter?>>()
+    private var shownKeys: Set<String> = emptySet()
+
+    /** The radar's time the flashes are shown at; null: none. */
+    internal var shownTime: Long? = null
         private set
 
-    /** The layer's source: an image of the view (an empty one until the first arrives). */
-    fun source(): ImageSource = ImageSource(SOURCE, LatLngQuad(LatLng(1.0, 0.0), LatLng(1.0, 1.0), LatLng(0.0, 1.0), LatLng(0.0, 0.0)), EMPTY)
+    /** The source and the layer of the points ([RadarMapController] puts the layer in its place). */
+    fun source(): GeoJsonSource = GeoJsonSource(SOURCE, FeatureCollection.fromFeatures(emptyList())).also { source = it; shownKeys = emptySet() }
 
-    /** A (new) style: its source starts empty – the picture shown goes on it again. */
-    fun install(style: Style) {
-        this.style = style
-        appliedGeo = null
-        shownGeo?.let { apply(it, shownPicture) }
-    }
+    fun layer(): CircleLayer = CircleLayer(LAYER_ID, SOURCE).withProperties(
+        PropertyFactory.circleColor(COLOUR), PropertyFactory.circleStrokeColor(RIM), PropertyFactory.circleStrokeWidth(1.2f),
+        PropertyFactory.circlePitchAlignment(Property.CIRCLE_PITCH_ALIGNMENT_MAP), PropertyFactory.visibility(Property.NONE),
+    ).also { layer = it; it.setFilter(Expression.literal(false)) }
 
-    /** The visible area changed: the picture covers it with a margin. */
+    /** The visible area changed: the points cover it with a margin. */
     fun setView(south: Double, north: Double, west: Double, east: Double) {
         val g = geo
-        val inside = g != null && FieldGeo.R * Math.toRadians(west) >= g.minX && FieldGeo.R * Math.toRadians(east) <= g.maxX &&
-            FieldGeo.mercY(south) >= g.minY && FieldGeo.mercY(north) <= g.maxY
+        val inside = g != null && west >= g.west && east <= g.east && south >= g.south && north <= g.north
         if (inside) return
-        geo = FieldGeo.forView(south, north, west, east, maxSide = MAX_SIDE, minPxKm = 0.0)
+        geo = FieldGeo.forView(south, north, west, east, maxSide = 256, minPxKm = 0.0)
     }
 
-    /**
-     * Shows the flashes up to [step] (one of [stepFor]'s); null: none (a time ahead of now).
-     * Standing, its three 5-minute pictures, the newest brightest; [playing], the 15 minutes as one
-     * picture – a third of the requests, as a step shows half a second – and the steps [ahead]
-     * loaded before playback reaches them.
-     */
-    fun show(step: Long?, playing: Boolean = false, ahead: List<Long> = emptyList()) {
+    /** Shows the flashes at the radar's time [time] ([timeFor]); null: none (a time ahead of now). */
+    fun at(time: Long?, now: Long = System.currentTimeMillis()) {
+        shownTime = time
+        val l = layer
+        if (time == null) { l?.setFilter(Expression.literal(false)); return }
+        // the quarters the flashes of the 15 minutes before [time] lie in
+        quartersFor(time).forEach { ensure(it, now) }
+        refresh()
+        l ?: return
+        val age = Expression.subtract(Expression.literal(time.toDouble()), Expression.get("t"))
+        l.setFilter(Expression.all(Expression.gte(age, Expression.literal(0)), Expression.lt(age, Expression.literal(FADE_MS.toDouble()))))
+        l.setProperties(
+            PropertyFactory.circleRadius(Expression.interpolate(Expression.linear(), age, Expression.stop(0, look(0).first), Expression.stop(FADE_MS, look(FADE_MS).first))),
+            PropertyFactory.circleOpacity(Expression.interpolate(Expression.linear(), age, Expression.stop(0, look(0).second), Expression.stop(FADE_MS, look(FADE_MS).second))),
+            PropertyFactory.circleStrokeOpacity(Expression.interpolate(Expression.linear(), age, Expression.stop(0, look(0).second), Expression.stop(FADE_MS, look(FADE_MS).second))),
+        )
+    }
+
+    /** The radar's times playback comes to next: their quarters loaded before it does. */
+    fun ahead(times: List<Long>, now: Long = System.currentTimeMillis()) {
+        times.flatMap { quartersFor(it) }.distinct().forEach { ensure(it, now) }
+    }
+
+    /** Whether the flashes of [time] are loaded (its quarters of the area). */
+    internal fun ready(time: Long): Boolean = geo?.let { g -> quartersFor(time).all { quarters.containsKey(key(g, it)) } } == true
+
+    /** The flashes shown at [time] of those loaded (newest first). */
+    internal fun flashesAt(time: Long): List<Flash> = geo?.let { g ->
+        quartersFor(time).flatMap { quarters[key(g, it)]?.flashes.orEmpty() }.filter { time - it.time in 0 until FADE_MS }.sortedByDescending { it.time }
+    }.orEmpty()
+
+    /** The quarter (start) [time]'s flashes of the last [FADE_MS] lie in. */
+    private fun quartersFor(time: Long): List<Long> =
+        listOf(Math.floorDiv(time - FADE_MS + 1, QUARTER_MS) * QUARTER_MS, Math.floorDiv(time, QUARTER_MS) * QUARTER_MS).distinct()
+
+    /** The quarter from [start] of the area loaded – once, or again if it was not over then (a minute later). */
+    private fun ensure(start: Long, now: Long) {
         val g = geo ?: return
-        job?.cancel()
-        ahead.forEach { a -> spans(a, playing).forEach { (end, span) -> fetch(g, end, span) } }
-        if (step == null) { wanted = null; setImage(g, NONE, null, EMPTY); return }
-        val key = key(g, step) + if (playing) "p" else ""
-        wanted = key
-        pictures.get(key)?.let { setImage(g, key, step, it); return }
-        // the flashes of another time do not stand for this one
-        setImage(g, NONE, null, EMPTY)
-        job = scope.launch {
-            val parts = spans(step, playing).map { (end, span) -> fetch(g, end, span) }.awaitAll()
-            val picture = withContext(Dispatchers.Default) { compose(parts.map { it?.let { b -> BitmapFactory.decodeByteArray(b, 0, b.size) } }) }
-            // a picture that failed is asked again next time
-            if (parts.all { it != null }) pictures.put(key, picture)
-            if (wanted == key) setImage(g, key, step, picture)
+        val k = key(g, start)
+        val q = quarters[k]
+        if (q != null && (q.complete || now - q.asked < AGAIN_MS)) return
+        if (start > now) return
+        loading.getOrPut(k) {
+            scope.async {
+                load(g, start, now).also { r ->
+                    if (r != null) quarters[k] = r
+                    loading.remove(k)
+                    withContext(Dispatchers.Main.immediate) { refresh() }
+                }
+            }
         }
     }
 
-    /** The DWD's pictures making up the flashes to [step], each by its end and span – the newest first. */
-    private fun spans(step: Long, playing: Boolean): List<Pair<Long, Long>> =
-        if (playing) listOf(step to AGES * STEP_MS) else (0 until AGES).map { (step - it * STEP_MS) to STEP_MS }
-
-    /** A picture from the cache, else loading – on in the layer's scope, whoever waited for it gone. */
-    private fun fetch(g: FieldGeo, end: Long, span: Long): Deferred<ByteArray?> {
-        val key = key(g, end) + "/" + span
-        images.get(key)?.let { return CompletableDeferred(it) }
-        return loading.getOrPut(key) {
-            scope.async { load(g, end, span).also { if (it != null) images.put(key, it); loading.remove(key) } }
+    /** The points of the area loaded so far on the map (when they changed). */
+    private fun refresh() {
+        val g = geo ?: return
+        val prefix = areaKey(g) + "@"
+        val keys = quarters.keys.filter { it.startsWith(prefix) }.toSet()
+        if (keys == shownKeys) return
+        shownKeys = keys
+        val src = source ?: return
+        val features = keys.flatMap { quarters[it]?.flashes.orEmpty() }.map { f ->
+            Feature.fromGeometry(Point.fromLngLat(f.lon, f.lat)).apply { addNumberProperty("t", f.time.toDouble()) }
         }
+        src.setGeoJson(FeatureCollection.fromFeatures(features))
     }
 
-    private fun setImage(g: FieldGeo, key: String, step: Long?, bmp: Bitmap) {
-        if (shownKey == key) return
-        shownKey = key
-        shownStep = step
-        shownGeo = g
-        shownPicture = bmp
-        apply(g, bmp)
-    }
-
-    private fun apply(g: FieldGeo, bmp: Bitmap) {
-        val src = style?.getSource(SOURCE) as? ImageSource ?: return
-        if (appliedGeo !== g) {
-            src.setCoordinates(LatLngQuad(LatLng(g.north, g.west), LatLng(g.north, g.east), LatLng(g.south, g.east), LatLng(g.south, g.west)))
-            appliedGeo = g
-        }
-        src.setImage(bmp)
-    }
-
-    private suspend fun load(g: FieldGeo, end: Long, span: Long): ByteArray? = withContext(Dispatchers.IO) {
+    private suspend fun load(g: FieldGeo, start: Long, now: Long): Quarter? = withContext(Dispatchers.IO) {
         runCatching {
-            http.newCall(Request.Builder().url(url(g, end, wms, span)).build()).execute().use { r ->
-                if (!r.isSuccessful || r.body.contentType()?.subtype != "png") return@use null
-                r.body.bytes()
+            http.newCall(Request.Builder().url(url(g, start)).build()).execute().use { r ->
+                if (!r.isSuccessful) return@use null
+                val flashes = flashes(r.body.string()) ?: return@use null
+                Quarter(flashes, now, complete = start + QUARTER_MS + LATENCY_MS < now)
             }
         }.getOrNull()
     }
 
-    private fun key(g: FieldGeo, time: Long) = "${g.minX.toLong()},${g.minY.toLong()},${g.maxX.toLong()},${g.maxY.toLong()}@$time"
+    /** The WFS request for the flash groups of the quarter hour from [start] over [g], the newest first. */
+    internal fun url(g: FieldGeo, start: Long): String {
+        val box = listOf(g.west, g.south, g.east, g.north).joinToString(",") { "%.3f".format(java.util.Locale.ROOT, it) }
+        return wfs.toHttpUrl().newBuilder()
+            .addQueryParameter("service", "WFS").addQueryParameter("version", "2.0.0").addQueryParameter("request", "GetFeature")
+            .addQueryParameter("typeNames", LightningSource.LAYER).addQueryParameter("outputFormat", "csv")
+            .addQueryParameter("propertyName", "FLASH_ID,GROUP_END_TIME,GEOM").addQueryParameter("srsName", "CRS:84")
+            .addQueryParameter("sortBy", "GROUP_END_TIME DESC").addQueryParameter("count", MAX_GROUPS.toString())
+            .addQueryParameter(
+                "cql_filter",
+                "GROUP_END_TIME DURING ${Instant.ofEpochMilli(start)}/${Instant.ofEpochMilli(start + QUARTER_MS)} AND BBOX(GEOM,$box,'CRS:84')",
+            )
+            .build().toString()
+    }
+
+    private fun areaKey(g: FieldGeo) = "${g.minX.toLong()},${g.minY.toLong()},${g.maxX.toLong()},${g.maxY.toLong()}"
+    private fun key(g: FieldGeo, start: Long) = areaKey(g) + "@" + start
 
     companion object {
         const val SOURCE = "lightning"
-        private const val NONE = "none"
-        const val WMS = "https://maps.dwd.de/geoserver/dwd/wms"
-        const val LAYER = "dwd:Accumulated_Flash_Geometry"
-        /** One picture covers 5 minutes (standing) … */
-        const val STEP_MS = 5 * 60_000L
-        /** … three of them the 15 minutes shown, the newest brightest. */
-        private const val AGES = 3
-        private val ALPHA = intArrayOf(255, 150, 70)
+        const val LAYER_ID = "lightning"
+        /** A flash shows this long after it struck, shrinking and fading. */
+        const val FADE_MS = 15 * 60_000L
+        const val QUARTER_MS = 15 * 60_000L
+        /** Size of a flash's dot as it strikes (dp). */
+        const val RADIUS_DP = 9f
         /** A flash reaches the DWD a minute or two after it struck. */
         const val LATENCY_MS = 2 * 60_000L
-        /** Bright yellow: apart from the radar's colours, the warnings and the map. */
-        private const val COLOUR = 0xFFFFF176.toInt()
-        /** Longest side of the picture, in pixels (thin flash outlines need no more). */
-        private const val MAX_SIDE = 768
-        private val EMPTY: Bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+        /** A quarter not yet over when asked: asked again after this. */
+        private const val AGAIN_MS = 60_000L
+        /** Groups per quarter hour at most – the newest: a storm in the area stays far below. */
+        const val MAX_GROUPS = 5000
+        private const val COLOUR = "#FFFBE0"
+        private const val RIM = "#FFE24D"
 
-        /** The steps one over the other, the oldest first and faintest; null parts (failed) left out. */
-        internal fun compose(parts: List<Bitmap?>): Bitmap {
-            val first = parts.firstOrNull { it != null } ?: return EMPTY
-            val out = Bitmap.createBitmap(first.width, first.height, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(out)
-            val paint = Paint(Paint.FILTER_BITMAP_FLAG).apply { colorFilter = PorterDuffColorFilter(COLOUR, PorterDuff.Mode.SRC_IN) }
-            parts.withIndex().reversed().forEach { (age, bmp) ->
-                if (bmp == null) return@forEach
-                paint.alpha = ALPHA[age]
-                canvas.drawBitmap(bmp, null, android.graphics.Rect(0, 0, out.width, out.height), paint)
-            }
-            return out
+        /** A flash [ageMs] after it struck: its dot's radius (dp) and opacity – from full to nothing in [FADE_MS]. */
+        fun look(ageMs: Long): Pair<Float, Float> {
+            val k = 1f - (ageMs.toFloat() / FADE_MS).coerceIn(0f, 1f)
+            return RADIUS_DP * k to k
         }
+
+        /** The flashes of the radar's time [frame] at [now]: up to it; null for a time ahead of now (no lightning is forecast). */
+        fun timeFor(frame: Long, now: Long): Long? = if (frame > now + 150_000L) null else minOf(frame, now)
 
         /**
-         * The newest step ending at or before the radar's time [frame] at [now]; null for a time
-         * ahead of now (the radar's forecast: no lightning is forecast).
+         * The flashes of the CSV answer: each at the middle of its first group's outline (lon/lat),
+         * at that group's minute; null if it is no such answer (an error the server sends as text).
          */
-        fun stepFor(frame: Long, now: Long): Long? {
-            if (frame > now + STEP_MS / 2) return null
-            return Math.floorDiv(minOf(frame, now - LATENCY_MS), STEP_MS) * STEP_MS
+        fun flashes(csv: String): List<Flash>? {
+            val lines = csv.lineSequence().filter { it.isNotBlank() }.toList()
+            val head = lines.firstOrNull()?.split(',') ?: return null
+            val id = head.indexOf("FLASH_ID"); val at = head.indexOf("GROUP_END_TIME"); val geom = head.indexOf("GEOM")
+            if (id < 0 || at < 0 || geom < 0) return null
+            val first = HashMap<String, Flash>()
+            for (line in lines.drop(1)) {
+                // the geometry comes last, quoted (commas inside)
+                val cells = line.substringBefore(",\"").split(',')
+                val wkt = line.substringAfter(",\"", "").substringBeforeLast('"')
+                val flash = cells.getOrNull(id) ?: continue
+                val time = cells.getOrNull(at)?.let { t -> runCatching { Instant.parse(if (t.endsWith("Z")) t else t + "Z").toEpochMilli() }.getOrNull() } ?: continue
+                val (lat, lon) = middle(wkt) ?: continue
+                if (first[flash]?.let { it.time <= time } != true) first[flash] = Flash(lat, lon, time)
+            }
+            return first.values.toList()
         }
 
-        /** While playing: the step of the radar's time [frame], on the quarter hour (one picture of 15 minutes). */
-        fun playStep(frame: Long, now: Long): Long? = stepFor(Math.floorDiv(frame, AGES * STEP_MS) * AGES * STEP_MS, now)
-
-        /** The WMS request for the flashes of the [span] (5 minutes) ending at [end], over [g] (the map's projection). */
-        fun url(g: FieldGeo, end: Long, wms: String = WMS, span: Long = STEP_MS): String {
-            val ratio = (g.maxX - g.minX) / (g.maxY - g.minY)
-            val w = if (ratio >= 1) MAX_SIDE else max(1, (MAX_SIDE * ratio).toInt())
-            val h = if (ratio >= 1) max(1, (MAX_SIDE / ratio).toInt()) else MAX_SIDE
-            return String.format(
-                Locale.US, "%s?service=WMS&version=1.3.0&request=GetMap&layers=%s&styles=&format=image/png&transparent=true&crs=EPSG:3857" +
-                    "&bbox=%.0f,%.0f,%.0f,%.0f&width=%d&height=%d&time=%s/%s",
-                wms, LAYER, g.minX, g.minY, g.maxX, g.maxY, w, h, RadarSources.isoTime(end - span + 1000), RadarSources.isoTime(end),
-            )
+        /** The middle of a WKT outline's points (lon lat pairs); null without any. */
+        private fun middle(wkt: String): Pair<Double, Double>? {
+            val pts = Regex("""(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)""").findAll(wkt).map { it.groupValues[1].toDouble() to it.groupValues[2].toDouble() }.toList()
+            if (pts.isEmpty()) return null
+            return pts.sumOf { it.second } / pts.size to pts.sumOf { it.first } / pts.size
         }
     }
 }

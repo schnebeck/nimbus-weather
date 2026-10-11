@@ -128,8 +128,8 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   Deutschland, die Niederlande in einem) wird einmal geladen, zu Reflektivität aufbereitet und bis zum Verfall lokal gehalten
   (Analysen ~3½ Tage), Verschieben und Zoomen brauchen kein Netz; deckende Farben, Straßen, Grenzen
   und Namen über dem Radar; Temperatur- (mit Isothermen) und Windebene, Satellit (Meteosat, alle
-  10 Minuten, zur Zeit des Radarbilds), Blitze (vom Satelliten, ganz Europa: wo es in den 15 Minuten
-  bis zum Radarbild geblitzt hat, die jüngsten am hellsten), Warnkarte, Rückblick bis 24 h. Auch das
+  10 Minuten, zur Zeit des Radarbilds), Blitze (vom Satelliten, ganz Europa: jeder Blitz ein Punkt
+  an seinem Ort, der ab seiner Minute schrumpft und in 15 Minuten verblasst – beim Abspielen fließend), Warnkarte, Rückblick bis 24 h. Auch das
   Radar eines Tages im Rückblick zeigt Temperatur, Wind, Satellit und Blitze. Die Schleife wartet nur
   auf die Quelle der Bildmitte; Nachbarländer und RainViewer kommen in eigener Spur dazu und ergänzen
   das Bild, eine Quelle ohne Antwort setzt ein paar Minuten aus. Welche Ebenen beim

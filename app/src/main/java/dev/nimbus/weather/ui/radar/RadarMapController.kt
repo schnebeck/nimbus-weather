@@ -70,10 +70,9 @@ internal class RadarMapController {
             setBounds(5.5f, 47.0f, 15.5f, 55.2f)
         }, 512).apply { prefetchZoomDelta = 0 })
         add(RasterLayer("warn", "warn").withProperties(PropertyFactory.rasterOpacity(0f), PropertyFactory.rasterFadeDuration(0f), PropertyFactory.visibility(Property.NONE)))
-        // the lightning above radar and warnings: bright marks that must not hide under the rain
+        // the lightning above radar and warnings: bright points that must not hide under the rain
         style.addSource(lightning.source())
-        lightning.install(style)
-        add(RasterLayer("lightning", LightningLayer.SOURCE).withProperties(PropertyFactory.rasterFadeDuration(0f), PropertyFactory.visibility(Property.NONE)))
+        lightning.layer().let { if (below != null) style.addLayerBelow(it, below) else style.addLayer(it) }
     }
 
     fun addLocation(style: Style, place: Place) {
@@ -100,6 +99,6 @@ internal class RadarMapController {
     }
 
     fun setLightning(on: Boolean) {
-        (style?.getLayer("lightning") as? RasterLayer)?.state(on, if (on) 1f else 0f)
+        style?.getLayer(LightningLayer.LAYER_ID)?.setProperties(PropertyFactory.visibility(if (on) Property.VISIBLE else Property.NONE))
     }
 }

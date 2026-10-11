@@ -136,7 +136,7 @@
     <string name="radar_title">Precipitation Radar</string>
     <string name="satellite">Satellite</string>
     <string name="lightning">Lightning</string>
-    <string name="lightning_attribution">Lightning: DWD, from EUMETSAT MTG data – the last 15 min, the newest brightest</string>
+    <string name="lightning_attribution">Lightning: DWD, from EUMETSAT MTG data – each flash where it struck, fading within 15 min</string>
     <string name="lightning_near">Lightning nearby</string>
     <string name="lightning_nearest_km">nearest %1$d km away</string>
     <string name="lightning_overhead">overhead (within 5 km)</string>

@@ -109,8 +109,20 @@ private const val RADAR_REFRESH_CHECK_MS = 60_000L
 /** Buffering of an archived day: playback starts and resumes with this many steps ready ahead. */
 private const val BUFFER_START = 6
 private const val BUFFER_RESUME = 12
-/** Lightning pictures loaded ahead of playback: a step shows about half a second, a picture takes one or two. */
-private const val LIGHTNING_AHEAD = 6
+/** Lightning loaded ahead of playback: the next hour of radar time (a quarter hour plays in under two seconds). */
+private const val LIGHTNING_AHEAD_MS = 60 * 60_000L
+
+/**
+ * The radar's time at [position] for the lightning: between two steps by its fraction (playback
+ * moves the flashes smoothly), the newest live step up to now; null in the radar's forecast.
+ */
+private fun lightningTime(tl: RadarTimeline, position: Float): Long? {
+    val i = position.toInt().coerceIn(0, tl.frames.lastIndex)
+    val now = System.currentTimeMillis()
+    val a = tl.frames[i].time
+    val t = if (tl.day == null && i == tl.nowIndex) now else tl.frames.getOrNull(i + 1)?.let { b -> a + ((b.time - a) * (position - i)).toLong() } ?: a
+    return LightningLayer.timeFor(t, now)
+}
 
 @Composable
 fun RadarScreen(
@@ -371,22 +383,15 @@ fun RadarScreen(
     }
     // The flashes of the 15 minutes up to the radar's time – none in its forecast; while playing,
     // every third step only (a picture takes the DWD seconds)
-    val lightStep = timeline?.let { tl ->
-        val t = tl.frames[frame.coerceIn(0, tl.frames.lastIndex)].time
-        if (playing) LightningLayer.playStep(t, System.currentTimeMillis()) else LightningLayer.stepFor(t, System.currentTimeMillis())
-    }
-    LaunchedEffect(lightning, lightStep, playing, satView, styleReady) {
+    LaunchedEffect(lightning, frame, playing, satView, styleReady) {
         if (!styleReady) return@LaunchedEffect
         controller.setLightning(lightning)
         val tl = timeline
         if (!lightning || tl == null) return@LaunchedEffect
         if (satView == 0) controller.map?.projection?.visibleRegion?.latLngBounds?.let { b -> light.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast) }
-        // playing: the steps it comes to next (round the loop), loaded before it does
-        val now = System.currentTimeMillis()
-        val ahead = if (!playing) emptyList() else (1..tl.frames.size).asSequence()
-            .mapNotNull { LightningLayer.playStep(tl.frames[(frame + it) % tl.frames.size].time, now) }
-            .distinct().filter { it != lightStep }.take(LIGHTNING_AHEAD).toList()
-        light.show(lightStep, playing, ahead)
+        light.at(lightningTime(tl, frame.toFloat()))
+        // playing: the next hour of the loop (round it), loaded before it comes
+        if (playing) light.ahead((1..tl.frames.size).map { tl.frames[(frame + it) % tl.frames.size].time }.filter { it - tl.frames[frame.coerceIn(0, tl.frames.lastIndex)].time in 0..LIGHTNING_AHEAD_MS })
     }
     // Playback runs continuously: the position moves on with every display frame and the player
     // draws the rain moved between the steps – no jumping from step to step.
@@ -423,6 +428,7 @@ fun RadarScreen(
             buffering = state.buffering
             if (!state.playing) { playing = false; break }
             player.position = state.position
+            if (lightning) light.at(lightningTime(tl, state.position))
             if (state.position.toInt() != frame) frame = state.position.toInt()
         }
     }

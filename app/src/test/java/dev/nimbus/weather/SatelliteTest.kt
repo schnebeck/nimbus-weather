@@ -31,12 +31,27 @@ class SatelliteTest {
     private val now = t("2026-10-03T09:00:00Z")
 
     @Test fun thePictureOfTheRadarsTime() {
-        // standing: the 10-minute step, playing: the hour
-        assertEquals(t("2026-10-02T14:30:00Z"), SatelliteLayer.timeFor(t("2026-10-02T14:35:00Z"), now, playing = false))
-        assertEquals(t("2026-10-02T14:00:00Z"), SatelliteLayer.timeFor(t("2026-10-02T14:35:00Z"), now, playing = true))
+        // standing: the 10-minute step
+        assertEquals(t("2026-10-02T14:30:00Z"), SatelliteLayer.timeFor(t("2026-10-02T14:35:00Z"), now))
         // the radar's forecast steps lie ahead: the newest picture there is (about 20 minutes old)
-        assertEquals(t("2026-10-03T08:40:00Z"), SatelliteLayer.timeFor(t("2026-10-03T10:15:00Z"), now, playing = false))
-        assertTrue(SatelliteLayer.timeFor(now, now, playing = false) <= now - SatelliteLayer.LATENCY_MS)
+        assertEquals(t("2026-10-03T08:40:00Z"), SatelliteLayer.timeFor(t("2026-10-03T10:15:00Z"), now))
+        assertTrue(SatelliteLayer.timeFor(now, now) <= now - SatelliteLayer.LATENCY_MS)
+    }
+
+    /**
+     * Playing, the clouds pass over instead of jumping: between the pictures 10 minutes apart (a day
+     * of the look-back: 30) the later one shows by where the radar's time lies between them;
+     * standing, the picture alone; at the newest one, nothing after it.
+     */
+    @Test fun theCloudsPassOverWhilePlaying() {
+        val b = SatelliteLayer.blend(t("2026-10-02T14:35:00Z"), now, playing = true, SatelliteLayer.STEP_MS)
+        assertEquals(SatelliteLayer.Blend(t("2026-10-02T14:30:00Z"), t("2026-10-02T14:40:00Z"), 0.5f), b)
+        val day = SatelliteLayer.blend(t("2026-10-02T14:35:00Z"), now, playing = true, SatelliteLayer.DAY_STEP_MS)
+        assertEquals(t("2026-10-02T14:30:00Z"), day.before); assertEquals(t("2026-10-02T15:00:00Z"), day.after)
+        assertEquals(1f / 6, day.f, 1e-6f)
+        assertEquals(SatelliteLayer.Blend(t("2026-10-02T14:30:00Z"), null, 0f), SatelliteLayer.blend(t("2026-10-02T14:35:00Z"), now, playing = false, SatelliteLayer.STEP_MS))
+        val newest = SatelliteLayer.blend(t("2026-10-03T10:15:00Z"), now, playing = true, SatelliteLayer.STEP_MS)
+        assertEquals(SatelliteLayer.Blend(SatelliteLayer.newest(now), null, 0f), newest)
     }
 
     @Test fun theRequestCoversTheView() {

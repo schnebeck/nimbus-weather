@@ -1,0 +1,1 @@
+• Satellit im Radar beim Abspielen überblendet: Die Wolken ziehen zwischen den Bildern weich weiter statt zu springen – in der Live-Schleife mit Bildern alle 10 Minuten, im Rückblick alle 30 Minuten, vorgeladen

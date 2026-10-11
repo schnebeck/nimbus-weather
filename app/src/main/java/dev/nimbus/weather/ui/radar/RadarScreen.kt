@@ -112,6 +112,16 @@ private const val BUFFER_RESUME = 12
 /** Lightning loaded ahead of playback: the next hour of radar time (a quarter hour plays in under two seconds). */
 private const val LIGHTNING_AHEAD_MS = 60 * 60_000L
 
+/** The radar's time at [position]: between two steps by its fraction. */
+private fun radarTime(tl: RadarTimeline, position: Float): Long {
+    val i = position.toInt().coerceIn(0, tl.frames.lastIndex)
+    val a = tl.frames[i].time
+    return tl.frames.getOrNull(i + 1)?.let { b -> a + ((b.time - a) * (position - i)).toLong() } ?: a
+}
+
+/** The satellite pictures' distance while playing: the live loop every 10 minutes, a day of the look-back every 30. */
+private fun satStep(tl: RadarTimeline) = if (tl.day != null) SatelliteLayer.DAY_STEP_MS else SatelliteLayer.STEP_MS
+
 /**
  * The radar's time at [position] for the lightning: between two steps by its fraction (playback
  * moves the flashes smoothly), the newest live step up to now; null in the radar's forecast.
@@ -119,8 +129,7 @@ private const val LIGHTNING_AHEAD_MS = 60 * 60_000L
 private fun lightningTime(tl: RadarTimeline, position: Float): Long? {
     val i = position.toInt().coerceIn(0, tl.frames.lastIndex)
     val now = System.currentTimeMillis()
-    val a = tl.frames[i].time
-    val t = if (tl.day == null && i == tl.nowIndex) now else tl.frames.getOrNull(i + 1)?.let { b -> a + ((b.time - a) * (position - i)).toLong() } ?: a
+    val t = if (tl.day == null && i == tl.nowIndex) now else radarTime(tl, position)
     return LightningLayer.timeFor(t, now)
 }
 
@@ -373,16 +382,15 @@ fun RadarScreen(
     }
 
     LaunchedEffect(satellite, warnings) { controller.setOverlays(satellite, warnings && !archive) }
-    // The satellite picture at the radar's time: every 10 minutes when standing, every hour while
-    // playing (the next hour loaded ahead) – live and on a past day
-    val satTime = timeline?.let { tl -> SatelliteLayer.timeFor(tl.frames[frame.coerceIn(0, tl.frames.lastIndex)].time, System.currentTimeMillis(), playing) }
-    LaunchedEffect(satellite, satTime, satView, styleReady) {
-        if (!satellite || !styleReady || satTime == null) return@LaunchedEffect
+    // The satellite at the radar's time: standing its 10-minute picture; playing, blended between
+    // pictures 10 minutes apart (a day of the look-back: 30) – live and on a past day
+    val satTime = timeline?.let { tl -> SatelliteLayer.timeFor(tl.frames[frame.coerceIn(0, tl.frames.lastIndex)].time, System.currentTimeMillis()) }
+    LaunchedEffect(satellite, frame, playing, satView, styleReady) {
+        val tl = timeline
+        if (!satellite || !styleReady || tl == null) return@LaunchedEffect
         if (satView == 0) controller.map?.projection?.visibleRegion?.latLngBounds?.let { b -> sat.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast) }
-        sat.show(satTime, if (playing) satTime + SatelliteLayer.PLAY_STEP_MS else null)
+        sat.at(radarTime(tl, frame.toFloat()), playing, satStep(tl))
     }
-    // The flashes of the 15 minutes up to the radar's time – none in its forecast; while playing,
-    // every third step only (a picture takes the DWD seconds)
     LaunchedEffect(lightning, frame, playing, satView, styleReady) {
         if (!styleReady) return@LaunchedEffect
         controller.setLightning(lightning)
@@ -429,6 +437,7 @@ fun RadarScreen(
             if (!state.playing) { playing = false; break }
             player.position = state.position
             if (lightning) light.at(lightningTime(tl, state.position))
+            if (satellite) sat.at(radarTime(tl, state.position), true, satStep(tl))
             if (state.position.toInt() != frame) frame = state.position.toInt()
         }
     }

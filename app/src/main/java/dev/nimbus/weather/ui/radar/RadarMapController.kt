@@ -63,8 +63,11 @@ internal class RadarMapController {
         fun add(layer: RasterLayer) = if (below != null) style.addLayerBelow(layer, below) else style.addLayer(layer)
         // the satellite: one picture of the view at the radar's time (EUMETSAT, see SatelliteLayer)
         style.addSource(satellite.source())
+        style.addSource(satellite.nextSource())
         satellite.install(style)
         add(RasterLayer("sat", SatelliteLayer.SOURCE).withProperties(PropertyFactory.rasterOpacity(0f), PropertyFactory.rasterFadeDuration(0f), PropertyFactory.visibility(Property.NONE)))
+        // the later picture over it while playing, blended in by the satellite layer
+        add(RasterLayer(SatelliteLayer.LAYER_NEXT, SatelliteLayer.SOURCE_NEXT).withProperties(PropertyFactory.rasterOpacity(0f), PropertyFactory.rasterFadeDuration(0f), PropertyFactory.visibility(Property.NONE)))
         style.addSource(RasterSource("warn", TileSet("2.2.0", RadarSources.dwdTileUrl(RadarSources.WARN_LAYER, null)).apply {
             maxZoom = 10f
             setBounds(5.5f, 47.0f, 15.5f, 55.2f)
@@ -94,7 +97,8 @@ internal class RadarMapController {
         val s = style ?: return
         satellite = sat
         warnings = warn
-        (s.getLayer("sat") as? RasterLayer)?.state(sat, if (sat) 0.75f else 0f)
+        (s.getLayer("sat") as? RasterLayer)?.state(sat, if (sat) SatelliteLayer.OPACITY else 0f)
+        s.getLayer(SatelliteLayer.LAYER_NEXT)?.setProperties(PropertyFactory.visibility(if (sat) Property.VISIBLE else Property.NONE))
         (s.getLayer("warn") as? RasterLayer)?.state(warn, if (warn) 0.55f else 0f)
     }
 

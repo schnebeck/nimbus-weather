@@ -76,4 +76,23 @@ class OutlookTextTest {
         val dry = norden().let { d -> d.copy(hourly = d.hourly.map { it.copy(condition = Condition.CLOUDY, precipitation = 0.0, precipitationProbability = 0.0) }) }
         assertEquals(Outlook.Precip.Dry, Outlook.from(dry, now, isAfternoon = false).precipitation)
     }
+
+    /** Cloudy now, clear from 19:00 – after sunset in October: "clear", not "sunny"; by day "sunny". */
+    @Test fun aClearSkyAfterSunsetIsClearNotSunny() {
+        val start = now / h * h
+        fun evening(sunDownFrom: Int): WeatherData {
+            val hourly = (1..14).map { k ->
+                val t = start + k * h
+                val clear = k >= 3                                   // the hour from start + 2 h on
+                HourlyPoint(t, 14.0, condition = if (clear) Condition.CLEAR else Condition.CLOUDY, isDay = k < sunDownFrom, precipitationProbability = 0.0, precipitation = 0.0)
+            }
+            val cur = CurrentWeather(now, 14.0, 13.0, Condition.CLOUDY, true, 70.0, 10.0, 1018.0, 20.0, 30.0, 240.0, 90.0, null, null, 0.0)
+            return WeatherData(Place("c", "Celle", latitude = 52.62, longitude = 10.08), "UTC", 0, cur, hourly, emptyList(), sources = emptyList(), fetchedAt = now)
+        }
+        var night = ""; var day = ""
+        compose.setContent { night = outlookText(evening(sunDownFrom = 2), now); day = outlookText(evening(sunDownFrom = 99), now) }
+        compose.waitForIdle()
+        assertTrue(night, "klar." in night && "sonnig" !in night)
+        assertTrue(day, "sonnig." in day)
+    }
 }

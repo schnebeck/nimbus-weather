@@ -1,0 +1,1 @@
+• Short forecast: after sunset it says "clear" instead of "sunny" (also "mostly clear") – following the sun whatever the season

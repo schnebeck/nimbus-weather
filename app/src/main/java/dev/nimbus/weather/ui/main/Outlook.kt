@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.sp
 data class Outlook(
     val now: Condition,
     /** Next change to a different kind of weather within the window. */
-    val change: Pair<Condition, Long>?,
+    val change: Change?,
     val temperature: Temp,
     val precipitation: Precip,
     /** Strongest gust in km/h if it is notable (≥ 50 km/h). */
@@ -41,6 +41,9 @@ data class Outlook(
     /** Outlook for tomorrow, only in the afternoon and evening. */
     val tomorrow: DailyPoint?,
 ) {
+    /** The weather from [at] on; [isDay]: the sun above the horizon then ("sunny", else "clear"). */
+    data class Change(val condition: Condition, val at: Long, val isDay: Boolean)
+
     sealed interface Temp {
         data class Rise(val to: Double, val at: Long) : Temp
         data class Fall(val to: Double, val at: Long) : Temp
@@ -77,7 +80,7 @@ data class Outlook(
             val hours = Insights.upcomingHours(data, now, WINDOW_HOURS + 1).drop(1)
             val current = data.current.condition
             val change = Insights.nextChange(listOf(HourlyPoint(now, data.current.temperature, condition = current, isDay = data.current.isDay)) + hours, current)
-                .takeIf { it.time != null }?.let { it.condition to maxOf(it.time!! - HOUR, now) }
+                .takeIf { it.time != null }?.let { Change(it.condition, maxOf(it.time!! - HOUR, now), it.isDay) }
             val today = data.daily.lastOrNull { it.date <= now }
             val tomorrow = data.daily.firstOrNull { it.date > now }
             return Outlook(
@@ -161,7 +164,7 @@ fun outlookText(data: WeatherData, now: Long): String {
     val sentences = buildList {
         val nowPhrase = phrase(o.now, data.current.isDay)
         add(
-            o.change?.let { (c, t) -> str(dev.nimbus.weather.R.string.outlook_change, nowPhrase, phrase(c, true), tf.time(t)) }
+            o.change?.let { ch -> str(dev.nimbus.weather.R.string.outlook_change, nowPhrase, phrase(ch.condition, ch.isDay), tf.time(ch.at)) }
                 ?: str(dev.nimbus.weather.R.string.outlook_steady, nowPhrase),
         )
         add(

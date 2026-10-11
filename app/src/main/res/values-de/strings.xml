@@ -128,7 +128,7 @@
     <string name="radar_title">Niederschlagsradar</string>
     <string name="satellite">Satellit</string>
     <string name="lightning">Blitze</string>
-    <string name="lightning_attribution">Blitze: DWD, aus EUMETSAT-MTG-Daten – jeder Blitz an seinem Ort, verblasst in 15 min</string>
+    <string name="lightning_attribution">Blitze: DWD/EUMETSAT</string>
     <string name="lightning_near">Blitze in der Nähe</string>
     <string name="lightning_nearest_km">nächster %1$d km entfernt</string>
     <string name="lightning_overhead">über dem Ort (unter 5 km)</string>

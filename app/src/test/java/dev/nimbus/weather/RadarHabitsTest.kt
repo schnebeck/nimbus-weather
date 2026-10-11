@@ -34,6 +34,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -111,5 +113,21 @@ class RadarHabitsTest {
         for (t in listOf("Ebenen beim Öffnen", "Radar vorladen", "Radarfarben")) {
             assertTrue("$t in the radar's group", top(t) in radar..next)
         }
+    }
+
+    /** The sources take no line more with the lightning on (two at a phone's width), three at most with the satellite too. */
+    @Test @Config(qualifiers = "de-w411dp-h891dp-xxhdpi") fun theSourcesTakeNoLineMore() {
+        var plain = 0; var withLightning = 0; var withBoth = 0
+        compose.setContent {
+            androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.width(379.dp)) {
+                dev.nimbus.weather.ui.radar.RadarSourcesNote(false, null) { plain = it }
+                dev.nimbus.weather.ui.radar.RadarSourcesNote(true, null) { withLightning = it }
+                dev.nimbus.weather.ui.radar.RadarSourcesNote(true, 2026) { withBoth = it }
+            }
+        }
+        compose.waitForIdle()
+        assertEquals("lightning on: no line more", plain, withLightning)
+        assertTrue("$withLightning", withLightning <= 2)
+        assertTrue("$withBoth", withBoth <= 3)
     }
 }

@@ -629,13 +629,7 @@ fun RadarScreen(
                 }
             }
             Spacer(Modifier.height(6.dp))
-            Text(stringResource(R.string.radar_attribution), fontSize = 9.sp, color = NimbusColors.Tertiary, maxLines = 2)
-            if (lightning) Text(stringResource(R.string.lightning_attribution), fontSize = 9.sp, color = NimbusColors.Tertiary, maxLines = 1)
-            // the satellite's licence (CC BY 4.0) asks for this line while its picture is shown
-            if (satellite && satTime != null) Text(
-                String.format(java.util.Locale.ROOT, SatelliteLayer.ATTRIBUTION, java.time.Instant.ofEpochMilli(satTime).atZone(java.time.ZoneOffset.UTC).year),
-                fontSize = 9.sp, color = NimbusColors.Tertiary, maxLines = 1,
-            )
+            RadarSourcesNote(lightning, satTime?.takeIf { satellite }?.let { java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneOffset.UTC).year })
         }
     }
 }
@@ -648,4 +642,21 @@ private fun android.view.View.frameRateHint(fps: Float) {
         return
     }
     if (this is android.view.ViewGroup) for (i in 0 until childCount) getChildAt(i).frameRateHint(fps)
+}
+
+/**
+ * The sources in one text, the layers' added while they are on – [lightning], the satellite's of
+ * [satelliteYear] (its licence, CC BY 4.0, asks for its words while its picture is shown) – no
+ * line of its own each.
+ */
+@Composable
+internal fun RadarSourcesNote(lightning: Boolean, satelliteYear: Int?, onLines: (Int) -> Unit = {}) {
+    Text(
+        listOfNotNull(
+            stringResource(R.string.radar_attribution),
+            stringResource(R.string.lightning_attribution).takeIf { lightning },
+            satelliteYear?.let { String.format(java.util.Locale.ROOT, SatelliteLayer.ATTRIBUTION, it) },
+        ).joinToString(" · "),
+        fontSize = 9.sp, color = NimbusColors.Tertiary, maxLines = 3, onTextLayout = { onLines(it.lineCount) },
+    )
 }

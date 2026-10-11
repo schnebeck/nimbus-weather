@@ -1,0 +1,4 @@
+• Radar spielt mit 20 Bildern/s: weniger Rechenlast, das Laden kommt schneller voran
+• Einstellung: Radarebenen beim Öffnen (z. B. Blitze, Satellit)
+• Radar schließt nach 2 Minuten ohne Berührung
+• Radar vorladen auch im Hintergrund, etwa alle 30 Minuten bei ausreichendem Akku; wahlweise auch über mobile Daten

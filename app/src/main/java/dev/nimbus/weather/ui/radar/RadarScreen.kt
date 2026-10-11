@@ -390,9 +390,10 @@ fun RadarScreen(
     }
     // the map's surface asks for no more frames than the pictures there are (Android 11 on)
     LaunchedEffect(playing) { mapView.frameRateHint(if (playing) Playback.PICTURES_PER_SECOND.toFloat() else 0f) }
-    LaunchedEffect(playing, timeline, nowcastHere) {
-        val tl = timeline ?: return@LaunchedEffect
-        if (!playing) { buffering = false; player.playing = false; player.position = frame.toFloat(); return@LaunchedEffect }
+    // playing only while shown: its beat is a timer, not the display's frames
+    LaunchedWhileShown(playing, timeline, nowcastHere) {
+        val tl = timeline ?: return@LaunchedWhileShown
+        if (!playing) { buffering = false; player.playing = false; player.position = frame.toFloat(); return@LaunchedWhileShown }
         val archived = tl.day != null
         // time per 5-minute step: the live ranges show [HistoryRange.playMinutes] per beat
         val stepMs = if (archived) ARCHIVE_STEP_MS else FRAME_MS * HistoryRange.STEP_MINUTES / tl.range.playMinutes

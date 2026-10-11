@@ -90,4 +90,13 @@ class WhileShownTest {
         }.toList()
         assertTrue("loops that run on behind the lock screen: $loose", loose.isEmpty())
     }
+
+    /** The radar plays on a timer of its own (20 pictures a second): only while shown, never behind the lock screen. */
+    @Test fun theRadarPlaysOnlyWhileShown() {
+        val lines = File("src/main/java/dev/nimbus/weather/ui/radar/RadarScreen.kt").readLines()
+        val beat = lines.indexOfFirst { "Playback.nextDue(" in it }
+        assertTrue("no playback beat found", beat > 0)
+        val block = lines.subList(0, beat).indexOfLast { "LaunchedWhileShown(" in it || "LaunchedEffect(" in it }
+        assertTrue("the playback loop runs in: ${lines[block].trim()}", "LaunchedWhileShown(" in lines[block])
+    }
 }

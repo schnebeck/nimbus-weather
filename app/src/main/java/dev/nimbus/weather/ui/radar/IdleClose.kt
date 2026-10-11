@@ -31,10 +31,10 @@ class IdleClose(private val afterMs: Long = AFTER_MS, private val clock: () -> L
 
     /** Returns once untouched for [afterMs]. */
     suspend fun awaitIdle() {
-        while (true) {
-            val left = touched + afterMs - clock()
-            if (left <= 0) return
+        var left = touched + afterMs - clock()
+        while (left > 0) {
             delay(left)
+            left = touched + afterMs - clock()
         }
     }
 

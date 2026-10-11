@@ -87,12 +87,16 @@ private fun rememberLightningSource(): LightningSource? {
     return remember { (context.applicationContext as? NimbusApp)?.container?.http?.let(::LightningSource) }
 }
 
-/** "Lightning nearby – nearest 12 km away · 3 min ago · 27 flashes in 15 min"; tapped, the radar's lightning. */
+/**
+ * "Lightning nearby – nearest 12 km away · 3 min ago · 27 flashes in 15 min", the minutes counted
+ * to [now] (the page's clock) between the askings; tapped, the radar's lightning.
+ */
 @Composable
-fun LightningNote(nearby: LightningNearby, onOpen: () -> Unit) {
+fun LightningNote(nearby: LightningNearby, now: Long, onOpen: () -> Unit) {
     val where = if (nearby.distanceKm < OVERHEAD_KM) stringResource(R.string.lightning_overhead)
     else stringResource(R.string.lightning_nearest_km, nearby.distanceKm.roundToInt())
-    val ago = if (nearby.minutesAgo < 1) stringResource(R.string.lightning_just_now) else stringResource(R.string.lightning_minutes_ago, nearby.minutesAgo)
+    val minutes = nearby.minutesAgo(now)
+    val ago = if (minutes < 1) stringResource(R.string.lightning_just_now) else stringResource(R.string.lightning_minutes_ago, minutes)
     val count = pluralStringResource(if (nearby.more) R.plurals.lightning_flashes_more else R.plurals.lightning_flashes, nearby.flashes, nearby.flashes)
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0x66000000)).clickable(onClick = onOpen).padding(12.dp),

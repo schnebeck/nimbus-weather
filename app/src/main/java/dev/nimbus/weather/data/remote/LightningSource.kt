@@ -26,10 +26,16 @@ import java.time.Instant
 import kotlin.math.cos
 
 /**
- * Lightning near a place: the nearest flash [distanceKm] away, [minutesAgo]; [flashes] within the
- * radius – [more]: at least that many (the newest groups only were asked for).
+ * Lightning near a place: the nearest flash [distanceKm] away, [struck] then (epoch millis);
+ * [flashes] within the radius – [more]: at least that many (the newest groups only were asked for).
  */
-data class LightningNearby(val distanceKm: Double, val minutesAgo: Int, val flashes: Int, val more: Boolean = false)
+data class LightningNearby(val distanceKm: Double, val struck: Long, val flashes: Int, val more: Boolean = false) {
+    /** How long ago at [now]: told against the clock, not the time it was asked for. */
+    fun minutesAgo(now: Long) = ((now - struck) / 60_000L).toInt().coerceAtLeast(0)
+
+    /** Still within the window asked for at [now]; older is no lightning nearby. */
+    fun current(now: Long) = now - struck < LightningSource.WINDOW_MS
+}
 
 /**
  * The flashes the Lightning Imager of Meteosat Third Generation saw around a place, as the DWD
@@ -102,7 +108,7 @@ class LightningSource(private val http: OkHttpClient, private val wfs: String = 
                 if (nearest == null || km < nearest.first) nearest = km to time
             }
             val (km, time) = nearest ?: return null
-            return LightningNearby(km, ((now - time) / 60_000L).toInt().coerceAtLeast(0), flashes.size.coerceAtLeast(1), more = features.size >= MAX_GROUPS)
+            return LightningNearby(km, minOf(time, now), flashes.size.coerceAtLeast(1), more = features.size >= MAX_GROUPS)
         }
 
         /**

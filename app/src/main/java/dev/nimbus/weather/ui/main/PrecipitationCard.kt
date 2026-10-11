@@ -58,8 +58,21 @@ import androidx.compose.runtime.setValue
  */
 class PrecipToday(
     val todaySum: Double, val next: Double, val readings: Map<Long, Double>,
-    val peak: HourlyPoint?, val notice: Insights.PrecipNotice?, val dry: Boolean, val nextWet: HourlyPoint?,
+    val chance: Chance, val notice: Insights.PrecipNotice?, val dry: Boolean, val nextWet: HourlyPoint?,
 ) {
+    /**
+     * How the chance goes on until midnight, each hour by its start: a highest or lowest only
+     * where it is a high or low point – the hour running now with its chance falling is none.
+     */
+    sealed interface Chance {
+        data class Highest(val percent: Int, val at: Long) : Chance
+        data class Lowest(val percent: Int, val at: Long) : Chance
+        data class Falls(val to: Int, val at: Long) : Chance
+        data class Rises(val to: Int, val at: Long) : Chance
+        data class Steady(val percent: Int) : Chance
+        data object None : Chance
+    }
+
     companion object {
         /** Below this an amount shows as 0.0 mm – nothing. */
         const val DRY_MM = 0.05
@@ -85,10 +98,26 @@ class PrecipToday(
             val dry = !raining && notice == null && todaySum < DRY_MM &&
                 rest.all { (it.precipitation ?: 0.0) < DRY_MM && (it.precipitationProbability ?: 0.0) < DRY_CHANCE }
             val nextWet = data.hourly.firstOrNull { it.time > now && ((it.precipitationProbability ?: 0.0) >= WET_CHANCE || (it.precipitation ?: 0.0) >= WET_MM) }
-            return PrecipToday(
-                todaySum, rest.sumOf { it.precipitation ?: 0.0 }, readings,
-                rest.maxByOrNull { it.precipitationProbability ?: 0.0 }, notice, dry, nextWet,
-            )
+            return PrecipToday(todaySum, rest.sumOf { it.precipitation ?: 0.0 }, readings, chance(rest), notice, dry, nextWet)
+        }
+
+        /** Less apart than this (percentage points) is the same chance. */
+        private const val APART = 5
+
+        /** [rest]: the hours not yet over, the one running now first. */
+        fun chance(rest: List<HourlyPoint>): Chance {
+            val c = rest.map { (it.precipitationProbability ?: 0.0).roundToInt() }
+            if (c.isEmpty() || c.max() < 10) return Chance.None
+            fun at(i: Int) = rest[i].time - HOUR
+            val hi = c.indexOf(c.max())
+            val lo = c.indexOf(c.min())
+            return when {
+                hi > 0 && c[hi] - c.first() >= APART && c[hi] - c.last() >= APART -> Chance.Highest(c[hi], at(hi))
+                lo > 0 && c.first() - c[lo] >= APART && c.last() - c[lo] >= APART -> Chance.Lowest(c[lo], at(lo))
+                c.first() - c.last() >= APART -> Chance.Falls(c[lo], at(lo))
+                c.last() - c.first() >= APART -> Chance.Rises(c[hi], at(hi))
+                else -> Chance.Steady(c.first())
+            }
         }
 
         private const val HOUR = 3_600_000L
@@ -101,8 +130,7 @@ fun PrecipitationCard(data: WeatherData, now: Long, raining: Boolean = false, me
     val tf = LocalTimeFormat.current
     val p = remember(data, now / 60_000L, raining, measured, tf) { PrecipToday.of(data, now, raining, measured, tf) } ?: return
     val unit = stringResource(Texts.precipUnit(s.precipitationUnit))
-    val todaySum = p.todaySum; val next = p.next; val readings = p.readings; val peak = p.peak; val notice = p.notice
-    val peakChance = peak?.precipitationProbability ?: 0.0
+    val todaySum = p.todaySum; val next = p.next; val readings = p.readings; val notice = p.notice
     if (p.dry) {
         // A dry day: one line – and when the forecast has some, the next precipitation
         GlassCard(title = stringResource(R.string.precip_title), icon = Icons.Outlined.WaterDrop, info = Term.PRECIP_PROBABILITY) {
@@ -147,8 +175,14 @@ fun PrecipitationCard(data: WeatherData, now: Long, raining: Boolean = false, me
         }
         Spacer(Modifier.height(4.dp))
         Text(
-            if (peak != null && peakChance >= 10) stringResource(R.string.precip_max_chance, peakChance.roundToInt(), tf.time(peak.time))
-            else stringResource(R.string.precip_no_chance),
+            when (val c = p.chance) {
+                is PrecipToday.Chance.Highest -> stringResource(R.string.precip_max_chance, c.percent, tf.time(c.at))
+                is PrecipToday.Chance.Lowest -> stringResource(R.string.precip_min_chance, c.percent, tf.time(c.at))
+                is PrecipToday.Chance.Falls -> stringResource(R.string.precip_chance_falls, c.to, tf.time(c.at))
+                is PrecipToday.Chance.Rises -> stringResource(R.string.precip_chance_rises, c.to, tf.time(c.at))
+                is PrecipToday.Chance.Steady -> stringResource(R.string.precip_chance_steady, c.percent)
+                PrecipToday.Chance.None -> stringResource(R.string.precip_no_chance)
+            },
             fontSize = 14.sp, color = Color.White,
         )
         // The hour-by-hour chart is part of the 10-day forecast (in the temperature chart, or as

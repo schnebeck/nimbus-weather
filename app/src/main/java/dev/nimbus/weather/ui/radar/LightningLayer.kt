@@ -24,7 +24,9 @@ import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.util.LruCache
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -38,6 +40,7 @@ import org.maplibre.android.geometry.LatLngQuad
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.sources.ImageSource
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 
 /**
@@ -45,24 +48,47 @@ import kotlin.math.max
  * Imager of Meteosat Third Generation saw, as the DWD serves them (all of Europe, a minute or two
  * late). The DWD's own colours tell nothing here – each 5-minute step is drawn in one bright
  * colour instead, the older ones fainter, as one picture of the view (like the satellite's): no
- * blank tiles while the time moves on.
+ * blank tiles while the time moves on. A picture stands only for its own time: on a new time the
+ * old flashes go at once, the new ones come when loaded – once loaded, at once.
  */
-class LightningLayer(private val scope: CoroutineScope, private val http: OkHttpClient) {
+class LightningLayer(
+    /** Runs on the main thread (the map's). */
+    private val scope: CoroutineScope,
+    private val http: OkHttpClient,
+    private val wms: String = WMS,
+) {
     private var style: Style? = null
     @Volatile private var geo: FieldGeo? = null
-    private var shownGeo: FieldGeo? = null
+    private var appliedGeo: FieldGeo? = null
     private var shownKey: String? = null
+    private var shownGeo: FieldGeo? = null
+    private var shownPicture: Bitmap = EMPTY
     private var wanted: String? = null
     private var job: Job? = null
     /** The DWD's pictures of single steps: a step serves three radar times. */
     private val steps = object : LruCache<String, Bitmap>(16 * 1024 * 1024) {
         override fun sizeOf(key: String, value: Bitmap) = value.byteCount
     }
+    /** The pictures as shown, by the radar's step: playing the loop again shows them at once. */
+    private val pictures = object : LruCache<String, Bitmap>(24 * 1024 * 1024) {
+        override fun sizeOf(key: String, value: Bitmap) = value.byteCount
+    }
+    /** Steps on their way: a time passed by while playing still loads, for the next round. */
+    private val loading = ConcurrentHashMap<String, Deferred<Bitmap?>>()
+
+    /** The step whose flashes are on the map; null: none. */
+    internal var shownStep: Long? = null
+        private set
 
     /** The layer's source: an image of the view (an empty one until the first arrives). */
     fun source(): ImageSource = ImageSource(SOURCE, LatLngQuad(LatLng(1.0, 0.0), LatLng(1.0, 1.0), LatLng(0.0, 1.0), LatLng(0.0, 0.0)), EMPTY)
 
-    fun install(style: Style) { this.style = style }
+    /** A (new) style: its source starts empty – the picture shown goes on it again. */
+    fun install(style: Style) {
+        this.style = style
+        appliedGeo = null
+        shownGeo?.let { apply(it, shownPicture) }
+    }
 
     /** The visible area changed: the picture covers it with a margin. */
     fun setView(south: Double, north: Double, west: Double, east: Double) {
@@ -76,37 +102,52 @@ class LightningLayer(private val scope: CoroutineScope, private val http: OkHttp
     /** Shows the flashes up to [step] (one of [stepFor]'s); null: none (a time ahead of now). */
     fun show(step: Long?) {
         val g = geo ?: return
-        if (step == null) { wanted = null; setImage(g, "none", EMPTY); return }
+        job?.cancel()
+        if (step == null) { wanted = null; setImage(g, NONE, null, EMPTY); return }
         val key = key(g, step)
         wanted = key
-        job?.cancel()
+        pictures.get(key)?.let { setImage(g, key, step, it); return }
+        // the flashes of another time do not stand for this one
+        setImage(g, NONE, null, EMPTY)
         job = scope.launch {
-            val parts = (0 until AGES).map { age -> async { step(g, step - age * STEP_MS) } }.awaitAll()
+            val parts = (0 until AGES).map { age -> fetch(g, step - age * STEP_MS) }.awaitAll()
             val picture = withContext(Dispatchers.Default) { compose(parts) }
-            if (wanted == key) withContext(Dispatchers.Main) { setImage(g, key, picture) }
+            // a step that failed is asked again next time
+            if (parts.all { it != null }) pictures.put(key, picture)
+            if (wanted == key) setImage(g, key, step, picture)
         }
     }
 
-    private suspend fun step(g: FieldGeo, end: Long): Bitmap? {
+    /** A step from the cache, else loading – on in the layer's scope, whoever waited for it gone. */
+    private fun fetch(g: FieldGeo, end: Long): Deferred<Bitmap?> {
         val key = key(g, end)
-        steps.get(key)?.let { return it }
-        return load(g, end)?.also { steps.put(key, it) }
+        steps.get(key)?.let { return CompletableDeferred(it) }
+        return loading.getOrPut(key) {
+            scope.async { load(g, end).also { if (it != null) steps.put(key, it); loading.remove(key) } }
+        }
     }
 
-    private fun setImage(g: FieldGeo, key: String, bmp: Bitmap) {
+    private fun setImage(g: FieldGeo, key: String, step: Long?, bmp: Bitmap) {
         if (shownKey == key) return
+        shownKey = key
+        shownStep = step
+        shownGeo = g
+        shownPicture = bmp
+        apply(g, bmp)
+    }
+
+    private fun apply(g: FieldGeo, bmp: Bitmap) {
         val src = style?.getSource(SOURCE) as? ImageSource ?: return
-        if (shownGeo !== g) {
+        if (appliedGeo !== g) {
             src.setCoordinates(LatLngQuad(LatLng(g.north, g.west), LatLng(g.north, g.east), LatLng(g.south, g.east), LatLng(g.south, g.west)))
-            shownGeo = g
+            appliedGeo = g
         }
         src.setImage(bmp)
-        shownKey = key
     }
 
     private suspend fun load(g: FieldGeo, end: Long): Bitmap? = withContext(Dispatchers.IO) {
         runCatching {
-            http.newCall(Request.Builder().url(url(g, end)).build()).execute().use { r ->
+            http.newCall(Request.Builder().url(url(g, end, wms)).build()).execute().use { r ->
                 if (!r.isSuccessful || r.body.contentType()?.subtype != "png") return@use null
                 val bytes = r.body.bytes()
                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
@@ -118,6 +159,7 @@ class LightningLayer(private val scope: CoroutineScope, private val http: OkHttp
 
     companion object {
         const val SOURCE = "lightning"
+        private const val NONE = "none"
         const val WMS = "https://maps.dwd.de/geoserver/dwd/wms"
         const val LAYER = "dwd:Accumulated_Flash_Geometry"
         /** One picture covers 5 minutes … */
@@ -157,14 +199,14 @@ class LightningLayer(private val scope: CoroutineScope, private val http: OkHttp
         }
 
         /** The WMS request for the flashes of the 5 minutes ending at [end], over [g] (the map's projection). */
-        fun url(g: FieldGeo, end: Long): String {
+        fun url(g: FieldGeo, end: Long, wms: String = WMS): String {
             val ratio = (g.maxX - g.minX) / (g.maxY - g.minY)
             val w = if (ratio >= 1) MAX_SIDE else max(1, (MAX_SIDE * ratio).toInt())
             val h = if (ratio >= 1) max(1, (MAX_SIDE / ratio).toInt()) else MAX_SIDE
             return String.format(
                 Locale.US, "%s?service=WMS&version=1.3.0&request=GetMap&layers=%s&styles=&format=image/png&transparent=true&crs=EPSG:3857" +
                     "&bbox=%.0f,%.0f,%.0f,%.0f&width=%d&height=%d&time=%s/%s",
-                WMS, LAYER, g.minX, g.minY, g.maxX, g.maxY, w, h, RadarSources.isoTime(end - STEP_MS + 1000), RadarSources.isoTime(end),
+                wms, LAYER, g.minX, g.minY, g.maxX, g.maxY, w, h, RadarSources.isoTime(end - STEP_MS + 1000), RadarSources.isoTime(end),
             )
         }
     }

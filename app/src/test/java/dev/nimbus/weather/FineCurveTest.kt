@@ -79,6 +79,28 @@ class FineCurveTest {
         assertTrue(m.zipWithNext().all { (a, b) -> a.time <= b.time })
     }
 
+    @Test fun hourlyStationReportsDrawALine() {
+        // a station reporting only hourly, nothing between 02:00 and 05:00
+        val reports = ((0..2) + (5..13)).associate { start + it * h to 9.0 + it * 0.2 }
+        val seg = Curve.segments(Curve.reports(reports, ten))
+        assertEquals(listOf(3, 9), seg.map { it.size })
+        // 10-minute reports stay 10-minute ones: a missing hour still splits them
+        val fine = ((0..6) + (13..18)).associate { start + it * ten to 10.0 }
+        assertEquals(listOf(7, 6), Curve.segments(Curve.reports(fine, ten)).map { it.size })
+        // today's curve: no lone dots
+        val measured = TodayMeasured(emptyMap(), emptyMap(), "X", emptyMap(), reports)
+        val hours = (0..24).map { HourlyPoint(start + it * h, 12.0, null, Condition.CLOUDY, true, 0.0, 0.0) }
+        assertTrue(Curve.segments(dayCurve(hours, emptyList(), start, start + 24 * h, measured)).none { it.size == 1 })
+    }
+
+    @Test fun hourlyValuesFillTheReportsGap() {
+        val fine = ((0..6) + (25..30)).map { CurvePoint(start + it * ten, 10.0, ten) }   // 00:00–01:00, 04:10–05:00
+        val hourly = (0..5).map { CurvePoint(start + it * h, 9.0) }
+        val m = Curve.merge(fine, hourly)
+        assertEquals(listOf(start + 2 * h, start + 3 * h), m.filter { it.interval == h }.map { it.time })
+        assertEquals(1, Curve.segments(m).size)
+    }
+
     @Test fun todayReadingsRunIntoTheForecastWithoutAGap() {
         // readings every 10 minutes up to 11:30, the forecast every 15 minutes all day
         val fine = (0..69).associate { start + it * ten to 15.0 }

@@ -258,7 +258,7 @@ private fun WeatherContent(
         // the sky above the cards: double-tapping it switches full screen (the header drawn over it has no touch of its own)
         add(PageItem("header-space", true) { Spacer(Modifier.fillMaxWidth().height(with(density) { expandedPx.toDp() } - 12.dp).fullscreenByDoubleTap()) })
         if (stale) add(PageItem("offline", true) { OfflineBanner(data) })
-        lightning?.let { n -> add(PageItem("lightning", true) { LightningNote(n, onOpenLightning) }) }
+        lightning?.takeIf { it.current(now) }?.let { n -> add(PageItem("lightning", true) { LightningNote(n, now, onOpenLightning) }) }
         if (data.alerts.isNotEmpty() && cards.shows(WeatherCard.ALERTS)) add(PageItem("alerts", true) { AlertsCard(data.alerts) })
         // The cards in the order chosen in the settings (Settings → Cards)
         cards.orderedCards().filter { cards.shows(it) }.forEach { card ->

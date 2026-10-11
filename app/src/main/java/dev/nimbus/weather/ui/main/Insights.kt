@@ -142,10 +142,18 @@ object Insights {
 
     data class HourlyChange(val condition: Condition, val isDay: Boolean, val time: Long?)
 
-    /** The next change of weather within 12 hours, or the continuing condition (time == null). */
+    /**
+     * The next change of weather within 12 hours, or the continuing condition (time == null). A
+     * change is weather that stays: a single hour between the same weather (a dry hour between
+     * rain) is no change.
+     */
     fun nextChange(hours: List<HourlyPoint>, current: Condition): HourlyChange {
         val g = group(current)
-        val next = hours.drop(1).take(12).firstOrNull { group(it.condition) != g }
+        val window = hours.drop(1).take(12)
+        val next = window.withIndex().firstOrNull { (i, h) ->
+            val after = window.getOrNull(i + 1)
+            group(h.condition) != g && (after == null || group(after.condition) != g)
+        }?.value
         return if (next != null) HourlyChange(next.condition, next.isDay, next.time)
         else HourlyChange(current, hours.firstOrNull()?.isDay ?: true, null)
     }

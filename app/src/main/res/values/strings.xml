@@ -303,6 +303,10 @@
     <string name="precip_today_amount">%1$s today</string>
     <string name="precip_next_amount">%1$s more until midnight</string>
     <string name="precip_max_chance">Highest chance: %1$d%% around %2$s</string>
+    <string name="precip_min_chance">Lowest chance: %1$d%% around %2$s</string>
+    <string name="precip_chance_falls">Chance falls to %1$d%% by %2$s</string>
+    <string name="precip_chance_rises">Chance rises to %1$d%% by %2$s</string>
+    <string name="precip_chance_steady">Chance around %1$d%% until midnight</string>
     <string name="precip_no_chance">No precipitation expected until midnight</string>
     <string name="precip_dry_today">Dry today</string>
     <string name="precip_next_wet">Next precipitation %1$s from about %2$s (%3$d%%)</string>
@@ -351,6 +355,7 @@
     <string name="outlook_precip_unlikely_nochance">%1$s possible around %2$s, but unlikely.</string>
     <string name="outlook_precip_unlikely_named">Its chance is low (%1$s %%).</string>
     <string name="outlook_precip_ends">The precipitation ends around %1$s.</string>
+    <string name="outlook_precip_pause">The precipitation stops around %1$s, %3$s again from around %2$s.</string>
     <string name="outlook_precip_continues">The precipitation continues for the next hours.</string>
     <string name="outlook_tomorrow">Tomorrow %1$s, %2$s to %3$s.</string>
     <string name="ph_sunny">sunny</string>

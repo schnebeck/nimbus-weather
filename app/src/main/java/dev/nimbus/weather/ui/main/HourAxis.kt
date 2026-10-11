@@ -178,12 +178,25 @@ object Curve {
     }
 
     /**
-     * Fine points where there are some, the coarse ones elsewhere: [coarse] points falling inside
-     * the span of [fine] are dropped (e.g. 15-minute model values for two days, hourly after that).
+     * Fine points where there are some, the coarse ones elsewhere: a [coarse] point with a fine one
+     * within its interval is dropped (e.g. 15-minute model values for two days, hourly after that;
+     * hourly readings fill the hours a station's reports are missing).
      */
     fun merge(fine: List<CurvePoint>, coarse: List<CurvePoint>): List<CurvePoint> {
         if (fine.isEmpty()) return coarse
-        val lo = fine.minOf { it.time }; val hi = fine.maxOf { it.time }
-        return (fine + coarse.filter { it.time < lo || it.time > hi }).sortedBy { it.time }
+        return (fine + coarse.filter { c -> fine.none { abs(it.time - c.time) < c.interval } }).sortedBy { it.time }
+    }
+
+    /**
+     * Station reports at their own pace: each point's interval is the nearer of its neighbours,
+     * at least [finest], at most an hour – a station reporting only hourly draws a line of hourly
+     * points, not a row of lone dots.
+     */
+    fun reports(readings: Map<Long, Double>, finest: Long): List<CurvePoint> {
+        val t = readings.keys.sorted()
+        return t.mapIndexed { i, time ->
+            val near = listOfNotNull(t.getOrNull(i - 1)?.let { time - it }, t.getOrNull(i + 1)?.let { it - time }).minOrNull() ?: finest
+            CurvePoint(time, readings.getValue(time), near.coerceIn(finest, HourAxis.HOUR))
+        }
     }
 }

@@ -61,7 +61,7 @@ class LightningTest {
     @Test fun theNearestFlashUnderAStorm() {
         val n = LightningSource.parse(Fixtures.json("lightning_near_raqqa.json"), 36.2, 39.0, now)!!
         assertEquals(4.73, n.distanceKm, 0.05)
-        assertEquals(0, n.minutesAgo)
+        assertEquals(0, n.minutesAgo(now))
         assertEquals(218, n.flashes)
         assertTrue("the answer ends at the count: at least that many", n.more)
     }
@@ -120,6 +120,60 @@ class LightningTest {
         assertTrue(url, "time=2026-10-11T00:15:01.000Z/2026-10-11T00:20:00.000Z" in url && "crs=EPSG:3857" in url && "transparent=true" in url)
     }
 
+    /**
+     * The flashes stand for their own time only: a new time takes them away at once, its own come
+     * when loaded; a time loaded before (the loop played again) comes at once, and a time passed
+     * by while playing goes on loading for the next round.
+     */
+    @Test fun anotherTimeTakesTheFlashesAway() {
+        val png = java.io.ByteArrayOutputStream().also {
+            Bitmap.createBitmap(4, 4, Bitmap.Config.ARGB_8888).apply { eraseColor(android.graphics.Color.WHITE) }.compress(Bitmap.CompressFormat.PNG, 100, it)
+        }.toByteArray()
+        val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
+        val slow = java.util.concurrent.atomic.AtomicBoolean(false)
+        val server = MockWebServer()
+        server.dispatcher = object : mockwebserver3.Dispatcher() {
+            override fun dispatch(request: mockwebserver3.RecordedRequest): MockResponse {
+                asked += request.url.queryParameter("time")!!
+                if (slow.get()) Thread.sleep(600)
+                return MockResponse.Builder().code(200).setHeader("Content-Type", "image/png").body(okio.Buffer().write(png)).build()
+            }
+        }
+        server.start()
+        val layer = LightningLayer(kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined), OkHttpClient(), server.url("/wms").toString())
+        layer.setView(50.0, 54.0, 6.0, 12.0)
+        fun until(step: Long?) {
+            val end = System.currentTimeMillis() + 5000
+            while (layer.shownStep != step && System.currentTimeMillis() < end) Thread.sleep(20)
+            assertEquals(step, layer.shownStep)
+        }
+        val a = Instant.parse("2026-10-11T00:15:00Z").toEpochMilli()
+        val b = a - 15 * 60_000L
+        val c = b - 15 * 60_000L
+        layer.show(a)
+        until(a)
+        slow.set(true)
+        layer.show(b)
+        assertNull("the flashes of the time before stay", layer.shownStep)
+        until(b)
+        val n = asked.size
+        layer.show(a)
+        assertEquals(a, layer.shownStep)
+        // passed by: its steps load on
+        layer.show(c)
+        layer.show(a)
+        val end = System.currentTimeMillis() + 5000
+        while (asked.size < n + 3 && System.currentTimeMillis() < end) Thread.sleep(20)
+        Thread.sleep(1000)
+        layer.show(c)
+        until(c)
+        assertEquals(n + 3, asked.size)
+        // a time ahead (the radar's forecast): none
+        layer.show(null)
+        assertNull(layer.shownStep)
+        server.close()
+    }
+
     /** The three steps in one bright colour, the newest strongest, the oldest faintest. */
     @Test fun theNewestBrightest() {
         fun step(x: Int) = Bitmap.createBitmap(3, 1, Bitmap.Config.ARGB_8888).apply { setPixel(x, 0, 0xFF00FF00.toInt()) }
@@ -129,14 +183,30 @@ class LightningTest {
         assertEquals(0xFFFFF176.toInt() and 0xFFFFFF, out.getPixel(0, 0) and 0xFFFFFF)
     }
 
+    /** The minutes go on with the clock between the askings; past the window the lightning is over. */
+    @Test fun theMinutesFollowTheClock() {
+        val ctx = RuntimeEnvironment.getApplication()
+        val n = LightningNearby(12.4, now, 27)
+        var clock by androidx.compose.runtime.mutableLongStateOf(now)
+        compose.setContent { LightningNote(n, clock) {} }
+        fun line(min: Int) = ctx.getString(R.string.lightning_nearest_km, 12) + " · " +
+            (if (min < 1) ctx.getString(R.string.lightning_just_now) else ctx.getString(R.string.lightning_minutes_ago, min)) + " · " +
+            ctx.resources.getQuantityString(R.plurals.lightning_flashes, 27, 27)
+        compose.onNodeWithText(line(0)).assertExists()
+        clock = now + 14 * 60_000L + 10_000L
+        compose.onNodeWithText(line(14)).assertExists()
+        assertTrue(n.current(now + 14 * 60_000L))
+        assertTrue(!n.current(now + LightningSource.WINDOW_MS))
+    }
+
     /** The note: how near, how long ago, how many – tapped, the radar's lightning. */
     @Test fun theNote() {
         val ctx = RuntimeEnvironment.getApplication()
         var opened = false
         compose.setContent {
             androidx.compose.foundation.layout.Column {
-                LightningNote(LightningNearby(12.4, 3, 27)) { opened = true }
-                LightningNote(LightningNearby(4.7, 0, 218, more = true)) {}
+                LightningNote(LightningNearby(12.4, now - 3 * 60_000L, 27), now) { opened = true }
+                LightningNote(LightningNearby(4.7, now, 218, more = true), now) {}
             }
         }
         val near = ctx.getString(R.string.lightning_nearest_km, 12) + " · " + ctx.getString(R.string.lightning_minutes_ago, 3) + " · " +

@@ -66,7 +66,7 @@ fun HourlyCard(data: WeatherData, now: Long) {
     if (hours.isEmpty()) return
     val items = remember(hours, data.daily) {
         val list = mutableListOf<HourItem>()
-        hours.forEachIndexed { i, h -> list += HourItem.Hour(h, i == 0) }
+        stripHours(hours).forEachIndexed { i, h -> list += HourItem.Hour(h, i == 0) }
         val start = hours.first().time
         val end = hours.last().time
         data.daily.forEach { d ->
@@ -84,9 +84,9 @@ fun HourlyCard(data: WeatherData, now: Long) {
     val cellWidth = remember(items, nowLabel, settings.temperatureUnit, density) {
         fun widest(texts: List<String>, style: androidx.compose.ui.text.TextStyle) =
             with(density) { (texts.maxOfOrNull { measurer.measure(it, style, softWrap = false, density = density).size.width } ?: 0).toDp() }
-        val labels = items.map { if (it is HourItem.Hour) (if (it.isNow) nowLabel else tf.hour(it.point.time)) else tf.time(it.time) }
-        val temps = items.mapNotNull { (it as? HourItem.Hour)?.let { h -> Units.temp(if (h.isNow) data.current.temperature else h.point.temperature, settings.temperatureUnit) } }
-        val chances = items.mapNotNull { (it as? HourItem.Hour)?.point?.let { p -> Insights.chanceText(p.precipitationProbability, p.precipitation) + NBSP + "%" } }
+        val labels = items.map { if (it is HourItem.Hour) (if (it.isNow) nowLabel else tf.hour(it.time)) else tf.time(it.time) }
+        val temps = items.mapNotNull { (it as? HourItem.Hour)?.let { h -> Units.temp(if (h.isNow) data.current.temperature else h.hour.temperature, settings.temperatureUnit) } }
+        val chances = items.mapNotNull { (it as? HourItem.Hour)?.hour?.let { h -> Insights.chanceText(h.chance, h.amount) + NBSP + "%" } }
         maxOf(
             52.dp,
             widest(labels, androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.SemiBold)) + 8.dp,
@@ -115,12 +115,12 @@ fun HourlyCard(data: WeatherData, now: Long) {
                 when (item) {
                     // "Now" shows the current (possibly measured) weather, like the header.
                     is HourItem.Hour -> HourCell(
-                        label = if (item.isNow) stringResource(R.string.now) else tf.hour(item.point.time),
-                        condition = if (item.isNow) data.current.condition else item.point.condition,
-                        isDay = if (item.isNow) data.current.isDay else item.point.isDay,
-                        precipProb = item.point.precipitationProbability,
-                        precipAmount = item.point.precipitation,
-                        value = Units.temp(if (item.isNow) data.current.temperature else item.point.temperature, settings.temperatureUnit),
+                        label = if (item.isNow) stringResource(R.string.now) else tf.hour(item.time),
+                        condition = if (item.isNow) data.current.condition else item.hour.condition,
+                        isDay = if (item.isNow) data.current.isDay else item.hour.isDay,
+                        precipProb = item.hour.chance,
+                        precipAmount = item.hour.amount,
+                        value = Units.temp(if (item.isNow) data.current.temperature else item.hour.temperature, settings.temperatureUnit),
                         bold = item.isNow,
                         width = cellWidth,
                     )
@@ -184,6 +184,18 @@ private fun SunHorizonGlyph(rise: Boolean) {
 
 private sealed interface HourItem {
     val time: Long
-    data class Hour(val point: HourlyPoint, val isNow: Boolean) : HourItem { override val time get() = point.time }
+    data class Hour(val hour: StripHour, val isNow: Boolean) : HourItem { override val time get() = hour.start }
     data class Sun(override val time: Long, val rise: Boolean) : HourItem
+}
+
+/**
+ * An hour of the strip – by definition the hour from [start] on, as everywhere ("17" is 17–18):
+ * the temperature at [start], the weather, chance and amount of the hour itself, which the data
+ * point at its end carries.
+ */
+internal data class StripHour(val start: Long, val temperature: Double, val condition: Condition, val isDay: Boolean, val chance: Double?, val amount: Double?)
+
+/** [points] hourly, the first at or before now: the hours from each point to the next. */
+internal fun stripHours(points: List<HourlyPoint>): List<StripHour> = points.zipWithNext { a, b ->
+    StripHour(a.time, a.temperature, b.condition, b.isDay, b.precipitationProbability, b.precipitation)
 }

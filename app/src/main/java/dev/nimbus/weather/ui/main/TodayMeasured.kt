@@ -107,8 +107,9 @@ data class TodayMeasured(
 
 /**
  * The temperature curve of a day in the forecast: the model every 15 minutes where it has such
- * steps, hourly elsewhere; today the station's readings (every 10 minutes, else hourly) up to the
- * last one, the forecast after it – no gap between them.
+ * steps, hourly elsewhere; today the station's readings (every 10 minutes or as often as it
+ * reports, its hourly values in between) up to the last one, the forecast after it – no gap
+ * between them.
  */
 fun dayCurve(
     hours: List<dev.nimbus.weather.data.model.HourlyPoint>, minutely: List<dev.nimbus.weather.data.model.MinutelyPoint>,
@@ -121,7 +122,7 @@ fun dayCurve(
     )
     if (measured == null) return forecast
     val readings = Curve.merge(
-        measured.fine.map { (t, v) -> CurvePoint(t, v, 10 * 60_000L) },
+        Curve.reports(measured.fine, 10 * 60_000L),
         measured.hours.mapNotNull { (t, m) -> m.temperature?.let { CurvePoint(t, it) } },
     ).filter { it.time in from..end }
     // the forecast goes on from the last reading, no step at "now"

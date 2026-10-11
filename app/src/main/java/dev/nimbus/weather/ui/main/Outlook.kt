@@ -26,7 +26,9 @@ import androidx.compose.ui.unit.sp
 
 /**
  * Short text forecast for the next hours, derived from the hourly model data. Kept free of
- * Android types; [outlookText] turns it into localised sentences.
+ * Android types; [outlookText] turns it into localised sentences. An hour is named by its start,
+ * as everywhere ("17:00" is the hour 17–18, which the data point at 18:00 carries); a temperature
+ * by its moment.
  */
 data class Outlook(
     val now: Condition,
@@ -57,17 +59,25 @@ data class Outlook(
          */
         data class Unlikely(val condition: Condition, val at: Long, val chance: String?) : Precip
         data class Ongoing(val endsAt: Long?) : Precip
+        /** It stops at [endsAt] and comes again as [condition] from [again]: a break, not the end. */
+        data class Pause(val endsAt: Long, val again: Long, val condition: Condition) : Precip
     }
 
     companion object {
         const val WINDOW_HOURS = 12
         const val MIN_CHANCE_TO_QUOTE = 30.0
+        private const val HOUR = 3_600_000L
+        /** Precipitation coming again within this after it stopped is a break. */
+        private const val PAUSE_MS = 3 * HOUR
+
+        /** The start of the hour a data point (stamped at the hour's end) carries – not before [now]. */
+        private fun start(h: HourlyPoint, now: Long) = maxOf(h.time - HOUR, now)
 
         fun from(data: WeatherData, now: Long, isAfternoon: Boolean): Outlook {
             val hours = Insights.upcomingHours(data, now, WINDOW_HOURS + 1).drop(1)
             val current = data.current.condition
             val change = Insights.nextChange(listOf(HourlyPoint(now, data.current.temperature, condition = current, isDay = data.current.isDay)) + hours, current)
-                .takeIf { it.time != null }?.let { it.condition to it.time!! }
+                .takeIf { it.time != null }?.let { it.condition to maxOf(it.time!! - HOUR, now) }
             val today = data.daily.lastOrNull { it.date <= now }
             val tomorrow = data.daily.firstOrNull { it.date > now }
             return Outlook(
@@ -95,27 +105,31 @@ data class Outlook(
         }
 
         fun precipitation(current: Condition, hours: List<HourlyPoint>, minutely: List<dev.nimbus.weather.data.model.MinutelyPoint>, now: Long): Precip {
+            fun wet(h: HourlyPoint) = (h.precipitationProbability ?: 0.0) >= 60 || (h.precipitation ?: 0.0) >= 0.3
             if (current.isPrecipitation) {
                 // End of the current precipitation: 15-minute nowcast first, then hourly data.
                 val nowcast = Insights.nowcast(Insights.nowcastPoints(minutely, now), now, rainingNow = true)
-                if (nowcast is Insights.Nowcast.StopsIn) return Precip.Ongoing(now + nowcast.minutes * 60_000L)
-                val end = hours.firstOrNull { (it.precipitation ?: 0.0) < 0.1 && !it.condition.isPrecipitation }
-                return Precip.Ongoing(end?.time)
+                val ends = if (nowcast is Insights.Nowcast.StopsIn) now + nowcast.minutes * 60_000L
+                else hours.firstOrNull { (it.precipitation ?: 0.0) < 0.1 && !it.condition.isPrecipitation }?.let { start(it, now) }
+                    ?: return Precip.Ongoing(null)
+                // the hours after it may bring more soon: then it only stops for a while
+                val again = hours.firstOrNull { it.time - HOUR >= ends + HOUR / 2 && wet(it) }?.takeIf { it.time - HOUR - ends <= PAUSE_MS }
+                return if (again != null) Precip.Pause(ends, start(again, now), precipCondition(again)) else Precip.Ongoing(ends)
             }
-            val likely = hours.firstOrNull { (it.precipitationProbability ?: 0.0) >= 60 || (it.precipitation ?: 0.0) >= 0.3 }
+            val likely = hours.firstOrNull { wet(it) }
             if (likely != null) {
                 // The chance is only mentioned if it supports the statement: models can deliver a
                 // measurable amount together with a (much) lower chance from another ensemble.
                 val chance = likely.precipitationProbability?.takeIf { it >= MIN_CHANCE_TO_QUOTE }?.let { Insights.chanceLabel(it) }
-                return Precip.Likely(precipCondition(likely), likely.time, chance)
+                return Precip.Likely(precipCondition(likely), start(likely, now), chance)
             }
             val possible = hours.filter { (it.precipitationProbability ?: 0.0) >= 30 }.maxByOrNull { it.precipitationProbability ?: 0.0 }
             if (possible != null) {
-                return Precip.Possible(precipCondition(possible), possible.time, Insights.chanceLabel(possible.precipitationProbability) ?: 30)
+                return Precip.Possible(precipCondition(possible), start(possible, now), Insights.chanceLabel(possible.precipitationProbability) ?: 30)
             }
             val shown = hours.firstOrNull { it.condition.isPrecipitation || (it.precipitation ?: 0.0) >= Insights.MEASURABLE_MM }
             if (shown != null) {
-                return Precip.Unlikely(precipCondition(shown), shown.time, Insights.chanceText(shown.precipitationProbability, shown.precipitation))
+                return Precip.Unlikely(precipCondition(shown), start(shown, now), Insights.chanceText(shown.precipitationProbability, shown.precipitation))
             }
             return Precip.Dry
         }
@@ -176,6 +190,7 @@ fun outlookText(data: WeatherData, now: Long): String {
                 else str(dev.nimbus.weather.R.string.outlook_precip_unlikely_nochance, phrase(p.condition), tf.time(p.at))
                 is Outlook.Precip.Ongoing -> p.endsAt?.let { str(dev.nimbus.weather.R.string.outlook_precip_ends, tf.time(it)) }
                     ?: str(dev.nimbus.weather.R.string.outlook_precip_continues)
+                is Outlook.Precip.Pause -> str(dev.nimbus.weather.R.string.outlook_precip_pause, tf.time(p.endsAt), tf.time(p.again), phrase(p.condition))
             },
         )
         o.gust?.let {

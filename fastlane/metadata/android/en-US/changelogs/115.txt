@@ -1,0 +1,4 @@
+• Hourly strip: "17" shows the hour 17–18, as the chart does; the short forecast names hours by their start and sees no change of weather in a dry hour between rain
+• Highest/lowest chance of precipitation only at a high or low point
+• Today: the same expectation in forecast and day course; curve from hourly station reports too
+• Lightning: on the radar only at its time, minutes follow the clock

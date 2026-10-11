@@ -38,14 +38,15 @@ class OutlookTest {
         assertEquals(Outlook.Temp.Steady(18.0), Outlook.temperature(18.0, (1..8).map { h(it, 18.5) }))
     }
 
+    /** Each hour named by its start: the point at now + 5 h carries the hour from now + 4 h. */
     @Test
     fun `precipitation outlook`() {
         val dry = (1..12).map { h(it, 15.0) }
         assertEquals(Outlook.Precip.Dry, Outlook.precipitation(Condition.CLOUDY, dry, emptyList(), now))
         val later = (1..12).map { h(it, 15.0, if (it >= 5) Condition.RAIN else Condition.CLOUDY, if (it >= 5) 80.0 else 5.0, if (it >= 5) 1.0 else 0.0) }
-        assertEquals(Outlook.Precip.Likely(Condition.RAIN, now + 5 * 3_600_000L, 80), Outlook.precipitation(Condition.CLOUDY, later, emptyList(), now))
+        assertEquals(Outlook.Precip.Likely(Condition.RAIN, now + 4 * 3_600_000L, 80), Outlook.precipitation(Condition.CLOUDY, later, emptyList(), now))
         val maybe = (1..12).map { h(it, 15.0, p = if (it == 7) 40.0 else 10.0) }
-        assertEquals(Outlook.Precip.Possible(Condition.SHOWERS, now + 7 * 3_600_000L, 40), Outlook.precipitation(Condition.CLOUDY, maybe, emptyList(), now))
+        assertEquals(Outlook.Precip.Possible(Condition.SHOWERS, now + 6 * 3_600_000L, 40), Outlook.precipitation(Condition.CLOUDY, maybe, emptyList(), now))
         val cold = (1..12).map { h(it, 0.0, p = if (it == 3) 45.0 else 0.0) }
         assertEquals(Condition.SNOW, (Outlook.precipitation(Condition.CLOUDY, cold, emptyList(), now) as Outlook.Precip.Possible).condition)
     }
@@ -73,7 +74,7 @@ class OutlookTest {
     @Test fun amountWithoutMatchingChanceIsNotQuoted() {
         // Norden, 1 Oct 2026: 0.4 mm at 03:00 but 0 % from another ensemble – no "(0 %)".
         val hours = (1..6).map { if (it >= 3) h(it, 17.0, Condition.RAIN, p = 0.0, mm = 0.4) else h(it, 18.0) }
-        assertEquals(Outlook.Precip.Likely(Condition.RAIN, now + 3 * 3_600_000L, null), Outlook.precipitation(Condition.CLOUDY, hours, emptyList(), now))
+        assertEquals(Outlook.Precip.Likely(Condition.RAIN, now + 2 * 3_600_000L, null), Outlook.precipitation(Condition.CLOUDY, hours, emptyList(), now))
         val supported = (1..6).map { if (it >= 3) h(it, 17.0, Condition.RAIN, p = 85.0, mm = 0.4) else h(it, 18.0) }
         assertEquals(90, (Outlook.precipitation(Condition.CLOUDY, supported, emptyList(), now) as Outlook.Precip.Likely).chance)
     }

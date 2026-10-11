@@ -292,6 +292,10 @@
     <string name="precip_today_amount">%1$s heute</string>
     <string name="precip_next_amount">noch %1$s bis Mitternacht</string>
     <string name="precip_max_chance">Höchste Wahrscheinlichkeit: %1$d %% gegen %2$s</string>
+    <string name="precip_min_chance">Tiefste Wahrscheinlichkeit: %1$d %% gegen %2$s</string>
+    <string name="precip_chance_falls">Wahrscheinlichkeit sinkt bis %2$s auf %1$d %%</string>
+    <string name="precip_chance_rises">Wahrscheinlichkeit steigt bis %2$s auf %1$d %%</string>
+    <string name="precip_chance_steady">Wahrscheinlichkeit bis Mitternacht um %1$d %%</string>
     <string name="precip_no_chance">Bis Mitternacht kein Niederschlag zu erwarten</string>
     <string name="precip_dry_today">Heute trocken</string>
     <string name="precip_next_wet">Nächster Niederschlag %1$s ab etwa %2$s (%3$d %%)</string>
@@ -340,6 +344,7 @@
     <string name="outlook_precip_unlikely_nochance">Gegen %2$s ist %1$s möglich, aber wenig wahrscheinlich.</string>
     <string name="outlook_precip_unlikely_named">Die Wahrscheinlichkeit dafür ist gering (%1$s %%).</string>
     <string name="outlook_precip_ends">Der Niederschlag endet gegen %1$s.</string>
+    <string name="outlook_precip_pause">Der Niederschlag setzt gegen %1$s aus, ab etwa %2$s wieder %3$s.</string>
     <string name="outlook_precip_continues">Der Niederschlag hält in den nächsten Stunden an.</string>
     <string name="outlook_tomorrow">Morgen %1$s, %2$s bis %3$s.</string>
     <string name="ph_sunny">sonnig</string>

@@ -40,6 +40,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import java.time.Instant
 
 /**
@@ -84,6 +86,25 @@ class LightningTest {
             assertTrue(filter, filter.endsWith(",'CRS:84')"))
             assertEquals("GROUP_END_TIME DESC", url.queryParameter("sortBy"))
             assertEquals(LightningSource.MAX_GROUPS.toString(), url.queryParameter("count"))
+        } finally { server.close() }
+    }
+
+    /** "My location" keeps its id when it moves: the lightning is asked for anew at the new position. */
+    @Test fun aMovedPlaceIsAskedAnew() {
+        val server = MockWebServer()
+        repeat(2) { server.enqueue(MockResponse.Builder().code(200).body(Fixtures.text("lightning_none_hannover.json")).build()) }
+        server.start()
+        try {
+            val source = LightningSource(OkHttpClient(), server.url("/ows").toString())
+            var place by androidx.compose.runtime.mutableStateOf(dev.nimbus.weather.data.model.Place("here", "Here", latitude = 52.38, longitude = 9.73))
+            compose.setContent { dev.nimbus.weather.ui.main.rememberLightningNearby(place, source) }
+            val first = server.takeRequest(5, java.util.concurrent.TimeUnit.SECONDS)!!.url.queryParameter("cql_filter")!!
+            compose.runOnIdle { place = place.copy(latitude = 36.2, longitude = 39.0) }
+            compose.waitForIdle()
+            val second = server.takeRequest(5, java.util.concurrent.TimeUnit.SECONDS)
+            assertTrue("no request after the move", second != null)
+            assertTrue(first, "BBOX(GEOM,8." in first)
+            assertTrue(second!!.url.queryParameter("cql_filter")!!, "BBOX(GEOM,38." in second.url.queryParameter("cql_filter")!!)
         } finally { server.close() }
     }
 

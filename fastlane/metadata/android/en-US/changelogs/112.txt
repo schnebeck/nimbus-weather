@@ -1,0 +1,1 @@
+• Lightning nearby: when "my location" moves, the app asks at once for the new position – it stayed with the old one until then

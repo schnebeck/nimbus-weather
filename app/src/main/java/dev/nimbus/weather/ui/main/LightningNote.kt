@@ -67,11 +67,10 @@ private const val OVERHEAD_KM = 5.0
  * (a box around the place: a few hundred bytes without lightning), never in the background.
  */
 @Composable
-fun rememberLightningNearby(place: Place): LightningNearby? {
-    val context = LocalContext.current
-    val source = remember { (context.applicationContext as? NimbusApp)?.container?.http?.let(::LightningSource) }
-    var nearby by remember(place.id) { mutableStateOf<LightningNearby?>(null) }
-    LaunchedWhileShown(place.id, source) {
+fun rememberLightningNearby(place: Place, source: LightningSource? = rememberLightningSource()): LightningNearby? {
+    // keyed by the position too: "my location" keeps its id when it moves
+    var nearby by remember(place.id, place.latitude, place.longitude) { mutableStateOf<LightningNearby?>(null) }
+    LaunchedWhileShown(place.id, place.latitude, place.longitude, source) {
         if (source == null) return@LaunchedWhileShown
         while (true) {
             nearby = source.nearby(place.latitude, place.longitude, System.currentTimeMillis())
@@ -79,6 +78,13 @@ fun rememberLightningNearby(place: Place): LightningNearby? {
         }
     }
     return nearby
+}
+
+/** The app's source; none without the app's HTTP client (a preview). */
+@Composable
+private fun rememberLightningSource(): LightningSource? {
+    val context = LocalContext.current
+    return remember { (context.applicationContext as? NimbusApp)?.container?.http?.let(::LightningSource) }
 }
 
 /** "Lightning nearby – nearest 12 km away · 3 min ago · 27 flashes in 15 min"; tapped, the radar's lightning. */

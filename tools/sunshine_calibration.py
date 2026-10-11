@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 #
 # Nimbus - tools/sunshine_calibration.py
-# Learns the sunshine of an hour from the satellite's radiation and the model's low cloud,
-# checked against DWD stations, and writes the model the app evaluates (SatelliteSunshine.kt).
+# Learns the sunshine of an hour – measured by the satellite (with the model's low cloud) and
+# forecast by the model – checked against DWD stations, and writes the models the app evaluates
+# (SatelliteSunshine.kt, ForecastSunshine.kt).
 #
 #   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
 #   Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
@@ -18,8 +19,8 @@
 #
 # Usage: tools/sunshine_calibration.py [cache-dir] [first-day] [last-day]   (needs numpy, scikit-learn)
 # Station hours: Bright Sky (DWD). Satellite hours: Open-Meteo, dwd_sis_europe_africa_v4 (archived
-# from 20 Feb 2026), at the station's position. Low cloud: Open-Meteo's archived forecasts
-# (best_match, as the app's look-back asks by default). All hour-ending, UTC.
+# from 20 Feb 2026), at the station's position. Low cloud and the forecast: Open-Meteo's archived
+# forecasts (best_match, as the app asks by default). All hour-ending, UTC.
 # The check: every month is left out of the learning once and judged on the stations not learnt
 # from – the model knows neither the month nor the place, only the weather of the hour.
 
@@ -32,8 +33,12 @@ STATIONS = ['01975', '03379', '01420', '02932', '02667', '03631', '00183', '0168
 CACHE = sys.argv[1] if len(sys.argv) > 1 else 'sunshine-cache'
 FIRST = datetime.date.fromisoformat(sys.argv[2] if len(sys.argv) > 2 else '2026-02-20')
 LAST = datetime.date.fromisoformat(sys.argv[3] if len(sys.argv) > 3 else '2026-10-09')
-MODEL = os.path.join(os.path.dirname(__file__), '..', 'app/src/main/resources/dev/nimbus/weather/data/remote/sunshine_model.json')
+RESOURCES = os.path.join(os.path.dirname(__file__), '..', 'app/src/main/resources/dev/nimbus/weather/data/remote')
+MODEL = os.path.join(RESOURCES, 'sunshine_model.json')
 FEATURES = ['sunshine', 'direct', 'global', 'diffuse', 'elevation', 'low']
+FORECAST_MODEL = os.path.join(RESOURCES, 'forecast_sunshine_model.json')
+FORECAST_FEATURES = ['sunshine', 'direct', 'elevation', 'cloud', 'precipitation']
+FORECAST_FIELDS = 'sunshine_duration,direct_normal_irradiance,shortwave_radiation,diffuse_radiation,cloud_cover,precipitation'
 PARAMS = dict(max_iter=100, learning_rate=0.1, max_leaf_nodes=15, min_samples_leaf=60,
               l2_regularization=1.0, early_stopping=False)
 
@@ -124,6 +129,65 @@ def dataset(low_name='low', model='best_match'):
     return np.array(X), np.array(y, float), np.array(sid_of), np.array(t_of), np.array(clear)
 
 
+def forecast_dataset(model='best_match'):
+    """The model's own hours (as the app gets them) against the stations: as ForecastSunshine.features."""
+    X, y, sid_of, t_of = [], [], [], []
+    for sid in STATIONS:
+        b = cached(f'bs_{sid}.json', lambda: station(sid))
+        lat, lon = b['src']['lat'], b['src']['lon']
+        h = cached(f'fc_{model}_{sid}.json', lambda: get(
+            'https://historical-forecast-api.open-meteo.com/v1/forecast'
+            f'?latitude={lat}&longitude={lon}&start_date={FIRST}&end_date={LAST}&hourly={FORECAST_FIELDS}'
+            f'&models={model}&timezone=UTC&timeformat=unixtime'))['hourly']
+        cloud = dict(zip(h['time'], h['cloud_cover']))
+        measured = {int(datetime.datetime.fromisoformat(x['t']).timestamp()): x['sun'] for x in b['recs']}
+        for t, sd, dni, pr in zip(h['time'], h['sunshine_duration'], h['direct_normal_irradiance'], h['precipitation']):
+            if None in (sd, dni) or measured.get(t) is None:
+                continue
+            f = forecast_features(t, lat, lon, sd, dni, cloud.get(t - 3600), cloud.get(t), pr)
+            if f:
+                X.append(f); y.append(measured[t]); sid_of.append(sid); t_of.append(t)
+    return np.array(X), np.array(y, float), np.array(sid_of), np.array(t_of)
+
+
+def forecast_features(hour_end, lat, lon, sd, dni, cloud_start, cloud_end, precipitation):
+    """As ForecastSunshine.features: the model's sunshine, its direct beam against a clear sky's, the sun's height, cloud, precipitation."""
+    els = [sun_altitude(hour_end - (5 + 10 * k) * 60, lat, lon) for k in range(6)]
+    if max(els) <= 0:
+        return None
+    clear_dni = sum(0.0 if e <= 0.01 else 1367 * 0.7 ** ((1 / math.sin(e)) ** 0.678) for e in els) / 6
+    cloud = np.nan if cloud_start is None or cloud_end is None else (cloud_start + cloud_end) / 2
+    return [sd / 60, dni / clear_dni if clear_dni > 0 else 0.0, math.degrees(sum(els) / 6), cloud,
+            np.nan if precipitation is None else precipitation]
+
+
+def check(X, y, sids, ts, raw, label):
+    """Every month left out of the learning once, judged on the stations not learnt from."""
+    months = np.array([datetime.datetime.fromtimestamp(t, datetime.UTC).month for t in ts])
+    fit = np.isin(sids, STATIONS[0::2])
+    rows = collections.defaultdict(list)
+    for mo in sorted(set(months)):
+        learn, judge = fit & (months != mo), ~fit & (months == mo)
+        model = HistGradientBoostingRegressor(**PARAMS).fit(X[learn], y[learn])
+        for name, p in list(raw(X[judge], judge).items()) + [('model', model.predict(X[judge]))]:
+            rows[name].append((errors(p, y[judge], sids[judge], ts[judge]), judge.sum()))
+        print(f'{label} month {mo:2d}: ' + ' | '.join(f'{n} bias {r[-1][0][1]:+5.2f}' for n, r in rows.items()))
+    for name, r in rows.items():
+        n = sum(k for _, k in r)
+        h, b, d = (sum(e[i] * k for e, k in r) / n for i in range(3))
+        print(f'{label} {name:10} (month left out, other stations): hour {h:5.2f} min, bias {b:+5.2f} min/h, day {d:4.0f} min')
+    return fit
+
+
+def write(X, y, features, path):
+    final = HistGradientBoostingRegressor(**PARAMS).fit(X, y)
+    m = export(final, features)
+    gap = max(abs(evaluate(m, X[i]) - min(60, max(0, final.predict(X[i:i + 1])[0]))) for i in range(0, len(X), 97))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    json.dump(m, open(path, 'w'), separators=(',', ':'))
+    print(f'model written: {os.path.normpath(path)} ({os.path.getsize(path) // 1024} KB), exported vs learnt: {gap:.4f} min')
+
+
 def share_07(X, clear):
     """The share of the direct irradiance: 60 × DNI / (0.7 × clear DNI); Open-Meteo's value where 0.7 × clear DNI < 120 W/m²."""
     return np.where(0.7 * clear < 120, X[:, 0], np.clip(60 * X[:, 1] / 0.7, 0, 60))
@@ -139,15 +203,15 @@ def errors(p, y, sids, ts):
     return np.abs(p - y)[sel].mean(), (p - y)[sel].mean(), np.mean([abs(a - b) for a, b in days.values()])
 
 
-def export(model):
+def export(model, features):
     trees = []
     for (pred,) in model._predictors:
         n = pred.nodes
-        trees.append({'f': [int(x) for x in n['feature_idx']], 't': [float('%.6g' % x) for x in n['num_threshold']],
+        trees.append({'f': [int(x) for x in n['feature_idx']], 't': [float('%.9g' % x) for x in n['num_threshold']],
                       'l': [int(x) if not leaf else -1 for x, leaf in zip(n['left'], n['is_leaf'])],
                       'r': [int(x) for x in n['right']], 'm': [int(x) for x in n['missing_go_to_left']],
-                      'v': [round(float(x), 5) for x in n['value']]})
-    return {'features': FEATURES, 'baseline': round(float(model._baseline_prediction.ravel()[0]), 5), 'trees': trees}
+                      'v': [round(float(x), 7) for x in n['value']]})
+    return {'features': features, 'baseline': round(float(model._baseline_prediction.ravel()[0]), 7), 'trees': trees}
 
 
 def evaluate(m, x):
@@ -164,31 +228,24 @@ def evaluate(m, x):
 
 def main():
     X, y, sids, ts, clear = dataset()
-    months = np.array([datetime.datetime.fromtimestamp(t, datetime.UTC).month for t in ts])
-    fit = np.isin(sids, STATIONS[0::2])
-    print(f'{len(y)} daylight hours at {len(STATIONS)} stations, {FIRST} – {LAST}')
-    rows = collections.defaultdict(list)
-    for mo in sorted(set(months)):
-        learn, judge = fit & (months != mo), ~fit & (months == mo)
-        model = HistGradientBoostingRegressor(**PARAMS).fit(X[learn], y[learn])
-        for name, p in (('Open-Meteo', X[judge, 0]), ('share 0.7', share_07(X[judge], clear[judge])), ('model', model.predict(X[judge]))):
-            rows[name].append((errors(p, y[judge], sids[judge], ts[judge]), judge.sum()))
-        print(f'month {mo:2d}: ' + ' | '.join(f'{n} bias {r[-1][0][1]:+5.2f}' for n, r in rows.items()))
-    for name, r in rows.items():
-        n = sum(k for _, k in r)
-        h, b, d = (sum(e[i] * k for e, k in r) / n for i in range(3))
-        print(f'{name:10} (month left out, other stations): hour {h:5.2f} min, bias {b:+5.2f} min/h, day {d:4.0f} min')
+    print(f'satellite: {len(y)} daylight hours at {len(STATIONS)} stations, {FIRST} – {LAST}')
+    fit = check(X, y, sids, ts, lambda x, judge: {'Open-Meteo': x[:, 0], 'share 0.7': share_07(x, clear[judge])}, 'satellite')
     # the low cloud of another model than the one learnt from (ICON chosen in the settings)
     Xi, yi, si, ti, _ = dataset('lowicon', 'icon_seamless')
-    learn = HistGradientBoostingRegressor(**PARAMS).fit(X[fit], y[fit])
     judge = ~np.isin(si, STATIONS[0::2])
-    print('ICON low cloud, other stations: hour %5.2f min, bias %+5.2f, day %4.0f' % errors(learn.predict(Xi[judge]), yi[judge], si[judge], ti[judge]))
-    final = HistGradientBoostingRegressor(**PARAMS).fit(X, y)
-    m = export(final)
-    gap = max(abs(evaluate(m, X[i]) - min(60, max(0, final.predict(X[i:i + 1])[0]))) for i in range(0, len(X), 97))
-    os.makedirs(os.path.dirname(MODEL), exist_ok=True)
-    json.dump(m, open(MODEL, 'w'), separators=(',', ':'))
-    print(f'model written: {os.path.normpath(MODEL)} ({os.path.getsize(MODEL) // 1024} KB), exported vs learnt: {gap:.4f} min')
+    learnt = HistGradientBoostingRegressor(**PARAMS).fit(X[fit], y[fit])
+    print('satellite, ICON low cloud, other stations: hour %5.2f min, bias %+5.2f, day %4.0f' % errors(learnt.predict(Xi[judge]), yi[judge], si[judge], ti[judge]))
+    write(X, y, FEATURES, MODEL)
+
+    X, y, sids, ts = forecast_dataset()
+    print(f'forecast: {len(y)} daylight hours')
+    fit = check(X, y, sids, ts, lambda x, judge: {'Open-Meteo': x[:, 0]}, 'forecast')
+    Xi, yi, si, ti = forecast_dataset('icon_seamless')
+    judge = ~np.isin(si, STATIONS[0::2])
+    learnt = HistGradientBoostingRegressor(**PARAMS).fit(X[fit], y[fit])
+    print('forecast, ICON, other stations: Open-Meteo hour %5.2f min, bias %+5.2f, day %4.0f' % errors(Xi[judge, 0], yi[judge], si[judge], ti[judge]))
+    print('forecast, ICON, other stations: model      hour %5.2f min, bias %+5.2f, day %4.0f' % errors(learnt.predict(Xi[judge]), yi[judge], si[judge], ti[judge]))
+    write(X, y, FORECAST_FEATURES, FORECAST_MODEL)
 
 
 if __name__ == '__main__':

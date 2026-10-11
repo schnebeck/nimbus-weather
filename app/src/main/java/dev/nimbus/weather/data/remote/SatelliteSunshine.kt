@@ -17,12 +17,6 @@
 
 package dev.nimbus.weather.data.remote
 
-import dev.nimbus.weather.util.Moon
-import kotlinx.serialization.json.JsonElement
-import kotlin.math.PI
-import kotlin.math.exp
-import kotlin.math.pow
-import kotlin.math.sin
 
 /** An hour of the satellite at a place: Open-Meteo's sunshine (minutes) and the radiation (W/m², hour means). */
 data class SatelliteHour(val sunshine: Double?, val direct: Double?, val global: Double?, val diffuse: Double?)
@@ -37,7 +31,7 @@ data class SatelliteHour(val sunshine: Double?, val direct: Double?, val global:
  * neither month nor place, so they hold for any of them.
  */
 object SatelliteSunshine {
-    /** Absolute: the release build renames this class and its package, a relative path would not find the file. */
+    /** Absolute: the release build renames the classes and their packages, a relative path would not find the file. */
     const val MODEL = "/dev/nimbus/weather/data/remote/sunshine_model.json"
 
     /** Minutes of sunshine in the hour ending [hourEnd]; Open-Meteo's where the radiation is missing, the sun down or the model unreadable. */
@@ -54,63 +48,20 @@ object SatelliteSunshine {
         val direct = h.direct ?: return null
         val global = h.global ?: return null
         val diffuse = h.diffuse ?: return null
-        // the sun's height in six steps through the hour (radians)
-        val heights = DoubleArray(6) { k -> Moon.sunAltitude(hourEnd - (5 + 10 * k) * 60_000L, lat, lon) * PI / 180 }
-        if (heights.max() <= 0) return null
-        val clearDirect = heights.sumOf { if (it <= 0.01) 0.0 else 1367 * 0.7.pow((1 / sin(it)).pow(0.678)) } / 6
-        val clearGlobal = heights.sumOf { if (it <= 0.01) 0.0 else 1098 * sin(it) * exp(-0.057 / sin(it)) } / 6
+        val sunHour = SunHour(hourEnd, lat, lon)
+        if (!sunHour.up) return null
         return doubleArrayOf(
             sun,
-            if (clearDirect > 0) direct / clearDirect else 0.0,
-            if (clearGlobal > 0) global / clearGlobal else 0.0,
+            if (sunHour.clearDirect > 0) direct / sunHour.clearDirect else 0.0,
+            if (sunHour.clearGlobal > 0) global / sunHour.clearGlobal else 0.0,
             if (global > 0) diffuse / global else 1.0,
-            heights.average() * 180 / PI,
+            sunHour.elevation,
             lowCloud ?: Double.NaN,
         )
     }
 
     /** Null if unreadable: the sunshine is then Open-Meteo's – the look-back must not fail for it. */
-    internal val model: Trees? by lazy {
-        runCatching {
-            Trees.parse(JsonCodec.parseToJsonElement(
-                requireNotNull(SatelliteSunshine::class.java.getResourceAsStream(MODEL)) { "$MODEL missing" }.bufferedReader().use { it.readText() },
-            ))
-        }.onFailure { android.util.Log.w("Nimbus", "sunshine model unreadable: ${it.message}") }.getOrNull()
-    }
+    internal val model: SunshineTrees? by lazy { SunshineTrees.load(MODEL, FEATURES) }
 
-    /** The learnt trees: each a list of nodes; a leaf has no left child (−1). */
-    internal class Trees(
-        private val baseline: Double, private val feature: Array<IntArray>, private val threshold: Array<DoubleArray>,
-        private val left: Array<IntArray>, private val right: Array<IntArray>, private val missingLeft: Array<BooleanArray>,
-        private val value: Array<DoubleArray>,
-    ) {
-        fun minutes(x: DoubleArray): Double {
-            var total = baseline
-            for (t in feature.indices) {
-                var i = 0
-                while (left[t][i] >= 0) {
-                    val v = x[feature[t][i]]
-                    i = if (if (v.isNaN()) missingLeft[t][i] else v <= threshold[t][i]) left[t][i] else right[t][i]
-                }
-                total += value[t][i]
-            }
-            return total.coerceIn(0.0, 60.0)
-        }
-
-        companion object {
-            val FEATURES = listOf("sunshine", "direct", "global", "diffuse", "elevation", "low")
-
-            fun parse(root: JsonElement): Trees {
-                val o = requireNotNull(root.obj())
-                require(o.a("features")?.map { it.str() } == FEATURES) { "the model's features differ" }
-                val trees = requireNotNull(o.a("trees")).map { requireNotNull(it.obj()) }
-                fun ints(k: String) = Array(trees.size) { t -> trees[t].doubles(k).map { requireNotNull(it).toInt() }.toIntArray() }
-                fun reals(k: String) = Array(trees.size) { t -> trees[t].doubles(k).map { requireNotNull(it) }.toDoubleArray() }
-                return Trees(
-                    requireNotNull(o.d("baseline")), ints("f"), reals("t"), ints("l"), ints("r"),
-                    Array(trees.size) { t -> trees[t].doubles("m").map { it == 1.0 }.toBooleanArray() }, reals("v"),
-                )
-            }
-        }
-    }
+    val FEATURES = listOf("sunshine", "direct", "global", "diffuse", "elevation", "low")
 }

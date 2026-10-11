@@ -63,6 +63,13 @@ private val CardRadius = 18.dp
  */
 val LocalPinLine = androidx.compose.runtime.staticCompositionLocalOf<(() -> Float)?> { null }
 
+/**
+ * How much of the top of the page's list lies under the header (px) – within a card, under its
+ * held title too: content that brings itself into view keeps below it, where it can be seen.
+ * Null: nothing covers the list.
+ */
+val LocalCoveredTop = androidx.compose.runtime.staticCompositionLocalOf<(() -> Float)?> { null }
+
 /** How far a card ([top], [height] in root px, title block [titleH]) has slid under the line [pin]: 0 … height − titleH. */
 fun cardOverlap(pin: Float, top: Float, height: Float, titleH: Float): Float =
     (pin - top).coerceIn(0f, maxOf(0f, height - titleH))
@@ -80,6 +87,7 @@ fun GlassCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val pin = LocalPinLine.current
+    val covered = LocalCoveredTop.current
     // Read only while drawing: scrolling never recomposes the cards
     val top = androidx.compose.runtime.remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
     val titleH = androidx.compose.runtime.remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
@@ -145,7 +153,9 @@ fun GlassCard(
                     }
                 },
         ) {
-            content()
+            // the content's own view: the header and this card's held title above it
+            val below = if (covered == null || title == null) covered else ({ covered() + titleH.floatValue })
+            androidx.compose.runtime.CompositionLocalProvider(LocalCoveredTop provides below) { content() }
         }
     }
 }

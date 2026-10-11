@@ -43,11 +43,11 @@ class SatelliteSunshineTest {
     /** Open-Meteo's sunshine, direct and global against a clear sky, diffuse share, sun height, low cloud – as the tool evaluated them. */
     @Test fun theSameAnswersAsTheTool() {
         val nan = Double.NaN
-        assertEquals(22.054370, trees.minutes(doubleArrayOf(60.0, 0.3, 0.45, 0.6, 29.0, nan)), 1e-4)
-        assertEquals(18.357740, trees.minutes(doubleArrayOf(60.0, 0.3, 0.45, 0.6, 29.0, 80.0)), 1e-4)
-        assertEquals(0.277560, trees.minutes(doubleArrayOf(0.0, 0.0, 0.2, 1.0, 10.0, 100.0)), 1e-4)
-        assertEquals(38.278110, trees.minutes(doubleArrayOf(45.0, 1.0, 1.0, 0.15, 40.0, 0.0)), 1e-4)
-        assertEquals(22.949060, trees.minutes(doubleArrayOf(30.0, 0.5, 0.7, 0.4, 20.0, nan)), 1e-4)
+        assertEquals(22.054358, trees.minutes(doubleArrayOf(60.0, 0.3, 0.45, 0.6, 29.0, nan)), 1e-4)
+        assertEquals(18.357722, trees.minutes(doubleArrayOf(60.0, 0.3, 0.45, 0.6, 29.0, 80.0)), 1e-4)
+        assertEquals(0.277583, trees.minutes(doubleArrayOf(0.0, 0.0, 0.2, 1.0, 10.0, 100.0)), 1e-4)
+        assertEquals(38.278075, trees.minutes(doubleArrayOf(45.0, 1.0, 1.0, 0.15, 40.0, 0.0)), 1e-4)
+        assertEquals(22.949076, trees.minutes(doubleArrayOf(30.0, 0.5, 0.7, 0.4, 20.0, nan)), 1e-4)
     }
 
     /** Without the radiation, or with the sun down: Open-Meteo's own value. */

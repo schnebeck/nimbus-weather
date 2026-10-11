@@ -1,0 +1,2 @@
+• The forecast's sunshine learnt from the whole hour: an hour with a shower no longer counts as fully sunny. Checked against 18 DWD stations: error of a day 125 → 72 minutes
+• 10-day forecast: a day opened always shows its head below the page's header and the card's title

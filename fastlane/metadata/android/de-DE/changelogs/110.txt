@@ -1,0 +1,2 @@
+• Vorhersage-Sonne aus der ganzen Stunde gelernt: Eine Stunde mit Schauer zählt nicht mehr als voll sonnig. Geprüft an 18 DWD-Stationen: Tagesfehler 125 → 72 Minuten
+• 10-Tage-Vorhersage: Ein aufgeklappter Tag steht mit seinem Kopf immer sichtbar unter Seitenkopf und Kartentitel

@@ -155,6 +155,7 @@ private fun DayRow(
     var tapped by remember { mutableStateOf(false) }
     var height by remember { mutableIntStateOf(0) }
     val window = androidx.compose.ui.platform.LocalWindowInfo.current.containerSize.height
+    val covered = dev.nimbus.weather.ui.components.LocalCoveredTop.current
     Column(
         Modifier.fillMaxWidth()
             .bringIntoViewRequester(bring)
@@ -207,9 +208,12 @@ private fun DayRow(
         ) {
             if (tapped) LaunchedEffect(Unit) {
                 // unfolded (at once without animations): its row and as much of the chart as fits
-                // in a screen – the row at the top where the whole day is taller than that
+                // below what covers the list (the page's header, the card's held title) – the row
+                // right below it where the whole day is taller; never more than the screen holds,
+                // or which edge wins is open
                 snapshotFlow { transition.currentState }.first { it == androidx.compose.animation.EnterExitState.Visible }
-                bring.bringIntoView(androidx.compose.ui.geometry.Rect(0f, 0f, 1f, minOf(height, window * 3 / 5).toFloat()))
+                val above = covered?.invoke() ?: 0f
+                bring.bringIntoView(androidx.compose.ui.geometry.Rect(0f, -above, 1f, minOf(height.toFloat(), window * 0.85f - above)))
                 tapped = false
             }
             val end = day.date + 24 * 3_600_000L

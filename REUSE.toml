@@ -180,10 +180,10 @@ path = "app/src/test/resources/fixtures/radolan_*.json"
 SPDX-FileCopyrightText = "Deutscher Wetterdienst (DWD), RADOLAN"
 SPDX-License-Identifier = "CC-BY-4.0"
 
-# The sunshine model, learnt by tools/sunshine_calibration.py from DWD stations (via Bright Sky) and
-# the satellite (DWD SIS from EUMETSAT MTG, via Open-Meteo)
+# The sunshine models, learnt by tools/sunshine_calibration.py from DWD stations (via Bright Sky),
+# the satellite (DWD SIS from EUMETSAT MTG) and archived forecasts, via Open-Meteo
 [[annotations]]
-path = "app/src/main/resources/dev/nimbus/weather/data/remote/sunshine_model.json"
+path = ["app/src/main/resources/dev/nimbus/weather/data/remote/sunshine_model.json", "app/src/main/resources/dev/nimbus/weather/data/remote/forecast_sunshine_model.json"]
 SPDX-FileCopyrightText = [
     "(C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>",
     "Learnt from data of Deutscher Wetterdienst (DWD), from EUMETSAT satellite data, via Open-Meteo.com",

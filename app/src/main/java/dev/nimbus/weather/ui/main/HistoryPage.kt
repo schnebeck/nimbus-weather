@@ -188,7 +188,10 @@ fun HistoryPage(
             }
             // Cards keep their title at the line below the top bar and slide away under it (GlassCard)
             val listTop = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
-            CompositionLocalProvider(dev.nimbus.weather.ui.components.LocalPinLine provides { listTop.floatValue + clipTop }) {
+            CompositionLocalProvider(
+                dev.nimbus.weather.ui.components.LocalPinLine provides { listTop.floatValue + clipTop },
+                dev.nimbus.weather.ui.components.LocalCoveredTop provides { clipTop },
+            ) {
             LazyColumn(
                 // Content scrolls away below the top bar instead of running under menu and radar button.
                 Modifier.fillMaxSize().padding(start = cutStart + paneWidth, end = cutEnd).wrapContentWidth().widthIn(max = 760.dp)

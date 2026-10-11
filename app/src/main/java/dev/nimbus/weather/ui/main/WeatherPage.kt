@@ -334,7 +334,10 @@ private fun WeatherContent(
         val side = if (columns == 1) 16.dp else 24.dp
         val start = side + if (sideways) 0.dp else cutStart
         val end = side + cutEnd
-        CompositionLocalProvider(dev.nimbus.weather.ui.components.LocalPinLine provides pinLine) {
+        CompositionLocalProvider(
+            dev.nimbus.weather.ui.components.LocalPinLine provides pinLine,
+            dev.nimbus.weather.ui.components.LocalCoveredTop provides { (expandedPx - scrolled).coerceAtLeast(collapsedPx) },
+        ) {
         if (columns == 1) {
             LazyColumn(
                 state = listState, modifier = clip,

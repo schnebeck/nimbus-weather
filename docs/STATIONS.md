@@ -122,6 +122,25 @@ voreingestellten Modells bleibt das Ergebnis gleich (7,0 min je Stunde). Für de
 (November bis Januar) gibt es noch keine Satellitendaten. Das Werkzeug, das die Daten holt, prüft
 und das Modell schreibt: [tools/sunshine_calibration.py](../tools/sunshine_calibration.py).
 
+### Sonnenschein der Vorhersage
+
+Auch die Sonnenscheindauer, die Open-Meteo zu den Vorhersagemodellen liefert, stammt aus dem
+Stundenmittel der direkten Strahlung – eine Stunde mit Schauer und Sonne dazwischen zählt dort
+als voll sonnig. Nimbus liest sie deshalb mit dem Rest der Stunde: der Sonnenscheindauer des
+Modells, seiner direkten Strahlung im Verhältnis zum klaren Himmel, der Sonnenhöhe, der Bewölkung
+und dem Niederschlag. Gelernt an denselben 18 Stationen gegen die archivierten Vorhersagen von
+Open-Meteo (best_match), genauso geprüft – jeder Monat einmal ausgelassen, nur an fremden
+Stationen bewertet:
+
+| | Open-Meteo | gelerntes Modell |
+|---|---|---|
+| mittlere Abweichung einer Stunde | 13,7 min | 8,9 min |
+| systematisch zu viel | +9,3 min/h | +0,4 min/h |
+| mittlere Abweichung eines Tages | 125 min | 72 min |
+
+Mit ICON statt best_match: 13,5 → 8,7 min je Stunde. Das kostet ein Feld mehr in der Anfrage (die
+direkte Strahlung); ohne es läge der Tagesfehler bei 83 min.
+
 ## Geprüft, aber nicht eingebaut
 
 | Netz | Befund |

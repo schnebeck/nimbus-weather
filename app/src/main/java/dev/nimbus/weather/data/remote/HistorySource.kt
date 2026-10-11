@@ -167,7 +167,7 @@ class HistorySource(
         .addQueryParameter("timezone", "auto")
         .addQueryParameter("timeformat", "unixtime")
         .addQueryParameter("wind_speed_unit", "kmh")
-        .addQueryParameter("hourly", "temperature_2m,precipitation,precipitation_probability,weather_code,is_day,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover,cloud_cover_low,sunshine_duration")
+        .addQueryParameter("hourly", "temperature_2m,precipitation,precipitation_probability,weather_code,is_day,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover,cloud_cover_low,sunshine_duration,direct_normal_irradiance")
         .addQueryParameter("minutely_15", "temperature_2m")
         .build().toString()
 
@@ -196,13 +196,17 @@ class HistorySource(
             val temp = h.doubles("temperature_2m"); val pr = h.doubles("precipitation"); val wc = h.doubles("weather_code")
             val day = h.doubles("is_day"); val ws = h.doubles("wind_speed_10m"); val wg = h.doubles("wind_gusts_10m")
             val sun = h.doubles("sunshine_duration"); val pp = h.doubles("precipitation_probability")
-            val wd = h.doubles("wind_direction_10m"); val cc = h.doubles("cloud_cover")
+            val wd = h.doubles("wind_direction_10m"); val cc = h.doubles("cloud_cover"); val dni = h.doubles("direct_normal_irradiance")
+            val lat = o.d("latitude"); val lon = o.d("longitude")
             val map = t.indices.mapNotNull { i ->
                 val time = (t[i] ?: return@mapNotNull null) * 1000
+                // the model's sunshine read with the rest of its hour (ForecastSunshine)
+                val raw = sun.at(i)?.div(60.0)
+                val sunshine = if (lat == null || lon == null) raw else ForecastSunshine.minutes(raw, dni.at(i), time, lat, lon, cc.at(i - 1), cc.at(i), pr.at(i))
                 time to HistoryHour.Modelled(
                     temperature = temp.at(i), precipitation = pr.at(i), windSpeed = ws.at(i), windGust = wg.at(i),
-                    sunshineMinutes = sun.at(i)?.div(60.0),
-                    condition = WeatherCodes.forHour(wc.at(i)?.toInt(), pr.at(i), cc.at(i), sun.at(i)?.div(60.0)),
+                    sunshineMinutes = sunshine,
+                    condition = WeatherCodes.forHour(wc.at(i)?.toInt(), pr.at(i), cc.at(i), sunshine),
                     isDay = (day.at(i) ?: 1.0) > 0.5, chance = pp.at(i), windDirection = wd.at(i),
                 )
             }.toMap()

@@ -121,6 +121,24 @@ the same (7.0 min an hour). There are no satellite data for the winter (November
 The tool that fetches the data, checks and writes the model:
 [tools/sunshine_calibration.py](../tools/sunshine_calibration.py).
 
+### Sunshine of the forecast
+
+The sunshine duration Open-Meteo gives with the forecast models comes from the hour's mean direct
+irradiance too – an hour of a shower with sun around it counts as fully sunny there. Nimbus
+therefore reads it with the rest of the hour: the model's sunshine duration, its direct irradiance
+against a clear sky's, the sun's height, the cloud cover and the precipitation. Learnt from the
+same 18 stations against Open-Meteo's archived forecasts (best_match), checked the same way –
+every month left out once, judged only on stations not learnt from:
+
+| | Open-Meteo | learnt model |
+|---|---|---|
+| mean error of an hour | 13.7 min | 8.9 min |
+| systematically too much | +9.3 min/h | +0.4 min/h |
+| mean error of a day | 125 min | 72 min |
+
+With ICON instead of best_match: 13.5 → 8.7 min an hour. It costs one more field in the request
+(the direct irradiance); without it the error of a day would be 83 min.
+
 ## Checked, not built in
 
 | Network | Finding |

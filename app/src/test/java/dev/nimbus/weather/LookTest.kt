@@ -21,6 +21,7 @@ package dev.nimbus.weather
 import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -405,27 +406,41 @@ class LookTest {
 
     /**
      * A day tapped comes into view once it has unfolded – a day open above it closes at the same
-     * time and pulls it up out of the screen. Today open above, scrolled down to the days after it.
+     * time and pulls it up out of the screen. The page's header covers the top of the list and the
+     * card holds its title there: the day must stand below both. Today open above, scrolled down
+     * to the days after it.
      */
     @Test fun aTappedDayComesIntoView() {
         val list = androidx.compose.foundation.lazy.LazyListState()
+        // as on the page: a space as tall as the open header first; the header closes as the list
+        // scrolls, down to its collapsed height
+        val expanded = with(compose.density) { 320.dp.toPx() }
+        val collapsed = with(compose.density) { 140.dp.toPx() }
+        val covered = { if (list.firstVisibleItemIndex > 0) collapsed else (expanded - list.firstVisibleItemScrollOffset).coerceAtLeast(collapsed) }
         compose.setContent {
-            androidx.compose.foundation.lazy.LazyColumn(Modifier.height(640.dp), state = list) {
-                item { Card { dev.nimbus.weather.ui.main.DailyCard(cardData(), day + 10 * h) } }
-                item { Box(Modifier.height(900.dp)) }
+            CompositionLocalProvider(
+                dev.nimbus.weather.ui.components.LocalPinLine provides covered,
+                dev.nimbus.weather.ui.components.LocalCoveredTop provides covered,
+            ) {
+                androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxSize(), state = list) {
+                    item { Box(Modifier.height(320.dp)) }
+                    item { Card { dev.nimbus.weather.ui.main.DailyCard(cardData(), day + 10 * h) } }
+                    item { Box(Modifier.height(900.dp)) }
+                }
             }
         }
         compose.waitForIdle()
         val third = TimeFormat("UTC", true).weekdayShort(day + 48 * h)
-        // today's chart mostly scrolled away, the next days at the bottom
-        compose.runOnIdle { list.dispatchRawDelta(with(compose.density) { 520.dp.toPx() }) }
+        // today's chart mostly scrolled away under the header, the next days at the bottom
+        compose.runOnIdle { list.dispatchRawDelta(with(compose.density) { 760.dp.toPx() }) }
         compose.waitForIdle()
         compose.onNodeWithText(third).performTouchInput { click(Offset(width / 2f, 25.dp.toPx())) }
         compose.waitForIdle()
-        // the day's own top (its bounds in the root are cut to the view)
+        // the day's own top (its bounds in the root are cut to the view), the card's held title above it
         val top = compose.onNodeWithText(third).fetchSemanticsNode().positionInRoot.y
-        val viewport = with(compose.density) { 640.dp.toPx() }
-        assertTrue("the tapped day's row at $top, the view 0..$viewport", top >= 0f && top < viewport / 2)
+        val title = compose.onNodeWithText("forecast", substring = true, ignoreCase = true).fetchSemanticsNode().boundsInRoot.bottom
+        val viewport = compose.onRoot().fetchSemanticsNode().size.height
+        assertTrue("the tapped day's row at $top, below the header (${covered()}) and the title ($title), the view to $viewport", top >= title && top >= covered() && top < viewport * 0.6f)
     }
 
     // ---- the readout while the finger slides --------------------------------------------------

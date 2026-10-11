@@ -664,4 +664,76 @@
     <string name="settings_fullscreen_desc">Status- und Navigationsleiste ausblenden; vom Rand wischen blendet sie kurz ein. Doppeltippen auf den Himmel über den Karten schaltet ein und aus.</string>
     <string name="settings_fullscreen_button">Vollbild-Knopf</string>
     <string name="settings_fullscreen_button_desc">Ein Knopf in der Kopfleiste schaltet das Vollbild zusätzlich zum Doppeltippen.</string>
+    <!-- a day's weather in one line (DayWeather): Kind and Term in their order -->
+    <string-array name="day_kind_adjective">
+        <item>sonnig</item>
+        <item>heiter</item>
+        <item>wolkig</item>
+        <item>bedeckt</item>
+        <item>neblig</item>
+        <item>nieselig</item>
+        <item>regnerisch</item>
+        <item>Dauerregen</item>
+        <item>Schauerwetter</item>
+        <item>gewittrig</item>
+        <item>Schneefall</item>
+        <item>Schneeregen</item>
+        <item>Eisregen</item>
+    </string-array>
+    <string-array name="day_kind_noun">
+        <item>Sonne</item>
+        <item>Sonne</item>
+        <item>Wolken</item>
+        <item>Wolken</item>
+        <item>Nebel</item>
+        <item>Niesel</item>
+        <item>Regen</item>
+        <item>Dauerregen</item>
+        <item>Schauer</item>
+        <item>Gewitter</item>
+        <item>Schnee</item>
+        <item>Schneeregen</item>
+        <item>Eisregen</item>
+    </string-array>
+    <string-array name="day_kind_some">
+        <item>etwas Sonne</item>
+        <item>etwas Sonne</item>
+        <item>Wolken</item>
+        <item>Wolken</item>
+        <item>Nebel</item>
+        <item>etwas Niesel</item>
+        <item>etwas Regen</item>
+        <item>Regen</item>
+        <item>Schauern</item>
+        <item>Gewittern</item>
+        <item>etwas Schnee</item>
+        <item>Schneeregen</item>
+        <item>Eisregen</item>
+    </string-array>
+    <string-array name="day_term">
+        <item>früh morgens</item>
+        <item>früh</item>
+        <item>morgens</item>
+        <item>am frühen Vormittag</item>
+        <item>vormittags</item>
+        <item>am späten Vormittag</item>
+        <item>mittags</item>
+        <item>nachmittags</item>
+        <item>am späten Nachmittag</item>
+        <item>am frühen Abend</item>
+        <item>abends</item>
+        <item>am späten Abend</item>
+        <item>nachts</item>
+        <item>in der Nacht</item>
+        <item>tagsüber</item>
+        <item>bis mittags</item>
+        <item>ab mittags</item>
+    </string-array>
+    <string name="day_mostly">meist %1$s</string>
+    <string name="day_with">%1$s mit %2$s</string>
+    <string name="day_first">%1$s %2$s, dann %3$s</string>
+    <string name="day_later">%3$s, %1$s %2$s</string>
+    <string name="day_afternoon">tagsüber %3$s, %1$s %2$s</string>
+    <string name="day_overnight">%1$s %2$s, tagsüber %3$s</string>
+    <string name="day_otherwise">%1$s %3$s, sonst %2$s</string>
 </resources>

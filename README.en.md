@@ -68,7 +68,9 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
   next hours, DWD alerts, lightning nearby (the nearest flash of the last 15 minutes within 50 km,
   tapped the radar with the lightning), "Precipitation today" on top (amount, next 3 hours, highest chance; on dry
   days one line with the next precipitation, or hidden), hourly and 10-day forecast with the chance
-  of precipitation, tiles for feels-like, UV, wind, humidity, visibility and pressure. The forecast
+  of precipitation (each day with a symbol and its weather from its hours: sky, rain, snow, thunder
+  and fog in one symbol, and a line such as "drizzle early in the morning, then bright" or "mostly
+  cloudy with showers"), tiles for feels-like, UV, wind, humidity, visibility and pressure. The forecast
   appears at once, tiles with slower sources follow as soon as their data is there; a dot per tile
   shows whether its data is current (green) or still the previous one (yellow). Each kind of data has
   a shelf life (forecast 10, look-back 15 minutes): on returning and every minute after, the app

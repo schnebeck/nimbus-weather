@@ -675,4 +675,76 @@
     <string name="settings_fullscreen_desc">Hide the status and navigation bar; a swipe from the edge shows them for a moment. Double-tap the sky above the cards to switch it on and off.</string>
     <string name="settings_fullscreen_button">Full-screen button</string>
     <string name="settings_fullscreen_button_desc">A button in the top bar switches full screen as well as the double-tap.</string>
+    <!-- a day's weather in one line (DayWeather): Kind and Term in their order -->
+    <string-array name="day_kind_adjective">
+        <item>sunny</item>
+        <item>bright</item>
+        <item>cloudy</item>
+        <item>overcast</item>
+        <item>foggy</item>
+        <item>drizzly</item>
+        <item>rainy</item>
+        <item>steady rain</item>
+        <item>showery</item>
+        <item>thundery</item>
+        <item>snowy</item>
+        <item>sleet</item>
+        <item>freezing rain</item>
+    </string-array>
+    <string-array name="day_kind_noun">
+        <item>sun</item>
+        <item>sun</item>
+        <item>clouds</item>
+        <item>clouds</item>
+        <item>fog</item>
+        <item>drizzle</item>
+        <item>rain</item>
+        <item>steady rain</item>
+        <item>showers</item>
+        <item>thunderstorms</item>
+        <item>snow</item>
+        <item>sleet</item>
+        <item>freezing rain</item>
+    </string-array>
+    <string-array name="day_kind_some">
+        <item>some sun</item>
+        <item>some sun</item>
+        <item>clouds</item>
+        <item>clouds</item>
+        <item>fog</item>
+        <item>some drizzle</item>
+        <item>some rain</item>
+        <item>rain</item>
+        <item>showers</item>
+        <item>thunderstorms</item>
+        <item>some snow</item>
+        <item>sleet</item>
+        <item>freezing rain</item>
+    </string-array>
+    <string-array name="day_term">
+        <item>after midnight</item>
+        <item>before dawn</item>
+        <item>early in the morning</item>
+        <item>mid-morning</item>
+        <item>in the morning</item>
+        <item>late in the morning</item>
+        <item>around noon</item>
+        <item>in the afternoon</item>
+        <item>late in the afternoon</item>
+        <item>early in the evening</item>
+        <item>in the evening</item>
+        <item>late in the evening</item>
+        <item>at night</item>
+        <item>overnight</item>
+        <item>by day</item>
+        <item>until noon</item>
+        <item>from noon</item>
+    </string-array>
+    <string name="day_mostly">mostly %1$s</string>
+    <string name="day_with">%1$s with %2$s</string>
+    <string name="day_first">%2$s %1$s, then %3$s</string>
+    <string name="day_later">%3$s, %2$s %1$s</string>
+    <string name="day_afternoon">%3$s by day, %2$s %1$s</string>
+    <string name="day_overnight">%2$s %1$s, %3$s by day</string>
+    <string name="day_otherwise">%3$s %1$s, %2$s otherwise</string>
 </resources>

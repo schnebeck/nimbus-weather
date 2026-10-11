@@ -37,6 +37,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.nimbus.weather.data.model.Condition
+import dev.nimbus.weather.data.model.DaySymbol
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -162,6 +163,61 @@ fun DrawScope.drawWeatherGlyph(condition: Condition, isDay: Boolean) {
             bolt(s)
         }
     }
+}
+
+/** The symbol of a whole day ([dev.nimbus.weather.data.model.DayWeather]): its sky, what fell, thunder, fog. */
+@Composable
+fun DayIcon(symbol: DaySymbol, size: Dp = 26.dp, modifier: Modifier = Modifier, description: String? = null) {
+    Canvas(modifier.size(size).then(if (description != null) Modifier.semantics { contentDescription = description } else Modifier)) {
+        drawDayGlyph(symbol)
+    }
+}
+
+/**
+ * The sky alone as the hours' symbols; with precipitation, thunder or fog the sky moves up and
+ * leaves the lower third to them – fog under what falls, the drops seen falling through it.
+ */
+fun DrawScope.drawDayGlyph(d: DaySymbol) {
+    val s = size.minDimension
+    if (d.fall == null && !d.thunder && !d.fog) {
+        drawWeatherGlyph(
+            when (d.sky) {
+                DaySymbol.Sky.SUNNY -> Condition.CLEAR
+                DaySymbol.Sky.BRIGHT -> Condition.MOSTLY_CLEAR
+                DaySymbol.Sky.CLOUDY -> Condition.PARTLY_CLOUDY
+                DaySymbol.Sky.OVERCAST -> Condition.CLOUDY
+            },
+            true,
+        )
+        return
+    }
+    when (d.sky) {
+        DaySymbol.Sky.SUNNY -> { sun(Offset(s * 0.64f, s * 0.28f), s * 0.2f); cloud(Offset(s * 0.06f, s * 0.32f), s * 0.6f, CloudWhite) }
+        DaySymbol.Sky.BRIGHT -> { sun(Offset(s * 0.66f, s * 0.26f), s * 0.17f); cloud(Offset(s * 0.06f, s * 0.26f), s * 0.74f, CloudWhite) }
+        DaySymbol.Sky.CLOUDY -> { sun(Offset(s * 0.72f, s * 0.2f), s * 0.13f); cloud(Offset(s * 0.06f, s * 0.22f), s * 0.82f, CloudWhite) }
+        DaySymbol.Sky.OVERCAST -> {
+            cloud(Offset(s * 0.32f, s * 0.06f), s * 0.6f, CloudGrey)
+            cloud(Offset(s * 0.06f, s * 0.22f), s * 0.82f, if (d.thunder) CloudDark else CloudWhite)
+        }
+    }
+    if (d.fog) for ((y, inset) in listOf(0.86f to 0.08f, 0.96f to 0.2f)) {
+        drawLine(CloudWhite.copy(alpha = 0.85f), Offset(s * inset, s * y), Offset(s * (1f - inset), s * y), s * 0.06f, StrokeCap.Round)
+    }
+    val n = if (d.thunder) 2 else d.amount.coerceIn(1, 3) + 1
+    val left = if (d.thunder) 0.22f else 0.26f
+    val step = if (d.thunder) 0.5f else 0.42f / (n - 1)
+    val long = if (d.fog) 0.1f else 0.14f
+    when (d.fall) {
+        DaySymbol.Fall.DRIZZLE -> drops(s, count = n, length = 0.07f, width = 0.065f, startX = left, step = step, top = 0.74f)
+        DaySymbol.Fall.RAIN -> drops(s, count = n, length = if (d.amount >= 3) long + 0.04f else long, width = 0.065f, startX = left, step = step, top = 0.72f)
+        DaySymbol.Fall.SNOW -> (0 until n).forEach { i -> flake(Offset(s * (left + 0.04f + i * step), s * (0.8f + (i % 2) * 0.08f)), s * 0.07f) }
+        DaySymbol.Fall.SLEET, DaySymbol.Fall.FREEZING -> {
+            drops(s, count = 2, length = long, width = 0.06f, startX = left, step = 0.44f, top = 0.72f)
+            flake(Offset(s * 0.46f, s * 0.82f), s * 0.065f)
+        }
+        null -> Unit
+    }
+    if (d.thunder) bolt(s)
 }
 
 private fun DrawScope.sun(c: Offset, r: Float) {

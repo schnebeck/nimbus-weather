@@ -1,0 +1,1 @@
+• Day weather from its hours: each day of the 10-day forecast gets a symbol with sky, rain, snow, thunder and fog and a line such as "drizzle early in the morning, then bright", "sunny by day, thundery with rain in the afternoon" or "mostly cloudy with showers" – instead of the day's worst weather only

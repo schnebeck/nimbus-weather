@@ -149,6 +149,11 @@ private fun DayRow(
     nowCondition: dev.nimbus.weather.data.model.Condition? = null,
 ) {
     val settings = LocalSettings.current
+    val zone = LocalTimeFormat.current.zone
+    // the day told by its hours (the model's daily code names its worst weather only); with too few, by that code
+    val dayWeather = remember(hours, zone) {
+        dev.nimbus.weather.data.model.DayWeather.of(hours.filter { it.time > day.date && it.time <= day.date + 24 * 3_600_000L }, zone)
+    }
     // Opened by a tap: once unfolded, the day is brought into view – a day open above it closes at
     // the same time and pulls it up out of the screen
     val bring = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
@@ -165,7 +170,7 @@ private fun DayRow(
         if (!columns.stacked) Row(Modifier.fillMaxWidth().heightIn(min = 50.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(label, Modifier.width(columns.label), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1, softWrap = false)
             Column(Modifier.width(columns.symbol), horizontalAlignment = Alignment.CenterHorizontally) {
-                WeatherIcon(day.condition, true, size = 26.dp)
+                if (dayWeather != null) dev.nimbus.weather.ui.components.DayIcon(dayWeather.symbol, size = 26.dp) else WeatherIcon(day.condition, true, size = 26.dp)
                 ChanceText(day.precipitationProbability, day.precipitationSum)
             }
             Text(
@@ -183,7 +188,7 @@ private fun DayRow(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(label, Modifier.weight(1f), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1, softWrap = false)
                 Column(Modifier.width(columns.symbol), horizontalAlignment = Alignment.CenterHorizontally) {
-                    WeatherIcon(day.condition, true, size = 26.dp)
+                    if (dayWeather != null) dev.nimbus.weather.ui.components.DayIcon(dayWeather.symbol, size = 26.dp) else WeatherIcon(day.condition, true, size = 26.dp)
                     ChanceText(day.precipitationProbability, day.precipitationSum)
                 }
                 Text(
@@ -225,7 +230,7 @@ private fun DayRow(
                 curve = remember(hours, minutely, measured) { dayCurve(hours, minutely, day.date, HourAxis.dayAxisEnd(end), measured) },
                 separatePrecip = settings.separatePrecipitation,
                 measuredBy = measured?.let { measuredBy(it.hours.values, it.station) },
-                dayOverview = if (currentTemp == null) remember(day, hours) { DayOverview.of(day, hours) } else null,
+                dayOverview = if (currentTemp == null) remember(day, hours, zone) { DayOverview.of(day, hours, zone) } else null,
             )
         }
     }

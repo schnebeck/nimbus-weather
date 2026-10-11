@@ -1,0 +1,1 @@
+• Tageswetter aus den Stunden: Jeder Tag der 10-Tage-Vorhersage bekommt ein Symbol mit Himmel, Regen, Schnee, Gewitter und Nebel und eine Zeile wie „Morgens Niesel, dann heiter“, „Tagsüber sonnig, nachmittags gewittrig mit Regen“ oder „Meist wolkig mit Schauern“ – statt nur des schlechtesten Wetters des Tages

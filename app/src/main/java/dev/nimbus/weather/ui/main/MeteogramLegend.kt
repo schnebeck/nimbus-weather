@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -151,7 +152,9 @@ internal fun Readout(
     fun pct(v: Double?, amount: Double?) = v?.let { (Insights.chanceText(it, amount) ?: "0") + NBSP + "%" } ?: NO_VALUE
     // measured or expected: the columns say it (look-back, today); a day to come is all forecast
     val whole = day?.takeIf { !highlighted && !compare }
-    val condition = stringResource(if (whole != null) Texts.condition(whole.condition, true) else Texts.condition(h.condition, h.isDay))
+    val dayText = day?.weather?.let { dayWeatherText(it) }
+    val condition = dayText?.takeIf { whole != null }
+        ?: stringResource(if (whole != null) Texts.condition(whole.condition, true) else Texts.condition(h.condition, h.isDay))
     val lTemp = stringResource(R.string.readout_temperature)
     val lPrecip = stringResource(R.string.precipitation)
     val lChance = stringResource(R.string.readout_chance)
@@ -168,9 +171,20 @@ internal fun Readout(
                 style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum"),
             )
             Spacer(Modifier.width(8.dp))
-            if (whole != null) WeatherIcon(whole.condition, true, size = 24.dp) else WeatherIcon(h.condition, h.isDay, size = 24.dp)
+            when {
+                whole?.weather != null -> dev.nimbus.weather.ui.components.DayIcon(whole.weather.symbol, size = 24.dp)
+                whole != null -> WeatherIcon(whole.condition, true, size = 24.dp)
+                else -> WeatherIcon(h.condition, h.isDay, size = 24.dp)
+            }
             Spacer(Modifier.width(8.dp))
-            Text(condition, Modifier.weight(1f), fontSize = 14.sp, color = Color.White, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            // the day's line (up to two) keeps its height while the hours slide under the finger
+            Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                if (dayText != null) Text(dayText, Modifier.alpha(0f), fontSize = 14.sp, maxLines = 2)
+                Text(
+                    condition, fontSize = 14.sp, color = Color.White, maxLines = if (whole != null) 2 else 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                )
+            }
         }
         Spacer(Modifier.height(4.dp))
         Column(Modifier.fillMaxWidth()) {

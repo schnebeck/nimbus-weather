@@ -28,6 +28,8 @@ import dev.nimbus.weather.data.model.HourlyPoint
  */
 data class DayOverview(
     val condition: Condition,
+    /** The day told in one line and one symbol, from its hours. */
+    val weather: dev.nimbus.weather.data.model.DayWeather? = null,
     val high: Double, val low: Double,
     val precipitation: Double?, val chance: Double?,
     val wind: Double?, val windDirection: Double?, val gust: Double?,
@@ -37,10 +39,11 @@ data class DayOverview(
         private const val DAY_MS = 24 * 3_600_000L
 
         /** [hours]: any hours – those of the day (stamped after its midnight, up to the next) count. */
-        fun of(day: DailyPoint, hours: List<HourlyPoint>): DayOverview {
+        fun of(day: DailyPoint, hours: List<HourlyPoint>, zone: java.time.ZoneId? = null): DayOverview {
             val own = hours.filter { it.time > day.date && it.time <= day.date + DAY_MS }
             return DayOverview(
                 condition = day.condition,
+                weather = zone?.let { dev.nimbus.weather.data.model.DayWeather.of(own, it) },
                 high = day.tempMax, low = day.tempMin,
                 precipitation = own.mapNotNull { it.precipitation }.takeIf { it.isNotEmpty() }?.sum() ?: day.precipitationSum,
                 chance = day.precipitationProbability ?: own.mapNotNull { it.precipitationProbability }.maxOrNull(),

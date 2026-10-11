@@ -69,7 +69,9 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   Stunden, DWD-Warnungen, Blitze in der Nähe (nächster Blitz der letzten 15 Minuten im Umkreis von
   50 km, angetippt das Radar mit Blitzen), „Niederschlag heute“ obenauf (Menge, nächste 3 Stunden, höchste
   Wahrscheinlichkeit; an trockenen Tagen eine Zeile mit dem nächsten Niederschlag oder ausgeblendet),
-  Stunden- und 10-Tage-Vorhersage mit Niederschlagswahrscheinlichkeit, Kacheln für Gefühlt, UV, Wind,
+  Stunden- und 10-Tage-Vorhersage mit Niederschlagswahrscheinlichkeit (jeder Tag mit Symbol und
+  Tageswetter aus seinen Stunden: Himmel, Regen, Schnee, Gewitter und Nebel in einem Symbol, dazu eine
+  Zeile wie „Morgens Niesel, dann heiter“ oder „Meist wolkig mit Schauern“), Kacheln für Gefühlt, UV, Wind,
   Luftfeuchte, Sichtweite und Luftdruck. Die Vorhersage erscheint sofort, Kacheln mit langsameren
   Quellen kommen hinzu, sobald ihre Daten da sind; ein Punkt je Kachel zeigt, ob ihre Daten aktuell
   sind (grün) oder noch die vorigen (gelb). Jede Datenart hat eine Haltbarkeit (Vorhersage 10, Rückblick

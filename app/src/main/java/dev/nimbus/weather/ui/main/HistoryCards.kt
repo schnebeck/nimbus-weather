@@ -77,6 +77,13 @@ internal fun SummaryCard(sum: DaySummary, history: History, settings: Settings, 
             HairlineDivider(Modifier.padding(vertical = 6.dp))
             SummaryRow(stringResource(R.string.history_row_sun) to stringResource(R.string.history_row_sun_short), hoursMinutes(it * 60.0), null)
         }
+        if ((sum.lightning ?: 0) > 0) {
+            HairlineDivider(Modifier.padding(vertical = 6.dp))
+            SummaryRow(
+                stringResource(R.string.history_row_lightning) to stringResource(R.string.lightning), "${sum.lightning}",
+                if (sum.lightningFrom != null && sum.lightningTo != null) "${tf.time(sum.lightningFrom)}–${tf.time(sum.lightningTo)}" else null,
+            )
+        }
         sum.maxGust?.let { g ->
             HairlineDivider(Modifier.padding(vertical = 6.dp))
             SummaryRow(

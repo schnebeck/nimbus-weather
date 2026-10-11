@@ -105,6 +105,19 @@ fun windColor(kmh: Double): Color = when {
  */
 private val NowMark = Color(0xB3FFFFFF)
 
+/**
+ * Symbols and wind arrows every 3 hours, in the column of their hour's label, bar and cursor
+ * (00:30, 03:30 …): the values of that hour (00–01, 03–04 …) – the thunderstorm of an hour with
+ * lightning near the place in any of the three: a measured storm is never left out.
+ */
+internal fun symbolBlocks(pts: List<MeteoPoint>, start: Long, axisEnd: Long): List<Pair<Long, MeteoPoint>> =
+    generateSequence(start) { it + 3 * 3_600_000L }.takeWhile { it < axisEnd }.mapNotNull { b ->
+        val centre = b + 30 * 60_000L
+        val first = pts.firstOrNull { it.time == b + 3_600_000L } ?: pts.minByOrNull { kotlin.math.abs(it.time - centre) }
+        val storm = pts.firstOrNull { it.time in b + 3_600_000L..b + 3 * 3_600_000L && (it.compare?.lightningM ?: 0) > 0 }
+        first?.let { centre to if (storm != null) it.copy(condition = storm.condition, isDay = storm.isDay) else it }
+    }.toList()
+
 @Composable
 fun Meteogram(
     points: List<MeteoPoint>, start: Long, end: Long, nights: List<LongRange>, now: Long, modifier: Modifier = Modifier,
@@ -182,14 +195,7 @@ fun Meteogram(
     val unitStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Secondary, fontWeight = FontWeight.SemiBold)
     val tUnit = if (s.temperatureUnit == TemperatureUnit.FAHRENHEIT) "°F" else "°C"
     val pUnit = stringResource(Texts.precipUnit(s.precipitationUnit))
-    // Symbols and wind arrows every 3 hours, in the column of their hour's label, bar and cursor
-    // (00:30, 03:30 …): the values of that hour (00–01, 03–04 …).
-    val blocks = remember(pts, start, end) {
-        generateSequence(start) { it + 3 * 3_600_000L }.takeWhile { it < axisEnd }.mapNotNull { b ->
-            val centre = b + 30 * 60_000L
-            (pts.firstOrNull { it.time == b + 3_600_000L } ?: pts.minByOrNull { kotlin.math.abs(it.time - centre) })?.let { centre to it }
-        }.toList()
-    }
+    val blocks = remember(pts, start, end) { symbolBlocks(pts, start, axisEnd) }
 
     // Vertical layout: time labels | symbols | plot | wind arrows. Units sit in the top corners,
     // the axes carry numbers only and are exactly as wide as their widest label.
@@ -451,7 +457,11 @@ fun Meteogram(
                 temperature = tm ?: sel.temperature,
                 compare = sel.compare?.let { c -> c.copy(tempM = if (c.tempM != null) tm ?: c.tempM else null, tempF = tfc ?: c.tempF) },
             )
-            Readout(shown, highlighted = cursorOn, compare = compare, extraRows = pts.any { it.compare?.feelsF != null || it.compare?.humidityF != null }, day = dayOverview)
+            Readout(
+                shown, highlighted = cursorOn, compare = compare,
+                extraRows = pts.any { it.compare?.feelsF != null || it.compare?.humidityF != null }, day = dayOverview,
+                lightningRow = pts.any { (it.compare?.lightningM ?: 0) > 0 },
+            )
             summary?.invoke()
             BarLegend(
                 rainTotals, sunTotals.takeIf { sunShown }, chance = separatePrecip,

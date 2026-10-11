@@ -50,6 +50,7 @@ fun History.lookBackPoints(day: HistoryDay, start: Long): List<MeteoPoint> = cha
         compare = HourCompare(
             m?.temperature, f?.temperature, rain, f?.precipitation, f?.chance,
             m?.windSpeed, m?.windDirection, f?.windSpeed, m?.windGust, f?.windGust, sun, f?.sunshineMinutes,
+            lightningM = m?.lightning,
         ),
         precipMeasured = rain != null,
         sunMeasured = sun != null,

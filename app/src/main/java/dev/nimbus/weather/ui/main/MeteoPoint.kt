@@ -63,6 +63,8 @@ data class HourCompare(
     val sunM: Double?, val sunF: Double?,
     /** Today's chart: the forecast's feels-like temperature and humidity (rows of their own). */
     val feelsF: Double? = null, val humidityF: Double? = null,
+    /** Flashes near the place in the hour, by the satellite; null: not known. */
+    val lightningM: Int? = null,
 )
 
 /**

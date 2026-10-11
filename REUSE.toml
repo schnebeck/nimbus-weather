@@ -192,7 +192,7 @@ SPDX-License-Identifier = "CC-BY-4.0"
 
 # Lightning around a place (DWD, from EUMETSAT MTG's Lightning Imager), recorded
 [[annotations]]
-path = "app/src/test/resources/fixtures/lightning_*.json"
+path = "app/src/test/resources/fixtures/lightning_*"
 SPDX-FileCopyrightText = "Deutscher Wetterdienst (DWD), from EUMETSAT satellite data"
 SPDX-License-Identifier = "CC-BY-4.0"
 

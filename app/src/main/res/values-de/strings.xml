@@ -629,6 +629,8 @@
     <string name="measured_by_station">DWD-Station %1$s</string>
     <string name="measured_by_radar">Niederschlag vom DWD-Radar über dem Ort</string>
     <string name="measured_by_satellite">Sonne vom Satelliten über dem Ort</string>
+    <string name="measured_by_lightning">Blitze vom Satelliten</string>
+    <string name="history_row_lightning">Blitze im Umkreis von 15 km</string>
     <string name="radar_over_place">DWD-Radar über dem Ort</string>
     <string name="legend_temperature">Temperatur</string>
     <string name="legend_temp_forecast">Temp. Prognose</string>

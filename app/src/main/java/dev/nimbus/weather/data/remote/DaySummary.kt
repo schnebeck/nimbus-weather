@@ -27,6 +27,8 @@ data class DaySummary(
     /** Mean absolute difference model − measurement of the hourly temperature. */
     val tempError: Double?,
     val measured: Boolean,
+    /** Flashes near the place (the satellite's) – null: not known; with the first hour's start and the last hour's end. */
+    val lightning: Int? = null, val lightningFrom: Long? = null, val lightningTo: Long? = null,
 ) {
     companion object {
         /** Summary of the hours up to [now] (today's forecast for the rest of the day is left out). */
@@ -43,6 +45,7 @@ data class DaySummary(
             }
             val precip = pick({ it.measured?.precipitation }, { it.model?.precipitation })
             val sun = pick({ it.measured?.sunshineMinutes }, { it.model?.sunshineMinutes })
+            val stormy = h.filter { (it.measured?.lightning ?: 0) > 0 }
             return DaySummary(
                 tempMax = temps.maxOrNull(), tempMin = temps.minOrNull(),
                 precipitation = precip.takeIf { it.isNotEmpty() }?.sum(),
@@ -55,11 +58,18 @@ data class DaySummary(
                 modelPrecipitation = h.mapNotNull { it.model?.precipitation }.takeIf { it.isNotEmpty() }?.sum(),
                 tempError = errors.takeIf { it.size >= 3 }?.average(),
                 measured = measured,
+                lightning = if (h.any { it.measured?.lightning != null }) h.sumOf { it.measured?.lightning ?: 0 } else null,
+                lightningFrom = stormy.minOfOrNull { it.time }?.minus(3_600_000L),
+                lightningTo = stormy.maxOfOrNull { it.time },
             )
         }
 
-        /** Most characteristic daytime weather: precipitation beats clouds if it lasted ≥ 2 h. */
+        /**
+         * Most characteristic daytime weather: precipitation beats clouds if it lasted ≥ 2 h;
+         * lightning measured near the place makes it a day of thunderstorms, however short.
+         */
         fun dominant(hours: List<HistoryHour>): Condition {
+            if (hours.any { (it.measured?.lightning ?: 0) > 0 }) return Condition.THUNDERSTORM
             val conds = hours.filter { it.model?.isDay != false }.mapNotNull { it.measured?.condition ?: it.model?.condition }
                 .ifEmpty { hours.mapNotNull { it.measured?.condition ?: it.model?.condition } }
             if (conds.isEmpty()) return Condition.CLOUDY

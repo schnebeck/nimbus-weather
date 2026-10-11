@@ -75,7 +75,7 @@ data class TodayMeasured(
             sunMeasured = m?.sunshineMinutes != null,
             compare = expected.copy(
                 tempM = t, precipM = m?.precipitation, windM = m?.windSpeed, windDirM = m?.windDirection,
-                gustM = m?.windGust, sunM = m?.sunshineMinutes,
+                gustM = m?.windGust, sunM = m?.sunshineMinutes, lightningM = m?.lightning,
             ),
         )
     }
@@ -138,6 +138,7 @@ fun measuredBy(hours: Collection<HistoryHour.Measured>, station: String?): Strin
         if (station != null && hours.any { it.temperature != null }) add(stringResource(R.string.measured_by_station, station))
         if (hours.any { it.precipitation != null && it.precipitationFrom == Provenance.RADAR }) add(stringResource(R.string.measured_by_radar))
         if (hours.any { it.sunshineMinutes != null && it.sunshineFrom == Provenance.SATELLITE }) add(stringResource(R.string.measured_by_satellite))
+        if (hours.any { (it.lightning ?: 0) > 0 }) add(stringResource(R.string.measured_by_lightning))
     }
     return if (parts.isEmpty()) null else stringResource(R.string.measured_by, parts.joinToString(" · "))
 }

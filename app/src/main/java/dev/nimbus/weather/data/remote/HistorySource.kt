@@ -49,6 +49,8 @@ data class HistoryHour(
         val precipitationFrom: Provenance = Provenance.STATION,
         /** Where [sunshineMinutes] was measured: at the station, or by the satellite over the place. */
         val sunshineFrom: Provenance = Provenance.STATION,
+        /** Flashes within about [LightningSource.NEAR_KM] (the satellite's); null: not known. */
+        val lightning: Int? = null,
     )
 
     data class Modelled(
@@ -103,6 +105,8 @@ class HistorySource(
     private val brightSkyUrl: String = "https://api.brightsky.dev",
     /** Precipitation and sunshine measured over the place itself (null: the station's only). */
     private val spot: SpotSource? = null,
+    /** Lightning at the place, from the satellite (null: none asked for). */
+    private val lightning: LightningSource? = null,
     /**
      * How long the look-back waits for the radar and the satellite: the DWD's point request took
      * from one second to fifty, and the look-back waited for it. Late, the station's values stand
@@ -119,6 +123,7 @@ class HistorySource(
             else withTimeoutOrNull(spotWaitMs) { spot.radarPrecipitation(lat, lon, now - SPOT_BACK_MS, now) }.orEmpty()
         }
         val sunJob = async { spot?.let { withTimeoutOrNull(spotWaitMs) { it.satelliteHours(lat, lon, pastDays = 2) } }.orEmpty() }
+        val lightningJob = async { lightning?.let { withTimeoutOrNull(spotWaitMs) { it.hourly(lat, lon, now - SPOT_BACK_MS) } } }
         val obsJob = async {
             if (!inGermany) null else runCatching {
                 // Zone is not known before the model answer; Germany is always Europe/Berlin.
@@ -155,7 +160,10 @@ class HistorySource(
             }.getOrNull()
         }.orEmpty()
         // the satellite's sunshine needs the model's low cloud of the same hours
-        combine(modelRoot, obsRoot, used, now, synop, radarJob.await(), SatelliteSunshine.minutes(sunJob.await(), lat, lon, lowCloud(modelRoot)))
+        combine(
+            modelRoot, obsRoot, used, now, synop, radarJob.await(), SatelliteSunshine.minutes(sunJob.await(), lat, lon, lowCloud(modelRoot)),
+            lightningJob.await(),
+        )
     } }
 
     private fun modelUrl(lat: Double, lon: Double, model: String) = "$openMeteoUrl/v1/forecast".toHttpUrl().newBuilder()
@@ -298,19 +306,29 @@ class HistorySource(
          * precipitation, the satellite's sunshine – and hours of their own where the station has
          * none; then each hour's weather brightened by its sunshine ([WeatherCodes.withSunshine]).
          */
+        /**
+         * The station's hours with what was measured over the place itself: the radar's
+         * precipitation, the satellite's sunshine and lightning ([lightning]: flashes per hour, null
+         * if not known – an hour without an entry then had none). An hour with lightning near the
+         * place was a thunderstorm, whatever else it looked like.
+         */
         internal fun overSpot(
             station: Map<Long, HistoryHour.Measured>, radar: Map<Long, Double>, sun: Map<Long, Double>, now: Long,
-        ): Map<Long, HistoryHour.Measured> = (station.keys + radar.keys + sun.keys).filter { it <= now }.associateWith { t ->
+            lightning: Map<Long, Int>? = null,
+        ): Map<Long, HistoryHour.Measured> = (station.keys + radar.keys + sun.keys + lightning.orEmpty().keys).filter { it <= now }.associateWith { t ->
             val m = station[t] ?: HistoryHour.Measured(null, null, null, null, null, null, null, null)
             val rain = radar[t]
             val s = sun[t]
+            val flashes = lightning?.let { it[t] ?: 0 }
             val spot = m.copy(
                 precipitation = rain ?: m.precipitation,
                 precipitationFrom = if (rain != null) Provenance.RADAR else m.precipitationFrom,
                 sunshineMinutes = s ?: m.sunshineMinutes,
                 sunshineFrom = if (s != null) Provenance.SATELLITE else m.sunshineFrom,
+                lightning = flashes,
             )
-            spot.copy(condition = spot.condition?.let { WeatherCodes.withSunshine(it, spot.sunshineMinutes) })
+            if ((flashes ?: 0) > 0) spot.copy(condition = Condition.THUNDERSTORM)
+            else spot.copy(condition = spot.condition?.let { WeatherCodes.withSunshine(it, spot.sunshineMinutes) })
         }
 
         fun condition(condition: String?, icon: String?, precipitation: Double?): Condition? = when (condition) {
@@ -337,6 +355,8 @@ class HistorySource(
         fun combine(
             modelRoot: JsonElement, obsRoot: JsonElement?, model: String, now: Long, synop: List<SynopReport> = emptyList(),
             radar: Map<Long, Double> = emptyMap(), sun: Map<Long, Double> = emptyMap(),
+            /** Flashes per hour near the place; null: not known. */
+            lightning: Map<Long, Int>? = null,
         ): History {
             val (zone, modelled) = parseModel(modelRoot)
             val hourly = obsRoot?.let { parseObservations(it, modelRoot.obj()?.d("elevation")) } ?: Observations(emptyMap(), null, null)
@@ -349,7 +369,7 @@ class HistorySource(
                 val model = modelled[t]?.temperature
                 if (m.temperature != null && !Representative.temperature(m.temperature, model)) m.copy(temperature = null) else m
             }
-            val obs = hourly.copy(byTime = overSpot(station, radar, sun, now))
+            val obs = hourly.copy(byTime = overSpot(station, radar, sun, now, lightning))
             val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
             // Past hours, and for today the forecast up to midnight (drawn dashed, not counted in the summary)
             val times = (modelled.keys + obs.byTime.keys).filter { t ->

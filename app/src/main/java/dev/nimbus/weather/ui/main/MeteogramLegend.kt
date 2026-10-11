@@ -135,6 +135,8 @@ internal fun Readout(
     extraRows: Boolean = false,
     /** A day to come: while no cursor is set, the whole day's figures instead of an hour's. */
     day: DayOverview? = null,
+    /** A day with lightning near the place: the flashes of each hour in a row of their own. */
+    lightningRow: Boolean = false,
 ) {
     val s = LocalSettings.current
     val tf = LocalTimeFormat.current
@@ -189,6 +191,7 @@ internal fun Readout(
                         lWind to listOf(w(c.windM, c.windDirM), w(c.windF)),
                         lGust to listOf(w(c.gustM), w(c.gustF)),
                         lSun to listOf(sun(c.sunM), sun(c.sunF)),
+                        if (lightningRow) stringResource(R.string.lightning) to listOf(c.lightningM?.toString() ?: NO_VALUE, NO_VALUE) else null,
                         if (extraRows) stringResource(R.string.humidity) to listOf(NO_VALUE, c.humidityF?.let { "${it.roundToInt()}" + NBSP + "%" } ?: NO_VALUE) else null,
                     ),
                 )

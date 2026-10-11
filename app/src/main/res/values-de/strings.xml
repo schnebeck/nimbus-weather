@@ -214,7 +214,7 @@
     <string name="settings_about">Über</string>
     <string name="settings_diagnostics">Diagnose</string>
     <string name="activity_log">Aktivitätsprotokoll</string>
-    <string name="activity_log_desc">Schreibt mit, was die App tut – Netzabrufe mit ihren Mengen, sichtbar oder nicht, Bildschirm, Rechenzeit – für Akku- und Datenanalysen. Ohne Koordinaten und Ortsnamen; es bleibt auf dem Handy, bis du es teilst.</string>
+    <string name="activity_log_desc">Schreibt mit, was die App tut – Netzabrufe mit ihren Mengen, sichtbar oder nicht, Bildschirm, Rechenzeit, Laden und Aufbereiten des Radars – für Akku- und Datenanalysen. Ohne Koordinaten und Ortsnamen; es bleibt auf dem Handy, bis du es teilst.</string>
     <string name="activity_log_share">Protokoll teilen</string>
     <string name="activity_log_clear">Löschen</string>
     <string name="activity_log_empty">Noch nichts protokolliert</string>

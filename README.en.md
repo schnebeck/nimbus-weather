@@ -172,7 +172,9 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
   model (preset: Automatic – the finest model for each place and time, named with its grid in the
   data sources), units (on first start to suit the country), station values, animations, order and
   visibility of the cards. Under "Diagnostics" an activity log (off until switched on): network calls
-  with their amounts, shown or not, screen and CPU time, for battery and data analyses – without
+  with their amounts, shown or not, screen and CPU time, and how the radar loads (its sources, when
+  its own one is complete, how the others answer, when all pictures are prepared, sources resting,
+  loading ahead in the background), for battery and data analyses – without
   coordinates or place names, on the phone until shared.
 - **A model per place**: in the list of places (long press) each place first gets "As in the app
   settings" or "A model of its own for this place", then the model – regional ones too, like MET

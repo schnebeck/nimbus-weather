@@ -33,6 +33,7 @@ import org.maplibre.android.style.layers.PropertyFactory
 import org.maplibre.android.style.layers.RasterLayer
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.sources.ImageSource
+import dev.nimbus.weather.util.ActivityLog
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -70,7 +71,13 @@ class RadarPlayer(
     private val dirty = ConcurrentHashMap.newKeySet<String>()
     /** The sources beside the area's own: asked with a short time limit, left out a while when they fail. */
     private val sideHttp = http.newBuilder().callTimeout(SIDE_TIMEOUT_S, java.util.concurrent.TimeUnit.SECONDS).build()
-    private val health = SourceHealth()
+    private val health = SourceHealth(onRest = { ActivityLog.note("radar source $it rests ${SourceHealth.PAUSE_MS / 60_000} min after ${SourceHealth.FAILS} failures") })
+    /** When the loop of the current area began to load (the activity log's times count from here). */
+    @Volatile private var loadingSince = 0L
+    /** Longest and total time of the frames built for the area so far (activity log). */
+    private val buildMs = java.util.concurrent.atomic.AtomicLong()
+    private val buildMax = java.util.concurrent.atomic.AtomicLong()
+    @Volatile private var allBuiltNoted = false
 
     private val _loaded = MutableStateFlow(0)
     /** Steps of the time line in the store (downloaded) – the loading progress. */
@@ -215,6 +222,8 @@ class RadarPlayer(
         // without one, the downloader passed every step by and ended, and the area started none
         if (geo == null) { downloader = null; return }
         failed.clear()
+        loadingSince = android.os.SystemClock.elapsedRealtime()
+        buildMs.set(0); buildMax.set(0); allBuiltNoted = false
         downloader = scope.launch(Dispatchers.Default) {
             withContext(Dispatchers.IO) {
                 tl.frames.forEach { f -> geo?.let { g -> RadarPicture.composites(f, g).takeIf { it.isNotEmpty() && it.all { c -> RadarStore.hasArea(c, f, g) } } }?.let { stored += f.id } }
@@ -233,6 +242,13 @@ class RadarPlayer(
             val besides = Channel<Pair<Int, RadarComposite?>>(Channel.UNLIMITED)
             val rvAsked = HashSet<String>()
             val rvNeeded = geo?.let { RadarPicture.needsRainViewer(RadarPicture.coverage(it), it.w * it.h) } == true
+            val beside = java.util.concurrent.ConcurrentHashMap<String, IntArray>()       // per source: answered, failed
+            if (ActivityLog.enabled) geo?.let { g ->
+                val inArea = tl.frames.lastOrNull { !it.isForecast }?.let { RadarPicture.composites(it, g) }.orEmpty()
+                val own = mainOf(inArea, g)?.id ?: RAINVIEWER
+                val others = inArea.map { it.id }.filter { it != own } + listOfNotNull(RAINVIEWER.takeIf { rvNeeded && own != RAINVIEWER })
+                ActivityLog.note("radar loop: ${tl.frames.size} steps, own source $own, beside ${others.ifEmpty { listOf("none") }.joinToString(", ")}")
+            }
             kotlinx.coroutines.coroutineScope {
                 launch {
                     kotlinx.coroutines.coroutineScope {
@@ -260,20 +276,31 @@ class RadarPlayer(
                         }
                     }
                     besides.close()
+                    if (ActivityLog.enabled) ActivityLog.note(
+                        "radar own source: ${tl.frames.count { it.id in stored }} of ${tl.frames.size} steps after ${since()} s, ${tl.frames.count { it.id in failed }} not delivered",
+                    )
                 }
-                repeat(SIDE_WORKERS) {
-                    launch {
-                        for ((i, c) in besides) {
-                            val f = tl.frames[i]
-                            val g = geo ?: continue
-                            val source = c?.id ?: RAINVIEWER
-                            if (!health.usable(source)) continue
-                            val ok = if (c == null) {
-                                RvSteps.paths(tl, i).all { path -> RadarPicture.mosaic(sideHttp, tl.rainViewerHost, path, g, side = true).complete.also { if (it) dirtyFor(tl, path) } }
-                            } else RadarStore.forArea(sideHttp, c, f, g, side = true) != null
-                            if (ok) { health.answered(source); dirty += f.id; wake.trySend(Unit) } else health.failed(source)
+                launch {
+                    kotlinx.coroutines.coroutineScope {
+                        repeat(SIDE_WORKERS) {
+                            launch {
+                                for ((i, c) in besides) {
+                                    val f = tl.frames[i]
+                                    val g = geo ?: continue
+                                    val source = c?.id ?: RAINVIEWER
+                                    if (!health.usable(source)) continue
+                                    val ok = if (c == null) {
+                                        RvSteps.paths(tl, i).all { path -> RadarPicture.mosaic(sideHttp, tl.rainViewerHost, path, g, side = true).complete.also { if (it) dirtyFor(tl, path) } }
+                                    } else RadarStore.forArea(sideHttp, c, f, g, side = true) != null
+                                    beside.getOrPut(source) { IntArray(2) }.let { n -> synchronized(n) { n[if (ok) 0 else 1]++ } }
+                                    if (ok) { health.answered(source); dirty += f.id; wake.trySend(Unit) } else health.failed(source)
+                                }
+                            }
                         }
                     }
+                    if (ActivityLog.enabled && beside.isNotEmpty()) ActivityLog.note(
+                        "radar beside: " + beside.entries.joinToString(", ") { (k, n) -> "$k ${n[0]} answered, ${n[1]} failed" } + " after ${since()} s",
+                    )
                 }
             }
         }
@@ -291,6 +318,9 @@ class RadarPlayer(
         tl.frames.indices.filter { path in RvSteps.paths(tl, it) }.forEach { dirty += tl.frames[it].id }
         wake.trySend(Unit)
     }
+
+    /** Seconds since the loop began to load (activity log). */
+    private fun since() = "%.1f".format(java.util.Locale.ROOT, (android.os.SystemClock.elapsedRealtime() - loadingSince) / 1000.0)
 
     private fun countStored(tl: RadarTimeline) {
         val g = geo
@@ -355,10 +385,15 @@ class RadarPlayer(
                     val t0 = System.nanoTime()
                     val vf = builder.build(i, layers)
                     parts[k] = have
+                    val ms = (System.nanoTime() - t0) / 1_000_000
+                    buildMs.addAndGet(ms); buildMax.accumulateAndGet(ms, ::maxOf)
                     if (dev.nimbus.weather.BuildConfig.DEBUG) android.util.Log.d("NimbusPlayer", "frame $i ${g.w}x${g.h} extract ${(System.nanoTime() - t0) / 1_000_000} ms")
                     if (gen != generation) return@launch
                     frames[k] = vf
                     _ready.value++
+                    if (!allBuiltNoted && frames.size == tl.frames.size && ActivityLog.enabled) ActivityLog.note(
+                        "radar frames: all ${tl.frames.size} built after ${since()} s, ${buildMs.get()} ms in all, longest ${buildMax.get()} ms",
+                    ).also { allBuiltNoted = true }
                     requestRender()
                     // moved on meanwhile: plan the window around the new position
                     if (windowed && !coarseOnly && kotlin.math.abs(position - windowAnchor) > WINDOW_SLIDE) { wake.trySend(Unit); break }

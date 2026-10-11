@@ -26,6 +26,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import dev.nimbus.weather.ui.radar.RadarPrefetcher
+import dev.nimbus.weather.util.ActivityLog
 import java.util.concurrent.TimeUnit
 
 /**
@@ -62,9 +63,11 @@ object BackgroundWork {
 class RadarAheadWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val ctx = applicationContext
-        if (!RadarPrefetcher.usedRecently(ctx)) return Result.success()
+        if (!RadarPrefetcher.usedRecently(ctx)) return Result.success().also { ActivityLog.note("radar ahead: skipped, the radar not opened within a week") }
         val (lat, lon) = RadarPrefetcher.lastPlace(ctx) ?: return Result.success()
-        runCatching { RadarPrefetcher.loadSteps(ctx, lat, lon) }
+        val t0 = android.os.SystemClock.elapsedRealtime()
+        val ok = runCatching { RadarPrefetcher.loadSteps(ctx, lat, lon) }.getOrDefault(false)
+        ActivityLog.note("radar ahead: " + (if (ok) "past steps loaded" else "no time line") + " in ${(android.os.SystemClock.elapsedRealtime() - t0) / 1000} s")
         return Result.success()
     }
 }

@@ -69,7 +69,7 @@ class MainSourceFirstTest {
     /** Two failures in a row: left out for five minutes; an answer counts it anew. */
     @Test fun aFailingSourceRests() {
         var now = 0L
-        val h = SourceHealth { now }
+        val h = SourceHealth(clock = { now })
         h.failed("knmi")
         assertTrue(h.usable("knmi"))
         h.failed("knmi")
@@ -78,5 +78,36 @@ class MainSourceFirstTest {
         assertTrue(h.usable("knmi"))
         h.failed("knmi"); h.answered("knmi"); h.failed("knmi")
         assertTrue("an answer between: counted anew", h.usable("knmi"))
+    }
+
+    @get:org.junit.Rule val tmp = org.junit.rules.TemporaryFolder()
+
+    /**
+     * The activity log tells how the radar loaded: its sources, when the own one was complete,
+     * how the others answered, a source resting – enough to see what held it up.
+     */
+    @Test fun theActivityLogTellsHowTheRadarLoaded() {
+        val log = dev.nimbus.weather.util.ActivityLog
+        log.dir = tmp.newFolder("log")
+        log.setEnabled(true)
+        val hanging = OkHttpClient.Builder().addInterceptor { chain ->
+            if ("knmi" in chain.request().url.host) Thread.sleep(500)
+            throw java.io.IOException("offline in the test")
+        }.build()
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        try {
+            val tl = RadarTimeline((-24..0).map { k -> RadarFrame(t0 - 24 * 3_600_000L + k * step, false, null, null) }, 24, "")
+            val p = RadarPlayer(scope, hanging, maxSide = 128)
+            p.setTimeline(tl)
+            p.setView(53.1, 54.1, 6.2, 8.2, 1080)
+            fun lines() = java.io.File(log.dir!!, "activity.log").let { f -> log.flush(); if (f.exists()) f.readLines() else emptyList() }
+            val until = System.currentTimeMillis() + 20_000
+            while (lines().none { "radar beside:" in it }) { assertTrue("no summary of the sources beside: ${lines()}", System.currentTimeMillis() < until); Thread.sleep(100) }
+            val text = lines().joinToString("\n")
+            assertTrue(text, Regex("radar loop: 25 steps, own source dwd, beside .*knmi").containsMatchIn(text))
+            assertTrue(text, Regex("radar own source: 0 of 25 steps after [0-9.]+ s, 25 not delivered").containsMatchIn(text))
+            assertTrue(text, "radar source knmi rests 5 min after 2 failures" in text)
+            assertTrue(text, Regex("radar beside: .*knmi 0 answered, [0-9]+ failed").containsMatchIn(text))
+        } finally { scope.cancel(); log.setEnabled(false); log.clear() }
     }
 }

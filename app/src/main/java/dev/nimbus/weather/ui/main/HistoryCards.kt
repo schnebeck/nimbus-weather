@@ -122,14 +122,24 @@ private fun SummaryRow(label: Pair<String, String>, value: String, secondary: St
 
 /** The day as meteogram: measurement (temperature colours) against forecast (white, dashed), plus precipitation and wind. */
 @Composable
-internal fun DayCourseCard(day: HistoryDay, sum: DaySummary, settings: Settings, tf: TimeFormat, history: dev.nimbus.weather.data.remote.History, place: Place) {
+internal fun DayCourseCard(
+    day: HistoryDay, sum: DaySummary, settings: Settings, tf: TimeFormat, history: dev.nimbus.weather.data.remote.History, place: Place,
+    /** The place's forecast: its chance where the look-back's model has none. */
+    forecast: List<dev.nimbus.weather.data.model.HourlyPoint> = emptyList(),
+    /** The weather now (the header's): the hour running [now] shows it, as in the day's forecast – the same clock as there (its "now" line, the hour shown untouched). */
+    nowCondition: dev.nimbus.weather.data.model.Condition? = null,
+    now: Long = history.fetchedAt,
+) {
     val start = day.date.atStartOfDay(tf.zone).toInstant().toEpochMilli()
-    val points = remember(day, history) { history.lookBackPoints(day, start) }
+    val points = remember(day, history, forecast, nowCondition, now / 60_000L) {
+        val chance = forecast.associate { it.time to it.precipitationProbability }
+        history.lookBackPoints(day, start) { chance[it] }.map { it.asNow(now, nowCondition) }
+    }
     val curves = remember(day, history) { lookBackCurves(history, start) }
     GlassCard(title = stringResource(R.string.history_course), icon = Icons.Outlined.Thermostat) {
         Meteogram(
             points, start, start + 24 * 3_600_000L,
-            remember(start) { nights(start, HourAxis.dayAxisEnd(start + 24 * 3_600_000L), place.latitude, place.longitude) }, System.currentTimeMillis(),
+            remember(start) { nights(start, HourAxis.dayAxisEnd(start + 24 * 3_600_000L), place.latitude, place.longitude) }, now,
             Modifier.fillMaxWidth().bleed(CARD_BLEED),
             curve = curves.first, forecastCurve = curves.second,
             // "today so far": the line at the time now (the other days do not hold it)
@@ -172,9 +182,8 @@ internal fun RadarDayCard(dayStart: Long, tf: TimeFormat, onOpen: () -> Unit) {
 /**
  * The measured and the forecast curve of the day from [start], in the finest resolution there is:
  * station reports every 10 minutes (SYNOP, about the last 1½ days) or as often as the station
- * reports, the model every 15 minutes; hourly values where there are no finer ones. Today the
- * forecast of the hours to come goes on from the last reading, as in the day's forecast – the same
- * hour is expected the same in both; the hours past stay the model's own, to be compared.
+ * reports, the model every 15 minutes; hourly values where there are no finer ones. Today what is
+ * expected ([expectedCurve]) as in the day's forecast – the same hour is expected the same in both.
  */
 internal fun lookBackCurves(history: dev.nimbus.weather.data.remote.History, start: Long): Pair<List<CurvePoint>, List<CurvePoint>> {
     val from = start - 3_600_000L; val to = start + 25 * 3_600_000L
@@ -186,7 +195,6 @@ internal fun lookBackCurves(history: dev.nimbus.weather.data.remote.History, sta
         history.fineModel.filterKeys { it in from..to }.map { (t, v) -> CurvePoint(t, v, 15 * 60_000L) },
         history.chartHours(start).mapNotNull { h -> h.model?.temperature?.let { CurvePoint(h.time, it) } },
     )
-    val last = measured.maxOfOrNull { it.time }
-    if (last == null || history.fetchedAt !in start until start + 24 * 3_600_000L) return measured to model
-    return measured to model.filter { it.time <= last } + Curve.joined(measured, model).filter { it.time > last }
+    if (history.fetchedAt !in start until start + 24 * 3_600_000L) return measured to model
+    return measured to expectedCurve(model, measured)
 }

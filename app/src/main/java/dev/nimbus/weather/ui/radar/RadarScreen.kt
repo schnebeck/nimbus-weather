@@ -424,7 +424,13 @@ fun RadarScreen(
     LaunchedWhileShown(Unit) {
         idle.touched()
         idle.awaitIdle()
+        dev.nimbus.weather.util.ActivityLog.note("radar closed: ${IdleClose.AFTER_MS / 60_000} min untouched")
         onBack()
+    }
+    DisposableEffect(Unit) {
+        val opened = android.os.SystemClock.elapsedRealtime()
+        dev.nimbus.weather.util.ActivityLog.note("radar opened" + if (archive) " (a day of the look-back)" else "")
+        onDispose { dev.nimbus.weather.util.ActivityLog.note("radar left after ${(android.os.SystemClock.elapsedRealtime() - opened) / 1000} s") }
     }
 
     Box(

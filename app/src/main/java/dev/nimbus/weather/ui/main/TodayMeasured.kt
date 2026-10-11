@@ -105,6 +105,25 @@ data class TodayMeasured(
     }
 }
 
+/** The model's curve of a day and the station's readings of it (null without a station). */
+private fun dayParts(
+    hours: List<dev.nimbus.weather.data.model.HourlyPoint>, minutely: List<dev.nimbus.weather.data.model.MinutelyPoint>,
+    start: Long, end: Long, measured: TodayMeasured?,
+): Pair<List<CurvePoint>, List<CurvePoint>?> {
+    val from = start - 3_600_000L
+    val forecast = Curve.merge(
+        minutely.filter { it.time in from..end && it.temperature != null }.map { CurvePoint(it.time, it.temperature!!, 15 * 60_000L) },
+        hours.filter { it.time in from..end }.map { CurvePoint(it.time, it.temperature) },
+    )
+    val readings = measured?.let { m ->
+        Curve.merge(
+            Curve.reports(m.fine, 10 * 60_000L),
+            m.hours.mapNotNull { (t, h) -> h.temperature?.let { CurvePoint(t, it) } },
+        ).filter { it.time in from..end }
+    }
+    return forecast to readings
+}
+
 /**
  * The temperature curve of a day in the forecast: the model every 15 minutes where it has such
  * steps, hourly elsewhere; today the station's readings (every 10 minutes or as often as it
@@ -115,18 +134,28 @@ fun dayCurve(
     hours: List<dev.nimbus.weather.data.model.HourlyPoint>, minutely: List<dev.nimbus.weather.data.model.MinutelyPoint>,
     start: Long, end: Long, measured: TodayMeasured?,
 ): List<CurvePoint> {
-    val from = start - 3_600_000L
-    val forecast = Curve.merge(
-        minutely.filter { it.time in from..end && it.temperature != null }.map { CurvePoint(it.time, it.temperature!!, 15 * 60_000L) },
-        hours.filter { it.time in from..end }.map { CurvePoint(it.time, it.temperature) },
-    )
-    if (measured == null) return forecast
-    val readings = Curve.merge(
-        Curve.reports(measured.fine, 10 * 60_000L),
-        measured.hours.mapNotNull { (t, m) -> m.temperature?.let { CurvePoint(t, it) } },
-    ).filter { it.time in from..end }
+    val (forecast, readings) = dayParts(hours, minutely, start, end, measured)
     // the forecast goes on from the last reading, no step at "now"
-    return Curve.joined(readings, forecast)
+    return if (readings == null) forecast else Curve.joined(readings, forecast)
+}
+
+/** What today's hours were and are expected to be ([expectedCurve]); null without readings. */
+fun dayExpected(
+    hours: List<dev.nimbus.weather.data.model.HourlyPoint>, minutely: List<dev.nimbus.weather.data.model.MinutelyPoint>,
+    start: Long, end: Long, measured: TodayMeasured?,
+): List<CurvePoint>? {
+    val (forecast, readings) = dayParts(hours, minutely, start, end, measured)
+    return readings?.let { expectedCurve(forecast, it) }
+}
+
+/**
+ * What was and is expected of the hours, as both of today's charts read it (the 10-day forecast
+ * and the look-back): the model's own up to the last reading – to be compared with the readings –,
+ * from there on going on from that reading ([Curve.joined]).
+ */
+fun expectedCurve(model: List<CurvePoint>, readings: List<CurvePoint>): List<CurvePoint> {
+    val last = readings.maxOfOrNull { it.time } ?: return model
+    return model.filter { it.time <= last } + Curve.joined(readings, model).filter { it.time > last }
 }
 
 /**

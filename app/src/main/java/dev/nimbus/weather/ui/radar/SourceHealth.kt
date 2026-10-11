@@ -23,7 +23,11 @@ import java.util.concurrent.ConcurrentHashMap
  * Sources beside the place's own one (another country's composite, RainViewer): one that failed
  * [FAILS] times in a row is left out for [PAUSE_MS] – asked on, every step waited for it in vain.
  */
-class SourceHealth(private val clock: () -> Long = System::currentTimeMillis) {
+class SourceHealth(
+    private val clock: () -> Long = System::currentTimeMillis,
+    /** A source starts to rest. */
+    private val onRest: (String) -> Unit = {},
+) {
     private class State(var fails: Int = 0, var until: Long = 0L)
     private val states = ConcurrentHashMap<String, State>()
 
@@ -36,8 +40,9 @@ class SourceHealth(private val clock: () -> Long = System::currentTimeMillis) {
         val s = states.getOrPut(source) { State() }
         synchronized(s) {
             s.fails++
-            if (s.fails >= FAILS) { s.until = clock() + PAUSE_MS; s.fails = 0 }
+            if (s.fails >= FAILS) { s.until = clock() + PAUSE_MS; s.fails = 0 } else return
         }
+        onRest(source)
     }
 
     companion object {

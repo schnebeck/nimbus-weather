@@ -1,0 +1,2 @@
+• Tagesverlauf und 10-Tage-Vorhersage zeigen für dieselbe Stunde dieselben Werte: Temperatur zum Stundenbeginn, Menge, Wahrscheinlichkeit, Wind, Sonne; die laufende Stunde in beiden mit dem Wetter jetzt
+• Aktivitätsprotokoll: zeigt jetzt auch, wie das Radar lädt – Quellen, wann die eigene vollständig ist, wie die anderen antworten, ausgesetzte Quellen, Vorladen

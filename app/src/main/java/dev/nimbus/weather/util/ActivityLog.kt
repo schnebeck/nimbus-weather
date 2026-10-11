@@ -40,8 +40,10 @@ import java.util.concurrent.Executors
 
 /**
  * The activity log (setting, off by default): one line per network call – host and path without
- * the query (no coordinates), bytes, duration – and per change of the app shown or hidden and of
- * the screen; each line with the process's CPU time since the line before. Written to logcat (tag
+ * the query (no coordinates), bytes, duration –, per change of the app shown or hidden and of the
+ * screen, and per stage of the radar (opened, its sources, the own one complete, the others, the
+ * frames built, a source resting, closed, loaded ahead); each line with the process's CPU time
+ * since the line before. Written to logcat (tag
  * `Nimbus`) and to a small file that turns over, kept on the device until it is shared.
  */
 object ActivityLog {

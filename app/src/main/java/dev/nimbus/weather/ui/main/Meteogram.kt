@@ -177,10 +177,11 @@ fun Meteogram(
     }
     // drawn: the station's 10-minute reports as a 30-minute mean; the readout keeps the readings
     val drawnCurve = remember(mainCurve) { Curve.smoothed(mainCurve) }
-    val dashCurve = remember(forecastCurve, pts) {
-        if (!compare) emptyList()
-        else (forecastCurve ?: pts.mapNotNull { p -> p.forecastTemperature?.let { CurvePoint(p.time, it) } }).filter { it.time >= start - 3_600_000L && it.time <= curveEnd }
+    // what was expected (the readout's "expected" at the hour's start); drawn dashed when compared
+    val expectCurve = remember(forecastCurve, pts) {
+        (forecastCurve ?: pts.mapNotNull { p -> p.forecastTemperature?.let { CurvePoint(p.time, it) } }).filter { it.time >= start - 3_600_000L && it.time <= curveEnd }
     }
+    val dashCurve = if (compare) expectCurve else emptyList()
     val allT = temps + fTemps.filterNotNull() + (mainCurve + dashCurve).map { Units.temperature(it.value, s.temperatureUnit) }
     val tLo = floor(allT.min() - 1).toInt()
     // Even range, so the middle grid line is a whole degree as well.
@@ -452,7 +453,7 @@ fun Meteogram(
             val sel = pts[selected.coerceIn(1, pts.lastIndex)]
             val tc = sel.time - HourAxis.HOUR
             val tm = Curve.at(mainCurve, tc)
-            val tfc = Curve.at(dashCurve, tc)
+            val tfc = Curve.at(expectCurve, tc)
             val shown = sel.copy(
                 temperature = tm ?: sel.temperature,
                 compare = sel.compare?.let { c -> c.copy(tempM = if (c.tempM != null) tm ?: c.tempM else null, tempF = tfc ?: c.tempF) },

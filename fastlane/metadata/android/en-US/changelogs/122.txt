@@ -1,0 +1,2 @@
+• Day course and 10-day forecast show the same values for the same hour: temperature at the hour's start, amount, chance, wind, sun; the hour running now with the weather now in both
+• Activity log: now also shows how the radar loads – sources, when its own one is complete, how the others answer, sources resting, loading ahead

@@ -228,6 +228,8 @@ private fun DayRow(
                 Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 showNow = currentTemp != null,   // today only
                 curve = remember(hours, minutely, measured) { dayCurve(hours, minutely, day.date, HourAxis.dayAxisEnd(end), measured) },
+                // the hours' "expected" as the look-back reads it
+                forecastCurve = remember(hours, minutely, measured) { dayExpected(hours, minutely, day.date, HourAxis.dayAxisEnd(end), measured) },
                 separatePrecip = settings.separatePrecipitation,
                 measuredBy = measured?.let { measuredBy(it.hours.values, it.station) },
                 dayOverview = if (currentTemp == null) remember(day, hours, zone) { DayOverview.of(day, hours, zone) } else null,

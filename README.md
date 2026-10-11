@@ -177,7 +177,9 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   Datenquellen nennen es mit seiner Auflösung), Einheiten (beim ersten Start passend zum Land),
   Stationswerte, Animationen, Reihenfolge und Sichtbarkeit der Kacheln. Unter „Diagnose“ ein
   Aktivitätsprotokoll (aus, bis man es einschaltet): Netzabrufe mit ihren Mengen, sichtbar oder nicht,
-  Bildschirm und Rechenzeit, für Akku- und Datenanalysen – ohne Koordinaten und Ortsnamen, auf dem
+  Bildschirm und Rechenzeit, dazu wie das Radar lädt (seine Quellen, wann die eigene vollständig ist,
+  wie die anderen antworten, wann alle Bilder aufbereitet sind, ausgesetzte Quellen, Vorladen im
+  Hintergrund), für Akku- und Datenanalysen – ohne Koordinaten und Ortsnamen, auf dem
   Handy, bis man es teilt.
 - **Modell je Ort**: In der Ortsliste (lange drücken) wählt man für jeden Ort zuerst „Wie in den
   App-Einstellungen“ oder „Eigenes Modell für diesen Ort“, dann das Modell – auch regionale wie MET

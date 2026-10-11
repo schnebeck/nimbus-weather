@@ -27,7 +27,11 @@ import dev.nimbus.weather.data.remote.HistoryDay
  * satellite) as a block with the forecast's frame in front – what was not, the forecast's frame
  * alone. An hour without a temperature reading (yet) is drawn as the forecast, dashed.
  */
-fun History.lookBackPoints(day: HistoryDay, start: Long): List<MeteoPoint> = chartHours(start).mapNotNull { h ->
+fun History.lookBackPoints(
+    day: HistoryDay, start: Long,
+    /** The chance of an hour (by its time stamp) where the model gives none – the forecast's, as the day's forecast shows it. */
+    chanceOf: (Long) -> Double? = { null },
+): List<MeteoPoint> = chartHours(start).mapNotNull { h ->
     val m = h.measured
     val f = h.model
     val temp = m?.temperature ?: f?.temperature ?: return@mapNotNull null
@@ -48,7 +52,7 @@ fun History.lookBackPoints(day: HistoryDay, start: Long): List<MeteoPoint> = cha
         forecastOnly = m?.temperature == null,
         // the readout table shows both apart, an empty cell where one is missing
         compare = HourCompare(
-            m?.temperature, f?.temperature, rain, f?.precipitation, f?.chance,
+            m?.temperature, f?.temperature, rain, f?.precipitation, f?.chance ?: chanceOf(h.time),
             m?.windSpeed, m?.windDirection, f?.windSpeed, m?.windGust, f?.windGust, sun, f?.sunshineMinutes,
             lightningM = m?.lightning,
         ),

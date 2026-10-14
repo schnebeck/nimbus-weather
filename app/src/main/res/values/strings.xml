@@ -77,6 +77,7 @@
     <string name="now_sky_measured_sunshine">Sky: from the measured sunshine, %1$s\u00A0(%2$s km)</string>
     <string name="now_sky_model_sunshine">Sky: forecast model, from its sunshine in the current hour</string>
     <string name="now_sky_model">Sky: forecast model</string>
+    <string name="now_sky_radar">Sky: precipitation by the DWD radar over the place</string>
     <string name="now_value_temperature">Temperature</string>
     <string name="now_value_humidity">Humidity</string>
     <string name="now_value_dew_point">Dew point</string>
@@ -531,6 +532,7 @@
     <string name="gauge_open_state_page">Gauge page of the state ›</string>
     <string name="src_gauges">Water levels: %1$s</string>
     <string name="src_lhp_alerts">Flood alerts: LHP</string>
+    <string name="src_radar_now">Precipitation now: DWD radar over the place</string>
     <string name="outlook_precip_chance">Chance of precipitation %1$d %%.</string>
     <string name="settings_cards">Cards</string>
     <string name="settings_cards_desc">Hold ≡ and drag to sort, the switch hides a card. The small tiles are one block on the page – expand it to sort them among themselves.</string>

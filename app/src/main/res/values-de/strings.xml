@@ -72,6 +72,7 @@
     <string name="now_sky_measured_sunshine">Himmel: nach dem gemessenen Sonnenschein, %1$s\u00A0(%2$s km)</string>
     <string name="now_sky_model_sunshine">Himmel: Vorhersagemodell, nach seinem Sonnenschein in der laufenden Stunde</string>
     <string name="now_sky_model">Himmel: Vorhersagemodell</string>
+    <string name="now_sky_radar">Himmel: Niederschlag nach dem DWD-Radar über dem Ort</string>
     <string name="now_value_temperature">Temperatur</string>
     <string name="now_value_humidity">Luftfeuchte</string>
     <string name="now_value_dew_point">Taupunkt</string>
@@ -520,6 +521,7 @@
     <string name="gauge_open_state_page">Pegelseite des Landes ›</string>
     <string name="src_gauges">Pegel: %1$s</string>
     <string name="src_lhp_alerts">Hochwasserwarnungen: LHP</string>
+    <string name="src_radar_now">Niederschlag jetzt: DWD-Radar über dem Ort</string>
     <string name="outlook_precip_chance">Niederschlagswahrscheinlichkeit %1$d %%.</string>
     <string name="settings_cards">Kacheln</string>
     <string name="settings_cards_desc">≡ kurz halten und ziehen zum Sortieren, der Schalter blendet eine Kachel aus. Die kleinen Kacheln stehen als Block auf der Seite – aufklappen, um sie untereinander zu sortieren.</string>

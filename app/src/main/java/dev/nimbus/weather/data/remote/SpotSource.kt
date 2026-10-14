@@ -18,6 +18,7 @@
 
 package dev.nimbus.weather.data.remote
 
+import dev.nimbus.weather.data.model.RadarNow
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.JsonElement
@@ -47,6 +48,13 @@ class SpotSource(
         val ry = async { runCatching { http.getJson(pointUrl(RY, lat, lon, maxOf(from, to - RY_SPAN_MS), to)) }.getOrNull()?.let(::series) }
         hourly(rw.await().orEmpty(), ry.await().orEmpty())
     }
+
+    /**
+     * Precipitation over the place now: RY's newest 5-minute steps (up to [NOW_STEPS]) as a rate,
+     * stamped with the newest one; null outside the radar's area.
+     */
+    suspend fun radarNow(lat: Double, lon: Double, now: Long): RadarNow? =
+        now(series(http.getJson(pointUrl(RY, lat, lon, now - NOW_SPAN_MS, now))))
 
     /** The satellite's hours at the place, by the hour's end, for the last [pastDays] days and today ([SatelliteSunshine]). */
     suspend fun satelliteHours(lat: Double, lon: Double, pastDays: Int): Map<Long, SatelliteHour> = runCatching {
@@ -87,6 +95,18 @@ class SpotSource(
         private const val MAX_FEATURES = 400
 
         private fun iso(ms: Long) = Instant.ofEpochMilli(ms / 60_000L * 60_000L).toString()
+
+        /** What [radarNow] asks for: the last half hour of RY. */
+        private const val NOW_SPAN_MS = 30 * 60_000L
+        /** The steps [radarNow] averages: a quarter of an hour. */
+        const val NOW_STEPS = 3
+
+        /** The rate (mm/h) of the newest [NOW_STEPS] 5-minute steps of [ry], stamped with the newest; null: none. */
+        fun now(ry: Map<Long, Double>): RadarNow? {
+            val last = ry.keys.maxOrNull() ?: return null
+            val steps = (0 until NOW_STEPS).mapNotNull { ry[last - it * STEP_MS] }
+            return RadarNow(last, kotlin.math.round(steps.average() * (HOUR_MS / STEP_MS) * 100) / 100)
+        }
 
         /** A time series of a point answer: time → value; "no data" (negative, outside the radars) left out. */
         fun series(root: JsonElement): Map<Long, Double> = root.obj()?.a("features").orEmpty().mapNotNull { e ->

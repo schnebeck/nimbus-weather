@@ -172,10 +172,16 @@ data class WeatherData(
      * the extra's own values.
      */
     val partsAt: Map<DataPart, Long> = emptyMap(),
+    /** What the radar saw falling over the place lately (Germany); null: nothing known. */
+    val radarNow: RadarNow? = null,
 ) {
     /** When [part] was fetched (0: unknown). */
     fun fetchedAt(part: DataPart): Long = partsAt[part] ?: if (part == DataPart.FORECAST) fetchedAt else 0L
 }
+
+/** Precipitation the radar measured over the place: [mmPerHour] from its 5-minute steps up to [time]. */
+@Serializable
+data class RadarNow(val time: Long, val mmPerHour: Double)
 
 /** The parts of [WeatherData] that come from sources of their own (and can be older than the rest). */
 @Serializable
@@ -223,7 +229,7 @@ data class BathingSite(
 
 /** A data source that contributed to a forecast; rendered localized in the UI. */
 @Serializable
-enum class SourceKind { MODEL_DWD_ICON, MODEL_ECMWF, MODEL_METEO_FRANCE, MODEL_REGIONAL, MODEL_BEST_MATCH, GAP_FILL, DWD_STATION, STATION, DWD_WARNINGS, CAMS, COMMUNITY, DWD_POLLEN, PEGELONLINE, NLWKN, GAUGES, LHP_ALERTS, BATHING }
+enum class SourceKind { MODEL_DWD_ICON, MODEL_ECMWF, MODEL_METEO_FRANCE, MODEL_REGIONAL, MODEL_BEST_MATCH, GAP_FILL, DWD_STATION, STATION, DWD_WARNINGS, CAMS, COMMUNITY, DWD_POLLEN, PEGELONLINE, NLWKN, GAUGES, LHP_ALERTS, BATHING, RADAR_NOW }
 
 @Serializable
 data class Source(

@@ -53,6 +53,7 @@ fun nowSourcesText(c: CurrentWeather): String {
     val skyLine = when {
         c.sky == SkyBasis.MEASURED_SUNSHINE && sky != null -> stringResource(R.string.now_sky_measured_sunshine, sky.station, Units.oneDecimal(sky.distanceKm))
         c.sky == SkyBasis.OBSERVED && sky != null -> stringResource(R.string.now_sky_observed, sky.station, Units.oneDecimal(sky.distanceKm))
+        c.sky == SkyBasis.RADAR -> stringResource(R.string.now_sky_radar)
         c.sky == SkyBasis.MODEL_SUNSHINE -> stringResource(R.string.now_sky_model_sunshine)
         else -> stringResource(R.string.now_sky_model)
     }

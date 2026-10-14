@@ -1,0 +1,2 @@
+• Wetter jetzt: Das Radar über dem Ort entscheidet, ob es gerade regnet oder schneit – vor einer entfernten Station und dem Modell; eine Station im selben Radarpixel (1 km) bleibt maßgeblich
+• Die Seite wartet nicht auf das Radar; bleibt eine Antwort aus, gilt die letzte noch 30 Minuten – kein Quellenwechsel bei jedem Laden

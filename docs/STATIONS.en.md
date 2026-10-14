@@ -89,6 +89,11 @@ radar only fills its gaps. An hour's weather symbol follows the amount that hold
 station saw and the radar did not measure over the place leaves the hour dry; rain the radar
 measured where the station saw nothing fall shows as rain. No amount, no rain symbol.
 
+The same holds for the weather now: the radar's (RY) latest quarter of an hour over the place
+decides whether and how it falls just now – before a distant station and before the model. The page
+does not wait for it, the radar follows. When an answer does not come, the last one holds for
+another half hour: the sky does not change its source with every load.
+
 Temperature and wind still come from the station. Below the chart it says where the measurements
 come from. An hour without a measurement shows no bar; the forecast stands in the value table's
 "expected" column.

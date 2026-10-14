@@ -89,6 +89,11 @@ Radar füllt nur ihre Lücken. Das Wettersymbol einer Stunde folgt der Menge, di
 entfernte Station Regen, den das Radar über dem Ort nicht misst, bleibt die Stunde trocken; misst
 das Radar Regen, wo die Station nichts fallen sah, zeigt sie Regen. Ohne Menge kein Regensymbol.
 
+Dasselbe gilt für das Wetter jetzt: Die jüngste Viertelstunde des Radars (RY) über dem Ort
+entscheidet, ob und wie es gerade fällt – vor einer entfernten Station und vor dem Modell. Die Seite
+wartet nicht darauf, das Radar kommt nach. Bleibt eine Antwort aus, gilt die letzte noch eine halbe
+Stunde: Der Himmel wechselt seine Quelle nicht mit jedem Laden.
+
 Temperatur und Wind kommen weiter von der Station. Unter dem Diagramm steht, woher die Messungen
 stammen. Eine Stunde, für die es keine Messung gibt, zeigt keinen Balken; die Prognose steht in der
 Werte-Tabelle in der Spalte „erwartet“.

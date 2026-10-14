@@ -42,4 +42,6 @@ enum class SkyBasis {
     OBSERVED,
     /** Held against the sunshine the station measured: brightened where it shone. */
     MEASURED_SUNSHINE,
+    /** What falls, or that nothing does, by the radar over the place. */
+    RADAR,
 }

@@ -53,6 +53,8 @@ class WeatherRepository(
     private val extrasDeadlineMs: Long = SOURCE_TIMEOUT_MS,
     /** The station networks besides the DWD's (null: the DWD's alone). */
     private val stations: dev.nimbus.weather.data.remote.StationNetworks? = null,
+    /** The radar over the place (null: none asked for). */
+    private val spot: dev.nimbus.weather.data.remote.SpotSource? = null,
 ) {
 
     /**
@@ -112,6 +114,10 @@ class WeatherRepository(
                 val others = async { stations?.let { runCatching { it.nearby(lat, lon) }.getOrNull() }.orEmpty() }
                 listOfNotNull(dwd.await()) + others.await()
             }
+        }
+        // what the radar sees falling over the place now (Germany): the page does not wait for it
+        val radarJob = async {
+            if (spot == null || !inDwdArea) null else fetch(RADAR_NOW_WAIT_MS, "radar now") { spot.radarNow(lat, lon, clock()) }
         }
         val alertsJob = async {
             if (inDwdArea) runCatching { brightSky.alerts(lat, lon, german) }.getOrDefault(emptyList()) else emptyList()
@@ -198,16 +204,20 @@ class WeatherRepository(
         val extraKinds = setOf(SourceKind.CAMS, SourceKind.DWD_POLLEN, SourceKind.BATHING, SourceKind.GAUGES, SourceKind.LHP_ALERTS, SourceKind.COMMUNITY)
         val keep = previous?.takeIf { it.place.latitude == lat && it.place.longitude == lon }
         val coreAt = clock()
+        // the radar's last answer while it stands for now – a late one does not hand the sky back to the station
+        var radarNow = NowWeather.radarValid(keep?.radarNow, coreAt)
+        if (radarJob.isCompleted) radarJob.await()?.value?.let { radarNow = it }
+        val base = current
         fun data(
             aq: dev.nimbus.weather.data.model.AirQuality?, community: dev.nimbus.weather.data.model.CommunityObservation?,
             pollen: dev.nimbus.weather.data.model.PollenForecast?, gauges: List<dev.nimbus.weather.data.model.GaugeInfo>,
             bathing: List<dev.nimbus.weather.data.model.BathingSite>, flood: List<dev.nimbus.weather.data.model.WeatherAlert>,
             extraSources: List<Source>, stale: Set<DataPart>, partsAt: Map<DataPart, Long>,
-        ) = WeatherData(
+        ) = NowWeather.withRadar(base, radarNow, clock()).let { now -> WeatherData(
             place = place,
             timezone = forecast.timezone,
             utcOffsetSeconds = forecast.utcOffsetSeconds,
-            current = current,
+            current = now,
             hourly = forecast.hourly,
             daily = forecast.daily,
             minutely = forecast.minutely,
@@ -217,11 +227,12 @@ class WeatherRepository(
             pollen = pollen,
             gauges = gauges,
             bathing = bathing,
-            sources = sources + extraSources,
+            sources = sources + listOfNotNull(Source(SourceKind.RADAR_NOW).takeIf { now.sky == dev.nimbus.weather.data.model.SkyBasis.RADAR }) + extraSources,
             fetchedAt = coreAt,
             stale = stale,
             partsAt = partsAt,
-        )
+            radarNow = radarNow,
+        ) }
         // when each part was fetched: the forecast now, an extra when its answer came – one not
         // asked for (still current) or without an answer keeps the time of its last value
         val arrivedAt = mutableMapOf<DataPart, Long>()
@@ -289,6 +300,10 @@ class WeatherRepository(
             arrive(bathingJob, DataPart.BATHING) { bathingList = it }
             arrive(floodJob, DataPart.FLOOD) { floodAlerts = it }
             arrive(communityJob, DataPart.COMMUNITY) { communityObs = it }
+            launch {
+                val r = radarJob.await()?.value ?: return@launch
+                lock.withLock { if (r != radarNow) { radarNow = r; onProgress(snapshot()) } }
+            }
         }
         snapshot()
     } }
@@ -325,6 +340,8 @@ class WeatherRepository(
         private const val LHP = "LHP"
         private const val HOUR_MS = 3_600_000L
         private const val DAY_MS = 24 * HOUR_MS
+        /** How long the radar over the place may take: its answer comes after the page, never holds it. */
+        private const val RADAR_NOW_WAIT_MS = 30_000L
         /** How long the forecast waits for the best match's single models (they only name a source). */
         private const val PARTS_WAIT_MS = 3_000L
 

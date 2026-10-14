@@ -109,6 +109,7 @@ fun SourcesFooter(data: WeatherData) {
                     src.detail.orEmpty().split(",").mapNotNull { n -> runCatching { providerName(dev.nimbus.weather.data.model.GaugeProvider.valueOf(n)) }.getOrNull() }.joinToString(", "),
                 )
                 SourceKind.LHP_ALERTS -> stringResource(R.string.src_lhp_alerts)
+                SourceKind.RADAR_NOW -> stringResource(R.string.src_radar_now)
                 SourceKind.BATHING -> stringResource(R.string.src_bathing, src.detail?.takeIf { it.isNotBlank() }?.let { ", " + it.replace(",", ", ") } ?: "")
             }
         } + stringResource(R.string.src_moon)

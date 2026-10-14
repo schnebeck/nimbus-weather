@@ -1,0 +1,2 @@
+• Weather now: the radar over the place decides whether it is raining or snowing just now – before a distant station and the model; a station within the same radar pixel (1 km) still decides
+• The page does not wait for the radar; when an answer does not come, the last one holds for 30 minutes – no change of source with every load

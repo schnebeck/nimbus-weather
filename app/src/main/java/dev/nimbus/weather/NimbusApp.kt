@@ -104,8 +104,9 @@ class AppContainer(app: Application) {
     val store = Store(app)
     val location = LocationProvider(app, http)
     val openMeteo = OpenMeteoSource(http)
+    private val spot = dev.nimbus.weather.data.remote.SpotSource(http)
     val history = dev.nimbus.weather.data.remote.HistorySource(
-        http, spot = dev.nimbus.weather.data.remote.SpotSource(http), lightning = dev.nimbus.weather.data.remote.LightningSource(http),
+        http, spot = spot, lightning = dev.nimbus.weather.data.remote.LightningSource(http),
     )
     val repository = WeatherRepository(
         openMeteo, BrightSkySource(http), CommunitySource(http), PollenSource(http),
@@ -114,5 +115,6 @@ class AppContainer(app: Application) {
             dev.nimbus.weather.ui.radar.RadarPrefetcher.isUnmetered(app)
         },
         stations = dev.nimbus.weather.data.remote.StationNetworks(http),
+        spot = spot,
     )
 }

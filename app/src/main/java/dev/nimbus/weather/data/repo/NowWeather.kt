@@ -23,9 +23,11 @@ import dev.nimbus.weather.data.model.CurrentWeather
 import dev.nimbus.weather.data.model.HourlyPoint
 import dev.nimbus.weather.data.model.MeasuredValue
 import dev.nimbus.weather.data.model.NowValue
+import dev.nimbus.weather.data.model.RadarNow
 import dev.nimbus.weather.data.model.SkyBasis
 import dev.nimbus.weather.data.model.StationNetwork
 import dev.nimbus.weather.data.model.WeatherCodes
+import dev.nimbus.weather.data.remote.HistorySource
 import dev.nimbus.weather.data.remote.Reading
 import dev.nimbus.weather.data.remote.StationObservation
 
@@ -96,6 +98,31 @@ object NowWeather {
             ),
             sky = sky,
         )
+    }
+
+    /**
+     * How long the radar's newest step stands for now: an answer coming late keeps the last one,
+     * the sky does not change its source back and forth with every load.
+     */
+    const val RADAR_VALID_MS = 30 * 60_000L
+
+    /** [radar] while it still stands for [now]; null: too old or none. */
+    fun radarValid(radar: RadarNow?, now: Long): RadarNow? = radar?.takeIf { now - it.time in 0..RADAR_VALID_MS }
+
+    /**
+     * What falls now by the radar over the place ([radar], while valid): it beats a station
+     * farther off than the radar's pixel, and the model – precipitation without an echo shows the
+     * sky, rain is told by its rate, an echo where nothing was seen falls as
+     * [WeatherCodes.derive] gives it ([WeatherCodes.forMeasured]). A station within the pixel
+     * that saw the sky measures the place itself and stays.
+     */
+    fun withRadar(current: CurrentWeather, radar: RadarNow?, now: Long): CurrentWeather {
+        val r = radarValid(radar, now) ?: return current
+        val near = (current.stationDistanceKm ?: Double.MAX_VALUE) < HistorySource.RADAR_PIXEL_KM
+        if (near && (current.sky == SkyBasis.OBSERVED || current.sky == SkyBasis.MEASURED_SUNSHINE)) return current
+        val c = WeatherCodes.forMeasured(current.condition, r.mmPerHour, current.cloudCover, current.temperature, byRadar = true) ?: current.condition
+        if (c == current.condition) return current
+        return current.copy(condition = c, sky = SkyBasis.RADAR, measured = current.measured.filter { it.value != NowValue.SKY })
     }
 
     /** The hour running at [now]: its values cover the hour before their time stamp. */

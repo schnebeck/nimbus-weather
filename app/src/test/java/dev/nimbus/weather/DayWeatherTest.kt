@@ -54,9 +54,13 @@ class DayWeatherTest {
         fun fall(r: IntRange, cond: Condition, mm: Double, sun: Double = 0.0) = apply { r.forEach { c[it] = cond; p[it] = mm; this.sun[it] = sun } }
     }
 
-    private fun weather(d: Day) = DayWeather.of(
+    /** [chance]: the chance of precipitation of every hour. */
+    private fun weather(d: Day, chance: Double? = null) = DayWeather.of(
         (0..23).map { s ->
-            HourlyPoint(d0 + (s + 1) * h, 10.0, condition = d.c[s], isDay = s in 7..17, precipitation = d.p[s], sunshine = if (s in 7..17) d.sun[s] else null)
+            HourlyPoint(
+                d0 + (s + 1) * h, 10.0, condition = d.c[s], isDay = s in 7..17, precipitation = d.p[s],
+                precipitationProbability = chance, sunshine = if (s in 7..17) d.sun[s] else null,
+            )
         },
         ZoneOffset.UTC,
     )!!
@@ -152,5 +156,19 @@ class DayWeatherTest {
         assertTrue(fog.fog)
         assertEquals(DaySymbol.Fall.DRIZZLE, fog.fall)
         assertEquals(listOf("Nieselig"), texts(foggy))
+    }
+
+    /**
+     * The drops count the day's amount: neither the hours it is spread over nor its chance make
+     * more of it – a day sure to bring 1.8 mm is a day of little rain, 6 mm in two showers are
+     * as much as 6 mm all afternoon.
+     */
+    @Test fun theDropsCountTheAmount() {
+        fun drops(d: Day, chance: Double) = weather(d, chance).symbol.amount
+        assertEquals(1, drops(Day().fall(9..14, Condition.RAIN, 0.3), chance = 100.0))
+        assertEquals(1, drops(Day().fall(9..14, Condition.RAIN, 0.3), chance = 20.0))
+        assertEquals(2, drops(Day().fall(15..16, Condition.SHOWERS, 3.0), chance = 40.0))
+        assertEquals(2, drops(Day().fall(12..23, Condition.RAIN, 0.5), chance = 40.0))
+        assertEquals(3, drops(Day().fall(15..17, Condition.SHOWERS, 4.0), chance = 30.0))
     }
 }

@@ -87,6 +87,9 @@ data class DayWeather(val phrase: Phrase, val symbol: DaySymbol) {
         private const val STEADY_MM_H = 1.0
         /** This much sunshine on a day of rain or snow is worth telling. */
         private const val SUN_GLIMPSE_MIN = 90.0
+        /** From this day's amount on the symbol shows more drops, from [MUCH_MM] the most. */
+        private const val MORE_MM = 2.0
+        private const val MUCH_MM = 10.0
         /** Less per wet hour is drizzle. */
         private const val DRIZZLE_MM_H = 0.3
         /** The share of a stretch a term has to hold (and a span to be filled with). */
@@ -222,7 +225,11 @@ data class DayWeather(val phrase: Phrase, val symbol: DaySymbol) {
             return skies.isNotEmpty() && skies.count { it != kind } * 4 >= skies.size
         }
 
-        /** The symbol: the daylight sky, the day's precipitation (amount by its wet hours), thunder, fog. */
+        /**
+         * The symbol: the daylight sky, the day's precipitation, thunder, fog. The drops count the
+         * day's amount – not the hours it is spread over, nor its chance: a day sure to bring a
+         * millimetre is a day of little rain.
+         */
         internal fun symbol(hours: List<HourlyPoint>): DaySymbol {
             val light = hours.filter { it.isDay }
             val sun = light.mapNotNull { sun(it) }
@@ -243,8 +250,8 @@ data class DayWeather(val phrase: Phrase, val symbol: DaySymbol) {
             }
             val amount = when {
                 fall == null -> 0
-                kind(hours) == Kind.STEADY_RAIN || wetSum >= 10.0 -> 3
-                wet.size * 4 >= hours.size -> 2
+                wetSum >= MUCH_MM -> 3
+                wetSum >= MORE_MM -> 2
                 else -> 1
             }
             val thunder = hours.any { it.condition == Condition.THUNDERSTORM }

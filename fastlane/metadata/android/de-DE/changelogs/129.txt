@@ -1,0 +1,3 @@
+• 10-Tage-Vorhersage: Die Tropfen im Tagessymbol zählen die Tagesmenge (unter 2 mm wenig, ab 10 mm viel) – nicht die Stunden oder die Wahrscheinlichkeit
+• Rückblick: Das Radar über dem Ort gilt vor einer entfernten Station, eine Station im selben Radarpixel (1 km) vor dem Radar; das Stundensymbol folgt der Menge – kein Niesel bei 0 mm
+• Radar über dem Ort wird wieder für den ganzen Tag gelesen (der DWD hatte das Datenformat geändert)

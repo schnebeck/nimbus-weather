@@ -51,6 +51,8 @@ data class HistoryHour(
         val sunshineFrom: Provenance = Provenance.STATION,
         /** Flashes within about [LightningSource.NEAR_KM] (the satellite's); null: not known. */
         val lightning: Int? = null,
+        /** How far the gauge behind [precipitation] stands from the place (km); null: not known. */
+        val precipitationKm: Double? = null,
     )
 
     data class Modelled(
@@ -186,6 +188,8 @@ class HistorySource(
         private const val SPOT_BACK_MS = 3 * 24 * 3_600_000L
         /** See [spotWaitMs]. */
         const val SPOT_WAIT_MS = 8_000L
+        /** The width of the radar's pixel (RADOLAN: 1 km): a gauge nearer to the place measures within it. */
+        const val RADAR_PIXEL_KM = 1.0
 
         /** The model's low cloud (%) of the hour ending at a time: the mean of its start and its end. */
         fun lowCloud(modelRoot: JsonElement): (Long) -> Double? {
@@ -270,6 +274,7 @@ class HistorySource(
             val sources = o.a("sources")?.mapNotNull { it as? JsonObject }.orEmpty()
             val forecastIds = sources.filter { it.s("observation_type") == "forecast" }.mapNotNull { it.l("id") }.toSet()
             val heights = sources.associate { (it.l("id") ?: -1L) to it.d("height") }
+            val km = sources.associate { (it.l("id") ?: -1L) to it.d("distance")?.div(1000.0) }
             val main = sources.filter { it.l("id") !in forecastIds && Representative.height(it.d("height"), elevationM) }
                 .minByOrNull { it.d("distance") ?: Double.MAX_VALUE }
             val map = o.a("weather")?.mapNotNull { e ->
@@ -296,6 +301,7 @@ class HistorySource(
                     // Bright Sky's icon follows the cloud cover only: the measured sunshine corrects it (combine)
                     condition = condition(w.s("condition")?.takeIf { fits("condition") }, icon, precipitation),
                     pressure = v("pressure_msl"),
+                    precipitationKm = precipitation?.let { km[filled?.l("precipitation") ?: w.l("source_id")] },
                 )
             }?.toMap().orEmpty()
             return Observations(map, main?.s("station_name"), main?.d("distance")?.div(1000.0))
@@ -311,13 +317,18 @@ class HistorySource(
          * precipitation, the satellite's sunshine and lightning ([lightning]: flashes per hour, null
          * if not known – an hour without an entry then had none). An hour with lightning near the
          * place was a thunderstorm, whatever else it looked like.
+         *
+         * The radar's pixel over the place beats a gauge farther off than the pixel is wide; a gauge
+         * within [RADAR_PIXEL_KM] measures the place itself and keeps its amount. The hour's weather
+         * follows the amount kept ([WeatherCodes.forMeasured]): rain a distant station saw and the
+         * radar did not see over the place leaves the place dry.
          */
         internal fun overSpot(
             station: Map<Long, HistoryHour.Measured>, radar: Map<Long, Double>, sun: Map<Long, Double>, now: Long,
             lightning: Map<Long, Int>? = null,
         ): Map<Long, HistoryHour.Measured> = (station.keys + radar.keys + sun.keys + lightning.orEmpty().keys).filter { it <= now }.associateWith { t ->
             val m = station[t] ?: HistoryHour.Measured(null, null, null, null, null, null, null, null)
-            val rain = radar[t]
+            val rain = radar[t]?.takeIf { m.precipitation == null || (m.precipitationKm ?: Double.MAX_VALUE) >= RADAR_PIXEL_KM }
             val s = sun[t]
             val flashes = lightning?.let { it[t] ?: 0 }
             val spot = m.copy(
@@ -328,12 +339,15 @@ class HistorySource(
                 lightning = flashes,
             )
             if ((flashes ?: 0) > 0) spot.copy(condition = Condition.THUNDERSTORM)
-            else spot.copy(condition = spot.condition?.let { WeatherCodes.withSunshine(it, spot.sunshineMinutes) })
+            else spot.copy(
+                condition = WeatherCodes.forMeasured(spot.condition, spot.precipitation, spot.cloudCover, spot.temperature, byRadar = rain != null)
+                    ?.let { WeatherCodes.withSunshine(it, spot.sunshineMinutes) },
+            )
         }
 
         fun condition(condition: String?, icon: String?, precipitation: Double?): Condition? = when (condition) {
             "fog" -> Condition.FOG
-            "rain" -> if ((precipitation ?: 0.0) >= WeatherCodes.HEAVY_RAIN_MM_H) Condition.HEAVY_RAIN else if ((precipitation ?: 0.0) < 0.3) Condition.DRIZZLE else Condition.RAIN
+            "rain" -> WeatherCodes.rainBy(precipitation ?: 0.0)
             "sleet" -> Condition.SLEET
             "snow" -> Condition.SNOW
             "hail" -> Condition.SHOWERS

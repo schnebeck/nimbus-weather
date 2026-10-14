@@ -84,6 +84,11 @@ the place itself:
 | Sunshine | DWD from EUMETSAT MTG satellite data, via Open-Meteo (2.5 km) | Europe | about 20 min |
 | Lightning | DWD from MTG's Lightning Imager; flashes within about 15 km make an hour a thunderstorm | Europe, Africa | a few minutes |
 
+A station within one radar pixel (1 km) measures the place itself: its precipitation stays, the
+radar only fills its gaps. An hour's weather symbol follows the amount that holds: rain a distant
+station saw and the radar did not measure over the place leaves the hour dry; rain the radar
+measured where the station saw nothing fall shows as rain. No amount, no rain symbol.
+
 Temperature and wind still come from the station. Below the chart it says where the measurements
 come from. An hour without a measurement shows no bar; the forecast stands in the value table's
 "expected" column.

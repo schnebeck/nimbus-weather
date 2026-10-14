@@ -1,0 +1,3 @@
+• 10-day forecast: the drops in the day's symbol count the day's amount (below 2 mm little, from 10 mm much) – not the hours or the chance
+• Look-back: the radar over the place beats a distant station, a station within the same radar pixel (1 km) beats the radar; the hour's symbol follows the amount – no drizzle at 0 mm
+• The radar over the place is read for the whole day again (the DWD had changed its data format)

@@ -92,7 +92,8 @@ class SpotSource(
         fun series(root: JsonElement): Map<Long, Double> = root.obj()?.a("features").orEmpty().mapNotNull { e ->
             val p = (e as? JsonObject)?.o("properties") ?: return@mapNotNull null
             val t = runCatching { Instant.parse(p.s("TIME")).toEpochMilli() }.getOrNull() ?: return@mapNotNull null
-            val v = p.d("GRAY_INDEX")?.takeIf { it >= 0.0 } ?: return@mapNotNull null
+            // the band's value, named by the layer's file: GRAY_INDEX (RY), RW_HDF5 (RW)
+            val v = p.keys.firstOrNull { it != "TIME" }?.let { p.d(it) }?.takeIf { it >= 0.0 } ?: return@mapNotNull null
             t to v
         }.toMap()
 

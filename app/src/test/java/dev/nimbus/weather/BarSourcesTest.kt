@@ -170,8 +170,8 @@ class BarSourcesTest {
         assertEquals(dev.nimbus.weather.data.remote.Provenance.RADAR, m.precipitationFrom)
         assertEquals(5.0, m.sunshineMinutes!!, 1e-9)
         assertEquals(dev.nimbus.weather.data.remote.Provenance.SATELLITE, m.sunshineFrom)
-        // five minutes of sun leave the clouds: the station's 55 minutes (40 km away) made it sunny
-        assertEquals(Condition.CLOUDY, m.condition)
+        // the radar's 1.5 mm over the place: rain, whatever the station 40 km away saw
+        assertEquals(Condition.RAIN, m.condition)
         assertEquals(Condition.CLEAR, spot.getValue(noon - h).condition)
         assertEquals(dev.nimbus.weather.data.remote.Provenance.STATION, spot.getValue(noon - h).precipitationFrom)
     }

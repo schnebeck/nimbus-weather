@@ -105,6 +105,27 @@ object WeatherCodes {
         return withSunshine(matched, sunshineMinutes)
     }
 
+    /**
+     * A measured hour's weather matched with the amount that stands for the place: precipitation
+     * without an amount ([precipitation] below 0.05 mm) shows the sky by the [cloudCover], rain is
+     * told by its amount ([rainBy]); where the amount is the radar's over the place ([byRadar]) and
+     * the station saw nothing fall, it falls as [derive] gives it. Thunder stays.
+     */
+    fun forMeasured(c: Condition?, precipitation: Double?, cloudCover: Double?, temperature: Double?, byRadar: Boolean): Condition? = when {
+        precipitation == null || c == Condition.THUNDERSTORM -> c
+        c in wet && precipitation < 0.05 -> sky(cloudCover ?: 100.0)
+        c == Condition.DRIZZLE || c == Condition.RAIN || c == Condition.HEAVY_RAIN -> rainBy(precipitation)
+        byRadar && c !in wet && precipitation >= 0.1 -> derive(cloudCover, precipitation, temperature)
+        else -> c
+    }
+
+    /** Rain by its amount in the hour: drizzle below 0.3 mm, heavy rain from [HEAVY_RAIN_MM_H]. */
+    fun rainBy(mm: Double): Condition = when {
+        mm >= HEAVY_RAIN_MM_H -> Condition.HEAVY_RAIN
+        mm < 0.3 -> Condition.DRIZZLE
+        else -> Condition.RAIN
+    }
+
     /** WMO 96/99: thunderstorm with hail (forecast for Central Europe). */
     fun isHail(code: Int?): Boolean = code == 96 || code == 99
 
@@ -128,9 +149,7 @@ object WeatherCodes {
                 cold && p >= HEAVY_SNOW_MM_H -> Condition.HEAVY_SNOW
                 cold -> Condition.SNOW
                 sleety -> Condition.SLEET
-                p >= HEAVY_RAIN_MM_H -> Condition.HEAVY_RAIN
-                p < 0.3 -> Condition.DRIZZLE
-                else -> Condition.RAIN
+                else -> rainBy(p)
             }
         }
         if (fog) return Condition.FOG

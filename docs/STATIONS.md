@@ -84,6 +84,11 @@ Niederschlag, Sonnenschein und Blitze der Tagesdiagramme (heute und Rückblick) 
 | Sonnenschein | DWD aus EUMETSAT-MTG-Satellitendaten, über Open-Meteo (2,5 km) | Europa | ca. 20 min |
 | Blitze | DWD aus dem Lightning Imager von MTG; Blitze im Umkreis von etwa 15 km machen eine Stunde zum Gewitter | Europa, Afrika | wenige Minuten |
 
+Eine Station innerhalb eines Radarpixels (1 km) misst den Ort selbst: Ihr Niederschlag bleibt, das
+Radar füllt nur ihre Lücken. Das Wettersymbol einer Stunde folgt der Menge, die gilt: Sieht eine
+entfernte Station Regen, den das Radar über dem Ort nicht misst, bleibt die Stunde trocken; misst
+das Radar Regen, wo die Station nichts fallen sah, zeigt sie Regen. Ohne Menge kein Regensymbol.
+
 Temperatur und Wind kommen weiter von der Station. Unter dem Diagramm steht, woher die Messungen
 stammen. Eine Stunde, für die es keine Messung gibt, zeigt keinen Balken; die Prognose steht in der
 Werte-Tabelle in der Spalte „erwartet“.

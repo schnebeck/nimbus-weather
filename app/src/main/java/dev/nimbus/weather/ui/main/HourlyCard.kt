@@ -76,6 +76,8 @@ fun HourlyCard(data: WeatherData, now: Long) {
         list.sortedBy { if (it is HourItem.Hour && it.isNow) start - 1 else it.time }
     }
     val summary = outlookText(data, now)
+    val mmUnit = stringResource(dev.nimbus.weather.util.Texts.precipUnit(settings.precipitationUnit))
+    fun radarAmount(mm: Double?) = Units.precipitationNumber(mm ?: 0.0, settings.precipitationUnit) + NBSP + mmUnit
     // One width for every cell: wide enough for the widest label, chance and temperature in the
     // font size set ("Jetzt", "07:25", "-12°") – the cells grow with a large font, all alike
     val nowLabel = stringResource(R.string.now)
@@ -86,7 +88,7 @@ fun HourlyCard(data: WeatherData, now: Long) {
             with(density) { (texts.maxOfOrNull { measurer.measure(it, style, softWrap = false, density = density).size.width } ?: 0).toDp() }
         val labels = items.map { if (it is HourItem.Hour) (if (it.isNow) nowLabel else tf.hour(it.time)) else tf.time(it.time) }
         val temps = items.mapNotNull { (it as? HourItem.Hour)?.let { h -> Units.temp(if (h.isNow) data.current.temperature else h.hour.temperature, settings.temperatureUnit) } }
-        val chances = items.mapNotNull { (it as? HourItem.Hour)?.hour?.let { h -> Insights.chanceText(h.chance, h.amount) + NBSP + "%" } }
+        val chances = items.mapNotNull { (it as? HourItem.Hour)?.hour?.let { h -> if (h.radar) radarAmount(h.amount) else Insights.chanceText(h.chance, h.amount) + NBSP + "%" } }
         maxOf(
             52.dp,
             widest(labels, androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.SemiBold)) + 8.dp,
@@ -120,6 +122,7 @@ fun HourlyCard(data: WeatherData, now: Long) {
                         isDay = if (item.isNow) data.current.isDay else item.hour.isDay,
                         precipProb = item.hour.chance,
                         precipAmount = item.hour.amount,
+                        radarAmount = if (item.hour.radar) radarAmount(item.hour.amount) else null,
                         value = Units.temp(if (item.isNow) data.current.temperature else item.hour.temperature, settings.temperatureUnit),
                         bold = item.isNow,
                         width = cellWidth,
@@ -132,14 +135,19 @@ fun HourlyCard(data: WeatherData, now: Long) {
 }
 
 @Composable
-private fun HourCell(label: String, condition: Condition, isDay: Boolean, precipProb: Double?, precipAmount: Double?, value: String, bold: Boolean, width: androidx.compose.ui.unit.Dp) {
+private fun HourCell(
+    label: String, condition: Condition, isDay: Boolean, precipProb: Double?, precipAmount: Double?, radarAmount: String?,
+    value: String, bold: Boolean, width: androidx.compose.ui.unit.Dp,
+) {
     Column(Modifier.width(width), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, fontSize = 14.sp, fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Medium, color = Color.White, maxLines = 1)
         Box(Modifier.heightIn(min = 46.dp), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 WeatherIcon(condition, isDay, size = 26.dp)
                 // Shown regardless of the symbol: fog or clouds can still come with a 40 % rain risk.
-                ChanceText(precipProb, precipAmount)
+                // An hour the radar tells has no chance: its amount takes the line (the symbols stay in line).
+                if (radarAmount != null) RadarAmountText(radarAmount, (precipAmount ?: 0.0) >= Insights.MEASURABLE_MM)
+                else ChanceText(precipProb, precipAmount)
             }
         }
         Text(value, fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White)
@@ -191,11 +199,14 @@ private sealed interface HourItem {
 /**
  * An hour of the strip – by definition the hour from [start] on, as everywhere ("17" is 17–18):
  * the temperature at [start], the weather, chance and amount of the hour itself, which the data
- * point at its end carries.
+ * point at its end carries; [radar]: amount and weather by the radar (no chance then).
  */
-internal data class StripHour(val start: Long, val temperature: Double, val condition: Condition, val isDay: Boolean, val chance: Double?, val amount: Double?)
+internal data class StripHour(
+    val start: Long, val temperature: Double, val condition: Condition, val isDay: Boolean, val chance: Double?, val amount: Double?,
+    val radar: Boolean = false,
+)
 
 /** [points] hourly, the first at or before now: the hours from each point to the next. */
 internal fun stripHours(points: List<HourlyPoint>): List<StripHour> = points.zipWithNext { a, b ->
-    StripHour(a.time, a.temperature, b.condition, b.isDay, b.precipitationProbability, b.precipitation)
+    StripHour(a.time, a.temperature, b.condition, b.isDay, b.precipitationProbability, b.precipitation, b.radar)
 }

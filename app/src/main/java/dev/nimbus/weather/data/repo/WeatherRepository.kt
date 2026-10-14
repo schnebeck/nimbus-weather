@@ -213,21 +213,26 @@ class WeatherRepository(
             pollen: dev.nimbus.weather.data.model.PollenForecast?, gauges: List<dev.nimbus.weather.data.model.GaugeInfo>,
             bathing: List<dev.nimbus.weather.data.model.BathingSite>, flood: List<dev.nimbus.weather.data.model.WeatherAlert>,
             extraSources: List<Source>, stale: Set<DataPart>, partsAt: Map<DataPart, Long>,
-        ) = NowWeather.withRadar(base, radarNow, clock()).let { now -> WeatherData(
+        ) = NowWeather.withRadar(base, radarNow, clock()).let { now ->
+            val hourly = RadarAhead.hours(forecast.hourly, radarNow, clock())
+            WeatherData(
             place = place,
             timezone = forecast.timezone,
             utcOffsetSeconds = forecast.utcOffsetSeconds,
             current = now,
-            hourly = forecast.hourly,
+            hourly = hourly,
             daily = forecast.daily,
-            minutely = forecast.minutely,
+            minutely = RadarAhead.minutely(forecast.minutely, radarNow, clock()),
             alerts = alerts + flood,
             airQuality = aq,
             community = community,
             pollen = pollen,
             gauges = gauges,
             bathing = bathing,
-            sources = sources + listOfNotNull(Source(SourceKind.RADAR_NOW).takeIf { now.sky == dev.nimbus.weather.data.model.SkyBasis.RADAR }) + extraSources,
+            sources = sources + listOfNotNull(
+                Source(SourceKind.RADAR_NOW).takeIf { now.sky == dev.nimbus.weather.data.model.SkyBasis.RADAR },
+                Source(SourceKind.RADAR_NOWCAST).takeIf { hourly.any { it.radar } },
+            ) + extraSources,
             fetchedAt = coreAt,
             stale = stale,
             partsAt = partsAt,

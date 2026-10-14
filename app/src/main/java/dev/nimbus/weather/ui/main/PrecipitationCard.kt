@@ -98,7 +98,8 @@ class PrecipToday(
             val dry = !raining && notice == null && todaySum < DRY_MM &&
                 rest.all { (it.precipitation ?: 0.0) < DRY_MM && (it.precipitationProbability ?: 0.0) < DRY_CHANCE }
             val nextWet = data.hourly.firstOrNull { it.time > now && ((it.precipitationProbability ?: 0.0) >= WET_CHANCE || (it.precipitation ?: 0.0) >= WET_MM) }
-            return PrecipToday(todaySum, rest.sumOf { it.precipitation ?: 0.0 }, readings, chance(rest), notice, dry, nextWet)
+            // the hours the radar tells have no chance: the model's chance of the hours after them
+            return PrecipToday(todaySum, rest.sumOf { it.precipitation ?: 0.0 }, readings, chance(rest.filter { !it.radar }), notice, dry, nextWet)
         }
 
         /** Less apart than this (percentage points) is the same chance. */

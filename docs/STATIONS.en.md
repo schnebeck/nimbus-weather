@@ -94,6 +94,12 @@ decides whether and how it falls just now – before a distant station and befor
 does not wait for it, the radar follows. When an answer does not come, the last one holds for
 another half hour: the sky does not change its source with every load.
 
+For the next two hours Nimbus takes the DWD's radar nowcast (WN, reflectivity every 5 minutes,
+turned into rain by Marshall–Palmer, Z = 200·R^1.6; weaker than 8 dBZ: none). With the measured
+steps of the running hour it replaces the model in the quarter hours and hours it covers in full:
+amount and symbol by the radar, and in the hourly strip the amount instead of the chance. After
+that the model holds again.
+
 Temperature and wind still come from the station. Below the chart it says where the measurements
 come from. An hour without a measurement shows no bar; the forecast stands in the value table's
 "expected" column.

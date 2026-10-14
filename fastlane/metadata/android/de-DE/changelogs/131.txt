@@ -1,0 +1,2 @@
+• Die nächsten 2 Stunden nach der Radarvorhersage des DWD: Menge und Symbol der Stunden und Viertelstunden, die sie abdeckt – vor dem Modell
+• Stundenstreifen: In Radarstunden steht die Menge statt der Wahrscheinlichkeit

@@ -110,6 +110,7 @@ fun SourcesFooter(data: WeatherData) {
                 )
                 SourceKind.LHP_ALERTS -> stringResource(R.string.src_lhp_alerts)
                 SourceKind.RADAR_NOW -> stringResource(R.string.src_radar_now)
+                SourceKind.RADAR_NOWCAST -> stringResource(R.string.src_radar_nowcast)
                 SourceKind.BATHING -> stringResource(R.string.src_bathing, src.detail?.takeIf { it.isNotBlank() }?.let { ", " + it.replace(",", ", ") } ?: "")
             }
         } + stringResource(R.string.src_moon)

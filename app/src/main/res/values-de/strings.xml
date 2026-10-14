@@ -522,6 +522,7 @@
     <string name="src_gauges">Pegel: %1$s</string>
     <string name="src_lhp_alerts">Hochwasserwarnungen: LHP</string>
     <string name="src_radar_now">Niederschlag jetzt: DWD-Radar über dem Ort</string>
+    <string name="src_radar_nowcast">Niederschlag der nächsten 2 Stunden: DWD-Radarvorhersage</string>
     <string name="outlook_precip_chance">Niederschlagswahrscheinlichkeit %1$d %%.</string>
     <string name="settings_cards">Kacheln</string>
     <string name="settings_cards_desc">≡ kurz halten und ziehen zum Sortieren, der Schalter blendet eine Kachel aus. Die kleinen Kacheln stehen als Block auf der Seite – aufklappen, um sie untereinander zu sortieren.</string>

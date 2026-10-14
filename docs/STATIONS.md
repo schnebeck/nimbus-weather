@@ -94,6 +94,12 @@ entscheidet, ob und wie es gerade fällt – vor einer entfernten Station und vo
 wartet nicht darauf, das Radar kommt nach. Bleibt eine Antwort aus, gilt die letzte noch eine halbe
 Stunde: Der Himmel wechselt seine Quelle nicht mit jedem Laden.
 
+Für die nächsten zwei Stunden nimmt Nimbus die Radarvorhersage des DWD (WN, Reflektivität alle
+5 Minuten, in Regen umgerechnet nach Marshall–Palmer, Z = 200·R^1,6; schwächer als 8 dBZ: nichts).
+Mit den gemessenen Schritten der laufenden Stunde ersetzt sie das Modell in den Viertelstunden und
+Stunden, die sie ganz abdeckt: Menge und Symbol nach dem Radar, statt der Wahrscheinlichkeit steht
+im Stundenstreifen die Menge. Danach gilt wieder das Modell.
+
 Temperatur und Wind kommen weiter von der Station. Unter dem Diagramm steht, woher die Messungen
 stammen. Eine Stunde, für die es keine Messung gibt, zeigt keinen Balken; die Prognose steht in der
 Werte-Tabelle in der Spalte „erwartet“.

@@ -40,6 +40,15 @@ internal fun ChanceText(probability: Double?, amount: Double?) {
     )
 }
 
+/** The radar's amount under a weather symbol, in the chance's place (the radar gives none): blue when measurable, dimmed below. */
+@Composable
+internal fun RadarAmountText(text: String, wet: Boolean) {
+    Text(
+        text, fontSize = 11.sp, fontWeight = if (wet) FontWeight.Bold else FontWeight.Medium,
+        color = if (wet) PrecipBlue else Color(0x99FFFFFF), style = ChanceStyle, maxLines = 1,
+    )
+}
+
 /** Soft dark shadow keeps the blue percentages readable on bright, cloudy skies. */
 internal val ChanceStyle = androidx.compose.ui.text.TextStyle(
     shadow = androidx.compose.ui.graphics.Shadow(Color(0x99000000), Offset(0f, 1f), 4f),

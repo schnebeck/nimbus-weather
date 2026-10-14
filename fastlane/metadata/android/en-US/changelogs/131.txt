@@ -1,0 +1,2 @@
+• The next 2 hours by the DWD's radar nowcast: amount and symbol of the hours and quarter hours it covers – before the model
+• Hourly strip: hours told by the radar show their amount instead of a chance

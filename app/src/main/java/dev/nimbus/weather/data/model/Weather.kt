@@ -97,6 +97,8 @@ data class HourlyPoint(
     val sunshine: Double? = null,
     /** Thunderstorm with hail (WMO 96/99) – [condition] is THUNDERSTORM then. */
     val hail: Boolean = false,
+    /** [precipitation] and [condition] by the radar over the place (measured, then its nowcast) – no chance then. */
+    val radar: Boolean = false,
 )
 
 @Serializable
@@ -179,9 +181,13 @@ data class WeatherData(
     fun fetchedAt(part: DataPart): Long = partsAt[part] ?: if (part == DataPart.FORECAST) fetchedAt else 0L
 }
 
-/** Precipitation the radar measured over the place: [mmPerHour] from its 5-minute steps up to [time]. */
+/**
+ * The radar over the place: [mmPerHour] from its 5-minute steps up to [time] (RY, measured);
+ * [steps]: mm in each 5 minutes by their ends – measured up to [time], the nowcast after it
+ * (WN, computed from the analysis at [issue]).
+ */
 @Serializable
-data class RadarNow(val time: Long, val mmPerHour: Double)
+data class RadarNow(val time: Long, val mmPerHour: Double, val steps: Map<Long, Double> = emptyMap(), val issue: Long? = null)
 
 /** The parts of [WeatherData] that come from sources of their own (and can be older than the rest). */
 @Serializable
@@ -229,7 +235,7 @@ data class BathingSite(
 
 /** A data source that contributed to a forecast; rendered localized in the UI. */
 @Serializable
-enum class SourceKind { MODEL_DWD_ICON, MODEL_ECMWF, MODEL_METEO_FRANCE, MODEL_REGIONAL, MODEL_BEST_MATCH, GAP_FILL, DWD_STATION, STATION, DWD_WARNINGS, CAMS, COMMUNITY, DWD_POLLEN, PEGELONLINE, NLWKN, GAUGES, LHP_ALERTS, BATHING, RADAR_NOW }
+enum class SourceKind { MODEL_DWD_ICON, MODEL_ECMWF, MODEL_METEO_FRANCE, MODEL_REGIONAL, MODEL_BEST_MATCH, GAP_FILL, DWD_STATION, STATION, DWD_WARNINGS, CAMS, COMMUNITY, DWD_POLLEN, PEGELONLINE, NLWKN, GAUGES, LHP_ALERTS, BATHING, RADAR_NOW, RADAR_NOWCAST }
 
 @Serializable
 data class Source(

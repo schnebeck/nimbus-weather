@@ -32,7 +32,8 @@ import java.time.Instant
  * time stamp, as everywhere in the app):
  * - precipitation from the DWD's radar (RADOLAN, Germany): RW, the hourly sum adjusted to the rain
  *   gauges (half an hour late, a day back); the hours it does not have yet from RY, 5-minute sums
- *   at once – one request each, the values at the place as a time series;
+ *   at once – one request each, the values at the place as a time series; the two hours to come
+ *   from its nowcast (WN, reflectivity every 5 minutes);
  * - sunshine from the satellite (the DWD's from EUMETSAT MTG, 2.5 km, about 20 minutes late, all of
  *   Europe), via Open-Meteo.
  */
@@ -53,8 +54,14 @@ class SpotSource(
      * Precipitation over the place now: RY's newest 5-minute steps (up to [NOW_STEPS]) as a rate,
      * stamped with the newest one; null outside the radar's area.
      */
-    suspend fun radarNow(lat: Double, lon: Double, now: Long): RadarNow? =
-        now(series(http.getJson(pointUrl(RY, lat, lon, now - NOW_SPAN_MS, now))))
+    suspend fun radarNow(lat: Double, lon: Double, now: Long): RadarNow? = coroutineScope {
+        // the nowcast on its own: without it, what falls now still counts
+        val wn = async { runCatching { nowcast(http.getJson(pointUrl(WN, lat, lon, now - NOW_STEPS * STEP_MS, now + AHEAD_MS))) }.getOrNull() }
+        val ry = series(http.getJson(pointUrl(RY, lat, lon, now - NOW_SPAN_MS, now)))
+        val r = now(ry) ?: return@coroutineScope null.also { wn.cancel() }
+        val ahead = wn.await()
+        r.copy(steps = ry + ahead?.second.orEmpty().filterKeys { it > r.time }, issue = ahead?.first)
+    }
 
     /** The satellite's hours at the place, by the hour's end, for the last [pastDays] days and today ([SatelliteSunshine]). */
     suspend fun satelliteHours(lat: Double, lon: Double, pastDays: Int): Map<Long, SatelliteHour> = runCatching {
@@ -96,8 +103,14 @@ class SpotSource(
 
         private fun iso(ms: Long) = Instant.ofEpochMilli(ms / 60_000L * 60_000L).toString()
 
-        /** What [radarNow] asks for: the last half hour of RY. */
-        private const val NOW_SPAN_MS = 30 * 60_000L
+        /** The DWD's nowcast: reflectivity every 5 minutes for two hours from each analysis. */
+        private const val WN = "Radar_wn-product_1x1km_ger"
+        /** What [radarNow] asks for: the last hour of RY (the running hour's steps so far) … */
+        private const val NOW_SPAN_MS = 65 * 60_000L
+        /** … and the nowcast as far as it reaches (two hours, and room to spare). */
+        private const val AHEAD_MS = 2 * HOUR_MS + 15 * 60_000L
+        /** Weaker echoes are no precipitation (as on the radar map). */
+        const val WET_DBZ = 8.0
         /** The steps [radarNow] averages: a quarter of an hour. */
         const val NOW_STEPS = 3
 
@@ -106,6 +119,25 @@ class SpotSource(
             val last = ry.keys.maxOrNull() ?: return null
             val steps = (0 until NOW_STEPS).mapNotNull { ry[last - it * STEP_MS] }
             return RadarNow(last, kotlin.math.round(steps.average() * (HOUR_MS / STEP_MS) * 100) / 100)
+        }
+
+        /**
+         * Rain from reflectivity (Marshall–Palmer, Z = 200 · R^1.6), in mm per hour; weaker than
+         * [WET_DBZ]: none.
+         */
+        fun rate(dbz: Double): Double = if (dbz < WET_DBZ) 0.0 else Math.pow(Math.pow(10.0, dbz / 10) / 200, 1 / 1.6)
+
+        /** The nowcast's answer: its analysis, and the mm of each 5 minutes by their ends; null: none. */
+        fun nowcast(root: JsonElement): Pair<Long?, Map<Long, Double>>? {
+            var issue: Long? = null
+            val steps = root.obj()?.a("features").orEmpty().mapNotNull { e ->
+                val p = (e as? JsonObject)?.o("properties") ?: return@mapNotNull null
+                val t = runCatching { Instant.parse(p.s("TIME")).toEpochMilli() }.getOrNull() ?: return@mapNotNull null
+                p.s("REFERENCE_TIME")?.let { r -> runCatching { Instant.parse(r).toEpochMilli() }.getOrNull() }?.let { issue = it }
+                val dbz = p.keys.firstOrNull { it != "TIME" && it != "REFERENCE_TIME" }?.let { p.d(it) } ?: return@mapNotNull null
+                t to kotlin.math.round(rate(dbz) * STEP_MS / HOUR_MS * 1000) / 1000
+            }.toMap()
+            return if (steps.isEmpty()) null else issue to steps
         }
 
         /** A time series of a point answer: time → value; "no data" (negative, outside the radars) left out. */

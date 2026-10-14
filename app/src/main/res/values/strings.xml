@@ -533,6 +533,7 @@
     <string name="src_gauges">Water levels: %1$s</string>
     <string name="src_lhp_alerts">Flood alerts: LHP</string>
     <string name="src_radar_now">Precipitation now: DWD radar over the place</string>
+    <string name="src_radar_nowcast">Precipitation of the next 2 hours: DWD radar nowcast</string>
     <string name="outlook_precip_chance">Chance of precipitation %1$d %%.</string>
     <string name="settings_cards">Cards</string>
     <string name="settings_cards_desc">Hold ≡ and drag to sort, the switch hides a card. The small tiles are one block on the page – expand it to sort them among themselves.</string>

@@ -96,7 +96,8 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
 - **Look back** by swiping right: today so far, yesterday, the day before – DWD readings against the
   forecast of the chosen model, on top the day in parts (early to night) with symbol and weather, the
   sky showing them one after the other; the mean deviation, the hourly values as a table
-  measured | expected; precipitation measured and forecast with its chance; lightning within 15 km
+  measured | expected; precipitation measured and forecast with its chance; in the day's summary
+  temperature, precipitation and sunshine each beside the forecast; lightning within 15 km
   (by the satellite) makes an hour a thunderstorm – in its symbol, the table and the day's summary
   with count and time span; and the rain radar of the
   whole day in 5-minute steps to play, pan and zoom (where a weather service radar measures: DWD,

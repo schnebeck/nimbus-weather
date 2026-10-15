@@ -97,7 +97,8 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
 - **Rückblick** per Wischen nach rechts: heute bisher, gestern, vorgestern – DWD-Messwerte im
   Vergleich zur Vorhersage des gewählten Modells, oben der Tag in Abschnitten (früh bis nachts)
   mit Symbol und Wetter, der Himmel zeigt sie nacheinander; mit mittlerer Abweichung, Stundenwerte als Tabelle
-  gemessen | erwartet; Niederschlag gemessen und vorhergesagt mit Wahrscheinlichkeit; Blitze im
+  gemessen | erwartet; Niederschlag gemessen und vorhergesagt mit Wahrscheinlichkeit; in der Tagesbilanz
+  Temperatur, Niederschlag und Sonnenschein jeweils neben der Vorhersage; Blitze im
   Umkreis von 15 km (vom Satelliten) machen eine Stunde zum Gewitter – im Symbol, in der Tabelle und
   in der Tagesbilanz mit Anzahl und Zeitraum; dazu das
   Regenradar des ganzen Tages in 5-Minuten-Schritten zum Abspielen, Verschieben und Zoomen

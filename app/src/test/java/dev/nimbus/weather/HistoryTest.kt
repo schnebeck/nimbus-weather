@@ -85,9 +85,14 @@ class HistoryTest {
         assertEquals(0.0, s.modelPrecipitation!!, 1e-9)
         assertEquals(45.0, s.maxGust!!, 1e-9)
         assertEquals(12.0, s.sunshineHours!!, 1e-9)          // 24 x 30 min
+        // beside it the forecast's sunshine of the same hours: 24 x 20 min
+        assertEquals(8.0, s.modelSunshineHours!!, 1e-9)
         val modelOnly = DaySummary.of(HistoryDay(day.date, (0 until 24).map { hour(it, null, 8.0) }))
         assertTrue(!modelOnly.measured)
         assertNull(modelOnly.tempError)
+        // no sunshine measured: the sunshine shown is the forecast's already – not twice
+        assertEquals(8.0, modelOnly.sunshineHours!!, 1e-9)
+        assertNull(modelOnly.modelSunshineHours)
     }
 
     @Test

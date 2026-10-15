@@ -75,7 +75,10 @@ internal fun SummaryCard(sum: DaySummary, history: History, settings: Settings, 
         )
         sum.sunshineHours?.let {
             HairlineDivider(Modifier.padding(vertical = 6.dp))
-            SummaryRow(stringResource(R.string.history_row_sun) to stringResource(R.string.history_row_sun_short), hoursMinutes(it * 60.0), null)
+            SummaryRow(
+                stringResource(R.string.history_row_sun) to stringResource(R.string.history_row_sun_short), hoursMinutes(it * 60.0),
+                sum.modelSunshineHours?.let { f -> model + hoursMinutes(f * 60.0) },
+            )
         }
         if ((sum.lightning ?: 0) > 0) {
             HairlineDivider(Modifier.padding(vertical = 6.dp))

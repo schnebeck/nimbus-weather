@@ -98,7 +98,8 @@ Für die nächsten zwei Stunden nimmt Nimbus die Radarvorhersage des DWD (WN, Re
 5 Minuten, in Regen umgerechnet nach Marshall–Palmer, Z = 200·R^1,6; schwächer als 8 dBZ: nichts).
 Mit den gemessenen Schritten der laufenden Stunde ersetzt sie das Modell in den Viertelstunden und
 Stunden, die sie ganz abdeckt: Menge und Symbol nach dem Radar, statt der Wahrscheinlichkeit steht
-im Stundenstreifen die Menge. Danach gilt wieder das Modell.
+im Stundenstreifen die Menge. Danach gilt wieder das Modell. Der Rückblick zeigt die kommenden
+Stunden von heute ebenso.
 
 Temperatur und Wind kommen weiter von der Station. Unter dem Diagramm steht, woher die Messungen
 stammen. Eine Stunde, für die es keine Messung gibt, zeigt keinen Balken; die Prognose steht in der

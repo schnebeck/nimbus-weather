@@ -22,6 +22,8 @@ import dev.nimbus.weather.data.model.HourlyPoint
 import dev.nimbus.weather.data.model.MinutelyPoint
 import dev.nimbus.weather.data.model.RadarNow
 import dev.nimbus.weather.data.model.WeatherCodes
+import dev.nimbus.weather.data.remote.History
+import dev.nimbus.weather.data.remote.HistoryHour
 import kotlin.math.round
 
 /**
@@ -62,5 +64,25 @@ object RadarAhead {
             val c = WeatherCodes.forMeasured(h.condition, mm, h.cloudCover, h.temperature, byRadar = true) ?: h.condition
             h.copy(precipitation = mm, condition = WeatherCodes.withSunshine(c, h.sunshine), precipitationProbability = null, radar = true)
         }
+    }
+
+    /**
+     * The look-back's hours to come – today's from the running one on – by the radar as [hours]
+     * gives the weather page's: the model's amount and symbol where the radar covers the hour,
+     * no chance. The hours over keep what was measured and expected.
+     */
+    fun history(history: History, radar: RadarNow?, now: Long): History {
+        val r = NowWeather.radarValid(radar, now) ?: return history
+        fun ahead(h: HistoryHour): HistoryHour {
+            val m = h.model ?: return h
+            if (h.time <= now) return h
+            val mm = sum(r.steps, h.time, HOUR_MS) ?: return h
+            val c = WeatherCodes.forMeasured(m.condition, mm, null, m.temperature, byRadar = true) ?: m.condition
+            return h.copy(model = m.copy(precipitation = mm, condition = WeatherCodes.withSunshine(c, m.sunshineMinutes), chance = null))
+        }
+        return history.copy(
+            days = history.days.map { d -> d.copy(hours = d.hours.map(::ahead)) },
+            allHours = history.allHours.map(::ahead),
+        )
     }
 }

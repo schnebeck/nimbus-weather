@@ -101,7 +101,12 @@ fun HistoryPage(
     modelLabel: String? = null,
 ) {
     val context = LocalContext.current
-    val history = state?.history
+    val now = rememberNow()
+    // today's hours to come by the radar's nowcast, as on the weather page
+    val radarNow = state?.data?.radarNow
+    val history = remember(state?.history, radarNow, now / 60_000L) {
+        state?.history?.let { dev.nimbus.weather.data.repo.RadarAhead.history(it, radarNow, now) }
+    }
     val day = history?.days?.getOrNull(dayIndex)
     val summary = remember(day) { day?.takeIf { it.hours.isNotEmpty() }?.let { DaySummary.of(it, history.fetchedAt) } }
     val tf = remember(history?.zone) { TimeFormat(history?.zone?.id ?: (state?.data?.timezone ?: "UTC"), DateFormat.is24HourFormat(context)) }
@@ -217,7 +222,7 @@ fun HistoryPage(
                     else -> {
                         item(key = "summary") { SummaryCard(summary, history, settings, tf) }
                         // Right after midnight there is only one hour – nothing to draw yet.
-                        if (day.hours.size >= 2) item(key = "course") { DayCourseCard(day, summary, settings, tf, history, place, state?.data?.hourly.orEmpty(), state?.data?.current?.condition, rememberNow()) }
+                        if (day.hours.size >= 2) item(key = "course") { DayCourseCard(day, summary, settings, tf, history, place, state?.data?.hourly.orEmpty(), state?.data?.current?.condition, now) }
                         // The composites keep days of radar (DWD, KNMI, MET Norway): the whole day, in 5-minute steps
                         if (dev.nimbus.weather.ui.radar.RadarComposites.covered(place.latitude, place.longitude)) item(key = "radar") {
                             val start = day.date.atStartOfDay(history.zone).toInstant().toEpochMilli()

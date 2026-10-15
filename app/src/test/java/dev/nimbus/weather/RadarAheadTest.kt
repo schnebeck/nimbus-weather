@@ -34,6 +34,7 @@ import dev.nimbus.weather.data.remote.OpenMeteoSource
 import dev.nimbus.weather.data.remote.PollenSource
 import dev.nimbus.weather.data.remote.SpotSource
 import dev.nimbus.weather.data.repo.RadarAhead
+import dev.nimbus.weather.ui.main.lookBackPoints
 import dev.nimbus.weather.data.repo.WeatherRepository
 import kotlinx.coroutines.runBlocking
 import mockwebserver3.Dispatcher
@@ -142,6 +143,42 @@ class RadarAheadTest {
     /** A radar answer older than half an hour tells nothing of the hours to come. */
     @Test fun anOldNowcastTellsNothing() {
         assertEquals(model, RadarAhead.hours(model, radar(), t0 + 46 * min))
+    }
+
+    /**
+     * The look-back today: its hours to come by the radar as the weather page's – the hours over
+     * keep what was measured and expected, the hour beyond the nowcast the model's.
+     */
+    @Test fun theLookBackTodayByTheRadar() {
+        val zone = java.time.ZoneOffset.UTC
+        fun modelled(c: Condition, mm: Double) =
+            dev.nimbus.weather.data.remote.HistoryHour.Modelled(12.0, mm, 10.0, 20.0, 0.0, c, true, chance = 80.0)
+        val measured = dev.nimbus.weather.data.remote.HistoryHour.Measured(11.5, 0.4, 9.0, 18.0, 200.0, 0.0, 100.0, Condition.DRIZZLE)
+        val hours = model.map { m ->
+            dev.nimbus.weather.data.remote.HistoryHour(m.time, measured.takeIf { m.time <= now }, modelled(m.condition, m.precipitation!!))
+        }
+        val day = dev.nimbus.weather.data.remote.HistoryDay(java.time.LocalDate.of(2026, 10, 14), hours)
+        val history = dev.nimbus.weather.data.remote.History(listOf(day), "Alfeld", 17.4, "icon_seamless", zone, now)
+        val ahead = RadarAhead.history(history, radar(), now)
+        val byTime = ahead.days.single().hours.associateBy { it.time }
+        // over: as it was, measured and expected
+        assertEquals(hours[0], byTime.getValue(t0))
+        // the running hour and the next by the radar, no chance
+        assertEquals(0.0, byTime.getValue(t0 + hour).model!!.precipitation!!, 0.0)
+        assertEquals(Condition.CLOUDY, byTime.getValue(t0 + hour).model!!.condition)
+        assertNull(byTime.getValue(t0 + hour).model!!.chance)
+        assertEquals(1.0, byTime.getValue(t0 + 2 * hour).model!!.precipitation!!, 0.01)
+        assertEquals(Condition.RAIN, byTime.getValue(t0 + 2 * hour).model!!.condition)
+        // beyond the nowcast: the model's
+        assertEquals(hours[3], byTime.getValue(t0 + 3 * hour))
+        // the charts' hours alike
+        assertEquals(ahead.days.single().hours, ahead.allHours)
+        // as the chart shows it: the radar's amount as the forecast's bar, no chance
+        val point = ahead.lookBackPoints(ahead.days.single(), t0 - hour).first { it.time == t0 + 2 * hour }
+        assertEquals(1.0, point.precipitation!!, 0.01)
+        assertNull(point.compare!!.chanceF)
+        // an old radar answer changes nothing
+        assertEquals(history, RadarAhead.history(history, radar(), t0 + 46 * min))
     }
 
     // ---- the load

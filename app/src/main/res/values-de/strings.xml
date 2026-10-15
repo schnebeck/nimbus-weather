@@ -369,6 +369,7 @@
     <string name="history_yesterday">Gestern</string>
     <string name="history_day_before">Vorgestern</string>
     <string name="history_summary">Tagesbilanz</string>
+    <string name="history_summary_so_far">Tagesbilanz bisher</string>
     <string name="history_row_temp">Höchst / Tiefst</string>
     <string name="history_row_sun">Sonnenschein</string>
     <string name="history_row_gust">Stärkste Böe</string>

@@ -57,13 +57,17 @@ import dev.nimbus.weather.util.TimeFormat
 import dev.nimbus.weather.util.Units
 
 @Composable
-internal fun SummaryCard(sum: DaySummary, history: History, settings: Settings, tf: TimeFormat) {
+internal fun SummaryCard(
+    sum: DaySummary, history: History, settings: Settings, tf: TimeFormat,
+    /** Today: the day is not over – the summary of it so far. */
+    soFar: Boolean = false,
+) {
     val t = { v: Double? -> Units.temp(v, settings.temperatureUnit) }
     val pUnit = stringResource(Texts.precipUnit(settings.precipitationUnit))
     val wUnit = stringResource(Texts.windUnit(settings.windUnit))
     val p = { v: Double? -> Units.precipitationNumber(v, settings.precipitationUnit) + NBSP + pUnit }
     val model = stringResource(R.string.history_model_value, "")
-    GlassCard(title = stringResource(R.string.history_summary), icon = Icons.Outlined.History, info = Term.HISTORY) {
+    GlassCard(title = stringResource(if (soFar) R.string.history_summary_so_far else R.string.history_summary), icon = Icons.Outlined.History, info = Term.HISTORY) {
         SummaryRow(
             stringResource(R.string.history_row_temp) to stringResource(R.string.history_row_temp_short), "${t(sum.tempMax)} / ${t(sum.tempMin)}",
             if (sum.measured && sum.modelTempMax != null) model + "${t(sum.modelTempMax)} / ${t(sum.modelTempMin)}" else null,

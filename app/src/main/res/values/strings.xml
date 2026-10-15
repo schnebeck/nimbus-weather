@@ -380,6 +380,7 @@
     <string name="history_yesterday">Yesterday</string>
     <string name="history_day_before">Day Before Yesterday</string>
     <string name="history_summary">Day Summary</string>
+    <string name="history_summary_so_far">Day Summary So Far</string>
     <string name="history_row_temp">High / Low</string>
     <string name="history_row_sun">Sunshine</string>
     <string name="history_row_gust">Strongest gust</string>

@@ -1,6 +1,7 @@
 /*
  * Nimbus - app/src/test/java/dev/nimbus/weather/SummarySunTest.kt
- * The look-back's summary: the sunshine measured, and beneath it the forecast's for the same hours.
+ * The look-back's summary: the sunshine measured, and beneath it the forecast's for the same hours;
+ * today's titled as the summary so far.
  *
  *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
  *   Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
@@ -77,5 +78,30 @@ class SummarySunTest {
         compose.onRoot().captureRoboImage("src/test/screenshots/summary_sun.png")
         compose.onNodeWithText("5:30\u00A0Std.", substring = true).assertIsDisplayed()
         compose.onNodeWithText("Vorhersage 8:15\u00A0Std.", substring = true).assertIsDisplayed()
+        // a day over: the day's summary
+        compose.onNodeWithText("Tagesbilanz", ignoreCase = true).assertIsDisplayed()
+    }
+
+    /** Today the day is not over: its summary so far – in the title too. */
+    @Test fun todayTheSummarySoFar() {
+        val t0 = 1_790_812_800_000L
+        val hours = (0 until 12).map { i ->
+            HistoryHour(
+                t0 + (i + 1) * 3_600_000L,
+                HistoryHour.Measured(12.0, 0.0, 5.0, 10.0, 200.0, if (i >= 7) 30.0 else 0.0, 50.0, Condition.PARTLY_CLOUDY),
+                HistoryHour.Modelled(12.5, 0.0, 6.0, 12.0, if (i >= 7) 45.0 else 0.0, Condition.MOSTLY_CLEAR, i >= 7),
+            )
+        }
+        val day = HistoryDay(LocalDate.of(2026, 10, 1), hours)
+        val history = History(listOf(day), "Hildesheim", 9.6, "icon_seamless", ZoneOffset.UTC, t0 + 12 * 3_600_000L)
+        compose.setContent {
+            CompositionLocalProvider(LocalSettings provides Settings(), LocalTimeFormat provides TimeFormat("UTC", true)) {
+                Box(Modifier.width(360.dp).background(Color(0xFF2B3A4E)).padding(12.dp)) {
+                    SummaryCard(DaySummary.of(day), history, Settings(), TimeFormat("UTC", true), soFar = true)
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/summary_so_far.png")
+        compose.onNodeWithText("Tagesbilanz bisher", ignoreCase = true).assertIsDisplayed()
     }
 }

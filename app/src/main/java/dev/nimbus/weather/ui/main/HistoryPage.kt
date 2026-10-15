@@ -220,7 +220,7 @@ fun HistoryPage(
                     }
                     summary == null -> item(key = "empty") { HistoryMessage(stringResource(R.string.history_empty), null) }
                     else -> {
-                        item(key = "summary") { SummaryCard(summary, history, settings, tf) }
+                        item(key = "summary") { SummaryCard(summary, history, settings, tf, soFar = dayIndex == HISTORY_DAYS - 1) }
                         // Right after midnight there is only one hour – nothing to draw yet.
                         if (day.hours.size >= 2) item(key = "course") { DayCourseCard(day, summary, settings, tf, history, place, state?.data?.hourly.orEmpty(), state?.data?.current?.condition, now) }
                         // The composites keep days of radar (DWD, KNMI, MET Norway): the whole day, in 5-minute steps

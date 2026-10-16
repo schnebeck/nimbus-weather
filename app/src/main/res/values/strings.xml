@@ -315,7 +315,7 @@
     <string name="term_hourly_title">Hourly Forecast</string>
     <string name="term_hourly_body">The next 24 hours at a glance. The symbol shows the most likely weather for the hour, the number below it the temperature.\n\n• Now: the current weather – where available measured at the nearest DWD station, therefore it can differ slightly from the forecast for this hour\n• Percentages: chance of precipitation – blue from 10 %, below that dimmed – details in the “Precipitation” card further down\n• Sun symbols with a time: sunrise and sunset\n\nSwipe sideways for more hours.\n\nThe text above the hours is a short forecast for the next 12 hours, generated automatically from the hourly forecast of the selected weather model (preset: Automatic). It is not written by a meteorologist.\n\nIt names the next change in weather, how the temperature develops, whether and when precipitation is likely (from 60 %) or possible (from 30 %), strong gusts from 50 km/h and – in the afternoon and evening – a short outlook for tomorrow.\n\nIf it is raining now, the end of the precipitation comes from the 15-minute forecast.</string>
     <string name="term_daily_title">10-Day Forecast</string>
-    <string name="term_daily_body">One row per day: symbol, lowest and highest temperature.\n\n• The bar shows the day\'s temperature range on a scale common to all ten days – so warmer and colder days are easy to compare\n• Its colours go from blue (cold) via green and yellow to red (hot)\n• The dot on today\'s bar is the current temperature\n• Blue percentages: chance of precipitation on that day\n\nTap a day to see its temperature curve and hourly precipitation. Days 9 and 10 have larger uncertainty.</string>
+    <string name="term_daily_body">One row per day: symbol, lowest and highest temperature.\n\n• The bar shows the day\'s temperature range on a scale common to all ten days – so warmer and colder days are easy to compare\n• Its colours go from blue (cold) via green and yellow to red (hot)\n• The dot on today\'s bar is the current temperature\n• Blue percentages: chance of precipitation on that day\n\nTap a day to see its temperature curve and hourly precipitation. Days 9 and 10 have larger uncertainty.\n\nToday\'s day chart: left of the dashed now line the coloured curve shows the station\'s readings, right of it the forecast. The white dashed curve (“Forecast so far”) shows what had been forecast for the hours so far – so you can see how well the forecast did. For precipitation and sunshine, filled bars are measured (station, radar, satellite), frames are forecast.\n\nWith the setting “Today: measured vs. forecast” the coloured curve shows the readings only and the dashed one the forecast for the whole day.</string>
 
     <string name="models_unavailable">Model data currently unavailable – please try again later.</string>
 
@@ -654,8 +654,11 @@
     <string name="radar_over_place">DWD radar over the place</string>
     <string name="legend_temperature">Temperature</string>
     <string name="legend_temp_forecast">Temp. forecast</string>
+    <string name="legend_temp_forecast_so_far">Forecast so far</string>
     <string name="legend_chance">Precip. chance</string>
     <string name="radar_preparing">Preparing the radar…</string>
+    <string name="settings_today_apart">Today: measured vs. forecast</string>
+    <string name="settings_today_apart_desc">Today in the 10-day forecast: the coloured curve with the readings up to now only, the dashed one as the forecast for the whole day – as in the Course of the Day in “Today So Far”. Off: the coloured curve goes on as the forecast from the last reading on.</string>
     <string name="settings_show_dry_precip">Precipitation card on dry days</string>
     <string name="settings_show_dry_precip_desc">Shows “Dry today” and the next precipitation in the forecast. Off: on a dry day the card is hidden.</string>
     <string name="settings_separate_precip">Precipitation as its own chart</string>

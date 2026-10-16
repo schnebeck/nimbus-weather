@@ -1,0 +1,2 @@
+• 10-day forecast today: the dashed curve is called "Forecast so far" – it shows what had been forecast for the hours over; the info text explains both curves
+• New setting "Today: measured vs. forecast": the coloured curve with the readings only, dashed the whole day's forecast – as in the course of the day in "Today So Far"

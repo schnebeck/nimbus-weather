@@ -136,6 +136,9 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                     ToggleRow(stringResource(R.string.settings_separate_precip), stringResource(R.string.settings_separate_precip_desc), settings.separatePrecipitation) { v ->
                         onChange { it.copy(separatePrecipitation = v) }
                     }
+                    ToggleRow(stringResource(R.string.settings_today_apart), stringResource(R.string.settings_today_apart_desc), settings.todayMeasuredVsForecast) { v ->
+                        onChange { it.copy(todayMeasuredVsForecast = v) }
+                    }
                     ToggleRow(stringResource(R.string.settings_show_dry_precip), stringResource(R.string.settings_show_dry_precip_desc), settings.showDryPrecipitation) { v ->
                         onChange { it.copy(showDryPrecipitation = v) }
                     }

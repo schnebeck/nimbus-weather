@@ -142,6 +142,11 @@ fun Meteogram(
     measuredBy: String? = null,
     /** A day to come: its figures under the chart while no cursor is set. */
     dayOverview: DayOverview? = null,
+    /**
+     * Today's [curve] goes on as the forecast from the last reading: the dashed [forecastCurve]
+     * stands apart from it only in the hours over – the legend names it the forecast so far.
+     */
+    forecastSoFar: Boolean = false,
 ) {
     val s = LocalSettings.current
     val tf = LocalTimeFormat.current
@@ -467,7 +472,7 @@ fun Meteogram(
             BarLegend(
                 rainTotals, sunTotals.takeIf { sunShown }, chance = separatePrecip,
                 tempColors = Insights.temperatureColor(pts.minOf { it.temperature }) to Insights.temperatureColor(pts.maxOf { it.temperature }),
-                tempForecast = compare && dashCurve.isNotEmpty(),
+                tempForecast = compare && dashCurve.isNotEmpty(), forecastSoFar = forecastSoFar,
                 rainNotMeasured = rainNotMeasured, sunNotMeasured = sunNotMeasured,
             )
             if (measuredBy != null) Text(measuredBy, fontSize = 11.sp, lineHeight = 15.sp, color = NimbusColors.Secondary, modifier = Modifier.padding(top = 4.dp))

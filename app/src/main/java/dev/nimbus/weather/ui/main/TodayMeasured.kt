@@ -139,6 +139,16 @@ fun dayCurve(
     return if (readings == null) forecast else Curve.joined(readings, forecast)
 }
 
+/**
+ * Today's temperature curve drawn against the forecast ([dev.nimbus.weather.data.model.Settings.todayMeasuredVsForecast]): the
+ * readings alone, up to the last one; with none, the day's curve ([dayCurve]).
+ */
+fun dayReadingsCurve(
+    hours: List<dev.nimbus.weather.data.model.HourlyPoint>, minutely: List<dev.nimbus.weather.data.model.MinutelyPoint>,
+    start: Long, end: Long, measured: TodayMeasured?,
+): List<CurvePoint> =
+    dayParts(hours, minutely, start, end, measured).second?.takeIf { it.isNotEmpty() } ?: dayCurve(hours, minutely, start, end, measured)
+
 /** What today's hours were and are expected to be ([expectedCurve]); null without readings. */
 fun dayExpected(
     hours: List<dev.nimbus.weather.data.model.HourlyPoint>, minutely: List<dev.nimbus.weather.data.model.MinutelyPoint>,

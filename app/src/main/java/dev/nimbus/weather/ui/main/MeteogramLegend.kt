@@ -94,13 +94,15 @@ fun LegendRow(content: @Composable () -> Unit) = androidx.compose.foundation.lay
 /**
  * What the curves and bars mean, with the day's totals – readable without the cursor: the
  * temperature curve in its colours ([tempColors]: of the day's lowest and highest value) and, in
- * the look-back, the dashed forecast ([tempForecast]); sunshine ([sun], null: no sunshine row) and
+ * the look-back, the dashed forecast ([tempForecast]; [forecastSoFar]: of the hours over only); sunshine ([sun], null: no sunshine row) and
  * precipitation as blocks (measured) and frames (expected), each with its total.
  */
 @Composable
 internal fun BarLegend(
     rain: HourBar, sun: HourBar?, chance: Boolean = false,
     tempColors: Pair<Color, Color>, tempForecast: Boolean = false,
+    /** The dashed curve shows what was forecast for the hours over – the coloured one goes on as the forecast. */
+    forecastSoFar: Boolean = false,
     /** The hours over have no precipitation / sunshine reading at all. */
     rainNotMeasured: Boolean = false, sunNotMeasured: Boolean = false,
 ) {
@@ -111,7 +113,9 @@ internal fun BarLegend(
     LegendRow {
         val temp = Brush.horizontalGradient(listOf(tempColors.first, tempColors.second))
         LegendItem(tempColors.second, stringResource(R.string.legend_temperature), line = true, brush = temp)
-        if (tempForecast) LegendItem(ForecastLine, stringResource(R.string.legend_temp_forecast), line = true, dashed = true)
+        if (tempForecast) LegendItem(
+            ForecastLine, stringResource(if (forecastSoFar) R.string.legend_temp_forecast_so_far else R.string.legend_temp_forecast), line = true, dashed = true,
+        )
         if (sun != null) BarLegendItems(
             HourBars.Sun, sun, R.string.legend_sunshine, R.string.legend_sun_measured, R.string.legend_sun_forecast,
             R.string.legend_sun_not_measured.takeIf { sunNotMeasured },

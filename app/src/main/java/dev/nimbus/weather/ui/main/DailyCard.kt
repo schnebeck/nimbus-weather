@@ -222,17 +222,23 @@ private fun DayRow(
                 tapped = false
             }
             val end = day.date + 24 * 3_600_000L
+            // today with readings: measured against the forecast (the readings alone), or one curve going on as the forecast
+            val apart = measured != null && settings.todayMeasuredVsForecast
             Meteogram(
                 hours.map { h -> h.toMeteo().let { measured?.apply(it, now) ?: it }.asNow(now, nowCondition) }, day.date, end,
                 remember(day.date, place) { nights(day.date, HourAxis.dayAxisEnd(end), place.latitude, place.longitude) }, now,
                 Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 showNow = currentTemp != null,   // today only
-                curve = remember(hours, minutely, measured) { dayCurve(hours, minutely, day.date, HourAxis.dayAxisEnd(end), measured) },
+                curve = remember(hours, minutely, measured, apart) {
+                    if (apart) dayReadingsCurve(hours, minutely, day.date, HourAxis.dayAxisEnd(end), measured)
+                    else dayCurve(hours, minutely, day.date, HourAxis.dayAxisEnd(end), measured)
+                },
                 // the hours' "expected" as the look-back reads it
                 forecastCurve = remember(hours, minutely, measured) { dayExpected(hours, minutely, day.date, HourAxis.dayAxisEnd(end), measured) },
                 separatePrecip = settings.separatePrecipitation,
                 measuredBy = measured?.let { measuredBy(it.hours.values, it.station) },
                 dayOverview = if (currentTemp == null) remember(day, hours, zone) { DayOverview.of(day, hours, zone) } else null,
+                forecastSoFar = measured != null && !apart,
             )
         }
     }

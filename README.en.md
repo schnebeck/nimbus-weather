@@ -85,7 +85,10 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
 - **Meteogram** per day (00–24 h): temperature (forecast every 15 minutes, the DWD station's readings
   every 10 minutes), precipitation, sunshine and wind per hour, night shading, a legend with the
   day's totals. The station's 10-minute readings as 30-minute means, the forecast continuing from the
-  last reading without a step. Precipitation in the temperature chart or as a chart of its own below,
+  last reading without a step. Today the dashed curve ("Forecast so far") shows what had been
+  forecast for the hours over; with the setting "Today: measured vs. forecast" the coloured curve
+  shows the readings only and the dashed one the whole day's forecast, as the look-back's course of
+  the day does. Precipitation in the temperature chart or as a chart of its own below,
   with the chance as a line (in the look-back too). A long press shows a cursor with all values of
   the hour, in the columns "measured | expected"; on days to come the whole day's overview stands there without the cursor. What was measured stands as a filled bar, what is
   expected as a frame – precipitation blue, sunshine orange. Today the meteogram, precipitation and

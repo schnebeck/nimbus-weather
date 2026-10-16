@@ -1,0 +1,2 @@
+• 10-Tage-Vorhersage heute: Die gestrichelte Kurve heißt „Prognose bisher“ – sie zeigt, was für die vergangenen Stunden vorhergesagt war; der Infotext erklärt beide Kurven
+• Neue Einstellung „Heute: Messung gegen Prognose“: farbige Kurve nur mit den Messwerten, gestrichelt die Prognose des ganzen Tages – wie im Tagesverlauf von „Heute bisher“

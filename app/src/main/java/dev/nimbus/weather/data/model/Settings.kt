@@ -122,6 +122,12 @@ data class Settings(
      * amount and chance; off, the bars stay in the temperature chart (one combined chart).
      */
     val separatePrecipitation: Boolean = false,
+    /**
+     * Today's chart in the 10-day forecast: the coloured curve the readings alone and the dashed
+     * one the forecast of the whole day, as in the look-back's course of the day; off, the
+     * coloured curve goes on as the forecast from the last reading on.
+     */
+    val todayMeasuredVsForecast: Boolean = false,
     /** The precipitation card on a dry day: one line with the next precipitation – off, hidden. */
     val showDryPrecipitation: Boolean = true,
     /** Radius of the bathing water card in km. */

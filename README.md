@@ -86,7 +86,10 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
 - **Meteogramm** je Tag (00–24 Uhr): Temperatur (Vorhersage alle 15 Minuten, Messwerte der
   DWD-Station alle 10 Minuten), Niederschlag, Sonnenscheindauer und Wind pro Stunde,
   Nachtschattierung, Legende mit Tagessummen. Die 10-Minuten-Messwerte der Station als
-  30-Minuten-Mittel, die Vorhersage schließt ohne Sprung an die letzte Messung an. Niederschlag wahlweise im Temperaturdiagramm oder als
+  30-Minuten-Mittel, die Vorhersage schließt ohne Sprung an die letzte Messung an. Heute zeigt die
+  gestrichelte Kurve („Prognose bisher“), was für die vergangenen Stunden vorhergesagt war; mit der
+  Einstellung „Heute: Messung gegen Prognose“ zeigt die farbige Kurve nur die Messwerte und die
+  gestrichelte die Prognose des ganzen Tages, wie der Tagesverlauf im Rückblick. Niederschlag wahlweise im Temperaturdiagramm oder als
   eigenes Diagramm darunter, mit der Wahrscheinlichkeit als Linie (auch im Rückblick). Langes Drücken
   blendet einen Cursor mit allen Werten der Stunde ein, in den Spalten „gemessen | erwartet“; an künftigen Tagen steht ohne Cursor die Übersicht des ganzen Tages. Gemessenes
   steht als gefüllter Balken, Erwartetes als Rahmen – Niederschlag blau, Sonne orange. Heute zeigen

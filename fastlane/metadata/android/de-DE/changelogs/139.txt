@@ -1,0 +1,2 @@
+• Regenradar: steht in jedem Durchlauf zwei Sekunden auf „jetzt“; in der Vorhersage ist grau, was außerhalb ihres Gebiets liegt (keine Vorhersage statt scheinbar trocken), mit Hinweis
+• 10-Tage-Vorhersage lässt sich per Pfeil auf „Heute“ einklappen – die App merkt es sich

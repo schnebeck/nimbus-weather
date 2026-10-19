@@ -85,6 +85,9 @@ class CardFold(val folded: Boolean, val toggle: () -> Unit)
 
 val LocalCardFold = androidx.compose.runtime.compositionLocalOf<CardFold?> { null }
 
+/** Inside a card that folds itself ([GlassCard]'s foldsInside): whether it is folded – it then shows less. */
+val LocalCardFolded = androidx.compose.runtime.compositionLocalOf { false }
+
 /** Frosted translucent card, the building block of all weather modules. */
 @Composable
 fun GlassCard(
@@ -97,9 +100,11 @@ fun GlassCard(
     info: Term? = null,
     /** The card in one line, shown under its title while folded: with it, the card folds where the page lets it ([LocalCardFold]). */
     summary: String? = null,
+    /** Folds, showing less of itself instead of a [summary] line ([LocalCardFolded]). */
+    foldsInside: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val fold = LocalCardFold.current?.takeIf { summary != null && title != null }
+    val fold = LocalCardFold.current?.takeIf { (summary != null || foldsInside) && title != null }
     val folded = fold?.folded == true
     val pin = LocalPinLine.current
     val covered = LocalCoveredTop.current
@@ -135,7 +140,7 @@ fun GlassCard(
             // folded, a tap anywhere unfolds it
             .then(
                 when {
-                    folded -> Modifier.clickable(onClickLabel = androidx.compose.ui.res.stringResource(dev.nimbus.weather.R.string.card_unfold)) { fold.toggle() }
+                    folded && !foldsInside -> Modifier.clickable(onClickLabel = androidx.compose.ui.res.stringResource(dev.nimbus.weather.R.string.card_unfold)) { fold.toggle() }
                     onClick != null -> Modifier.clickable(onClick = onClick)
                     else -> Modifier
                 },
@@ -180,8 +185,8 @@ fun GlassCard(
             val below = if (covered == null || title == null) covered else ({ covered() + titleH.floatValue })
             // the fold is this card's, not that of a card inside it
             androidx.compose.runtime.CompositionLocalProvider(LocalCoveredTop provides below, LocalCardFold provides null) {
-                if (folded) androidx.compose.material3.Text(summary!!, fontSize = 15.sp, color = NimbusColors.Secondary, lineHeight = 20.sp, maxLines = 2)
-                else content()
+                if (folded && !foldsInside) androidx.compose.material3.Text(summary!!, fontSize = 15.sp, color = NimbusColors.Secondary, lineHeight = 20.sp, maxLines = 2)
+                else androidx.compose.runtime.CompositionLocalProvider(LocalCardFolded provides folded) { content() }
             }
         }
     }

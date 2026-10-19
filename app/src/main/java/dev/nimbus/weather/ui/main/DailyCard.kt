@@ -87,7 +87,10 @@ fun DailyCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) {
         title = stringResource(if (days.size == 10) R.string.ten_day_forecast else R.string.n_day_forecast, days.size),
         icon = Icons.Outlined.CalendarMonth,
         info = Term.DAILY,
+        // folded: today alone (its chart still opens)
+        foldsInside = true,
     ) {
+    val folded = dev.nimbus.weather.ui.components.LocalCardFolded.current
         // One set of column widths for all rows (the bars stay aligned): wide enough for the longest
     // day name, chance and temperature in the font size set – fixed widths cut "Heute" to "Heu"
     // and "20°" to "20" with a large system font
@@ -110,7 +113,7 @@ fun DailyCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) {
     // one line while the bar keeps a useful width (its 10 dp padding on each side included)
     val columns = natural.copy(stacked = maxWidth - (natural.label + natural.symbol + natural.temp * 2 - 4.dp + 20.dp) < MIN_BAR)
     Column {
-    days.forEachIndexed { i, d ->
+    (if (folded) days.take(1) else days).forEachIndexed { i, d ->
             if (i > 0) HairlineDivider()
             val isToday = i == 0
             DayRow(

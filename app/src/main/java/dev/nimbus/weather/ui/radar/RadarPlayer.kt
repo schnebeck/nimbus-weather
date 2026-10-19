@@ -88,6 +88,11 @@ class RadarPlayer(
     private val _nowcastHere = MutableStateFlow(true)
     /** Whether a composite with a nowcast reaches into the picture area – else its future is empty. */
     val nowcastHere: StateFlow<Boolean> = _nowcastHere
+    private val _nowcastEverywhere = MutableStateFlow(true)
+    /** Whether the nowcast covers the whole picture area – else its forecast steps are grey beyond it. */
+    val nowcastEverywhere: StateFlow<Boolean> = _nowcastEverywhere
+    /** The picture area's pixels beyond every nowcast: grey in the forecast steps. */
+    @Volatile private var noForecast: BooleanArray? = null
     private val _compositeHere = MutableStateFlow(true)
     /**
      * Whether a weather service's composite reaches into the picture area – else only RainViewer,
@@ -196,6 +201,7 @@ class RadarPlayer(
         val screenPxM = if (screenWidthPx > 0) FieldGeo.R * Math.toRadians(east - west) / screenWidthPx else 0.0
         screenSmooth = FrameBuilder.screenSmooth(want.pxM, screenPxM)
         covered = null
+        noForecast = null
         frames.clear()
         flows.clear()
         parts.clear()
@@ -345,6 +351,8 @@ class RadarPlayer(
             if (covered == null) covered = RadarPicture.coverage(g)
             val inArea = covered!!
             _nowcastHere.value = inArea.any { (c, mask) -> c.hasNowcast && mask.any { it } }
+            val nowcasts = inArea.filterKeys { it.hasNowcast }.values
+            noForecast = BooleanArray(g.w * g.h) { i -> nowcasts.none { it[i] } }.also { m -> _nowcastEverywhere.value = m.none { it } }
             _compositeHere.value = inArea.values.any { mask -> mask.any { it } }
             val builder = FrameBuilder(http, tl, g, inArea, screenSmooth)
             wake.trySend(Unit)
@@ -440,7 +448,9 @@ class RadarPlayer(
         val ow = (g.w + step - 1) / step; val oh = (g.h + step - 1) / step
         val out = IntArray(ow * oh)
         val t0 = System.nanoTime()
-        RadarField.render(a, if (flow != null) b else null, flow, t, g.w, g.h, RadarPicture.snowAt(g, fa.time), out, step)
+        // a step of the forecast: grey where there is none (beyond the nowcast), not dry
+        val forecast = tl.day == null && (fa.isForecast || fb?.isForecast == true && tSpan > 0f)
+        RadarField.render(a, if (flow != null) b else null, flow, t, g.w, g.h, RadarPicture.snowAt(g, fa.time), out, step, if (forecast) noForecast else null)
         if (dev.nimbus.weather.BuildConfig.DEBUG && renderCount++ % 30 == 0) android.util.Log.d("NimbusPlayer", "render ${ow}x$oh ${(System.nanoTime() - t0) / 1_000_000} ms")
         val slot = flip * 2 + step - 1
         val bmp = bitmaps[slot]?.takeIf { it.width == ow && it.height == oh }

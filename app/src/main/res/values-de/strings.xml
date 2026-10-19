@@ -153,6 +153,7 @@
     <string name="forecast">Vorhersage</string>
     <string name="radar_light">Leicht</string>
     <string name="radar_heavy">Stark</string>
+    <string name="radar_forecast_partly">Vorhersage nur für Deutschland – grau: ohne Vorhersage</string>
     <string name="radar_forecast_germany_only">Radarvorhersage (Nowcast) nur für Deutschland verfügbar</string>
     <string name="radar_minutes_ago">vor %1$d Min.</string>
     <string name="radar_minutes_ahead">in %1$d Min.</string>

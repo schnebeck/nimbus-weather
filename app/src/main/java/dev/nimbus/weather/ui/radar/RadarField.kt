@@ -35,6 +35,11 @@ object RadarField {
      * Radar cells are 1 km: the smoothing reaches about half a cell (see [RadarPalette.field]) –
      * from 1.4 pixels per cell on, so the default view is smooth too (the GPU scales it up).
      */
+    /** Where a step has no picture (no forecast there): a light grey, so it does not look dry. */
+    const val VEIL = 0x30A8B0BC
+
+    private fun blank(veil: BooleanArray?, i: Int) = if (veil != null && veil[i]) VEIL else 0
+
     fun smoothRadius(pxKm: Double): Int = if (pxKm <= 0.0) 0 else (1.0 / pxKm / 2 + 0.3).toInt().coerceIn(0, 32)
 
     /**
@@ -130,7 +135,11 @@ object RadarField {
      * [step] > 1 draws every step-th pixel only (the output is ⌈w/step⌉ × ⌈h/step⌉): while the
      * rain moves, half the resolution is plenty and four times as fast; the GPU scales it up.
      */
-    fun render(a: ViewFrame, b: ViewFrame?, flow: Flow?, t: Float, w: Int, h: Int, snowAt: FloatArray?, out: IntArray, step: Int = 1) {
+    fun render(
+        a: ViewFrame, b: ViewFrame?, flow: Flow?, t: Float, w: Int, h: Int, snowAt: FloatArray?, out: IntArray, step: Int = 1,
+        /** Pixels this step has no picture of (the forecast beyond the nowcast's area): grey, not dry. */
+        veil: BooleanArray? = null,
+    ) {
         val interp = b != null && flow != null && t > 0f
         val ow = (w + step - 1) / step; val oh = (h + step - 1) / step
         val off = (step - 1) / 2f
@@ -156,7 +165,7 @@ object RadarField {
                 val wet: Float; val dbz: Float; val sn: Float
                 if (!interp) {
                     wet = (a.wet[i].toInt() and 0xFF) / 255f
-                    if (wet < 0.35f) { out[o] = 0; continue }
+                    if (wet < 0.35f) { out[o] = blank(veil, i); continue }
                     dbz = (a.dbz[i].toInt() and 0xFF) / 2f
                     sn = if (a.snow != null) (a.snow[i].toInt() and 0xFF) / 255f else 0f
                 } else {
@@ -165,11 +174,11 @@ object RadarField {
                     sample(a, w, h, x - t * u, y - t * v, sa)
                     sample(b, w, h, x + (1 - t) * u, y + (1 - t) * v, sb)
                     wet = (1 - t) * sa[0] + t * sb[0]
-                    if (wet < 0.35f) { out[o] = 0; continue }
+                    if (wet < 0.35f) { out[o] = blank(veil, i); continue }
                     dbz = ((1 - t) * sa[0] * sa[1] + t * sb[0] * sb[1]) / wet
                     sn = ((1 - t) * sa[0] * sa[2] + t * sb[0] * sb[2]) / wet
                 }
-                if (dbz < 8f) { out[o] = 0; continue }
+                if (dbz < 8f) { out[o] = blank(veil, i); continue }
                 val snow = if (snowAt != null) max(snowAt[i], sn) else sn
                 var c = RadarPalette.colorFor(dbz, snow)
                 if (wet < 0.65f && c != 0) c = (((c ushr 24) * RadarPalette.edgeAlpha(wet)).toInt() shl 24) or (c and 0xFFFFFF)

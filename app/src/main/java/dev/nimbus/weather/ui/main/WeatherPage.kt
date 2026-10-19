@@ -264,7 +264,7 @@ private fun WeatherContent(
         cards.orderedCards().filter { cards.shows(it) }.forEach { card ->
             when (card) {
                 WeatherCard.HOURLY -> add(PageItem("hourly", columns == 1) { HourlyCard(data, now) })
-                WeatherCard.DAILY -> add(PageItem("daily") { DailyCard(data, now, todayMeasured) })
+                WeatherCard.DAILY -> add(PageItem("daily") { Foldable(card) { DailyCard(data, now, todayMeasured) } })
                 // on a dry day hidden (setting) – decided here, an empty card would leave a gap
                 WeatherCard.PRECIPITATION -> if (cards.showDryPrecipitation || !dryToday)
                     add(PageItem("precip") { PrecipitationCard(data, now, raining, todayMeasured) })

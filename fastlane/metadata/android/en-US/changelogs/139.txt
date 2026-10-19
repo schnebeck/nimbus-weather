@@ -1,0 +1,2 @@
+• Rain radar: stands two seconds on "now" each time round; in the forecast what lies beyond its area is grey (no forecast instead of seemingly dry), with a note
+• The 10-day forecast folds to "Today" with the arrow – the app remembers it

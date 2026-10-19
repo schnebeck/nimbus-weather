@@ -165,6 +165,24 @@ class CardFoldTest {
         compose.waitForIdle()
     }
 
+    /** The 10-day forecast folds to today alone – today's chart still opens; kept like the other cards. */
+    @Test fun theTenDaysFoldToToday() {
+        val data = forecast()
+        page { Foldable(WeatherCard.DAILY) { DailyCard(data, now) } }
+        compose.onNodeWithText("Mo", substring = false).assertExists()
+        compose.onNodeWithContentDescription("Einklappen").performClick()
+        compose.waitForIdle()
+        assertEquals(setOf(WeatherCard.DAILY), settings.foldedCards)
+        compose.onNodeWithText("Mo").assertDoesNotExist()
+        compose.onNodeWithText("Lange auf das Diagramm drücken zeigt die Werte jeder Stunde").assertExists()
+        tapToday()
+        compose.onNodeWithText("Lange auf das Diagramm drücken zeigt die Werte jeder Stunde").assertDoesNotExist()
+        compose.onNodeWithTag("page").captureRoboImage("src/test/screenshots/daily_folded.png")
+        compose.onNodeWithContentDescription("Aufklappen").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Mo").assertExists()
+    }
+
     /** Today opens unless closed by hand – then it opens closed, until opened again. */
     @Test fun todayAsTheUserLeftIt() {
         val data = forecast()

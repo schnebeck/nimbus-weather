@@ -128,7 +128,9 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   Farbskala für Regen (grün → gelb → rot → magenta) und Schnee (türkis → weiß → violett, pro Pixel
   nach der Temperatur), wahlweise ruhiger in Blau bzw. Rosa–Violett; die Radarzellen in jeder
   Zoomstufe geglättet statt als Blöcke; das Radar öffnet auf dem aktuellen Bild, lädt erst die
-  Vorhersage, dann die Vergangenheit und spielt los, sobald die Vorhersage da ist (abschaltbar);
+  Vorhersage, dann die Vergangenheit und spielt los, sobald die Vorhersage da ist (abschaltbar); in
+  jedem Durchlauf steht es zwei Sekunden auf „jetzt“; in der Vorhersage ist grau, was außerhalb ihres
+  Gebiets liegt (keine Vorhersage, nicht trocken);
   flüssiges Abspielen: zwischen zwei Radarbildern wird die
   Bewegung der Regengebiete berechnet; eigener Radarspeicher – jedes Bild eines Wetterdienstes (ganz
   Deutschland, die Niederlande in einem) wird einmal geladen, zu Reflektivität aufbereitet und bis zum Verfall lokal gehalten
@@ -182,7 +184,8 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
 - **Orte, Einstellungen**: Standort und gespeicherte Orte (lange drücken zum Sortieren und Löschen);
   Vorhersagemodell (voreingestellt: Automatisch – das feinste Modell je Ort und Zeitraum, die
   Datenquellen nennen es mit seiner Auflösung), Einheiten (beim ersten Start passend zum Land),
-  Stationswerte, Animationen, Reihenfolge und Sichtbarkeit der Kacheln. Größere Karten (Sonne, Mond,
+  Stationswerte, Animationen, Reihenfolge und Sichtbarkeit der Kacheln. Die 10-Tage-Vorhersage lässt
+  sich auf „Heute“ einklappen, größere Karten (Sonne, Mond,
   Luftqualität, Luftdruck, Pollen, Pegel, Badestellen, Messnetz, Modellvergleich) lassen sich mit
   dem Pfeil im Titel auf eine Zeile einklappen; die App merkt sich das je Karte, ebenso, ob „Heute“
   in der 10-Tage-Vorhersage auf- oder zugeklappt ist. Unter „Diagnose“ ein

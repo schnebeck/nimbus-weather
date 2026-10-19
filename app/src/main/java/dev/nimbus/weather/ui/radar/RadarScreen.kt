@@ -101,6 +101,8 @@ private const val GRID_WAIT_MS = 8_000L
 /** Time per step while playing: the live loop, and an archived day (5-minute steps, a day in ~55 s). */
 private const val FRAME_MS = 450f
 private const val ARCHIVE_STEP_MS = 180f
+/** The live loop stands this long on "now" each time it comes to it. */
+private const val NOW_HOLD_MS = 2000f
 /** The live loop rests this long on its last frame before starting over. */
 private const val LOOP_PAUSE_MS = 1400L
 private const val STYLE_TIMEOUT_MS = 15_000L
@@ -176,6 +178,7 @@ fun RadarScreen(
     val netStatus by RadarNetStatus.state.collectAsState()
     val nowcastHere by player.nowcastHere.collectAsState()
     val compositeHere by player.compositeHere.collectAsState()
+    val nowcastEverywhere by player.nowcastEverywhere.collectAsState()
     var frame by remember { mutableIntStateOf(0) }
     var playing by remember { mutableStateOf(false) }
     /** Archived day: playback holds until enough frames ahead are loaded. */
@@ -451,6 +454,8 @@ fun RadarScreen(
             state = Playback.step(
                 state, dt, lastIndex, loop = !archived, stepMs = stepMs, canShow = player::canShow,
                 resumeAhead = BUFFER_RESUME, restMs = LOOP_PAUSE_MS.toFloat(), loopFrom = from,
+                // the live loop stands on "now" a while each time: the current picture is seen
+                holdAt = if (archived) -1 else tl.nowIndex, holdMs = NOW_HOLD_MS,
             )
             buffering = state.buffering
             if (!state.playing) { playing = false; break }
@@ -554,10 +559,11 @@ fun RadarScreen(
                     }
                 }
                 if (!archive) Spacer(Modifier.height(8.dp))
-                // the forecast part greyed out: said why
-                if (!archive && !nowcastHere && tl.lastShown(false) < tl.frames.lastIndex) {
+                // the forecast part greyed out: said why – and in a step of the forecast, what is grey
+                val partly = !archive && f.isForecast && nowcastHere && !nowcastEverywhere
+                if (!archive && !nowcastHere && tl.lastShown(false) < tl.frames.lastIndex || partly) {
                     Text(
-                        stringResource(R.string.radar_forecast_germany_only),
+                        stringResource(if (partly) R.string.radar_forecast_partly else R.string.radar_forecast_germany_only),
                         Modifier.clip(RoundedCornerShape(8.dp)).background(Color(0x66000000)).padding(horizontal = 8.dp, vertical = 4.dp),
                         fontSize = 12.sp, color = Color(0xFFFFD27A),
                     )

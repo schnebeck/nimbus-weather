@@ -161,6 +161,7 @@
     <string name="forecast">Forecast</string>
     <string name="radar_light">Light</string>
     <string name="radar_heavy">Heavy</string>
+    <string name="radar_forecast_partly">Forecast for Germany only – grey: no forecast</string>
     <string name="radar_forecast_germany_only">Radar forecast (nowcast) only available for Germany</string>
     <string name="radar_minutes_ago">%1$d min ago</string>
     <string name="radar_minutes_ahead">in %1$d min</string>

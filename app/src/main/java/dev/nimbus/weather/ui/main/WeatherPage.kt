@@ -273,15 +273,15 @@ private fun WeatherContent(
                 WeatherCard.TILES -> if (columns == 1) {
                     if (cards.orderedTiles().any(cards::shows)) add(PageItem("tiles") { DetailTiles(data, now) })
                 } else detailTiles(data, now).forEach { (t, tile) -> add(PageItem("tile-${t.name.lowercase()}") { LaneTile(tile) }) }
-                WeatherCard.SUN -> add(PageItem("sun") { SunCard(data, now) })
-                WeatherCard.PRESSURE_CHART -> add(PageItem("pressure-chart") { PressureCard(data, now, todayMeasured) })
-                WeatherCard.MOON -> add(PageItem("moon") { MoonCard(data, now) })
-                WeatherCard.AIR_QUALITY -> if (data.airQuality?.europeanAqi != null) add(PageItem("aqi") { AirQualityCard(data) })
-                WeatherCard.POLLEN -> data.pollen?.let { p -> add(PageItem("pollen") { PollenForecastCard(p, now) }) }
-                WeatherCard.GAUGES -> if (data.gauges.isNotEmpty()) add(PageItem("gauge") { GaugeCard(data.gauges, now) })
-                WeatherCard.BATHING -> if (data.bathing.isNotEmpty()) add(PageItem("bathing") { BathingCard(data.bathing, now) })
-                WeatherCard.COMMUNITY -> if (data.community != null) add(PageItem("community") { CommunityCard(data) })
-                WeatherCard.MODELS -> add(PageItem("models") { ModelComparisonCard(state.models, now, onRequestModels) })
+                WeatherCard.SUN -> add(PageItem("sun") { Foldable(card) { SunCard(data, now) } })
+                WeatherCard.PRESSURE_CHART -> add(PageItem("pressure-chart") { Foldable(card) { PressureCard(data, now, todayMeasured) } })
+                WeatherCard.MOON -> add(PageItem("moon") { Foldable(card) { MoonCard(data, now) } })
+                WeatherCard.AIR_QUALITY -> if (data.airQuality?.europeanAqi != null) add(PageItem("aqi") { Foldable(card) { AirQualityCard(data) } })
+                WeatherCard.POLLEN -> data.pollen?.let { p -> add(PageItem("pollen") { Foldable(card) { PollenForecastCard(p, now) } }) }
+                WeatherCard.GAUGES -> if (data.gauges.isNotEmpty()) add(PageItem("gauge") { Foldable(card) { GaugeCard(data.gauges, now) } })
+                WeatherCard.BATHING -> if (data.bathing.isNotEmpty()) add(PageItem("bathing") { Foldable(card) { BathingCard(data.bathing, now) } })
+                WeatherCard.COMMUNITY -> if (data.community != null) add(PageItem("community") { Foldable(card) { CommunityCard(data) } })
+                WeatherCard.MODELS -> add(PageItem("models") { Foldable(card) { ModelComparisonCard(state.models, now, onRequestModels) } })
                 else -> Unit
             }
         }

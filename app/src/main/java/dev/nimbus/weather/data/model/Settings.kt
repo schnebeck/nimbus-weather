@@ -110,11 +110,20 @@ data class Settings(
     val hiddenCards: Set<WeatherCard> = emptySet(),
     /** Opt-in cards ([WeatherCard.OPT_IN]) the user switched on. */
     val enabledCards: Set<WeatherCard> = emptySet(),
+    /** Cards folded on the weather page to their title and one line (the arrow in their title). */
+    val foldedCards: Set<WeatherCard> = emptySet(),
+    /** Today in the 10-day forecast closed by the user: it opens closed from then on (until opened again). */
+    val todayClosed: Boolean = false,
     /** Own order of the cards (see [orderedCards]); empty = default. */
     val cardOrder: List<WeatherCard> = emptyList(),
     /** Own order of the small tiles (see [orderedTiles]); empty = default. */
     val tileOrder: List<WeatherCard> = emptyList(),
     val radarColors: RadarColors = RadarColors.CONTRAST,
+    /**
+     * The radar opens on "now" and plays by itself once the forecast is loaded (the past loads
+     * meanwhile); off, it stays on "now" until play is pressed.
+     */
+    val radarAutoplay: Boolean = true,
     /** Layers on when the radar opens (each can be switched there as before). */
     val radarOverlays: Set<RadarOverlay> = emptySet(),
     /**

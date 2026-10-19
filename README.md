@@ -127,7 +127,9 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   Bewegung berechnet; die Zeitachse richtet sich nach dem Radar des Ortes), einheitliche
   Farbskala für Regen (grün → gelb → rot → magenta) und Schnee (türkis → weiß → violett, pro Pixel
   nach der Temperatur), wahlweise ruhiger in Blau bzw. Rosa–Violett; die Radarzellen in jeder
-  Zoomstufe geglättet statt als Blöcke; flüssiges Abspielen: zwischen zwei Radarbildern wird die
+  Zoomstufe geglättet statt als Blöcke; das Radar öffnet auf dem aktuellen Bild, lädt erst die
+  Vorhersage, dann die Vergangenheit und spielt los, sobald die Vorhersage da ist (abschaltbar);
+  flüssiges Abspielen: zwischen zwei Radarbildern wird die
   Bewegung der Regengebiete berechnet; eigener Radarspeicher – jedes Bild eines Wetterdienstes (ganz
   Deutschland, die Niederlande in einem) wird einmal geladen, zu Reflektivität aufbereitet und bis zum Verfall lokal gehalten
   (Analysen ~3½ Tage), Verschieben und Zoomen brauchen kein Netz; deckende Farben, Straßen, Grenzen
@@ -180,7 +182,10 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
 - **Orte, Einstellungen**: Standort und gespeicherte Orte (lange drücken zum Sortieren und Löschen);
   Vorhersagemodell (voreingestellt: Automatisch – das feinste Modell je Ort und Zeitraum, die
   Datenquellen nennen es mit seiner Auflösung), Einheiten (beim ersten Start passend zum Land),
-  Stationswerte, Animationen, Reihenfolge und Sichtbarkeit der Kacheln. Unter „Diagnose“ ein
+  Stationswerte, Animationen, Reihenfolge und Sichtbarkeit der Kacheln. Größere Karten (Sonne, Mond,
+  Luftqualität, Luftdruck, Pollen, Pegel, Badestellen, Messnetz, Modellvergleich) lassen sich mit
+  dem Pfeil im Titel auf eine Zeile einklappen; die App merkt sich das je Karte, ebenso, ob „Heute“
+  in der 10-Tage-Vorhersage auf- oder zugeklappt ist. Unter „Diagnose“ ein
   Aktivitätsprotokoll (aus, bis man es einschaltet): Netzabrufe mit ihren Mengen, sichtbar oder nicht,
   Bildschirm und Rechenzeit, dazu wie das Radar lädt (seine Quellen, wann die eigene vollständig ist,
   wie die anderen antworten, wann alle Bilder aufbereitet sind, ausgesetzte Quellen, Vorladen im

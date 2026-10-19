@@ -1,0 +1,3 @@
+• Rain radar opens on the current picture: now first, then the forecast, then the past; playback starts once the forecast is loaded (setting "Play the radar automatically")
+• Larger cards fold to one line with the arrow in their title – the app remembers it; likewise "Today" in the 10-day forecast
+• Pollen with nothing in the air shows just the summary instead of empty rows

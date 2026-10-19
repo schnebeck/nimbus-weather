@@ -52,7 +52,11 @@ import kotlin.math.roundToInt
 fun CommunityCard(data: WeatherData) {
     val c = data.community ?: return
     val s = LocalSettings.current
-    GlassCard(title = stringResource(R.string.community_sensors), icon = Icons.Outlined.Groups, info = Term.COMMUNITY) {
+    val summary = listOfNotNull(
+        c.temperature?.let { Units.temp(it, s.temperatureUnit) },
+        c.humidity?.let { "${stringResource(R.string.humidity)} ${it.roundToInt()}%" },
+    ).joinToString(" · ").ifEmpty { stringResource(R.string.community_sensors) }
+    GlassCard(title = stringResource(R.string.community_sensors), icon = Icons.Outlined.Groups, info = Term.COMMUNITY, summary = summary) {
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
             c.temperature?.let { Text(Units.temp(it, s.temperatureUnit), fontSize = 34.sp, color = Color.White) }
             Column(Modifier.padding(bottom = 4.dp)) {

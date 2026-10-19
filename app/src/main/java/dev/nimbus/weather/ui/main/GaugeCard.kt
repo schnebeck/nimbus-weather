@@ -73,10 +73,20 @@ fun GaugeCard(gauges: List<GaugeInfo>, now: Long) {
     val others = gauges.filter { it !== tide }
     var selectedId by androidx.compose.runtime.saveable.rememberSaveable(others.map { it.uuid }) { mutableStateOf(others.firstOrNull()?.uuid) }
     val selected = others.firstOrNull { it.uuid == selectedId } ?: others.firstOrNull()
+    // folded: the first gauge of the card in one line – its water, the gauge, level, trend, rating
+    val first = tide ?: selected
+    val summary = first?.let { g ->
+        val level = g.level?.let { l -> "${l.roundToInt()}${NBSP}cm" + ((g.tendency ?: trend(g.history))?.let { " " + arrow(it) } ?: "") }
+        listOfNotNull(
+            listOf(titleCase(g.water), titleCase(g.name)).filter { it.isNotBlank() }.joinToString(" · ") + (level?.let { ": $it" } ?: ""),
+            gaugeStatus(g)?.first,
+        ).joinToString(" · ")
+    }
     GlassCard(
         title = stringResource(if (tide != null) R.string.gauge_title_tides else R.string.gauge_title_level),
         icon = Icons.Outlined.Waves,
         info = if (tide != null) Term.TIDES else Term.GAUGE,
+        summary = summary,
     ) {
         if (tide != null) {
             GaugeTitle(tide)

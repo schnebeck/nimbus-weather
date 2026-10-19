@@ -17,7 +17,10 @@
 
 package dev.nimbus.weather.ui.components
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.rounded.ExpandLess
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,6 +77,14 @@ val LocalCoveredTop = androidx.compose.runtime.staticCompositionLocalOf<(() -> F
 fun cardOverlap(pin: Float, top: Float, height: Float, titleH: Float): Float =
     (pin - top).coerceIn(0f, maxOf(0f, height - titleH))
 
+/**
+ * The weather page's fold of the card below: [folded], it shows its title and one summary line;
+ * [toggle] switches it (the page keeps it per card). Null: the card does not fold.
+ */
+class CardFold(val folded: Boolean, val toggle: () -> Unit)
+
+val LocalCardFold = androidx.compose.runtime.compositionLocalOf<CardFold?> { null }
+
 /** Frosted translucent card, the building block of all weather modules. */
 @Composable
 fun GlassCard(
@@ -84,8 +95,12 @@ fun GlassCard(
     onClick: (() -> Unit)? = null,
     contentPadding: Boolean = true,
     info: Term? = null,
+    /** The card in one line, shown under its title while folded: with it, the card folds where the page lets it ([LocalCardFold]). */
+    summary: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val fold = LocalCardFold.current?.takeIf { summary != null && title != null }
+    val folded = fold?.folded == true
     val pin = LocalPinLine.current
     val covered = LocalCoveredTop.current
     // Read only while drawing: scrolling never recomposes the cards
@@ -117,7 +132,14 @@ fun GlassCard(
                 }
                 drawPath(path, NimbusColors.CardBorder, style = androidx.compose.ui.graphics.drawscope.Stroke(0.6.dp.toPx()))
             }
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
+            // folded, a tap anywhere unfolds it
+            .then(
+                when {
+                    folded -> Modifier.clickable(onClickLabel = androidx.compose.ui.res.stringResource(dev.nimbus.weather.R.string.card_unfold)) { fold.toggle() }
+                    onClick != null -> Modifier.clickable(onClick = onClick)
+                    else -> Modifier
+                },
+            ),
     ) {
         if (title != null) {
             // The title stays at the line while the card slides under it
@@ -127,7 +149,7 @@ fun GlassCard(
                     .zIndex(1f)
                     .graphicsLayer { translationY = overlap(cardH.floatValue) },
             ) {
-                CardHeader(title, icon, Modifier.padding(start = 14.dp, end = 6.dp, top = 4.dp, bottom = 0.dp), info)
+                CardHeader(title, icon, Modifier.padding(start = 14.dp, end = 6.dp, top = 4.dp, bottom = 0.dp), info, fold)
                 if (contentPadding) HairlineDivider(Modifier.padding(horizontal = 14.dp))
             }
         }
@@ -140,6 +162,7 @@ fun GlassCard(
         }
         Column(
             (if (contentPadding) Modifier.padding(horizontal = 14.dp, vertical = 10.dp) else Modifier)
+                .then(if (fold != null) Modifier.animateContentSize() else Modifier)
                 // the content disappears under the title (or the card's top edge) – never above it
                 .drawWithContent {
                     val o = overlap(cardH.floatValue)
@@ -155,7 +178,11 @@ fun GlassCard(
         ) {
             // the content's own view: the header and this card's held title above it
             val below = if (covered == null || title == null) covered else ({ covered() + titleH.floatValue })
-            androidx.compose.runtime.CompositionLocalProvider(LocalCoveredTop provides below) { content() }
+            // the fold is this card's, not that of a card inside it
+            androidx.compose.runtime.CompositionLocalProvider(LocalCoveredTop provides below, LocalCardFold provides null) {
+                if (folded) androidx.compose.material3.Text(summary!!, fontSize = 15.sp, color = NimbusColors.Secondary, lineHeight = 20.sp, maxLines = 2)
+                else content()
+            }
         }
     }
 }
@@ -177,9 +204,14 @@ data class HeaderStyle(val halo: Float = dev.nimbus.weather.ui.theme.Legibility.
 val LocalHeaderStyle = androidx.compose.runtime.compositionLocalOf { HeaderStyle() }
 
 @Composable
-fun CardHeader(title: String, icon: ImageVector?, modifier: Modifier = Modifier, info: Term? = null) {
+fun CardHeader(title: String, icon: ImageVector?, modifier: Modifier = Modifier, info: Term? = null, fold: CardFold? = null) {
     val status = LocalCardStatus.current
-    Row(modifier.heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    val foldLabel = fold?.let { androidx.compose.ui.res.stringResource(if (it.folded) dev.nimbus.weather.R.string.card_unfold else dev.nimbus.weather.R.string.card_fold) }
+    Row(
+        // a card that folds: its whole title line folds and unfolds it
+        (if (fold != null) Modifier.clickable(onClickLabel = foldLabel) { fold.toggle() } else Modifier).then(modifier).heightIn(min = 40.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
         if (icon != null) Icon(icon, contentDescription = null, tint = NimbusColors.Tertiary, modifier = Modifier.size(14.dp))
         // Long titles (e.g. German compounds) shrink instead of being cut off.
         androidx.compose.foundation.text.BasicText(
@@ -194,6 +226,12 @@ fun CardHeader(title: String, icon: ImageVector?, modifier: Modifier = Modifier,
         )
         if (status != null) StatusDot(status)
         if (info != null) InfoButton(info)
+        if (fold != null) Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
+            Icon(
+                if (fold.folded) androidx.compose.material.icons.Icons.Rounded.ExpandMore else androidx.compose.material.icons.Icons.Rounded.ExpandLess,
+                contentDescription = foldLabel, tint = NimbusColors.Tertiary, modifier = Modifier.size(20.dp),
+            )
+        }
     }
 }
 

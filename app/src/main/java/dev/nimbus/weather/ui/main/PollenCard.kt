@@ -135,22 +135,26 @@ fun PollenForecastCard(pollenAll: PollenForecast, now: Long) {
     val todayMax = today?.levels?.values?.maxOrNull() ?: 0f
     val leaders = today?.levels?.filterValues { it > 0f && it >= todayMax - 0.5f }?.keys?.sortedByDescending { today.levels[it] }.orEmpty()
 
+    val leaderNames = leaders.map { stringResource(pollenName(it)) }
     GlassCard(
         title = stringResource(R.string.pollen_forecast), icon = Icons.Outlined.Grass, info = Term.POLLEN,
         onClick = { expanded = !expanded },
+        summary = stringResource(pollenLevelText(todayMax)) + if (leaderNames.isNotEmpty()) " · " + leaderNames.joinToString(", ") else "",
     ) {
         Column(Modifier.animateContentSize()) {
             // Summary
             Text(stringResource(pollenLevelText(todayMax)), fontSize = 22.sp, fontWeight = FontWeight.Medium, color = Color.White)
             Text(
-                if (leaders.isNotEmpty()) leaders.map { stringResource(pollenName(it)) }.joinToString(", ")
+                if (leaderNames.isNotEmpty()) leaderNames.joinToString(", ")
                 else stringResource(R.string.pollen_none_active, allTypes.size),
                 fontSize = 14.sp, color = NimbusColors.Secondary,
             )
             Spacer(Modifier.height(10.dp))
+            // Nothing flying: the summary says it – the rows, all empty, only when unfolded
+            val quiet = active.isEmpty() && !expanded
 
             // Day table
-            if (days.isNotEmpty()) {
+            if (days.isNotEmpty() && !quiet) {
                 Row(Modifier.fillMaxWidth()) {
                     Spacer(Modifier.weight(1.3f))
                     days.forEachIndexed { i, d ->
@@ -164,7 +168,7 @@ fun PollenForecastCard(pollenAll: PollenForecast, now: Long) {
                         )
                     }
                 }
-                val rows = if (expanded || active.isEmpty()) (active + allTypes.filter { it !in active }) else active
+                val rows = if (expanded) (active + allTypes.filter { it !in active }) else active
                 rows.forEach { type ->
                     Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
                         Row(Modifier.weight(1.3f), verticalAlignment = Alignment.CenterVertically) {
@@ -181,6 +185,9 @@ fun PollenForecastCard(pollenAll: PollenForecast, now: Long) {
 
             // Composition from CAMS concentrations
             val composition = remember(pollen, now) { composition(pollen, now) }
+            if (quiet && composition == null) {
+                // nothing in the air either: no section saying so
+            } else {
             Spacer(Modifier.height(12.dp))
             HairlineDivider()
             Spacer(Modifier.height(10.dp))
@@ -215,6 +222,7 @@ fun PollenForecastCard(pollenAll: PollenForecast, now: Long) {
                     stringResource(R.string.pollen_composition_total, String.format("%.1f", total)),
                     fontSize = 11.sp, color = NimbusColors.Tertiary, modifier = Modifier.padding(top = 2.dp),
                 )
+            }
             }
 
             // Hourly course (expanded)

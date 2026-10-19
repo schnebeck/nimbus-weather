@@ -86,6 +86,10 @@
     <string name="alert_until">Bis %1$s</string>
     <string name="more_alerts">+%1$d weitere</string>
     <string name="show_more">Mehr anzeigen</string>
+    <string name="moon_summary">%1$s · %2$d %% beleuchtet</string>
+    <string name="models_summary">Höchstwert morgen %1$s bis %2$s je nach Modell (%3$d Modelle)</string>
+    <string name="card_fold">Einklappen</string>
+    <string name="card_unfold">Aufklappen</string>
     <string name="show_less">Weniger anzeigen</string>
     <string name="summary_gusts">Windböen bis %1$s.</string>
     <string name="summary_dew_point">Der Taupunkt liegt aktuell bei %1$s.</string>
@@ -286,6 +290,8 @@
     <string name="legend_rain">Regen</string>
     <string name="legend_snow">Schnee</string>
 
+    <string name="settings_radar_autoplay">Radar automatisch abspielen</string>
+    <string name="settings_radar_autoplay_desc">Das Radar öffnet auf dem aktuellen Bild und spielt los, sobald die Vorhersage geladen ist; die Vergangenheit lädt währenddessen. Aus: Es bleibt auf „jetzt“ stehen, bis du auf Play tippst.</string>
     <string name="settings_preload_radar">Radar vorladen</string>
     <string name="settings_preload_radar_desc">Radarschleife für den zuletzt im Radar gezeigten Ort vorladen, damit sie sofort erscheint: bei offener App etwa alle 15 Minuten, sonst etwa alle 30 Minuten im Hintergrund, solange der Akku nicht knapp ist</string>
 

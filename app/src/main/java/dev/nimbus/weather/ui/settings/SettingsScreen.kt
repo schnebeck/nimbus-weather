@@ -149,6 +149,9 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                 Section(stringResource(R.string.settings_radar)) {
                     RadarOverlaysOnOpening(settings.radarOverlays) { o -> onChange { it.copy(radarOverlays = o) } }
                     Spacer(Modifier.size(14.dp))
+                    ToggleRow(stringResource(R.string.settings_radar_autoplay), stringResource(R.string.settings_radar_autoplay_desc), settings.radarAutoplay) { v ->
+                        onChange { it.copy(radarAutoplay = v) }
+                    }
                     ToggleRow(stringResource(R.string.settings_preload_radar), stringResource(R.string.settings_preload_radar_desc), settings.preloadRadar) { v ->
                         onChange { it.copy(preloadRadar = v) }
                     }

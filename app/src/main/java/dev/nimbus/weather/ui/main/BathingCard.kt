@@ -85,7 +85,11 @@ fun BathingCard(sites: List<BathingSite>, now: Long) {
     val count = maxOf(SHOWN, ordered.count { it.id in favorites } + 2)
     val shown = if (all) ordered else ordered.take(count)
     val tf = LocalTimeFormat.current
-    GlassCard(title = stringResource(R.string.bathing_title), icon = Icons.Outlined.Pool, info = Term.BATHING) {
+    // folded: the first water of the list (a favourite, else the nearest) with its temperature
+    val summary = ordered.first().let { site ->
+        bathingName(site.name) + " · " + (site.waterTemp?.let { Units.temp(it, s.temperatureUnit) } ?: (Units.oneDecimal(site.distanceKm) + NBSP + "km"))
+    }
+    GlassCard(title = stringResource(R.string.bathing_title), icon = Icons.Outlined.Pool, info = Term.BATHING, summary = summary) {
         if (!inSeason(tf.zoned(now).toLocalDate())) {
             Text(stringResource(R.string.bathing_off_season), fontSize = 12.sp, color = NimbusColors.Tertiary, lineHeight = 16.sp)
             Spacer(Modifier.height(6.dp))

@@ -71,7 +71,10 @@ fun MoonCard(data: WeatherData, now: Long) {
             Moon.Phase.WANING_CRESCENT -> R.string.moon_waning_crescent
         },
     )
-    GlassCard(title = stringResource(R.string.moon), icon = Icons.Outlined.DarkMode, info = Term.MOON, onClick = { explain(Term.MOON) }) {
+    GlassCard(
+        title = stringResource(R.string.moon), icon = Icons.Outlined.DarkMode, info = Term.MOON, onClick = { explain(Term.MOON) },
+        summary = stringResource(R.string.moon_summary, phaseName, (info.fraction * 100).roundToInt()),
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Canvas(Modifier.size(84.dp)) {
                 drawMoonPhase(center, size.minDimension / 2 * 0.92f, info.phase.toFloat(), lat < 0)

@@ -145,6 +145,8 @@ fun RadarScreen(
     lightningFirst: Boolean = false,
     /** Layers on when it opens (settings). */
     overlays: Set<dev.nimbus.weather.data.model.RadarOverlay> = emptySet(),
+    /** Plays by itself once loaded far enough (settings); off, it waits for play. */
+    autoplay: Boolean = true,
     onBack: () -> Unit,
 ) {
     val archive = archiveDay != null
@@ -164,6 +166,8 @@ fun RadarScreen(
     var timeline by remember { mutableStateOf<RadarTimeline?>(null) }
     var error by remember { mutableStateOf(false) }
     var ready by remember { mutableStateOf(false) }
+    /** Play, pause, a step or the slider touched: playback is the user's, nothing starts by itself. */
+    var tookOver by remember { mutableStateOf(false) }
     /** Frames with complete tiles, for the progress hint while the loop loads. */
     var loadedFrames by remember { mutableIntStateOf(0) }
     /** Incremented by "load again". */
@@ -264,7 +268,8 @@ fun RadarScreen(
     }
 
     // Progress and the start of playback: the player loads the steps from the store (one image
-    // per step, kept on disk) from the shown frame outwards.
+    // per step, kept on disk). The live loop stands on "now" until its forecast is loaded, then
+    // plays (the past loads meanwhile); an archived day plays once its first steps are there.
     LaunchedEffect(timeline, styleReady) {
         if (!styleReady || timeline == null) return@LaunchedEffect
         // the first picture area once the map has its size
@@ -274,10 +279,11 @@ fun RadarScreen(
             val tl = timeline ?: return@collect
             // An archived day plays as soon as the first coarse steps bridge the start; the
             // finer ones arrive while it plays
-            val canPlay = player.canShow(minOf(frame + BUFFER_START, tl.frames.lastIndex).toFloat())
+            val canPlay = if (tl.day != null) player.canShow(minOf(frame + BUFFER_START, tl.frames.lastIndex).toFloat())
+            else Playback.liveStarts(tl.nowIndex, tl.lastShown(player.nowcastHere.value), player::canShow)
             if (!ready && canPlay) {
                 ready = true
-                playing = true
+                if (autoplay && !tookOver) playing = true
                 if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "loop starts after ${System.currentTimeMillis() - openedAt} ms")
             }
         }
@@ -440,7 +446,12 @@ fun RadarScreen(
             val dt = (now - last) / 1_000_000f
             last = now
             // Live loop and archived day alike: buffer (with the hint) instead of standing still
-            state = Playback.step(state, dt, lastIndex, loop = !archived, stepMs = stepMs, canShow = player::canShow, resumeAhead = BUFFER_RESUME, restMs = LOOP_PAUSE_MS.toFloat())
+            // the live loop starts over at "now" until the past (loaded after the forecast) can play
+            val from = if (archived || state.position < lastIndex) 0 else Playback.liveLoopFrom(tl.nowIndex, lastIndex, player::canShow)
+            state = Playback.step(
+                state, dt, lastIndex, loop = !archived, stepMs = stepMs, canShow = player::canShow,
+                resumeAhead = BUFFER_RESUME, restMs = LOOP_PAUSE_MS.toFloat(), loopFrom = from,
+            )
             buffering = state.buffering
             if (!state.playing) { playing = false; break }
             player.position = state.position
@@ -555,6 +566,7 @@ fun RadarScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(
                         onClick = {
+                            tookOver = true
                             if (!playing && archive && frame >= tl.frames.lastIndex) frame = 0
                             playing = !playing
                         },
@@ -598,12 +610,13 @@ fun RadarScreen(
                             }
                             // Step by step: one 5-minute step back or forward (the slider is too
                             // fine for that with hundreds of steps)
-                            fun stepTo(i: Int) { playing = false; frame = i.coerceIn(0, last); player.position = frame.toFloat() }
+                            fun stepTo(i: Int) { tookOver = true; playing = false; frame = i.coerceIn(0, last); player.position = frame.toFloat() }
                             StepButton(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, stringResource(R.string.radar_step_back), frame > 0) { stepTo(frame - 1) }
                             Spacer(Modifier.width(6.dp))
                             StepButton(Icons.AutoMirrored.Rounded.KeyboardArrowRight, stringResource(R.string.radar_step_forward), frame < last) { stepTo(frame + 1) }
                         }
                         TimelineSlider(tl, frame, last) {
+                            tookOver = true
                             playing = false
                             frame = it
                             player.position = it.toFloat()

@@ -81,7 +81,14 @@ fun ModelComparisonCard(models: List<ModelSeries>?, now: Long, onRequest: () -> 
     val s = LocalSettings.current
     var highlighted by remember { mutableStateOf<String?>(null) }
     val measurer = rememberTextMeasurer()
-    GlassCard(title = stringResource(R.string.model_comparison), icon = Icons.Outlined.QueryStats, info = Term.MODELS) {
+    // folded: how far the models lie apart for tomorrow's high
+    val highs = remember(models, now / 3_600_000L) {
+        val from = tf.zoned(now).toLocalDate().plusDays(1).atStartOfDay(tf.zone).toInstant().toEpochMilli()
+        models.orEmpty().mapNotNull { m -> m.times.indices.filter { m.times[it] > from && m.times[it] <= from + 24 * 3_600_000L }.mapNotNull { m.temperature[it] }.maxOrNull() }
+    }
+    val summary = if (highs.isEmpty()) stringResource(R.string.model_comparison_hint)
+    else stringResource(R.string.models_summary, Units.temp(highs.min(), s.temperatureUnit), Units.temp(highs.max(), s.temperatureUnit), highs.size)
+    GlassCard(title = stringResource(R.string.model_comparison), icon = Icons.Outlined.QueryStats, info = Term.MODELS, summary = summary) {
         Text(stringResource(R.string.model_comparison_hint), fontSize = 13.sp, color = NimbusColors.Secondary)
         Spacer(Modifier.height(10.dp))
         if (models == null) {

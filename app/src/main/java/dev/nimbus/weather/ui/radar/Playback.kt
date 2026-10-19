@@ -57,6 +57,22 @@ object Progressive {
         return out
     }
 
+    /**
+     * Load order of the live loop's [n] steps, "now" at [now]: now, the forecast after it in
+     * playback order, then the past from now backwards – of the past the steps a long loop plays
+     * between ([plays]) before the others. The picture of now is there first; the loop plays the
+     * forecast while the past still loads.
+     */
+    fun liveOrder(n: Int, now: Int, plays: Set<Int> = emptySet()): List<Int> {
+        if (n <= 0) return emptyList()
+        val c = now.coerceIn(0, n - 1)
+        val past = (c - 1 downTo 0).toList()
+        return listOf(c) + (c + 1 until n) + past.filter { it in plays } + past.filter { it !in plays }
+    }
+
+    /** Can [from]..[to] play all through: every step there, or between steps close enough ([playable]). */
+    fun playsThrough(from: Int, to: Int, canShow: (Float) -> Boolean): Boolean = (from..to).all { canShow(it.toFloat()) }
+
     /** Frames further apart than this are not moved into each other (measured: beyond it the motion is guessed, not found). */
     const val MAX_MOTION_MS = 30 * 60_000L
 
@@ -110,7 +126,7 @@ object Progressive {
  * position moves on at [stepMs] per step while the next step can be shown; when it cannot (not
  * loaded yet, or the frame window of a long time line is still moving), playback buffers – with
  * the loading hint – until [resumeAhead] steps ahead are there. It never just stands still. At the
- * end the live loop rests [restMs] and starts over; an archived day stops.
+ * end the live loop rests [restMs] and starts over (at its loopFrom); an archived day stops.
  */
 object Playback {
     data class State(val position: Float, val buffering: Boolean = false, val restedMs: Float = 0f, val playing: Boolean = true)
@@ -127,9 +143,25 @@ object Playback {
     /** The next picture's time after the one [due], at [now] (ns): on the beat, anew after a pause of a beat or more. */
     fun nextDue(now: Long, due: Long) = if (now - due >= PICTURE_NS) now + PICTURE_NS else due + PICTURE_NS
 
+    /**
+     * The live loop, opened paused on "now" ([now]), starts by itself once its forecast up to
+     * [last] can play all through – where the area has none, once the past can.
+     */
+    fun liveStarts(now: Int, last: Int, canShow: (Float) -> Boolean): Boolean =
+        if (last > now) Progressive.playsThrough(now, last, canShow) else Progressive.playsThrough(0, now, canShow)
+
+    /**
+     * Where the live loop starts over: at "now" while the past cannot play yet (it loads after the
+     * forecast), at its start once it can.
+     */
+    fun liveLoopFrom(now: Int, last: Int, canShow: (Float) -> Boolean): Int =
+        if (now < last && !Progressive.playsThrough(0, now, canShow)) now else 0
+
     fun step(
         s: State, dtMs: Float, last: Int, loop: Boolean, stepMs: Float, canShow: (Float) -> Boolean,
         resumeAhead: Int = 12, restMs: Float = 1400f,
+        /** Where the loop starts over. */
+        loopFrom: Int = 0,
     ): State {
         if (!s.playing) return s
         val p = s.position
@@ -137,7 +169,7 @@ object Playback {
             if (!loop) return s.copy(playing = false, buffering = false)
             val rested = s.restedMs + dtMs
             return if (rested < restMs) s.copy(restedMs = rested, buffering = false)
-            else State(0f, buffering = !canShow(minOf(resumeAhead, last).toFloat()))
+            else State(loopFrom.toFloat(), buffering = !canShow(minOf(loopFrom + resumeAhead, last).toFloat()))
         }
         // buffering ends with a stretch ahead – and playback moves on in the same frame
         if (s.buffering && !canShow(minOf(p + resumeAhead, last.toFloat()))) return s

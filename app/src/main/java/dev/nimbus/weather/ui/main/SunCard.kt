@@ -107,7 +107,9 @@ fun SunCard(data: WeatherData, now: Long) {
         }
     }
 
-    GlassCard(title = stringResource(R.string.sun), icon = Icons.Outlined.WbTwilight, info = Term.SUN, onClick = { explain(Term.SUN) }) {
+    val summary = stringResource(R.string.sunrise_short) + " " + (rise?.let { tf.time(it) } ?: "–") + " · " +
+        stringResource(R.string.sunset_short) + " " + (set?.let { tf.time(it) } ?: "–")
+    GlassCard(title = stringResource(R.string.sun), icon = Icons.Outlined.WbTwilight, info = Term.SUN, onClick = { explain(Term.SUN) }, summary = summary) {
         Row(Modifier.fillMaxWidth()) {
             SunFact(stringResource(R.string.sunrise), rise?.let { tf.time(it) } ?: "–", null, Modifier.weight(1f), stringResource(R.string.sunrise_short))
             SunFact(stringResource(R.string.sunset), set?.let { tf.time(it) } ?: "–", null, Modifier.weight(1f), stringResource(R.string.sunset_short))

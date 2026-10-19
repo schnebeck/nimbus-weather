@@ -1,0 +1,3 @@
+• Regenradar öffnet auf dem aktuellen Bild: erst jetzt, dann die Vorhersage, dann die Vergangenheit laden; Abspielen startet, sobald die Vorhersage geladen ist (Einstellung „Radar automatisch abspielen“)
+• Größere Karten lassen sich per Pfeil im Titel auf eine Zeile einklappen – die App merkt es sich; ebenso „Heute“ in der 10-Tage-Vorhersage
+• Pollenflug ohne Belastung zeigt nur die Zusammenfassung statt leerer Zeilen

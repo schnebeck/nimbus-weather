@@ -79,8 +79,10 @@ fun DailyCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) {
     if (days.isEmpty()) return
     val lo = days.minOf { it.tempMin }
     val hi = days.maxOf { it.tempMax }
-    // Today opens by default; every row (today too) can still be closed.
-    var expanded by rememberSaveable(data.place.id) { mutableStateOf<Long?>(days.first().date) }
+    // Today opens – shows what a day holds – unless the user closed it (kept in the settings);
+    // every row can be opened and closed
+    val updateSettings = LocalSettingsUpdater.current
+    var expanded by rememberSaveable(data.place.id) { mutableStateOf<Long?>(if (settings.todayClosed) null else days.first().date) }
     GlassCard(
         title = stringResource(if (days.size == 10) R.string.ten_day_forecast else R.string.n_day_forecast, days.size),
         icon = Icons.Outlined.CalendarMonth,
@@ -118,7 +120,12 @@ fun DailyCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) {
                 min = lo, max = hi,
                 currentTemp = if (isToday) data.current.temperature else null,
                 expanded = expanded == d.date,
-                onClick = { expanded = if (expanded == d.date) null else d.date },
+                onClick = {
+                    val closing = expanded == d.date
+                    expanded = if (closing) null else d.date
+                    // today opened or closed by hand: so it opens next time
+                    if (isToday) updateSettings { s -> s.copy(todayClosed = closing) }
+                },
                 // 00:00 of the next day closes the curve at 24 h
                 // 00:00 of the day through 01:00 of the next: the 24 column
                 hours = data.hourly.filter { it.time in d.date..d.date + 25 * 3_600_000L },

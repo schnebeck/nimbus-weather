@@ -44,7 +44,10 @@ import kotlin.math.roundToInt
 fun AirQualityCard(data: WeatherData) {
     val aq = data.airQuality ?: return
     val aqi = aq.europeanAqi ?: return
-    GlassCard(title = stringResource(R.string.air_quality), icon = Icons.Outlined.Masks, info = Term.AIR_QUALITY) {
+    GlassCard(
+        title = stringResource(R.string.air_quality), icon = Icons.Outlined.Masks, info = Term.AIR_QUALITY,
+        summary = aqi.roundToInt().toString() + " · " + stringResource(Texts.aqiLevel(aqi)),
+    ) {
         Row(verticalAlignment = Alignment.Bottom) {
             Text(aqi.roundToInt().toString(), fontSize = 34.sp, color = Color.White)
             Spacer(Modifier.width(10.dp))

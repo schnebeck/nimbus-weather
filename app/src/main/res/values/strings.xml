@@ -91,6 +91,10 @@
     <string name="alert_until">Until %1$s</string>
     <string name="more_alerts">+%1$d more</string>
     <string name="show_more">Show more</string>
+    <string name="moon_summary">%1$s · %2$d %% lit</string>
+    <string name="models_summary">Tomorrow\'s high %1$s to %2$s by model (%3$d models)</string>
+    <string name="card_fold">Fold</string>
+    <string name="card_unfold">Unfold</string>
     <string name="show_less">Show less</string>
 
     <!-- Summaries -->
@@ -297,6 +301,8 @@
     <string name="legend_rain">Rain</string>
     <string name="legend_snow">Snow</string>
 
+    <string name="settings_radar_autoplay">Play the radar automatically</string>
+    <string name="settings_radar_autoplay_desc">The radar opens on the current picture and starts playing once the forecast is loaded; the past loads meanwhile. Off: it stays on “now” until you tap play.</string>
     <string name="settings_preload_radar">Preload radar</string>
     <string name="settings_preload_radar_desc">Load the radar loop of the place last seen on the radar ahead, so it opens instantly: about every 15 minutes while the app is open, otherwise about every 30 minutes in the background while the battery is not low</string>
 

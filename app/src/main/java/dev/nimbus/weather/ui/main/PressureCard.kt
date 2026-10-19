@@ -110,21 +110,27 @@ fun PressureCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) 
         ?: data.hourly.firstOrNull { it.time >= now + 3 * 3_600_000L }?.pressure
     val delta = in3h?.let { it - current }
 
-    GlassCard(title = stringResource(R.string.pressure_chart_title), icon = Icons.Outlined.Timeline, info = Term.PRESSURE) {
+    val trend = delta?.let { d ->
+        stringResource(
+            when {
+                d > 1.0 -> R.string.pressure_chart_rising
+                d < -1.0 -> R.string.pressure_chart_falling
+                else -> R.string.pressure_chart_steady
+            },
+            (if (d >= 0) "+" else "−") + Units.oneDecimal(abs(d)),
+        )
+    }
+    GlassCard(
+        title = stringResource(R.string.pressure_chart_title), icon = Icons.Outlined.Timeline, info = Term.PRESSURE,
+        summary = current.roundToInt().toString() + NBSP + "hPa" + (trend?.let { " · $it" } ?: ""),
+    ) {
         Row(verticalAlignment = Alignment.Bottom) {
             Text(current.roundToInt().toString(), fontSize = 30.sp, color = Color.White)
             Text(NBSP + "hPa", fontSize = 15.sp, color = Color.White, modifier = Modifier.padding(bottom = 5.dp))
             Spacer(Modifier.width(12.dp))
             delta?.let { d ->
                 Text(
-                    stringResource(
-                        when {
-                            d > 1.0 -> R.string.pressure_chart_rising
-                            d < -1.0 -> R.string.pressure_chart_falling
-                            else -> R.string.pressure_chart_steady
-                        },
-                        (if (d >= 0) "+" else "−") + Units.oneDecimal(abs(d)),
-                    ),
+                    trend!!,
                     fontSize = 14.sp, color = if (d <= -FAST_FALL_HPA_3H) FastFall else NimbusColors.Secondary,
                     modifier = Modifier.padding(bottom = 6.dp),
                 )

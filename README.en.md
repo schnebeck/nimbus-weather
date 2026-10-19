@@ -126,7 +126,9 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
   motion; the time line follows the place's radar), one colour scale for
   rain (green → yellow → red → magenta) and snow (turquoise → white → violet, per pixel by the
   temperature), optionally calmer in blue and pink–violet; the radar cells smoothed at every zoom
-  level instead of blocks; smooth playback: between two radar images the motion of the rain is
+  level instead of blocks; the radar opens on the current picture, loads the forecast first, then
+  the past, and starts playing once the forecast is there (can be switched off); smooth playback:
+  between two radar images the motion of the rain is
   computed; an own radar store – each image of a weather service (all of Germany, the Netherlands in
   one) is loaded once, turned into reflectivity and kept locally until it expires (analyses ~3½ days),
   panning and zooming need no network; opaque colours, roads, borders and names above the radar;
@@ -176,7 +178,10 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
 - **Places, settings**: my location and saved places (long press to sort and delete); the forecast
   model (preset: Automatic – the finest model for each place and time, named with its grid in the
   data sources), units (on first start to suit the country), station values, animations, order and
-  visibility of the cards. Under "Diagnostics" an activity log (off until switched on): network calls
+  visibility of the cards. Larger cards (sun, moon, air quality, pressure, pollen, gauges, bathing
+  waters, sensor network, model comparison) fold to one line with the arrow in their title; the app
+  keeps that per card, and whether "Today" in the 10-day forecast is open or closed. Under
+  "Diagnostics" an activity log (off until switched on): network calls
   with their amounts, shown or not, screen and CPU time, and how the radar loads (its sources, when
   its own one is complete, how the others answer, when all pictures are prepared, sources resting,
   loading ahead in the background), for battery and data analyses – without

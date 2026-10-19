@@ -211,9 +211,14 @@ class RadarPlayer(
     private fun stepMinutes(tl: RadarTimeline) =
         if (tl.frames.size < 2) 5 else ((tl.frames[1].time - tl.frames[0].time) / 60_000L).toInt()
 
+    /** The steps a long live loop plays between (kept for good while windowed); none for a short one. */
+    private fun liveKeep(tl: RadarTimeline): Set<Int> =
+        if (tl.frames.size > MAX_ALL) Progressive.keepSteps(tl.frames.map { it.time }, tl.range.playMinutes) else emptySet()
+
     /**
-     * Downloads the steps into the store, coarse to fine ([Progressive]): every 2 hours, every
-     * hour, … – over the whole time line, independent of what is shown, several at a time.
+     * Downloads the steps into the store, several at a time, independent of what is shown: the
+     * live loop now, the forecast, then the past ([Progressive.liveOrder]); an archived day coarse
+     * to fine ([Progressive.order]): every 2 hours, every hour, … over the whole day.
      */
     private fun restartDownloader() {
         val tl = timeline ?: return
@@ -230,9 +235,9 @@ class RadarPlayer(
             }
             countStored(tl)
             wake.trySend(Unit)
-            // A long live loop plays between steps 20–30 minutes apart: those belong to the overview
-            val overview = if (tl.day == null && tl.frames.size > MAX_ALL) 30 else 60
-            val order = Progressive.order(tl.frames.size, position.toInt().coerceIn(0, tl.frames.lastIndex), Progressive.strides(stepMinutes(tl)), stepMinutes(tl), overview)
+            // live: now, the forecast, then the past; an archived day coarse to fine from the position
+            val order = if (tl.day == null) Progressive.liveOrder(tl.frames.size, tl.nowIndex, liveKeep(tl))
+            else Progressive.order(tl.frames.size, position.toInt().coerceIn(0, tl.frames.lastIndex), Progressive.strides(stepMinutes(tl)), stepMinutes(tl))
             // A fixed number of workers takes the steps strictly in this order (each download
             // on its own reordered them: the step needed next could end up far back in the queue)
             val queue = Channel<Int>(Channel.UNLIMITED)
@@ -360,9 +365,11 @@ class RadarPlayer(
                     frames.keys.filter { it !in keep }.forEach { frames.remove(it) }
                     flows.keys.filter { k -> k.substringBefore('>') !in keep || k.substringAfter('>') !in keep }.forEach { flows.remove(it) }
                 }
-                // the kept steps first, from the position on and around the loop, then the window
-                val kept = keepSteps.sortedBy { (it - p + tl.frames.size) % tl.frames.size }
-                for (i in kept + Progressive.order(tl.frames.size, p, strides, stepMinutes(tl)).filter { it !in keepSteps }) {
+                // live: in the order they are loaded (now, the forecast, the past); an archived day
+                // from the position on, coarse to fine
+                val order = if (live) Progressive.liveOrder(tl.frames.size, tl.nowIndex, keepSteps)
+                else Progressive.order(tl.frames.size, p, strides, stepMinutes(tl))
+                for (i in order) {
                     if (gen != generation) return@launch
                     if (i !in lo..hi && i !in keepSteps) continue
                     val f = tl.frames[i]

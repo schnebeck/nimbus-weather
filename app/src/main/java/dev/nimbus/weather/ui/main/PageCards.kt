@@ -125,3 +125,17 @@ private fun PopIn(fresh: Boolean, content: @Composable () -> Unit) {
             androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(200, delayMillis = 240)),
     ) { content() }
 }
+
+/**
+ * [content]'s card folds on the weather page to its title and one line – kept per card in the
+ * settings, so it opens again as it was left.
+ */
+@androidx.compose.runtime.Composable
+internal fun Foldable(card: dev.nimbus.weather.data.model.WeatherCard, content: @androidx.compose.runtime.Composable () -> Unit) {
+    val folded = card in LocalSettings.current.foldedCards
+    val update = LocalSettingsUpdater.current
+    val fold = dev.nimbus.weather.ui.components.CardFold(folded) {
+        update { s -> s.copy(foldedCards = if (card in s.foldedCards) s.foldedCards - card else s.foldedCards + card) }
+    }
+    androidx.compose.runtime.CompositionLocalProvider(dev.nimbus.weather.ui.components.LocalCardFold provides fold) { content() }
+}

@@ -39,6 +39,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.graphics.StrokeCap
 import kotlin.math.roundToInt
 import androidx.compose.material3.Text
@@ -130,31 +131,56 @@ internal val ForecastOff = Color(0x1FFFFFFF)
 /** Land colour of the slate map style, under the legend bars. */
 private val MapLand = Color(0xFF505E6F)
 
-/** Rain (green → yellow → red) and, where it can snow, snow (turquoise → white → violet) scales, plus the temperature scale when shown. */
+/**
+ * The steps of the scales: the reflectivity (dBZ) where each lies on the bars and its rain rate
+ * (mm/h, Marshall–Palmer) – drizzle at the weakest step drawn, then light, moderate, heavy, severe.
+ */
+internal val LegendSteps = listOf(
+    8 to (R.string.radar_scale_drizzle to 0.1), 23 to (R.string.radar_scale_light to 1.0), 34 to (R.string.radar_scale_moderate to 5.0),
+    44 to (R.string.radar_scale_heavy to 20.0), 50 to (R.string.radar_scale_severe to 50.0),
+)
+
+/** Where [dbz] lies on a legend bar (0 at its left end, 1 at its right). */
+internal fun legendX(dbz: Int): Float =
+    ((dbz - RadarPalette.LEGEND_MIN_DBZ).toFloat() / (RadarPalette.LEGEND_MAX_DBZ - RadarPalette.LEGEND_MIN_DBZ)).coerceIn(0f, 1f)
+
+/**
+ * Rain and, where it can snow, snow scale – each a bar in the width of the screen – with the
+ * steps under them (word and rain rate), plus the temperature scale when shown.
+ */
 @Composable
 internal fun Legend(showTemp: Boolean, showSnow: Boolean, unit: dev.nimbus.weather.data.model.TemperatureUnit) {
+    val labelW = 48.dp
     @Composable
-    fun Bar(label: String, colors: List<Color>, modifier: Modifier) {
-        Column(modifier) {
-            Text(label, fontSize = 10.sp, color = NimbusColors.Secondary)
-            Canvas(Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))) {
-                // On the map's land colour: the weakest, fading-in steps look exactly as on the map
+    fun Bar(label: String, colors: List<Color>) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(label, Modifier.width(labelW), fontSize = 10.sp, color = NimbusColors.Secondary, maxLines = 1)
+            Canvas(Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(4.dp))) {
+                // On the map's land colour: the weakest, see-through steps look exactly as on the map
                 drawRect(MapLand)
                 drawRect(Brush.horizontalGradient(colors))
             }
         }
     }
-    Row(verticalAlignment = Alignment.Bottom) {
-        Bar(stringResource(R.string.legend_rain), RadarPalette.legendRain.map { Color(it) }, Modifier.weight(1f))
-        if (showSnow) {
-            Spacer(Modifier.width(10.dp))
-            Bar(stringResource(R.string.legend_snow), RadarPalette.legendSnow.map { Color(it) }, Modifier.weight(1f))
+    Bar(stringResource(R.string.legend_rain), RadarPalette.legendRain.map { Color(it) })
+    if (showSnow) {
+        Spacer(Modifier.height(3.dp))
+        Bar(stringResource(R.string.legend_snow), RadarPalette.legendSnow.map { Color(it) })
+    }
+    val p = dev.nimbus.weather.ui.main.LocalSettings.current.precipitationUnit
+    val inch = p == dev.nimbus.weather.data.model.PrecipitationUnit.INCH
+    val rateUnit = if (inch) "in/h" else "mm/h"
+    val steps = LegendSteps.mapIndexed { i, (dbz, s) ->
+        val (word, mm) = s
+        val v = mm / (if (inch) 25.4 else 1.0)
+        val rate = when {
+            inch -> String.format(java.util.Locale.getDefault(), if (v < 0.1) "%.3f" else if (v < 1) "%.2f" else "%.1f", v)
+            mm < 1 -> dev.nimbus.weather.util.Units.oneDecimal(mm)
+            else -> mm.roundToInt().toString()
         }
+        Triple(legendX(dbz), stringResource(word), if (i == LegendSteps.lastIndex) rate + dev.nimbus.weather.util.NBSP + rateUnit else rate)
     }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(stringResource(R.string.radar_light), fontSize = 10.sp, color = NimbusColors.Tertiary)
-        Text(stringResource(R.string.radar_heavy), fontSize = 10.sp, color = NimbusColors.Tertiary)
-    }
+    Row { Spacer(Modifier.width(labelW)); LegendTicks(steps, Modifier.weight(1f)) }
     if (showTemp) {
         Spacer(Modifier.height(4.dp))
         // Discrete bands like on the map (areas of equal temperature), in the display unit.
@@ -238,3 +264,36 @@ internal fun RadarStatusHint(
     }
 }
 
+/**
+ * Words and rates at their places under the bars ([steps]: position 0–1, word, rate): the first
+ * from the left end, the last up to the right end, the others centred; a step that would run into
+ * the one before (large fonts) is left out rather than drawn over it.
+ */
+@Composable
+private fun LegendTicks(steps: List<Triple<Float, String, String>>, modifier: Modifier) {
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val wordStyle = androidx.compose.ui.text.TextStyle(fontSize = 10.sp, color = NimbusColors.Secondary)
+    val rateStyle = androidx.compose.ui.text.TextStyle(fontSize = 9.sp, color = NimbusColors.Tertiary)
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val h = with(density) { (measurer.measure("Ag", wordStyle).size.height + measurer.measure("0", rateStyle).size.height).toDp() } + 3.dp
+    Canvas(modifier.height(h)) {
+        var right = -Float.MAX_VALUE
+        val gap = 6.dp.toPx()
+        steps.forEachIndexed { i, (x, word, rate) ->
+            val w = measurer.measure(word, wordStyle)
+            val r = measurer.measure(rate, rateStyle)
+            val width = maxOf(w.size.width, r.size.width).toFloat()
+            val left = when (i) {
+                0 -> 0f
+                steps.lastIndex -> size.width - width
+                else -> x * size.width - width / 2
+            }.coerceIn(0f, maxOf(0f, size.width - width))
+            if (left < right + gap) return@forEachIndexed
+            // word and rate aligned like the step: left, centred or right
+            fun at(tw: Int) = when (i) { 0 -> left; steps.lastIndex -> left + width - tw; else -> left + (width - tw) / 2 }
+            drawText(w, topLeft = Offset(at(w.size.width), 2.dp.toPx()))
+            drawText(r, topLeft = Offset(at(r.size.width), 2.dp.toPx() + w.size.height))
+            right = left + width
+        }
+    }
+}

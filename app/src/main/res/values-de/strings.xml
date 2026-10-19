@@ -151,8 +151,11 @@
     <string name="play">Abspielen</string>
     <string name="pause">Pause</string>
     <string name="forecast">Vorhersage</string>
-    <string name="radar_light">Leicht</string>
-    <string name="radar_heavy">Stark</string>
+    <string name="radar_scale_drizzle">Niesel</string>
+    <string name="radar_scale_light">leicht</string>
+    <string name="radar_scale_moderate">mäßig</string>
+    <string name="radar_scale_heavy">stark</string>
+    <string name="radar_scale_severe">Unwetter</string>
     <string name="radar_forecast_partly">Vorhersage nur für Deutschland – grau: ohne Vorhersage</string>
     <string name="radar_forecast_germany_only">Radarvorhersage (Nowcast) nur für Deutschland verfügbar</string>
     <string name="radar_minutes_ago">vor %1$d Min.</string>
@@ -420,7 +423,7 @@
     <string name="term_pollen_title">Pollen</string>
     <string name="term_pollen_body">Die Pollenflugvorhersage zeigt, wie stark allergierelevante Pollenarten in der Luft sind.\n\nStufen (Skala des Deutschen Wetterdienstes): keine, gering, mittel und hoch, mit Zwischenstufen. Jeder Balken hat drei Segmente – halb gefüllte Segmente sind die Zwischenstufen.\n\n• Deutschland: amtlicher Pollenflug-Gefahrenindex des DWD für 8 Arten (Hasel, Erle, Esche, Birke, Gräser, Roggen, Beifuß, Ambrosia) und 27 Regionen, täglich gegen 11 Uhr für heute, morgen und übermorgen\n• Übriges Europa: Stufen abgeleitet aus dem Copernicus-CAMS-Modell (6 Arten)\n\nZusammensetzung und Verlauf stammen aus CAMS in Pollenkörnern pro Kubikmeter Luft. Sie zeigen, welche Pollen dominieren – hilfreich, wenn man nur auf bestimmte Arten reagiert. Empfindliche Menschen können schon bei geringer Belastung reagieren.\n\nSind Pollen in der Luft und ist es trocken, zeigt der animierte Hintergrund sie als feine schwebende Partikel.</string>
     <string name="term_radar_title">Niederschlagsradar</string>
-    <string name="term_radar_body">Ein Wetterradar sendet Mikrowellenimpulse aus und misst, wie stark Regentropfen, Schneeflocken und Hagel sie zurückwerfen (Reflektivität in dBZ). Stärkere Echos bedeuten stärkeren Niederschlag.\n\nDeutschland: DWD-Radarkomposit im 5-Minuten-Takt plus Nowcast, der die Zugbahn des Niederschlags für die nächsten zwei Stunden fortschreibt. Niederlande, Nordsee und Nordwestdeutschland jenseits der DWD-Radare: KNMI-Radarkomposit im 5-Minuten-Takt (Vergangenheit). Norwegen, Schweden, Finnland und Dänemark: Nordic-Radarkomposit von MET Norway im 5-Minuten-Takt (Vergangenheit; herausgezoomt in gröberen Zellen). Übriges Europa: RainViewer (nur die vergangenen zwei Stunden, alle 10 Minuten – die Schritte dazwischen aus der Bewegung berechnet).\n\nAlle Quellen werden in einer gemeinsamen Farbskala dargestellt. Das Radar sieht Niederschlag in der Luft: Leichter Niesel oder Schnee in Bodennähe kann fehlen, an Bergen oder Radarstandorten können Artefakte auftreten.</string>
+    <string name="term_radar_body">Ein Wetterradar sendet Mikrowellenimpulse aus und misst, wie stark Regentropfen, Schneeflocken und Hagel sie zurückwerfen (Reflektivität in dBZ). Stärkere Echos bedeuten stärkeren Niederschlag.\n\nDeutschland: DWD-Radarkomposit im 5-Minuten-Takt plus Nowcast, der die Zugbahn des Niederschlags für die nächsten zwei Stunden fortschreibt. Niederlande, Nordsee und Nordwestdeutschland jenseits der DWD-Radare: KNMI-Radarkomposit im 5-Minuten-Takt (Vergangenheit). Norwegen, Schweden, Finnland und Dänemark: Nordic-Radarkomposit von MET Norway im 5-Minuten-Takt (Vergangenheit; herausgezoomt in gröberen Zellen). Übriges Europa: RainViewer (nur die vergangenen zwei Stunden, alle 10 Minuten – die Schritte dazwischen aus der Bewegung berechnet).\n\nAlle Quellen werden in einer gemeinsamen Farbskala dargestellt. Sie beginnt mit der schwächsten Stufe des DWD, etwa 0,1 mm pro Stunde (Niesel); die Stufen unter der Legende stehen grob für 1, 5, 20 und 50 mm pro Stunde. Die beiden schwächsten Stufen sind etwas durchscheinend: So schwache Echos erreichen oft nicht den Boden.\n\nDas Radar sieht Niederschlag in der Luft, nicht am Boden. Niesel aus tiefen Wolken hat so kleine Tropfen, dass ihn das Radar oft gar nicht sieht oder sein Strahl über ihn hinweggeht – dann bleibt die Karte leer, obwohl es nieselt. An der Wetterstation wird er trotzdem gemessen (Rückblick). An Bergen oder Radarstandorten können Artefakte auftreten.</string>
     <string name="term_models_title">Wettermodelle</string>
     <string name="term_models_body">Wettermodelle sind Computersimulationen, die den künftigen Zustand der Atmosphäre auf einem dreidimensionalen Gitter berechnen. Feinere Gitter bilden lokale Effekte wie Gewitter, Täler und Küsten besser ab.\n\n• ICON-D2 (DWD): 2,2 km, Deutschland &amp; Nachbarländer, 2 Tage\n• ICON-EU (DWD): 7 km, Europa, 5 Tage\n• ECMWF IFS: 9–⁠25 km, global, eines der besten globalen Modelle\n• MET Nordic (MET Norway): 1 km, Skandinavien &amp; Norddeutschland, 2½ Tage\n• AROME/ARPEGE (Météo-France), UK Met Office, KNMI Harmonie, MET Norway, NOAA GFS\n\nLiegen die Linien eng beieinander, ist die Vorhersage recht sicher. Laufen sie auseinander, ist die Wetterlage unsicher – typisch bei Gewittern oder mehrere Tage im Voraus. Tippe auf ein Modell, um es hervorzuheben.</string>
     <string name="term_community_title">Community-Messnetz</string>
@@ -621,7 +624,7 @@
     <string name="precip_measured_so_far">bisher gemessen %1$s (%2$s)</string>
     <string name="pressure_chart_hint_measured">Durchgezogen: gemessen · gestrichelt: Vorhersage · lange drücken für Werte</string>
     <string name="settings_radar_colors">Radarfarben</string>
-    <string name="settings_radar_colors_desc">Kontrast: Regen grün → gelb → rot → magenta, Schnee türkis → weiß → violett – viele Stufen gut unterscheidbar. Blau: ruhiger, Regen hell- bis dunkelblau, Schnee rosa bis violett.</string>
+    <string name="settings_radar_colors_desc">Kontrast: Regen grün → gelb → rot → magenta, Schnee türkis → weiß → violett – viele Stufen gut unterscheidbar. Blau (voreingestellt): ruhiger, Regen himmelblau → blau → violett → magenta, Schnee grau → weiß; auch bei Rot-Grün-Schwäche gut lesbar.</string>
     <string name="radar_colors_contrast">Kontrast</string>
     <string name="radar_colors_blue">Blau</string>
     <string name="readout_temperature">Temperatur</string>

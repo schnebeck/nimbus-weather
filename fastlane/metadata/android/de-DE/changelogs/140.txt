@@ -1,0 +1,3 @@
+• Regenradar: neue Standard-Farbskala Blau – Regen himmelblau → blau → violett → magenta, Schnee grau → weiß; auch bei Rot-Grün-Schwäche lesbar
+• Niesel (schwächste Stufe) deutlicher; Legende ab der schwächsten Stufe mit „Niesel · leicht · mäßig · stark · Unwetter“ und mm/h; Infotext erklärt die Skala
+• Niederschlag als eigenes Diagramm mit Wahrscheinlichkeitslinie ist jetzt voreingestellt

@@ -89,8 +89,9 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   30-Minuten-Mittel, die Vorhersage schließt ohne Sprung an die letzte Messung an. Heute zeigt die
   gestrichelte Kurve („Prognose bisher“), was für die vergangenen Stunden vorhergesagt war; mit der
   Einstellung „Heute: Messung gegen Prognose“ zeigt die farbige Kurve nur die Messwerte und die
-  gestrichelte die Prognose des ganzen Tages, wie der Tagesverlauf im Rückblick. Niederschlag wahlweise im Temperaturdiagramm oder als
-  eigenes Diagramm darunter, mit der Wahrscheinlichkeit als Linie (auch im Rückblick). Langes Drücken
+  gestrichelte die Prognose des ganzen Tages, wie der Tagesverlauf im Rückblick. Niederschlag als eigenes Diagramm
+  unter der Temperatur, mit der Wahrscheinlichkeit als Linie (voreingestellt), oder im
+  Temperaturdiagramm (auch im Rückblick). Langes Drücken
   blendet einen Cursor mit allen Werten der Stunde ein, in den Spalten „gemessen | erwartet“; an künftigen Tagen steht ohne Cursor die Übersicht des ganzen Tages. Gemessenes
   steht als gefüllter Balken, Erwartetes als Rahmen – Niederschlag blau, Sonne orange. Heute zeigen
   Meteogramm, Niederschlag und Luftdruck für die vergangenen Stunden die Messwerte, danach die
@@ -125,8 +126,11 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   MET-Norway-Radar für Norwegen, Schweden, Finnland und Dänemark (1 km, herausgezoomt als Übersicht in
   gröberen Zellen), RainViewer für das übrige Europa (alle 10 Minuten, die Schritte dazwischen aus der
   Bewegung berechnet; die Zeitachse richtet sich nach dem Radar des Ortes), einheitliche
-  Farbskala für Regen (grün → gelb → rot → magenta) und Schnee (türkis → weiß → violett, pro Pixel
-  nach der Temperatur), wahlweise ruhiger in Blau bzw. Rosa–Violett; die Radarzellen in jeder
+  Farbskala, pro Pixel nach der Temperatur Regen oder Schnee: voreingestellt ruhig in Blau (Regen
+  himmelblau → blau → violett → magenta, Schnee grau → weiß; auch bei Rot-Grün-Schwäche lesbar),
+  wahlweise Kontrast (Regen grün → gelb → rot → magenta, Schnee türkis → weiß → violett); die
+  Legende beginnt bei der schwächsten Stufe (Niesel, etwa 0,1 mm/h) und nennt die Stufen mit mm/h;
+  die Radarzellen in jeder
   Zoomstufe geglättet statt als Blöcke; das Radar öffnet auf dem aktuellen Bild, lädt erst die
   Vorhersage, dann die Vergangenheit und spielt los, sobald die Vorhersage da ist (abschaltbar); in
   jedem Durchlauf steht es zwei Sekunden auf „jetzt“; in der Vorhersage ist grau, was außerhalb ihres

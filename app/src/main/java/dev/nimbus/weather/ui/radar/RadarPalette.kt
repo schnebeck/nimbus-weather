@@ -24,35 +24,39 @@ package dev.nimbus.weather.ui.radar
  * map shows one consistent palette across the German border. The phase comes from the 2 m
  * temperature at each pixel (rain above 1 °C, snow below 0 °C, blended in between).
  *
- * Each scale runs through two dark points with a different hue on either side, so neighbouring
- * steps stay apart where most echoes are (17–35 dBZ) and the rare extremes stand out:
- * - rain: light green → dark green (17) → yellow (33) → dark red (49) → magenta (56)
- * - snow: turquoise → dark blue (17) → white (33) → dark violet (49) → pink (56)
- * No colour appears in both scales. The colours are opaque (only the weakest echoes fade in), so
- * the map shows them exactly as in the legend; roads, borders and names are drawn on top.
+ * Two scales to choose from (setting "Radar colours"), each with one for rain and one for snow:
+ * - blue (the default, calm, and apart for red-green colour blindness): rain sky blue → blue (30)
+ *   → violet (44) → magenta (50–56), from the moderate steps on brighter again, so the heavy ones
+ *   stand out on the dark map – their lightness, not only their hue, sets them apart;
+ *   snow grey → white (no hue at all, so it is never taken for rain)
+ * - contrast: two dark points with a different hue on either side, so neighbouring steps stay
+ *   apart where most echoes are (17–35 dBZ): rain light green → dark green (17) → yellow (33) →
+ *   dark red (49) → magenta (56); snow turquoise → dark blue (17) → white (33) → dark violet (49)
+ *   → pink (56)
+ * No colour appears in both scales of a pair. The colours are opaque from 12 dBZ; the two weakest
+ * steps (about 0.1 mm/h, drizzle) show through a little – such weak echoes often do not reach the
+ * ground; roads, borders and names are drawn on top.
  */
 object RadarPalette {
     private val rainStops = listOf(
-        8 to 0x59A8F0A0.toInt(), 10 to 0x8CA8F0A0.toInt(), 12 to 0xFF96E592.toInt(), 17 to 0xFF145F2A.toInt(),
+        8 to 0x8CA8F0A0.toInt(), 10 to 0xBFA8F0A0.toInt(), 12 to 0xFF96E592.toInt(), 17 to 0xFF145F2A.toInt(),
         33 to 0xFFF5E43A.toInt(), 49 to 0xFF6E1212.toInt(), 56 to 0xFFFF2BD6.toInt(),
     )
 
     private val snowStops = listOf(
-        8 to 0x597EEBF0.toInt(), 10 to 0x8C7EEBF0.toInt(), 12 to 0xFF6FD9E8.toInt(), 17 to 0xFF1A3C8C.toInt(),
+        8 to 0x8C7EEBF0.toInt(), 10 to 0xBF7EEBF0.toInt(), 12 to 0xFF6FD9E8.toInt(), 17 to 0xFF1A3C8C.toInt(),
         33 to 0xFFFFFFFF.toInt(), 49 to 0xFF4A1C80.toInt(), 56 to 0xFFFF9EE8.toInt(),
     )
 
-    /**
-     * The calm alternative (setting "Radar colours: blue"): rain from the lightest light blue to
-     * the darkest dark blue, snow from the lightest pink to the darkest violet – opaque as well.
-     */
+    /** The calm scale (the default, setting "Radar colours: blue"): rain sky blue → blue → violet → magenta. */
     private val blueRainStops = listOf(
-        8 to 0x59D6ECFF.toInt(), 10 to 0x8CD6ECFF.toInt(), 12 to 0xFFCDE6FF.toInt(), 24 to 0xFF7FB6F5.toInt(),
-        36 to 0xFF2F6FE0.toInt(), 46 to 0xFF153C9E.toInt(), 56 to 0xFF07144D.toInt(),
+        8 to 0x8C8FCBFF.toInt(), 10 to 0xBF8FCBFF.toInt(), 12 to 0xFF8FCBFF.toInt(), 20 to 0xFF4A98FF.toInt(),
+        30 to 0xFF1F4FCF.toInt(), 38 to 0xFF5B3AD0.toInt(), 44 to 0xFFA24DE8.toInt(), 50 to 0xFFE05AE6.toInt(), 56 to 0xFFFF7FF0.toInt(),
     )
+    /** … and snow grey → white: more snow, whiter. */
     private val blueSnowStops = listOf(
-        8 to 0x59FFE4F2.toInt(), 10 to 0x8CFFE4F2.toInt(), 12 to 0xFFFFDDEF.toInt(), 24 to 0xFFF0A6D8.toInt(),
-        36 to 0xFFC45CC0.toInt(), 46 to 0xFF7E2899.toInt(), 56 to 0xFF3A0B5C.toInt(),
+        8 to 0x8C9AA3AF.toInt(), 10 to 0xBF9AA3AF.toInt(), 12 to 0xFFA0A8B4.toInt(), 24 to 0xFFC3C9D1.toInt(),
+        36 to 0xFFE2E6EB.toInt(), 46 to 0xFFF4F6F8.toInt(), 56 to 0xFFFFFFFF.toInt(),
     )
 
     private val contrastLuts = buildLut(rainStops) to buildLut(snowStops)
@@ -63,13 +67,13 @@ object RadarPalette {
     private val blueFine = fine(blueLuts.first) to fine(blueLuts.second)
 
     /** The scale in use (from the settings); the tile URLs carry it, so cached tiles never mix scales. */
-    @Volatile var scheme: dev.nimbus.weather.data.model.RadarColors = dev.nimbus.weather.data.model.RadarColors.CONTRAST
+    @Volatile var scheme: dev.nimbus.weather.data.model.RadarColors = dev.nimbus.weather.data.model.RadarColors.BLUE
     private val luts get() = if (scheme == dev.nimbus.weather.data.model.RadarColors.BLUE) blueLuts else contrastLuts
     private val rainLut get() = luts.first
     private val snowLut get() = luts.second
 
-    /** Range of the legends; colours are sampled evenly, so a position on the bar is linear in dBZ. */
-    const val LEGEND_MIN_DBZ = 10
+    /** Range of the legends – from the weakest step drawn; colours are sampled evenly, so a position on the bar is linear in dBZ. */
+    const val LEGEND_MIN_DBZ = 8
     const val LEGEND_MAX_DBZ = 56
 
     /** Colours for the legends (light → heavy). */

@@ -97,6 +97,13 @@ class WeatherGridTest {
 
     @Test
     fun `snow fraction from temperature and blended colours`() {
+        // the contrast scale (the blue one: RadarScaleTest)
+        val before = RadarPalette.scheme
+        RadarPalette.scheme = dev.nimbus.weather.data.model.RadarColors.CONTRAST
+        try { contrastColours() } finally { RadarPalette.scheme = before }
+    }
+
+    private fun contrastColours() {
         assertEquals(1f, RadarPalette.snowFraction(-3f), 0f)
         assertEquals(1f, RadarPalette.snowFraction(0f), 0f)
         assertEquals(0f, RadarPalette.snowFraction(1f), 0f)

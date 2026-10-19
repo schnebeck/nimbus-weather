@@ -159,8 +159,11 @@
     <string name="play">Play</string>
     <string name="pause">Pause</string>
     <string name="forecast">Forecast</string>
-    <string name="radar_light">Light</string>
-    <string name="radar_heavy">Heavy</string>
+    <string name="radar_scale_drizzle">drizzle</string>
+    <string name="radar_scale_light">light</string>
+    <string name="radar_scale_moderate">moderate</string>
+    <string name="radar_scale_heavy">heavy</string>
+    <string name="radar_scale_severe">severe</string>
     <string name="radar_forecast_partly">Forecast for Germany only – grey: no forecast</string>
     <string name="radar_forecast_germany_only">Radar forecast (nowcast) only available for Germany</string>
     <string name="radar_minutes_ago">%1$d min ago</string>
@@ -431,7 +434,7 @@
     <string name="term_pollen_title">Pollen</string>
     <string name="term_pollen_body">The pollen forecast shows how strongly allergy-relevant pollen types are in the air.\n\nLevels (scale of the German Weather Service): none, low, moderate and high, with intermediate steps. Each bar has three segments – half-filled segments are the intermediate steps.\n\n• Germany: official DWD pollen forecast for 8 types (hazel, alder, ash, birch, grasses, rye, mugwort, ragweed) and 27 regions, issued daily around 11:00 for today, tomorrow and the day after\n• Rest of Europe: levels derived from the Copernicus CAMS model (6 types)\n\nComposition and course come from CAMS in grains per cubic metre of air. They show which pollen dominates – useful if you react to only some types. Sensitive people can react even at low levels.\n\nWhen pollen is in the air and it is dry, the animated background shows it as fine floating particles.</string>
     <string name="term_radar_title">Precipitation Radar</string>
-    <string name="term_radar_body">Weather radar sends out microwave pulses and measures how strongly raindrops, snowflakes and hail reflect them (reflectivity in dBZ). Stronger echoes mean heavier precipitation.\n\nGermany: DWD radar composite in 5-minute steps plus a nowcast that extrapolates the movement of the precipitation for the next two hours. The Netherlands, the North Sea and north-western Germany beyond the DWD radars: KNMI radar composite in 5-minute steps (past). Norway, Sweden, Finland and Denmark: MET Norway\'s Nordic radar composite in 5-minute steps (past; zoomed out in coarser cells). Rest of Europe: RainViewer (past two hours only, every 10 minutes – the steps between computed from the motion).\n\nAll sources are shown in one colour scale. Radar sees precipitation in the air: light drizzle or snow close to the ground may be missing, and near mountains or radar sites artefacts can occur.</string>
+    <string name="term_radar_body">Weather radar sends out microwave pulses and measures how strongly raindrops, snowflakes and hail reflect them (reflectivity in dBZ). Stronger echoes mean heavier precipitation.\n\nGermany: DWD radar composite in 5-minute steps plus a nowcast that extrapolates the movement of the precipitation for the next two hours. The Netherlands, the North Sea and north-western Germany beyond the DWD radars: KNMI radar composite in 5-minute steps (past). Norway, Sweden, Finland and Denmark: MET Norway\'s Nordic radar composite in 5-minute steps (past; zoomed out in coarser cells). Rest of Europe: RainViewer (past two hours only, every 10 minutes – the steps between computed from the motion).\n\nAll sources are shown in one colour scale. It begins with the DWD\'s weakest step, about 0.1 mm per hour (drizzle); the steps under the legend stand roughly for 1, 5, 20 and 50 mm per hour. The two weakest steps show through a little: such weak echoes often do not reach the ground.\n\nRadar sees precipitation in the air, not on the ground. Drizzle from low clouds has drops so small that the radar often does not see it, or its beam passes above it – then the map stays empty although it drizzles. The weather station measures it all the same (look-back). Near mountains or radar sites artefacts can occur.</string>
     <string name="term_models_title">Weather Models</string>
     <string name="term_models_body">Weather models are computer simulations that calculate the future state of the atmosphere on a three-dimensional grid. Finer grids resolve local effects such as thunderstorms, valleys and coasts better.\n\n• ICON-D2 (DWD): 2.2 km, Germany &amp; neighbours, 2 days\n• ICON-EU (DWD): 7 km, Europe, 5 days\n• ECMWF IFS: 9–⁠25 km, global, one of the best global models\n• MET Nordic (MET Norway): 1 km, Scandinavia &amp; northern Germany, 2½ days\n• AROME/ARPEGE (Météo-France), UK Met Office, KNMI Harmonie, MET Norway, NOAA GFS\n\nIf the lines lie close together, the forecast is fairly certain. If they diverge, the weather situation is uncertain – typical for thunderstorms or several days ahead. Tap a model to highlight it.</string>
     <string name="term_community_title">Community Sensors</string>
@@ -632,7 +635,7 @@
     <string name="precip_measured_so_far">%1$s measured so far (%2$s)</string>
     <string name="pressure_chart_hint_measured">Solid: measured · dashed: forecast · long press for values</string>
     <string name="settings_radar_colors">Radar colours</string>
-    <string name="settings_radar_colors_desc">Contrast: rain green → yellow → red → magenta, snow turquoise → white → violet – many steps easy to tell apart. Blue: calmer, rain light to dark blue, snow pink to violet.</string>
+    <string name="settings_radar_colors_desc">Contrast: rain green → yellow → red → magenta, snow turquoise → white → violet – many steps easy to tell apart. Blue (default): calmer, rain sky blue → blue → violet → magenta, snow grey → white; also clear with red-green colour blindness.</string>
     <string name="radar_colors_contrast">Contrast</string>
     <string name="radar_colors_blue">Blue</string>
     <string name="readout_temperature">Temperature</string>

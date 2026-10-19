@@ -76,7 +76,7 @@ enum class WeatherCard {
     }
 }
 
-/** Colour scale of the radar: high-contrast (green/yellow/red, turquoise/white/violet) or the calm blue one. */
+/** Colour scale of the radar: high-contrast (green/yellow/red, turquoise/white/violet) or the calm blue one (blue/violet/magenta, grey/white). */
 @Serializable
 enum class RadarColors { CONTRAST, BLUE }
 
@@ -118,7 +118,7 @@ data class Settings(
     val cardOrder: List<WeatherCard> = emptyList(),
     /** Own order of the small tiles (see [orderedTiles]); empty = default. */
     val tileOrder: List<WeatherCard> = emptyList(),
-    val radarColors: RadarColors = RadarColors.CONTRAST,
+    val radarColors: RadarColors = RadarColors.BLUE,
     /**
      * The radar opens on "now" and plays by itself once the forecast is loaded (the past loads
      * meanwhile); off, it stays on "now" until play is pressed.
@@ -130,7 +130,7 @@ data class Settings(
      * Precipitation as a chart of its own under the temperature (10-day forecast, look-back):
      * amount and chance; off, the bars stay in the temperature chart (one combined chart).
      */
-    val separatePrecipitation: Boolean = false,
+    val separatePrecipitation: Boolean = true,
     /**
      * Today's chart in the 10-day forecast: the coloured curve the readings alone and the dashed
      * one the forecast of the whole day, as in the look-back's course of the day; off, the

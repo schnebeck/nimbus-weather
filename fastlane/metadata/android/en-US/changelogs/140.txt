@@ -1,0 +1,3 @@
+• Rain radar: new default colour scale Blue – rain sky blue → blue → violet → magenta, snow grey → white; readable with red-green colour blindness too
+• Drizzle (the weakest step) easier to see; legend from the weakest step with "drizzle · light · moderate · heavy · severe" and mm/h; the info text explains the scale
+• Precipitation as a chart of its own with the chance line is now the default

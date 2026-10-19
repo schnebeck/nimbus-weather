@@ -88,8 +88,9 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
   last reading without a step. Today the dashed curve ("Forecast so far") shows what had been
   forecast for the hours over; with the setting "Today: measured vs. forecast" the coloured curve
   shows the readings only and the dashed one the whole day's forecast, as the look-back's course of
-  the day does. Precipitation in the temperature chart or as a chart of its own below,
-  with the chance as a line (in the look-back too). A long press shows a cursor with all values of
+  the day does. Precipitation as a chart of its own below the
+  temperature, with the chance as a line (the default), or in the temperature chart (in the
+  look-back too). A long press shows a cursor with all values of
   the hour, in the columns "measured | expected"; on days to come the whole day's overview stands there without the cursor. What was measured stands as a filled bar, what is
   expected as a frame – precipitation blue, sunshine orange. Today the meteogram, precipitation and
   pressure show the readings for the hours already over, the forecast after them; an hour whose
@@ -124,8 +125,11 @@ Copy the APK to the phone, open it and allow installing from unknown sources. Re
   Norway's radar for Norway, Sweden, Finland and Denmark (1 km, zoomed out an overview in coarser
   cells), RainViewer for the rest of Europe (every 10 minutes, the steps between computed from the
   motion; the time line follows the place's radar), one colour scale for
-  rain (green → yellow → red → magenta) and snow (turquoise → white → violet, per pixel by the
-  temperature), optionally calmer in blue and pink–violet; the radar cells smoothed at every zoom
+  rain or snow per pixel by the temperature: by default calm in blue (rain sky blue → blue →
+  violet → magenta, snow grey → white; readable with red-green colour blindness too), optionally
+  contrast (rain green → yellow → red → magenta, snow turquoise → white → violet); the legend
+  starts at the weakest step (drizzle, about 0.1 mm/h) and names the steps with mm/h; the radar
+  cells smoothed at every zoom
   level instead of blocks; the radar opens on the current picture, loads the forecast first, then
   the past, and starts playing once the forecast is there (can be switched off); each time round it
   stands two seconds on "now"; in the forecast what lies beyond its area is grey (no forecast, not

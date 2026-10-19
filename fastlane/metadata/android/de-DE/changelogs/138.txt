@@ -1,0 +1,1 @@
+• Heute in der 10-Tage-Vorhersage und im Tagesverlauf: Die gestrichelte Prognose zeigt das Modell unverändert und läuft bei „jetzt“ nicht mehr künstlich mit der Messung zusammen; „Prognose bisher“ endet bei der letzten Messung

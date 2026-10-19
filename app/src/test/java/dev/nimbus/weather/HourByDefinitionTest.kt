@@ -105,7 +105,11 @@ class HourByDefinitionTest {
         assertEquals(PrecipToday.Chance.None, PrecipToday.chance((16..23).map { p(it, Condition.CLOUDY, 0.0, 0.0) }))
     }
 
-    /** The day's forecast and the look-back's expect the same for the same hour to come. */
+    /**
+     * The day's forecast and the look-back expect the same for the same hour: the model as it is –
+     * never drawn to the readings, the hours to come neither; only the day's coloured curve goes on
+     * from the last reading.
+     */
     @Test fun bothChartsExpectTheSame() {
         // readings up to 15:00, about 1 K below the model
         val readings = (0..15).associate { day + it * h to 10.0 }
@@ -115,12 +119,16 @@ class HourByDefinitionTest {
             allHours = model.map { HistoryHour(it.time, null, HistoryHour.Modelled(it.temperature, 0.0, null, null, null, Condition.CLOUDY, true)) },
         )
         val (_, expected) = lookBackCurves(history, day)
-        val forecast = dayCurve(model, emptyList(), day, day + 24 * h, TodayMeasured(emptyMap(), emptyMap(), "Celle", emptyMap(), readings))
-        for (t in listOf(16, 17, 18, 20)) {
-            assertEquals("$t:00", Curve.at(forecast, day + t * h)!!, Curve.at(expected, day + t * h)!!, 1e-9)
+        val today = TodayMeasured(emptyMap(), emptyMap(), "Celle", emptyMap(), readings)
+        val dayExpected = dev.nimbus.weather.ui.main.dayExpected(model, emptyList(), day, day + 24 * h, today)!!
+        for (t in listOf(12, 15, 16, 17, 18, 20)) {
+            assertEquals("$t:00", 11.0, Curve.at(expected, day + t * h)!!, 1e-9)
+            assertEquals("$t:00", 11.0, Curve.at(dayExpected, day + t * h)!!, 1e-9)
         }
-        // the hours past stay the model's own, to be compared with the readings
-        assertEquals(11.0, Curve.at(expected, day + 12 * h)!!, 1e-9)
+        // the coloured curve of the day: from the last reading on, no step at it
+        val coloured = dayCurve(model, emptyList(), day, day + 24 * h, today)
+        assertTrue(Curve.at(coloured, day + 16 * h)!! < 11.0)
+        assertEquals(dev.nimbus.weather.ui.main.dayLastReading(model, emptyList(), day, day + 24 * h, today), day + 15 * h)
         // another day: the model as it is
         val (_, yesterday) = lookBackCurves(history.copy(fetchedAt = now + 24 * h), day)
         assertEquals(model.map { CurvePoint(it.time, it.temperature) }.filter { it.time <= day + 25 * h }, yesterday)

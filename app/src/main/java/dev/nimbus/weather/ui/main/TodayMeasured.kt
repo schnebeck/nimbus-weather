@@ -149,24 +149,24 @@ fun dayReadingsCurve(
 ): List<CurvePoint> =
     dayParts(hours, minutely, start, end, measured).second?.takeIf { it.isNotEmpty() } ?: dayCurve(hours, minutely, start, end, measured)
 
-/** What today's hours were and are expected to be ([expectedCurve]); null without readings. */
+/**
+ * What the model expects of today's hours, as it is – the dashed curve and the readout's
+ * "expected", the same in the look-back: never drawn to the readings, so where the forecast was
+ * off it shows; null without readings.
+ */
 fun dayExpected(
     hours: List<dev.nimbus.weather.data.model.HourlyPoint>, minutely: List<dev.nimbus.weather.data.model.MinutelyPoint>,
     start: Long, end: Long, measured: TodayMeasured?,
 ): List<CurvePoint>? {
     val (forecast, readings) = dayParts(hours, minutely, start, end, measured)
-    return readings?.let { expectedCurve(forecast, it) }
+    return readings?.let { forecast }
 }
 
-/**
- * What was and is expected of the hours, as both of today's charts read it (the 10-day forecast
- * and the look-back): the model's own up to the last reading – to be compared with the readings –,
- * from there on going on from that reading ([Curve.joined]).
- */
-fun expectedCurve(model: List<CurvePoint>, readings: List<CurvePoint>): List<CurvePoint> {
-    val last = readings.maxOfOrNull { it.time } ?: return model
-    return model.filter { it.time <= last } + Curve.joined(readings, model).filter { it.time > last }
-}
+/** The time of today's last reading drawn (the coloured curve's own part ends there); null without readings. */
+fun dayLastReading(
+    hours: List<dev.nimbus.weather.data.model.HourlyPoint>, minutely: List<dev.nimbus.weather.data.model.MinutelyPoint>,
+    start: Long, end: Long, measured: TodayMeasured?,
+): Long? = dayParts(hours, minutely, start, end, measured).second?.maxOfOrNull { it.time }
 
 /**
  * "Measured: …" – where the measured values of [hours] come from: the station ([station]), the

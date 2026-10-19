@@ -143,10 +143,11 @@ fun Meteogram(
     /** A day to come: its figures under the chart while no cursor is set. */
     dayOverview: DayOverview? = null,
     /**
-     * Today's [curve] goes on as the forecast from the last reading: the dashed [forecastCurve]
-     * stands apart from it only in the hours over – the legend names it the forecast so far.
+     * Today's [curve] goes on as the forecast from the last reading (at this time): the dashed
+     * [forecastCurve] is drawn up to it – the forecast so far, as the legend names it; the readout
+     * keeps the whole of it for "expected".
      */
-    forecastSoFar: Boolean = false,
+    forecastSoFar: Long? = null,
 ) {
     val s = LocalSettings.current
     val tf = LocalTimeFormat.current
@@ -186,7 +187,7 @@ fun Meteogram(
     val expectCurve = remember(forecastCurve, pts) {
         (forecastCurve ?: pts.mapNotNull { p -> p.forecastTemperature?.let { CurvePoint(p.time, it) } }).filter { it.time >= start - 3_600_000L && it.time <= curveEnd }
     }
-    val dashCurve = if (compare) expectCurve else emptyList()
+    val dashCurve = if (!compare) emptyList() else if (forecastSoFar == null) expectCurve else expectCurve.filter { it.time <= forecastSoFar }
     val allT = temps + fTemps.filterNotNull() + (mainCurve + dashCurve).map { Units.temperature(it.value, s.temperatureUnit) }
     val tLo = floor(allT.min() - 1).toInt()
     // Even range, so the middle grid line is a whole degree as well.
@@ -472,7 +473,7 @@ fun Meteogram(
             BarLegend(
                 rainTotals, sunTotals.takeIf { sunShown }, chance = separatePrecip,
                 tempColors = Insights.temperatureColor(pts.minOf { it.temperature }) to Insights.temperatureColor(pts.maxOf { it.temperature }),
-                tempForecast = compare && dashCurve.isNotEmpty(), forecastSoFar = forecastSoFar,
+                tempForecast = compare && dashCurve.isNotEmpty(), forecastSoFar = forecastSoFar != null,
                 rainNotMeasured = rainNotMeasured, sunNotMeasured = sunNotMeasured,
             )
             if (measuredBy != null) Text(measuredBy, fontSize = 11.sp, lineHeight = 15.sp, color = NimbusColors.Secondary, modifier = Modifier.padding(top = 4.dp))

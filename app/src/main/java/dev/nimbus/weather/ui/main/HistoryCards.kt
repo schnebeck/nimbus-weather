@@ -189,8 +189,9 @@ internal fun RadarDayCard(dayStart: Long, tf: TimeFormat, onOpen: () -> Unit) {
 /**
  * The measured and the forecast curve of the day from [start], in the finest resolution there is:
  * station reports every 10 minutes (SYNOP, about the last 1½ days) or as often as the station
- * reports, the model every 15 minutes; hourly values where there are no finer ones. Today what is
- * expected ([expectedCurve]) as in the day's forecast – the same hour is expected the same in both.
+ * reports, the model every 15 minutes; hourly values where there are no finer ones. The model as
+ * it is, today too – as the day's forecast expects it ([dayExpected]): the same hour is expected the
+ * same in both, and where the forecast was off it shows.
  */
 internal fun lookBackCurves(history: dev.nimbus.weather.data.remote.History, start: Long): Pair<List<CurvePoint>, List<CurvePoint>> {
     val from = start - 3_600_000L; val to = start + 25 * 3_600_000L
@@ -202,6 +203,5 @@ internal fun lookBackCurves(history: dev.nimbus.weather.data.remote.History, sta
         history.fineModel.filterKeys { it in from..to }.map { (t, v) -> CurvePoint(t, v, 15 * 60_000L) },
         history.chartHours(start).mapNotNull { h -> h.model?.temperature?.let { CurvePoint(h.time, it) } },
     )
-    if (history.fetchedAt !in start until start + 24 * 3_600_000L) return measured to model
-    return measured to expectedCurve(model, measured)
+    return measured to model
 }

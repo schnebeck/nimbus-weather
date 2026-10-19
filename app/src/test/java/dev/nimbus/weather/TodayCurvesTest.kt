@@ -172,8 +172,13 @@ class TodayCurvesTest {
         assertEquals(end, dayCurve(data.hourly, data.minutely, day, end, measured).maxOf { it.time })
         val expected = dayExpected(data.hourly, data.minutely, day, end, measured)!!
         assertEquals(end, expected.maxOf { it.time })
-        // up to the last reading the model's own: a kelvin below the readings
+        // the model as it is: a kelvin below the readings up to the last one, and after it too –
+        // not drawn to the last reading, so it does not meet the readings at "now"
         assertEquals(temp(12), expected.first { it.time == day + 12 * h }.value, 1e-9)
+        assertEquals(temp(15), expected.first { it.time == lastReading }.value, 1e-9)
+        assertEquals(temp(16), expected.first { it.time == day + 16 * h }.value, 1e-9)
+        // the forecast so far ends at the last reading
+        assertEquals(lastReading, dev.nimbus.weather.ui.main.dayLastReading(data.hourly, data.minutely, day, end, measured))
         // without readings: the day's curve
         assertEquals(dayCurve(data.hourly, data.minutely, day, end, null), dayReadingsCurve(data.hourly, data.minutely, day, end, null))
     }

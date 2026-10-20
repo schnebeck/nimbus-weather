@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import dev.nimbus.weather.ui.components.NimbusSnackbarHost
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -209,6 +210,19 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                             Text(stringResource(R.string.licenses_settings_desc), fontSize = 13.sp, color = NimbusColors.Secondary)
                         }
                         Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = NimbusColors.Tertiary)
+                    }
+                    // the privacy policy, in the app's language (on the project's page)
+                    val uri = androidx.compose.ui.platform.LocalUriHandler.current
+                    val privacy = stringResource(R.string.privacy_url)
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { runCatching { uri.openUri(privacy) } }.padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(stringResource(R.string.privacy_title), fontSize = 16.sp, color = Color.White)
+                            Text(stringResource(R.string.privacy_settings_desc), fontSize = 13.sp, color = NimbusColors.Secondary)
+                        }
+                        Icon(Icons.Outlined.OpenInNew, null, tint = NimbusColors.Tertiary, modifier = Modifier.size(18.dp))
                     }
                 }
             }

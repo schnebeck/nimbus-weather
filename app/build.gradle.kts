@@ -38,8 +38,8 @@ android {
         applicationId = "dev.nimbus.weather"
         minSdk = 26
         targetSdk = 36
-        versionCode = 141
-        versionName = "1.46.1"
+        versionCode = 142
+        versionName = "1.46.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -70,7 +70,9 @@ android {
 
     splits {
         abi {
-            isEnable = true
+            // APKs per ABI for GitHub and F-Droid; an app bundle (Play) splits by itself – with both
+            // the shrunk resources clash (issuetracker.google.com/402800800)
+            isEnable = gradle.startParameter.taskNames.none { it.contains("bundle", ignoreCase = true) }
             reset()
             include("arm64-v8a", "armeabi-v7a", "x86_64")
             isUniversalApk = true

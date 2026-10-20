@@ -59,6 +59,9 @@ Die signierten APKs gibt es unter [Releases](https://github.com/schnebeck/nimbus
 APK aufs Handy kopieren, öffnen und die Installation aus unbekannten Quellen erlauben.
 Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt.
 
+Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](https://schnebeck.github.io/nimbus-weather/PRIVACY.html)
+(Projektseite: <https://schnebeck.github.io/nimbus-weather/>).
+
 ## Funktionen
 
 - **Animierter Himmel**: Farbverlauf nach Sonnenstand, Sonne, Mond in der echten Phase, Sterne, Wolken,

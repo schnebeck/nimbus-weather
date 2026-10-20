@@ -25,6 +25,8 @@ build/
 
 # Requirements with their tests: kept locally
 docs/REQUIREMENTS.md
+# Working notes for the Play Console: kept locally
+docs/PLAY-CONSOLE.md
 
 # Project brief for the assistant: kept locally
 CLAUDE.md

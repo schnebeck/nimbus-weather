@@ -59,6 +59,9 @@ The signed APKs are under [Releases](https://github.com/schnebeck/nimbus-weather
 Copy the APK to the phone, open it and allow installing from unknown sources. Requires Android 8.0
 (API 26); Google Play Services are not needed.
 
+What the app sends to whom and what stays on the phone: [privacy policy](https://schnebeck.github.io/nimbus-weather/PRIVACY.en.html)
+(project page: <https://schnebeck.github.io/nimbus-weather/index.en.html>).
+
 ## Features
 
 - **Animated sky**: colours by the sun's position, sun, moon in its real phase, stars, clouds, fog,

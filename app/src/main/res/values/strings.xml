@@ -469,6 +469,9 @@
     <string name="sunshine_short">Sun</string>
     <string name="legend_precip">Precipitation %1$s</string>
     <string name="legend_sunshine">Sun %1$s</string>
+    <string name="privacy_title">Privacy policy</string>
+    <string name="privacy_settings_desc">What the app sends, to whom – and what stays on the phone</string>
+    <string name="privacy_url">https://schnebeck.github.io/nimbus-weather/PRIVACY.en.html</string>
     <string name="licenses_title">Open-source licenses</string>
     <string name="licenses_settings_desc">Licenses of Nimbus and of the libraries it uses</string>
     <string name="licenses_app_text">Nimbus is free software: it may be shared and modified under the terms of the GNU General Public License, version 3 or later. There is no warranty, to the extent permitted by law.</string>

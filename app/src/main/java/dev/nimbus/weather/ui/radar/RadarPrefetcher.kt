@@ -149,7 +149,7 @@ object RadarPrefetcher {
             val dm = context.resources.displayMetrics
             val options = MapSnapshotter.Options((dm.widthPixels / dm.density).toInt(), (dm.heightPixels / dm.density).toInt())
                 .withStyleBuilder(style)
-                .withCameraPosition(CameraPosition.Builder().target(LatLng(place.latitude, place.longitude)).zoom(RADAR_ZOOM).build())
+                .withCameraPosition(CameraPosition.Builder().target(LatLng(place.latitude, place.longitude)).zoom(RadarPreview.remembered ?: RADAR_ZOOM).build())
                 .withPixelRatio(1f)
                 .withLogo(false)
             val snapshotter = MapSnapshotter(context, options)

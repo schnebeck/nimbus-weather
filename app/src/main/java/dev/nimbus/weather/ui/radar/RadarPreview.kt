@@ -42,6 +42,12 @@ import kotlin.math.tan
  */
 object RadarPreview {
     const val ZOOM = 6.4
+
+    /** The radar's zoom as the full view was last left (settings): the preview shows the same scale. */
+    @Volatile var remembered: Double? = null
+
+    /** The preview's zoom now: the remembered one, else [ZOOM]. */
+    fun zoomNow(): Double = remembered ?: ZOOM
     private const val R = 6378137.0
     private const val MAX_FILE_AGE_MS = 30L * 24 * 3600_000L
 
@@ -72,11 +78,12 @@ object RadarPreview {
         withBase: Boolean = RadarPrefetcher.isUnmetered(context),
     ) {
         val (w, h) = cardSize ?: return
-        val key = key(lat, lon, w, h)
-        if (withBase && storedBase(key, lang) == null) renderBase(context, mapHttp, lat, lon, w, h, density, lang)
+        val zoom = zoomNow()
+        val key = key(lat, lon, w, h, zoom)
+        if (withBase && storedBase(key, lang) == null) renderBase(context, mapHttp, lat, lon, w, h, density, lang, zoom)
         prefetching.withLock {
             val timeline = runCatching { RadarSources.timeline(http, anchor = RadarComposites.anchorFor(lat, lon)) }.getOrNull() ?: return
-            timeline.frames.getOrNull(timeline.nowIndex)?.let { fetchOverlay(http, timeline, it, lat, lon, w, h) }
+            timeline.frames.getOrNull(timeline.nowIndex)?.let { fetchOverlay(http, timeline, it, lat, lon, w, h, zoom) }
         }
     }
 
@@ -84,16 +91,18 @@ object RadarPreview {
     /** Bumped when the radar picture is drawn differently (9: from the composites' grids, 10: RainViewer at [RadarPicture.STILL_RV_ZOOM]). */
     private const val PICTURE_VERSION = 10
 
-    /** Same place and size share the pictures; a moving location gets new ones every ~100 m. */
-    fun key(lat: Double, lon: Double, wDp: Int, hDp: Int) =
-        String.format(Locale.ROOT, "%.3f_%.3f_%dx%d", lat, lon, wDp, hDp)
+    /** Same place, size and zoom share the pictures; a moving location gets new ones every ~100 m. */
+    fun key(lat: Double, lon: Double, wDp: Int, hDp: Int, zoom: Double = zoomNow()) =
+        String.format(Locale.ROOT, "%.3f_%.3f_%dx%d", lat, lon, wDp, hDp) +
+            // the preset zoom keeps the names the pictures had before there was another
+            if (zoom == ZOOM) "" else String.format(Locale.ROOT, "_z%.2f", zoom)
 
     /**
-     * The area of a [wDp] × [hDp] view at [ZOOM] around the place (MapLibre: 512 dp tiles), at
+     * The area of a [wDp] × [hDp] view at [zoom] around the place (MapLibre: 512 dp tiles), at
      * [OVERLAY_SCALE] pixels per dp: enough pixels per radar cell for the smoothing (at 1 px per dp
      * the cells stayed blocks, scaled up on the screen).
      */
-    fun geo(lat: Double, lon: Double, wDp: Int, hDp: Int, zoom: Double = ZOOM): FieldGeo {
+    fun geo(lat: Double, lon: Double, wDp: Int, hDp: Int, zoom: Double = zoomNow()): FieldGeo {
         val metersPerDp = 2 * PI * R / (512.0 * Math.pow(2.0, zoom))
         val x = R * Math.toRadians(lon)
         val y = R * ln(tan(PI / 4 + Math.toRadians(lat) / 2))
@@ -129,11 +138,14 @@ object RadarPreview {
     }
 
     /** Renders the base map (no radar) off-screen and stores it. Must be started on the main thread. */
-    suspend fun renderBase(context: Context, mapHttp: OkHttpClient, lat: Double, lon: Double, wDp: Int, hDp: Int, density: Float, lang: String): Bitmap? {
+    suspend fun renderBase(
+        context: Context, mapHttp: OkHttpClient, lat: Double, lon: Double, wDp: Int, hDp: Int, density: Float, lang: String,
+        zoom: Double = zoomNow(),
+    ): Bitmap? {
         suspend fun snapshot(part: MapStyle.Part): Bitmap? {
             val style = MapStyle.builder(mapHttp, lang, part = part)
             return renderMutex.withLock { suspendCancellableCoroutine<Bitmap?> { cont ->
-                val snap = RadarSnapshot.create(context, style, lat, lon, wDp, hDp, density)
+                val snap = RadarSnapshot.create(context, style, lat, lon, wDp, hDp, density, zoom)
                 snap.start({ s -> if (cont.isActive) cont.resume(s.bitmap) }, { _ -> if (cont.isActive) cont.resume(null) })
                 cont.invokeOnCancellation { snap.cancel() }
             } }
@@ -141,14 +153,14 @@ object RadarPreview {
         val bmp = snapshot(MapStyle.Part.AREAS) ?: return null
         val lines = snapshot(MapStyle.Part.LINES)
         withContext(Dispatchers.IO) {
-            runCatching { lines?.let { l -> linesFile(key(lat, lon, wDp, hDp), lang)?.let { f -> f.parentFile?.mkdirs(); f.outputStream().use { l.compress(Bitmap.CompressFormat.PNG, 100, it) } } } }
+            runCatching { lines?.let { l -> linesFile(key(lat, lon, wDp, hDp, zoom), lang)?.let { f -> f.parentFile?.mkdirs(); f.outputStream().use { l.compress(Bitmap.CompressFormat.PNG, 100, it) } } } }
         }
         withContext(Dispatchers.IO) {
             runCatching {
                 val d = dir ?: return@runCatching
                 d.mkdirs()
                 d.listFiles()?.filter { System.currentTimeMillis() - it.lastModified() > MAX_FILE_AGE_MS }?.forEach { it.delete() }
-                baseFile(key(lat, lon, wDp, hDp), lang)?.outputStream()?.use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                baseFile(key(lat, lon, wDp, hDp, zoom), lang)?.outputStream()?.use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
             }
         }
         return bmp
@@ -158,10 +170,12 @@ object RadarPreview {
      * The radar picture of step [frame] for the preview area ([RadarPicture.still]). Null on
      * errors; an overlay without bitmap means "no precipitation".
      */
-    suspend fun fetchOverlay(http: OkHttpClient, tl: RadarTimeline, frame: RadarFrame, lat: Double, lon: Double, wDp: Int, hDp: Int): Overlay? {
-        val key = key(lat, lon, wDp, hDp)
+    suspend fun fetchOverlay(
+        http: OkHttpClient, tl: RadarTimeline, frame: RadarFrame, lat: Double, lon: Double, wDp: Int, hDp: Int, zoom: Double = zoomNow(),
+    ): Overlay? {
+        val key = key(lat, lon, wDp, hDp, zoom)
         overlays[ok(key)]?.takeIf { it.time == frame.time }?.let { return it }
-        return computing.get("${ok(key)}_${frame.time}") { compute(http, tl, frame, key, geo(lat, lon, wDp, hDp)) }
+        return computing.get("${ok(key)}_${frame.time}") { compute(http, tl, frame, key, geo(lat, lon, wDp, hDp, zoom)) }
     }
 
     private suspend fun compute(http: OkHttpClient, tl: RadarTimeline, frame: RadarFrame, key: String, g: FieldGeo): Overlay? {

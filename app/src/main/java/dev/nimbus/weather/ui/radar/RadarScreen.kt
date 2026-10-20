@@ -96,6 +96,21 @@ import java.util.TimeZone
 
 const val STYLE_URL = "https://tiles.openfreemap.org/styles/dark"
 const val RADAR_ZOOM = 6.6
+/** The closest the radar's map goes: about 5 km across a phone, a radar cell (1 km) some 85 dp wide. */
+const val RADAR_MAX_ZOOM = 12.0
+/** The farthest out: Europe and beyond. */
+const val RADAR_MIN_ZOOM = 3.0
+
+/**
+ * The zoom the radar opens at: the live radar at the one it was last left at ([remembered], within
+ * the map's limits), else [RADAR_ZOOM]; a day of the look-back always at [RADAR_ZOOM]; without a
+ * place, all of Germany.
+ */
+internal fun radarStartZoom(hasPlace: Boolean, archive: Boolean, remembered: Double?): Double = when {
+    !hasPlace -> 5.2
+    archive -> RADAR_ZOOM
+    else -> remembered?.coerceIn(RADAR_MIN_ZOOM, RADAR_MAX_ZOOM) ?: RADAR_ZOOM
+}
 /** How long the radar waits for the temperature grid before it starts without (it follows). */
 private const val GRID_WAIT_MS = 8_000L
 /** Time per step while playing: the live loop, and an archived day (5-minute steps, a day in ~55 s). */
@@ -149,6 +164,10 @@ fun RadarScreen(
     overlays: Set<dev.nimbus.weather.data.model.RadarOverlay> = emptySet(),
     /** Plays by itself once loaded far enough (settings); off, it waits for play. */
     autoplay: Boolean = true,
+    /** The zoom the live radar was last left at (settings); null: [RADAR_ZOOM]. */
+    startZoom: Double? = null,
+    /** The live radar left at this zoom: kept for the next time and the preview. */
+    onZoomLeft: (Double) -> Unit = {},
     onBack: () -> Unit,
 ) {
     val archive = archiveDay != null
@@ -170,6 +189,8 @@ fun RadarScreen(
     var ready by remember { mutableStateOf(false) }
     /** Play, pause, a step or the slider touched: playback is the user's, nothing starts by itself. */
     var tookOver by remember { mutableStateOf(false) }
+    /** The map's zoom when it last came to rest: kept when the live radar is left. */
+    var lastZoom by remember { mutableStateOf<Double?>(null) }
     /** Frames with complete tiles, for the progress hint while the loop loads. */
     var loadedFrames by remember { mutableIntStateOf(0) }
     /** Incremented by "load again". */
@@ -240,9 +261,9 @@ fun RadarScreen(
             map.uiSettings.isRotateGesturesEnabled = false
             map.uiSettings.isTiltGesturesEnabled = false
             val target = place?.let { LatLng(it.latitude, it.longitude) } ?: LatLng(51.1, 10.4)
-            map.cameraPosition = CameraPosition.Builder().target(target).zoom(if (place != null) RADAR_ZOOM else 5.2).build()
-            map.setMaxZoomPreference(10.0)
-            map.setMinZoomPreference(3.0)
+            map.cameraPosition = CameraPosition.Builder().target(target).zoom(radarStartZoom(place != null, archive, startZoom)).build()
+            map.setMaxZoomPreference(RADAR_MAX_ZOOM)
+            map.setMinZoomPreference(RADAR_MIN_ZOOM)
             map.setStyle(styleBuilder) { style ->
                 controller.installBase(style, sat, light)
                 overlays.install(style, fieldBelow = "sat", linesBelow = controller.anchor)
@@ -253,6 +274,7 @@ fun RadarScreen(
                 // picture area once the view leaves the old one
                 map.addOnCameraIdleListener {
                     gridCheck++
+                    lastZoom = map.cameraPosition.zoom
                     map.projection.visibleRegion.latLngBounds.let { b ->
                         player.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast, mapView.width)
                         sat.setView(b.latitudeSouth, b.latitudeNorth, b.longitudeWest, b.longitudeEast)
@@ -477,7 +499,11 @@ fun RadarScreen(
     DisposableEffect(Unit) {
         val opened = android.os.SystemClock.elapsedRealtime()
         dev.nimbus.weather.util.ActivityLog.note("radar opened" + if (archive) " (a day of the look-back)" else "")
-        onDispose { dev.nimbus.weather.util.ActivityLog.note("radar left after ${(android.os.SystemClock.elapsedRealtime() - opened) / 1000} s") }
+        onDispose {
+            dev.nimbus.weather.util.ActivityLog.note("radar left after ${(android.os.SystemClock.elapsedRealtime() - opened) / 1000} s")
+            // the zoom of the live radar is kept (a look at a past day leaves it as it was)
+            if (!archive) lastZoom?.let { onZoomLeft(it.coerceIn(RADAR_MIN_ZOOM, RADAR_MAX_ZOOM)) }
+        }
     }
 
     Box(

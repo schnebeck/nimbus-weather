@@ -131,7 +131,8 @@ Voraussetzung: Android 8.0 (API 26). Google Play Services werden nicht benötigt
   wahlweise Kontrast (Regen grün → gelb → rot → magenta, Schnee türkis → weiß → violett); die
   Legende beginnt bei der schwächsten Stufe (Niesel, etwa 0,1 mm/h) und nennt die Stufen mit mm/h;
   die Radarzellen in jeder
-  Zoomstufe geglättet statt als Blöcke; das Radar öffnet auf dem aktuellen Bild, lädt erst die
+  Zoomstufe geglättet statt als Blöcke; Zoom bis auf etwa 5 km Bildbreite, das Radar merkt sich
+  die Zoomstufe für das nächste Öffnen und die Vorschaukachel; das Radar öffnet auf dem aktuellen Bild, lädt erst die
   Vorhersage, dann die Vergangenheit und spielt los, sobald die Vorhersage da ist (abschaltbar); in
   jedem Durchlauf steht es zwei Sekunden auf „jetzt“; in der Vorhersage ist grau, was außerhalb ihres
   Gebiets liegt (keine Vorhersage, nicht trocken);

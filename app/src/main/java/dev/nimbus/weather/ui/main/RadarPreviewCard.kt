@@ -77,7 +77,9 @@ fun RadarPreviewCard(data: WeatherData, onOpen: () -> Unit) {
             val lat = data.place.latitude
             val lon = data.place.longitude
             val lang = context.resources.configuration.locales[0].language
-            val key = RadarPreview.key(lat, lon, wDp, hDp)
+            // the scale of the full view as it was last left
+            val zoom = LocalSettings.current.radarZoom ?: RadarPreview.ZOOM
+            val key = RadarPreview.key(lat, lon, wDp, hDp, zoom)
             SideEffect { RadarPreview.cardSize = wDp to hDp }
             var base by remember(key) { mutableStateOf<android.graphics.Bitmap?>(null) }
             var overlay by remember(key) { mutableStateOf<android.graphics.Bitmap?>(null) }
@@ -92,7 +94,7 @@ fun RadarPreviewCard(data: WeatherData, onOpen: () -> Unit) {
                     RadarPreview.storedBase(key, lang)?.let { base = it; lap("stored base") }
                         ?: run {
                             // first time for this place and size: render the base map once
-                            RadarPreview.renderBase(context, mapHttp, lat, lon, wDp, hDp, density.density, lang)?.let {
+                            RadarPreview.renderBase(context, mapHttp, lat, lon, wDp, hDp, density.density, lang, zoom)?.let {
                                 base = it; lines = RadarPreview.storedLines(key, lang); lap("rendered base")
                             }
                         }
@@ -106,7 +108,7 @@ fun RadarPreviewCard(data: WeatherData, onOpen: () -> Unit) {
                     val timeline = runCatching { RadarSources.timeline(http, anchor = anchor) }.getOrNull()
                     val frame = timeline?.frames?.getOrNull(timeline.nowIndex)
                     lap("timeline")
-                    if (timeline != null && frame != null) RadarPreview.fetchOverlay(http, timeline, frame, lat, lon, wDp, hDp)?.let { o ->
+                    if (timeline != null && frame != null) RadarPreview.fetchOverlay(http, timeline, frame, lat, lon, wDp, hDp, zoom)?.let { o ->
                         overlay = o.bitmap; radarTime = o.time; lap("radar")
                     }
                     dev.nimbus.weather.ui.radar.RadarPrefetcher.previewRendered()

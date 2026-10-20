@@ -25,10 +25,10 @@ import org.maplibre.android.snapshotter.MapSnapshotter
 
 /** The preview card's base map, rendered off-screen by MapLibre (the radar is drawn above it: [RadarPicture.still]). */
 object RadarSnapshot {
-    fun create(context: Context, style: Style.Builder, lat: Double, lon: Double, widthDp: Int, heightDp: Int, pixelRatio: Float): MapSnapshotter {
+    fun create(context: Context, style: Style.Builder, lat: Double, lon: Double, widthDp: Int, heightDp: Int, pixelRatio: Float, zoom: Double = RadarPreview.ZOOM): MapSnapshotter {
         val options = MapSnapshotter.Options(widthDp, heightDp)
             .withStyleBuilder(style)
-            .withCameraPosition(CameraPosition.Builder().target(LatLng(lat, lon)).zoom(6.4).build())
+            .withCameraPosition(CameraPosition.Builder().target(LatLng(lat, lon)).zoom(zoom).build())
             .withPixelRatio(pixelRatio)
             .withLogo(false)
         return MapSnapshotter(context, options)

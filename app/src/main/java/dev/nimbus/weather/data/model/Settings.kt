@@ -124,6 +124,8 @@ data class Settings(
      * meanwhile); off, it stays on "now" until play is pressed.
      */
     val radarAutoplay: Boolean = true,
+    /** The radar's zoom as the full view was last left; the preview shows the same scale. Null: the defaults. */
+    val radarZoom: Double? = null,
     /** Layers on when the radar opens (each can be switched there as before). */
     val radarOverlays: Set<RadarOverlay> = emptySet(),
     /**

@@ -130,6 +130,7 @@ class MainViewModel(
             }
             combine(store.settings, store.places) { s, p -> s to p }.collect { (settings, places) ->
                 dev.nimbus.weather.ui.radar.RadarPalette.scheme = settings.radarColors
+                dev.nimbus.weather.ui.radar.RadarPreview.remembered = settings.radarZoom
                 dev.nimbus.weather.data.repo.BackgroundWork.radarAhead(getApplication(), settings.preloadRadar, settings.preloadRadarMobile)
                 val first = !_state.value.initialized
                 val prev = lastSettings

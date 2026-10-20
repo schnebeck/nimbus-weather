@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Nimbus - app/src/main/res/drawable/ic_launcher_foreground.xml
-  Launcher icon: foreground layer (sun and cloud).
+  Launcher icon: foreground layer (sun, cloud and rain).
 
     Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
     Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
@@ -19,22 +19,44 @@
     xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <!-- sun -->
-    <path android:pathData="M62,44m-15,0a15,15 0,1 1,30 0a15,15 0,1 1,-30 0">
+    <!-- the sun's glow, faint enough to stay out of the silhouette -->
+    <path android:pathData="M39,40m-20,0a20,20 0,1 1,40 0a20,20 0,1 1,-40 0">
         <aapt:attr name="android:fillColor">
-            <gradient android:type="radial" android:centerX="58" android:centerY="40" android:gradientRadius="18"
-                android:startColor="#FFFFE58A" android:endColor="#FFFFB300" />
+            <gradient android:type="radial" android:centerX="39" android:centerY="40" android:gradientRadius="20">
+                <item android:offset="0.55" android:color="#66FFF3B0" />
+                <item android:offset="0.75" android:color="#33FFE082" />
+                <item android:offset="1" android:color="#00FFE082" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- sun, upper left behind the cloud -->
+    <path android:pathData="M39,40m-13.5,0a13.5,13.5 0,1 1,27 0a13.5,13.5 0,1 1,-27 0">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial" android:centerX="35" android:centerY="36" android:gradientRadius="16"
+                android:startColor="#FFFFF6C2" android:endColor="#FFFFB300" />
         </aapt:attr>
     </path>
     <!-- cloud: its shadow is the band between its outline and the same outline 4 units higher, so
          it follows the underside around both bumps and never leaves the cloud -->
-    <group>
-        <clip-path android:pathData="M42.11,74h31.89a11,11 0,0 0,1.5 -21.9a15,15 0,0 0,-28.3 -3.5a13.21,13.21 0,1 0,-5.09 25.4z" />
-        <path android:fillColor="#FFDCE8F7"
-            android:pathData="M42.11,74h31.89a11,11 0,0 0,1.5 -21.9a15,15 0,0 0,-28.3 -3.5a13.21,13.21 0,1 0,-5.09 25.4z" />
-        <group android:translateY="-4">
-            <path android:fillColor="#FFFFFFFF"
+    <group android:translateX="1" android:translateY="-7">
+        <group>
+            <clip-path android:pathData="M42.11,74h31.89a11,11 0,0 0,1.5 -21.9a15,15 0,0 0,-28.3 -3.5a13.21,13.21 0,1 0,-5.09 25.4z" />
+            <path android:fillColor="#FFD6F2F0"
                 android:pathData="M42.11,74h31.89a11,11 0,0 0,1.5 -21.9a15,15 0,0 0,-28.3 -3.5a13.21,13.21 0,1 0,-5.09 25.4z" />
+            <group android:translateY="-4">
+                <path android:fillColor="#FFFFFFFF"
+                    android:pathData="M42.11,74h31.89a11,11 0,0 0,1.5 -21.9a15,15 0,0 0,-28.3 -3.5a13.21,13.21 0,1 0,-5.09 25.4z" />
+            </group>
         </group>
+    </group>
+    <!-- rain -->
+    <group android:translateX="45" android:translateY="76">
+        <path android:fillColor="#FFFFFFFF" android:pathData="M0,-5.2C1.6,-2.6 3.1,-0.6 3.1,1.3a3.1,3.1 0,0 1,-6.2 0C-3.1,-0.6 -1.6,-2.6 0,-5.2z" />
+    </group>
+    <group android:translateX="56" android:translateY="79.5">
+        <path android:fillColor="#FFFFFFFF" android:pathData="M0,-5.2C1.6,-2.6 3.1,-0.6 3.1,1.3a3.1,3.1 0,0 1,-6.2 0C-3.1,-0.6 -1.6,-2.6 0,-5.2z" />
+    </group>
+    <group android:translateX="67" android:translateY="76">
+        <path android:fillColor="#FFFFFFFF" android:pathData="M0,-5.2C1.6,-2.6 3.1,-0.6 3.1,1.3a3.1,3.1 0,0 1,-6.2 0C-3.1,-0.6 -1.6,-2.6 0,-5.2z" />
     </group>
 </vector>

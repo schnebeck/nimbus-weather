@@ -20,7 +20,10 @@
 package dev.nimbus.weather
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
@@ -38,7 +41,9 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -61,6 +66,11 @@ import dev.nimbus.weather.ui.main.GaugeCard
 import dev.nimbus.weather.ui.main.LocalSettings
 import dev.nimbus.weather.ui.main.LocalSettingsUpdater
 import dev.nimbus.weather.ui.main.LocalTimeFormat
+import dev.nimbus.weather.ui.main.CARD_BLEED
+import dev.nimbus.weather.ui.main.bleed
+import dev.nimbus.weather.ui.components.GlassCard
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.platform.LocalDensity
 import dev.nimbus.weather.ui.main.PollenForecastCard
 import dev.nimbus.weather.util.NBSP
 import dev.nimbus.weather.util.TimeFormat
@@ -203,5 +213,26 @@ class CardFoldTest {
         opened++
         compose.waitForIdle()
         compose.onNodeWithText(hint).assertExists()
+    }
+
+    /** A foldable card still lets its charts reach into its side padding: their axis numbers stay whole. */
+    @Test fun theChartsReachIntoThePadding() {
+        var px = 0f
+        page {
+            px = LocalDensity.current.density
+            Foldable(WeatherCard.GAUGES) {
+                GlassCard(title = "Karte", summary = "eine Zeile") {
+                    Box(Modifier.testTag("chart").fillMaxWidth().height(20.dp).bleed(CARD_BLEED).background(Color.Red))
+                }
+            }
+        }
+        compose.onNodeWithContentDescription("Einklappen").assertExists()
+        val b = compose.onNodeWithTag("chart").fetchSemanticsNode().boundsInRoot
+        val shot = compose.onRoot().captureToImage().asAndroidBitmap()
+        val y = b.center.y.toInt()
+        for (x in listOf(b.left - 6 * px, b.right + 6 * px)) {
+            val c = shot.getPixel(x.toInt(), y)
+            assertTrue("chart cut off at x = $x: ${Integer.toHexString(c)}", (c shr 16 and 255) > 200 && (c shr 8 and 255) < 60)
+        }
     }
 }

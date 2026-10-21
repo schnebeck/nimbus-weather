@@ -1,0 +1,1 @@
+• Today's chart in the 10-day forecast: axis labels whole again (were cut off at the edges)

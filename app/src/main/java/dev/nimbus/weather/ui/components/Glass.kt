@@ -166,8 +166,9 @@ fun GlassCard(
             }
         }
         Column(
-            (if (contentPadding) Modifier.padding(horizontal = 14.dp, vertical = 10.dp) else Modifier)
-                .then(if (fold != null) Modifier.animateContentSize() else Modifier)
+            // the fold's animation clips to its bounds: outside the padding, where the charts reach (bleed)
+            (if (fold != null) Modifier.animateContentSize() else Modifier)
+                .then(if (contentPadding) Modifier.padding(horizontal = 14.dp, vertical = 10.dp) else Modifier)
                 // the content disappears under the title (or the card's top edge) – never above it
                 .drawWithContent {
                     val o = overlap(cardH.floatValue)

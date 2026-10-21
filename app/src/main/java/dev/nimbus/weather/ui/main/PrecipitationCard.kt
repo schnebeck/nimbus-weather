@@ -98,16 +98,19 @@ class PrecipToday(
             val dry = !raining && notice == null && todaySum < DRY_MM &&
                 rest.all { (it.precipitation ?: 0.0) < DRY_MM && (it.precipitationProbability ?: 0.0) < DRY_CHANCE }
             val nextWet = data.hourly.firstOrNull { it.time > now && ((it.precipitationProbability ?: 0.0) >= WET_CHANCE || (it.precipitation ?: 0.0) >= WET_MM) }
-            // the hours the radar tells have no chance: the model's chance of the hours after them
-            return PrecipToday(todaySum, rest.sumOf { it.precipitation ?: 0.0 }, readings, chance(rest.filter { !it.radar }), notice, dry, nextWet)
+            return PrecipToday(todaySum, rest.sumOf { it.precipitation ?: 0.0 }, readings, chance(rest), notice, dry, nextWet)
         }
 
         /** Less apart than this (percentage points) is the same chance. */
         private const val APART = 5
 
-        /** [rest]: the hours not yet over, the one running now first. */
+        /**
+         * [rest]: the hours not yet over, the one running now first. The hours the radar tells
+         * count with the model's chance – the one the day chart's line shows, so no figure here
+         * says other than the line.
+         */
         fun chance(rest: List<HourlyPoint>): Chance {
-            val c = rest.map { (it.precipitationProbability ?: 0.0).roundToInt() }
+            val c = rest.map { (it.precipitationProbability ?: it.modelChance ?: 0.0).roundToInt() }
             if (c.isEmpty() || c.max() < 10) return Chance.None
             fun at(i: Int) = rest[i].time - HOUR
             val hi = c.indexOf(c.max())
@@ -141,7 +144,7 @@ fun PrecipitationCard(data: WeatherData, now: Long, raining: Boolean = false, me
                 if (w == null) stringResource(R.string.precip_dry_ahead)
                 else stringResource(
                     R.string.precip_next_wet, tf.weekdayShort(w.time - 3_600_000L), tf.time(w.time - 3_600_000L),
-                    (w.precipitationProbability ?: 0.0).roundToInt(),
+                    (w.precipitationProbability ?: w.modelChance ?: 0.0).roundToInt(),
                 ),
                 fontSize = 14.sp, color = NimbusColors.Secondary,
             )

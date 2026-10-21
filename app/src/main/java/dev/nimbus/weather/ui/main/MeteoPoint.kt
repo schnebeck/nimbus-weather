@@ -75,7 +75,8 @@ fun MeteoPoint.asNow(now: Long, condition: Condition?): MeteoPoint =
     if (condition != null && time > now && time - now <= 3_600_000L) copy(condition = condition) else this
 
 fun HourlyPoint.toMeteo() = MeteoPoint(
-    time, temperature, condition, isDay, precipitation, precipitationProbability,
+    // the chart's chance line runs on through the radar's hours with the model's chance
+    time, temperature, condition, isDay, precipitation, precipitationProbability ?: modelChance,
     windSpeed, windDirection, windGust, humidity, apparentTemperature, sunshine = sunshine,
 )
 

@@ -35,6 +35,7 @@ import dev.nimbus.weather.data.remote.PollenSource
 import dev.nimbus.weather.data.remote.SpotSource
 import dev.nimbus.weather.data.repo.RadarAhead
 import dev.nimbus.weather.ui.main.lookBackPoints
+import dev.nimbus.weather.ui.main.toMeteo
 import dev.nimbus.weather.data.repo.WeatherRepository
 import kotlinx.coroutines.runBlocking
 import mockwebserver3.Dispatcher
@@ -116,6 +117,10 @@ class RadarAheadTest {
         assertEquals(Condition.CLOUDY, running.condition)
         assertNull(running.precipitationProbability)
         assertTrue(running.radar)
+        // the model's chance kept apart: the day chart's line runs on with it, no gap at the radar's hours
+        assertEquals(90.0, running.modelChance!!, 0.0)
+        assertEquals(90.0, running.toMeteo().precipitationChance!!, 0.0)
+        assertEquals(listOf(80.0, 90.0, 10.0, 70.0), RadarAhead.hours(model, radar(), now).map { it.toMeteo().precipitationChance })
         // 15–16 h: 1 mm by the nowcast where the model had it dry
         val next = hours.getValue(t0 + 2 * hour)
         assertEquals(1.0, next.precipitation!!, 0.01)
@@ -163,20 +168,20 @@ class RadarAheadTest {
         val byTime = ahead.days.single().hours.associateBy { it.time }
         // over: as it was, measured and expected
         assertEquals(hours[0], byTime.getValue(t0))
-        // the running hour and the next by the radar, no chance
+        // the running hour and the next by the radar, the model's chance kept for the chart's line
         assertEquals(0.0, byTime.getValue(t0 + hour).model!!.precipitation!!, 0.0)
         assertEquals(Condition.CLOUDY, byTime.getValue(t0 + hour).model!!.condition)
-        assertNull(byTime.getValue(t0 + hour).model!!.chance)
+        assertEquals(80.0, byTime.getValue(t0 + hour).model!!.chance!!, 0.0)
         assertEquals(1.0, byTime.getValue(t0 + 2 * hour).model!!.precipitation!!, 0.01)
         assertEquals(Condition.RAIN, byTime.getValue(t0 + 2 * hour).model!!.condition)
         // beyond the nowcast: the model's
         assertEquals(hours[3], byTime.getValue(t0 + 3 * hour))
         // the charts' hours alike
         assertEquals(ahead.days.single().hours, ahead.allHours)
-        // as the chart shows it: the radar's amount as the forecast's bar, no chance
+        // as the chart shows it: the radar's amount as the forecast's bar, the model's chance on the line
         val point = ahead.lookBackPoints(ahead.days.single(), t0 - hour).first { it.time == t0 + 2 * hour }
         assertEquals(1.0, point.precipitation!!, 0.01)
-        assertNull(point.compare!!.chanceF)
+        assertEquals(80.0, point.compare!!.chanceF!!, 0.0)
         // an old radar answer changes nothing
         assertEquals(history, RadarAhead.history(history, radar(), t0 + 46 * min))
     }

@@ -71,7 +71,7 @@ class BarLookTest {
 
     /**
      * 00:00 … 24:00 at a steady 12° (its curve in green, no colour of a bar); no wind, no chance –
-     * nothing white that could pass for the grey sunshine block. Measured 0.8 mm and 45 min, the
+     * nothing pale that could pass for the yellow sunshine block. Measured 0.8 mm and 45 min, the
      * forecast 0.4 mm and 25 min, so a frame in front of its block is seen inside it.
      */
     private fun points(form: Form) = (0..24).map { k ->
@@ -97,7 +97,7 @@ class BarLookTest {
     private fun Bitmap.rgb(x: Int, y: Int): Triple<Int, Int, Int> = getPixel(x, y).let { Triple((it shr 16) and 255, (it shr 8) and 255, it and 255) }
     private fun rainBlock(r: Int, g: Int, b: Int) = b > 170 && b - r > 60 && g in 140..190
     private fun rainFrame(r: Int, g: Int, b: Int) = abs(r - 107) <= 8 && abs(g - 122) <= 8 && abs(b - 255) <= 8
-    private fun sunBlock(r: Int, g: Int, b: Int) = abs(r - 195) < 12 && abs(g - 201) < 12 && abs(b - 210) < 12
+    private fun sunBlock(r: Int, g: Int, b: Int) = abs(r - 255) < 12 && abs(g - 240) < 12 && abs(b - 184) < 12
     private fun sunFrame(r: Int, g: Int, b: Int) = abs(r - 255) <= 8 && abs(g - 181) <= 8 && abs(b - 71) <= 8
 
     /** What one hour's column shows. */
@@ -168,5 +168,15 @@ class BarLookTest {
         // a frame near its block in colour stands out by its line
         listOf(rain, sun).filter { dist(it.frame, seen(it.fill)) < 0.6f }.forEach { assertTrue(it.frameDp >= 2f) }
         assertTrue("sun frame vs its block", dist(sun.frame, seen(sun.fill)) > 0.6f)
+    }
+
+    /** Measured sunshine is yellow – in the legend apart from the near-white chance line, which it stood beside in grey. */
+    @Test fun sunshineApartFromTheChanceLine() {
+        val sun = dev.nimbus.weather.ui.main.HourBars.Sun.fill
+        val line = dev.nimbus.weather.ui.main.ChanceLine.compositeOver(Color(0xFF2B3A4E))
+        fun dist(a: Color, b: Color) = abs(a.red - b.red) + abs(a.green - b.green) + abs(a.blue - b.blue)
+        assertTrue("sunshine vs chance line", dist(sun, line) > 0.25f)
+        // yellow: red and green well above blue
+        assertTrue(sun.red - sun.blue > 0.2f && sun.green - sun.blue > 0.15f)
     }
 }

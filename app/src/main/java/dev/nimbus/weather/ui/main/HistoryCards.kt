@@ -139,7 +139,7 @@ internal fun DayCourseCard(
 ) {
     val start = day.date.atStartOfDay(tf.zone).toInstant().toEpochMilli()
     val points = remember(day, history, forecast, nowCondition, now / 60_000L) {
-        val chance = forecast.associate { it.time to it.precipitationProbability }
+        val chance = forecast.associate { it.time to (it.precipitationProbability ?: it.modelChance) }
         history.lookBackPoints(day, start) { chance[it] }.map { it.asNow(now, nowCondition) }
     }
     val curves = remember(day, history) { lookBackCurves(history, start) }

@@ -99,6 +99,11 @@ data class HourlyPoint(
     val hail: Boolean = false,
     /** [precipitation] and [condition] by the radar over the place (measured, then its nowcast) – no chance then. */
     val radar: Boolean = false,
+    /**
+     * [radar]: the model's chance of precipitation the hour had. Only the day chart's chance line and
+     * its readout show it – beside the radar's amount, as the forecast's; the texts go by the radar.
+     */
+    val modelChance: Double? = null,
 )
 
 @Serializable

@@ -43,8 +43,11 @@ object HourBars {
      * as on the dark glass.
      */
     val Rain = BarLook(fill = Color(0xB38FD3FF), frame = Color(0xFF6B7AFF), frameDp = 2f)
-    /** Sunshine: light grey (the temperature curve has the warm colours), the forecast framed in orange. */
-    val Sun = BarLook(fill = Color(0xFFC3C9D2), frame = Color(0xFFFFB547))
+    /**
+     * Sunshine: a pale yellow – apart from the near-white chance line, and pale enough to keep its
+     * distance from the forecast's orange frame and the temperature curve's warm colours.
+     */
+    val Sun = BarLook(fill = Color(0xFFFFF0B8), frame = Color(0xFFFFB547))
 }
 
 /** What an hour's bar shows of a quantity: the [measured] amount (block) and the [expected] one (frame). */

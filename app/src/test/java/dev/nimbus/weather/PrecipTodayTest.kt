@@ -28,6 +28,7 @@ import dev.nimbus.weather.data.model.Settings
 import dev.nimbus.weather.data.model.WeatherCard
 import dev.nimbus.weather.data.model.WeatherData
 import dev.nimbus.weather.ui.main.PrecipToday
+import dev.nimbus.weather.ui.main.toMeteo
 import dev.nimbus.weather.util.TimeFormat
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -93,5 +94,21 @@ class PrecipTodayTest {
     @Test fun theDryDaySettingShowsByDefaultAndTheCardLeads() {
         assertTrue(Settings().showDryPrecipitation)
         assertEquals(WeatherCard.PRECIPITATION, Settings().orderedCards().first())
+    }
+
+    /**
+     * The radar's hours (the running one and the next) carry the model's chance apart: the card's
+     * sentence on the chance reads the same figures as the day chart's line – none it does not show.
+     */
+    @Test fun theChanceAsTheLineShowsIt() {
+        val d = data(wet = 15..15, chance = 60.0)
+        val radar = d.copy(hourly = d.hourly.map { p ->
+            // the running hour (10–11 h) 40 %, the next 95 % by the model
+            if (p.time in now..now + 2 * h) p.copy(precipitationProbability = null, radar = true, modelChance = if (p.time < now + h) 40.0 else 95.0, precipitation = 0.0) else p
+        })
+        val c = of(radar).chance
+        assertEquals(PrecipToday.Chance.Highest(95, day + 11 * h), c)
+        val line = radar.hourly.filter { it.time > now && it.time <= day + 24 * h }.map { it.toMeteo().precipitationChance!!.toInt() }
+        assertEquals(line.max(), (c as PrecipToday.Chance.Highest).percent)
     }
 }

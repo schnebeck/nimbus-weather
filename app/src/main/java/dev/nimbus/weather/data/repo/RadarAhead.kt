@@ -54,7 +54,7 @@ object RadarAhead {
     /**
      * The hours from the running one on by the radar where it covers them: the amount, the symbol
      * matched with it ([WeatherCodes.forMeasured] – rain by its amount, none without; thunder
-     * stays), no chance – the radar does not give one.
+     * stays), no chance – the radar does not give one; the model's is kept apart ([HourlyPoint.modelChance]).
      */
     fun hours(hours: List<HourlyPoint>, radar: RadarNow?, now: Long): List<HourlyPoint> {
         val r = NowWeather.radarValid(radar, now) ?: return hours
@@ -62,14 +62,15 @@ object RadarAhead {
             if (h.time <= now) return@map h
             val mm = sum(r.steps, h.time, HOUR_MS) ?: return@map h
             val c = WeatherCodes.forMeasured(h.condition, mm, h.cloudCover, h.temperature, byRadar = true) ?: h.condition
-            h.copy(precipitation = mm, condition = WeatherCodes.withSunshine(c, h.sunshine), precipitationProbability = null, radar = true)
+            h.copy(precipitation = mm, condition = WeatherCodes.withSunshine(c, h.sunshine), precipitationProbability = null, radar = true, modelChance = h.precipitationProbability)
         }
     }
 
     /**
      * The look-back's hours to come – today's from the running one on – by the radar as [hours]
-     * gives the weather page's: the model's amount and symbol where the radar covers the hour,
-     * no chance. The hours over keep what was measured and expected.
+     * gives the weather page's: the model's amount and symbol where the radar covers the hour; its
+     * chance stays, the chart's line shows it as the day's forecast does. The hours over keep what
+     * was measured and expected.
      */
     fun history(history: History, radar: RadarNow?, now: Long): History {
         val r = NowWeather.radarValid(radar, now) ?: return history
@@ -78,7 +79,7 @@ object RadarAhead {
             if (h.time <= now) return h
             val mm = sum(r.steps, h.time, HOUR_MS) ?: return h
             val c = WeatherCodes.forMeasured(m.condition, mm, null, m.temperature, byRadar = true) ?: m.condition
-            return h.copy(model = m.copy(precipitation = mm, condition = WeatherCodes.withSunshine(c, m.sunshineMinutes), chance = null))
+            return h.copy(model = m.copy(precipitation = mm, condition = WeatherCodes.withSunshine(c, m.sunshineMinutes)))
         }
         return history.copy(
             days = history.days.map { d -> d.copy(hours = d.hours.map(::ahead)) },

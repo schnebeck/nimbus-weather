@@ -19,7 +19,7 @@
 
 # Datenschutzerklärung – Nimbus
 
-Stand: 20. Oktober 2026
+Stand: 21. Oktober 2026
 
 ## Kurz gesagt
 
@@ -32,7 +32,7 @@ Stand: 20. Oktober 2026
 
 ## Verantwortlich
 
-Thorsten Schnebeck, E-Mail: [nimbus@schnebeck.de](mailto:nimbus@schnebeck.de)
+Thorsten Schnebeck, E-Mail: [playstore@schnebeck.de](mailto:playstore@schnebeck.de)
 
 ## Standort
 
@@ -106,7 +106,7 @@ Alles löschst du, indem du die App-Daten löschst oder die App deinstallierst.
 Da der Entwickler keine Daten von dir erhält oder speichert, gibt es bei ihm nichts auszukunften,
 zu berichtigen oder zu löschen. Zu Daten, die bei den genannten Diensten anfallen (etwa
 IP-Adressen in deren Protokollen), wende dich bitte an diese. Fragen beantworte ich gern unter
-[nimbus@schnebeck.de](mailto:nimbus@schnebeck.de); du hast außerdem das Recht, dich bei einer
+[playstore@schnebeck.de](mailto:playstore@schnebeck.de); du hast außerdem das Recht, dich bei einer
 Datenschutz-Aufsichtsbehörde zu beschweren.
 
 ## Änderungen

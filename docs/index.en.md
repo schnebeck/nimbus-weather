@@ -31,4 +31,4 @@ water levels and bathing waters. No ads, no account, no Google services – free
   [forecast models](https://github.com/schnebeck/nimbus-weather/blob/main/docs/MODELS.en.md) · [gauges](https://github.com/schnebeck/nimbus-weather/blob/main/docs/GAUGES.en.md) ·
   [bathing waters](https://github.com/schnebeck/nimbus-weather/blob/main/docs/BATHING.en.md)
 - **Privacy:** [privacy policy](PRIVACY.en.md)
-- **Contact:** [nimbus@schnebeck.de](mailto:nimbus@schnebeck.de) · [source code and issues](https://github.com/schnebeck/nimbus-weather)
+- **Contact:** [playstore@schnebeck.de](mailto:playstore@schnebeck.de) · [source code and issues](https://github.com/schnebeck/nimbus-weather)

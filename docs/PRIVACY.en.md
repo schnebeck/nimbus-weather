@@ -19,7 +19,7 @@
 
 # Privacy policy – Nimbus
 
-Last updated: 20 October 2026
+Last updated: 21 October 2026
 
 ## In short
 
@@ -32,7 +32,7 @@ Last updated: 20 October 2026
 
 ## Controller
 
-Thorsten Schnebeck, e-mail: [nimbus@schnebeck.de](mailto:nimbus@schnebeck.de)
+Thorsten Schnebeck, e-mail: [playstore@schnebeck.de](mailto:playstore@schnebeck.de)
 
 ## Location
 
@@ -104,7 +104,7 @@ You delete everything by clearing the app's data or uninstalling the app.
 As the developer receives and stores no data of yours, there is nothing with him to disclose,
 correct or delete. For data arising at the services named (such as IP addresses in their logs),
 please contact them. I am glad to answer questions at
-[nimbus@schnebeck.de](mailto:nimbus@schnebeck.de); you also have the right to complain to a data
+[playstore@schnebeck.de](mailto:playstore@schnebeck.de); you also have the right to complain to a data
 protection supervisory authority.
 
 ## Changes

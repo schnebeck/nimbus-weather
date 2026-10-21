@@ -31,4 +31,4 @@ und Badegewässer. Keine Werbung, kein Konto, keine Google-Dienste – freie Sof
   [Vorhersagemodelle](https://github.com/schnebeck/nimbus-weather/blob/main/docs/MODELS.md) · [Pegel](https://github.com/schnebeck/nimbus-weather/blob/main/docs/GAUGES.md) ·
   [Badegewässer](https://github.com/schnebeck/nimbus-weather/blob/main/docs/BATHING.md)
 - **Datenschutz:** [Datenschutzerklärung](PRIVACY.md)
-- **Kontakt:** [nimbus@schnebeck.de](mailto:nimbus@schnebeck.de) · [Quellcode und Fehlermeldungen](https://github.com/schnebeck/nimbus-weather)
+- **Kontakt:** [playstore@schnebeck.de](mailto:playstore@schnebeck.de) · [Quellcode und Fehlermeldungen](https://github.com/schnebeck/nimbus-weather)

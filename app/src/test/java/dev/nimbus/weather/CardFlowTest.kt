@@ -56,8 +56,8 @@ class CardFlowTest {
 
     private val h = 3_600_000L
     private val now = System.currentTimeMillis() / h * h + 20 * 60_000L
-    /** The cards over all columns: the sky above, the alerts, the offline note, the sources. */
-    private val wide = setOf("header-space", "alerts", "offline", "sources")
+    /** The cards over all columns: the sky above, the alerts, the offline note, the note on the views, the sources. */
+    private val wide = setOf("header-space", "alerts", "offline", "view-hint", "sources")
 
     private fun data(): WeatherData {
         val start = now / h * h - 2 * h

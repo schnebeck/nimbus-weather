@@ -1,0 +1,3 @@
+• Tidy the weather page: hold a card to fold, hide (with undo) or arrange it; small tiles alike
+• Three views: compact, normal, detailed – in the settings and as a question at the page's end
+• Settings reordered, the forecast model in one line

@@ -30,7 +30,15 @@ import dev.nimbus.weather.ui.components.CardStatus
 import dev.nimbus.weather.ui.components.LocalCardStatus
 
 /** One card of the weather page; [fullSpan] cards span all columns on a tablet. */
-internal class PageItem(val key: String, val fullSpan: Boolean = false, val content: @Composable () -> Unit)
+internal class PageItem(val key: String, val fullSpan: Boolean = false, val content: @Composable () -> Unit) {
+    /** The same card with what a long press on it offers ([dev.nimbus.weather.ui.components.CardMenu]). */
+    fun withMenu(menu: dev.nimbus.weather.ui.components.CardMenu) = PageItem(key, fullSpan) {
+        CompositionLocalProvider(dev.nimbus.weather.ui.components.LocalCardMenu provides menu) { content() }
+    }
+}
+
+/** The menus of the page's cards by card – for the small tiles inside their block. */
+internal val LocalPageMenus = staticCompositionLocalOf<((dev.nimbus.weather.data.model.WeatherCard) -> dev.nimbus.weather.ui.components.CardMenu)?> { null }
 
 /**
  * In the columns of a tablet, a card between two wide ones (or a wide one and the end) would
@@ -66,10 +74,11 @@ internal class Arrivals(private val clock: () -> Long = System::currentTimeMilli
 
 /**
  * The data part a card of the page shows (its status dot follows it); null: no dot (the header
- * space, banners, the footer, the model comparison loaded on demand).
+ * space, banners, the footer, the model comparison loaded on demand, the note on the views and
+ * the lists for arranging).
  */
 internal fun cardParts(key: String): Set<dev.nimbus.weather.data.model.DataPart>? = when (key) {
-    "header-space", "offline", "sources", "models" -> null
+    "header-space", "offline", "sources", "models", "view-hint", "arrange", "arrange-tiles" -> null
     "alerts" -> setOf(dev.nimbus.weather.data.model.DataPart.FORECAST, dev.nimbus.weather.data.model.DataPart.FLOOD)
     "aqi" -> setOf(dev.nimbus.weather.data.model.DataPart.AIR_QUALITY)
     "pollen" -> setOf(dev.nimbus.weather.data.model.DataPart.POLLEN)

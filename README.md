@@ -190,9 +190,17 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   der Rückblick), Listen (Pegel, Badestellen, Gezeiten) nach 30 Tagen ohne Nutzung, das Wetter
   entfernter Orte sofort.
 - **Orte, Einstellungen**: Standort und gespeicherte Orte (lange drücken zum Sortieren und Löschen);
-  Vorhersagemodell (voreingestellt: Automatisch – das feinste Modell je Ort und Zeitraum, die
-  Datenquellen nennen es mit seiner Auflösung), Einheiten (beim ersten Start passend zum Land),
-  Stationswerte, Animationen, Reihenfolge und Sichtbarkeit der Kacheln. Die 10-Tage-Vorhersage lässt
+  Einheiten (beim ersten Start passend zum Land), Kacheln, Radar, Anzeige (Stationswerte, Vollbild,
+  Animationen), Pollen, Badestellen, Vorhersagemodell (eine Zeile, die Liste auf Antippen;
+  voreingestellt: Automatisch – das feinste Modell je Ort und Zeitraum, die Datenquellen nennen es
+  mit seiner Auflösung).
+- **Wetterseite aufräumen**: Kachel lange drücken – Einklappen/Erweitern, Ausblenden (mit
+  Rückgängig), Anordnen (alle Kacheln schrumpfen auf ihre Titelzeile, die gewählte an ihre neue
+  Stelle ziehen; „Position geändert · Rückgängig“). Die kleinen Kacheln ebenso, innerhalb ihres
+  Blocks. Drei Ansichten nach Wichtigkeit: Kompakt (Niederschlag, Stunden, 10 Tage, Radar, Pollen),
+  Normal (alles, Sonne, Mond, Luftqualität und Spezielles eingeklappt), Ausführlich (alles offen) –
+  unter Einstellungen → Kacheln und einmal als Frage am Ende der Seite, bis sie beantwortet ist
+  (auch „Alles prima, wie es ist“). Die Reihenfolge bleibt dabei. Die 10-Tage-Vorhersage lässt
   sich auf „Heute“ einklappen, größere Karten (Sonne, Mond,
   Luftqualität, Luftdruck, Pollen, Pegel, Badestellen, Messnetz, Modellvergleich) lassen sich mit
   dem Pfeil im Titel auf eine Zeile einklappen; die App merkt sich das je Karte, ebenso, ob „Heute“

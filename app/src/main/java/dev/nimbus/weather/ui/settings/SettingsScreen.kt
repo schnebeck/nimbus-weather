@@ -42,6 +42,10 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material3.Icon
@@ -88,13 +92,6 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
-                Section(stringResource(R.string.settings_forecast_source)) {
-                    ModelChoices.forEach { (m, title, desc) ->
-                        ModelChoice(settings.model == m, stringResource(title), stringResource(desc)) { onChange { it.copy(model = m) } }
-                    }
-                }
-            }
-            item {
                 Section(stringResource(R.string.settings_units)) {
                     Label(stringResource(R.string.settings_temperature))
                     Segmented(listOf("°C", "°F"), TemperatureUnit.entries.indexOf(settings.temperatureUnit)) { i ->
@@ -110,23 +107,6 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                     Label(stringResource(R.string.settings_precipitation))
                     Segmented(listOf(stringResource(R.string.unit_mm), stringResource(R.string.unit_inch)), PrecipitationUnit.entries.indexOf(settings.precipitationUnit)) { i ->
                         onChange { it.copy(precipitationUnit = PrecipitationUnit.entries[i]) }
-                    }
-                }
-            }
-            item {
-                Section(null) {
-                    ToggleRow(stringResource(R.string.settings_stations), stringResource(R.string.settings_stations_desc), settings.useStationObservations) { v ->
-                        onChange { it.copy(useStationObservations = v) }
-                    }
-                    Spacer(Modifier.size(8.dp))
-                    ToggleRow(stringResource(R.string.settings_fullscreen), stringResource(R.string.settings_fullscreen_desc), settings.fullscreen) { v ->
-                        onChange { it.copy(fullscreen = v) }
-                    }
-                    ToggleRow(stringResource(R.string.settings_fullscreen_button), stringResource(R.string.settings_fullscreen_button_desc), settings.fullscreenButton) { v ->
-                        onChange { it.copy(fullscreenButton = v) }
-                    }
-                    ToggleRow(stringResource(R.string.settings_animations), stringResource(R.string.settings_animations_desc), settings.animationsEnabled) { v ->
-                        onChange { it.copy(animationsEnabled = v) }
                     }
                 }
             }
@@ -174,11 +154,19 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                 }
             }
             item {
-                Section(stringResource(R.string.bathing_title)) {
-                    Text(stringResource(R.string.settings_bathing_desc), fontSize = 13.sp, color = NimbusColors.Secondary, lineHeight = 18.sp)
-                    Spacer(Modifier.size(10.dp))
-                    Segmented(BathingRadii.map { "$it km" }, BathingRadii.indexOf(settings.bathingRadiusKm).coerceAtLeast(0)) { i ->
-                        onChange { it.copy(bathingRadiusKm = BathingRadii[i]) }
+                Section(stringResource(R.string.settings_display)) {
+                    ToggleRow(stringResource(R.string.settings_stations), stringResource(R.string.settings_stations_desc), settings.useStationObservations) { v ->
+                        onChange { it.copy(useStationObservations = v) }
+                    }
+                    Spacer(Modifier.size(8.dp))
+                    ToggleRow(stringResource(R.string.settings_fullscreen), stringResource(R.string.settings_fullscreen_desc), settings.fullscreen) { v ->
+                        onChange { it.copy(fullscreen = v) }
+                    }
+                    ToggleRow(stringResource(R.string.settings_fullscreen_button), stringResource(R.string.settings_fullscreen_button_desc), settings.fullscreenButton) { v ->
+                        onChange { it.copy(fullscreenButton = v) }
+                    }
+                    ToggleRow(stringResource(R.string.settings_animations), stringResource(R.string.settings_animations_desc), settings.animationsEnabled) { v ->
+                        onChange { it.copy(animationsEnabled = v) }
                     }
                 }
             }
@@ -188,6 +176,19 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                     Spacer(Modifier.size(10.dp))
                     dev.nimbus.weather.ui.main.PollenTypePicker(settings.pollenTypes) { types -> onChange { it.copy(pollenTypes = types) } }
                 }
+            }
+            item {
+                Section(stringResource(R.string.bathing_title)) {
+                    Text(stringResource(R.string.settings_bathing_desc), fontSize = 13.sp, color = NimbusColors.Secondary, lineHeight = 18.sp)
+                    Spacer(Modifier.size(10.dp))
+                    Segmented(BathingRadii.map { "$it km" }, BathingRadii.indexOf(settings.bathingRadiusKm).coerceAtLeast(0)) { i ->
+                        onChange { it.copy(bathingRadiusKm = BathingRadii[i]) }
+                    }
+                }
+            }
+            item {
+                // what few change, out of the way: the chosen model in one line, the others on a tap
+                Section(stringResource(R.string.settings_forecast_source)) { ModelAccordion(settings.model) { m -> onChange { it.copy(model = m) } } }
             }
             item {
                 Section(stringResource(R.string.settings_language)) {
@@ -256,4 +257,34 @@ private fun RadarScalePreview(colors: dev.nimbus.weather.data.model.RadarColors)
     }
     bar(stringResource(R.string.legend_rain), rain)
     bar(stringResource(R.string.legend_snow), snow)
+}
+
+/** The forecast model: closed, the chosen one with what it is good for; open, all to choose from. */
+@Composable
+private fun ModelAccordion(chosen: dev.nimbus.weather.data.model.ForecastModel, onChoose: (dev.nimbus.weather.data.model.ForecastModel) -> Unit) {
+    var open by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    val rotation by androidx.compose.animation.core.animateFloatAsState(if (open) 180f else 0f, label = "chevron")
+    val (_, title, desc) = ModelChoices.firstOrNull { it.first == chosen } ?: ModelChoices.first()
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { open = !open }.padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(title), fontSize = 16.sp, color = Color.White)
+            Text(stringResource(desc), fontSize = 13.sp, color = NimbusColors.Secondary)
+        }
+        Icon(
+            Icons.Rounded.ExpandMore, stringResource(R.string.settings_models_expand), tint = NimbusColors.Secondary,
+            modifier = Modifier.graphicsLayer { rotationZ = rotation },
+        )
+    }
+    androidx.compose.animation.AnimatedVisibility(
+        open,
+        enter = androidx.compose.animation.expandVertically(expandFrom = Alignment.Top) + androidx.compose.animation.fadeIn(),
+        exit = androidx.compose.animation.shrinkVertically(shrinkTowards = Alignment.Top) + androidx.compose.animation.fadeOut(),
+    ) {
+        Column(Modifier.padding(top = 6.dp)) {
+            ModelChoices.forEach { (m, t, d) -> ModelChoice(chosen == m, stringResource(t), stringResource(d)) { onChoose(m) } }
+        }
+    }
 }

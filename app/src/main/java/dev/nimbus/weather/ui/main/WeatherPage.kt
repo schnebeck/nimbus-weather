@@ -251,10 +251,25 @@ private fun WeatherContent(
         PrecipToday.of(data, now, raining, todayMeasured, tfToday)?.dry == true
     }
 
+    // Tidying where the cards are: a long press offers fold, hide, arrange; every change of the
+    // cards can be undone from the snackbar
+    val update = LocalSettingsUpdater.current
+    val snackbar = remember { androidx.compose.material3.SnackbarHostState() }
+    val cardsChange = dev.nimbus.weather.ui.settings.undoableCardsChange(cards, update, snackbar)
+    var arranging by remember(data.place.id) { mutableStateOf<WeatherCard?>(null) }
+    androidx.activity.compose.BackHandler(enabled = arranging != null) { arranging = null }
+    val menuFor: (WeatherCard) -> dev.nimbus.weather.ui.components.CardMenu = { card ->
+        dev.nimbus.weather.ui.components.CardMenu(hide = { cardsChange { it.withCard(card, false) } }, arrange = { arranging = card })
+    }
+    val tileArranging = arranging in WeatherCard.DEFAULT_TILES
+    // the cards on the page as it stands, in their order (the small tiles one block)
+    val present = mutableListOf<WeatherCard>()
+    val presentTiles = detailTiles(data, now).map { it.first }
+
     // The page as a list of cards. In columns only the sky, the alerts, the offline note and the
     // sources span them all: a card over all columns closed them like a line – the shorter one
     // stayed empty above it beside a long card (an opened day of the 10-day forecast)
-    val items = spanLonely(buildList {
+    val built = spanLonely(buildList {
         // the sky above the cards: double-tapping it switches full screen (the header drawn over it has no touch of its own)
         add(PageItem("header-space", true) { Spacer(Modifier.fillMaxWidth().height(with(density) { expandedPx.toDp() } - 12.dp).fullscreenByDoubleTap()) })
         if (stale) add(PageItem("offline", true) { OfflineBanner(data) })
@@ -262,6 +277,7 @@ private fun WeatherContent(
         if (data.alerts.isNotEmpty() && cards.shows(WeatherCard.ALERTS)) add(PageItem("alerts", true) { AlertsCard(data.alerts) })
         // The cards in the order chosen in the settings (Settings → Cards)
         cards.orderedCards().filter { cards.shows(it) }.forEach { card ->
+            val from = size
             when (card) {
                 WeatherCard.HOURLY -> add(PageItem("hourly", columns == 1) { HourlyCard(data, now) })
                 WeatherCard.DAILY -> add(PageItem("daily") { Foldable(card) { DailyCard(data, now, todayMeasured) } })
@@ -270,9 +286,17 @@ private fun WeatherContent(
                     add(PageItem("precip") { PrecipitationCard(data, now, raining, todayMeasured) })
                 WeatherCard.RADAR -> add(PageItem("radar") { RadarPreviewCard(data, onOpenRadar) })
                 // one column: two side by side; in columns each a card of its own (room for its title)
-                WeatherCard.TILES -> if (columns == 1) {
+                // arranging a small tile: the block as a list of its tiles
+                WeatherCard.TILES -> if (tileArranging) {
+                    add(PageItem("arrange-tiles", true) {
+                        ArrangeList(presentTiles, arranging!!, R.string.arrange_tiles_hint, onDone = { order ->
+                            arranging = null
+                            cardsChange { it.withTileOrder(order) }
+                        }, onCancel = { arranging = null })
+                    })
+                } else if (columns == 1) {
                     if (cards.orderedTiles().any(cards::shows)) add(PageItem("tiles") { DetailTiles(data, now) })
-                } else detailTiles(data, now).forEach { (t, tile) -> add(PageItem("tile-${t.name.lowercase()}") { LaneTile(tile) }) }
+                } else detailTiles(data, now).forEach { (t, tile) -> add(PageItem("tile-${t.name.lowercase()}") { LaneTile(tile) }.withMenu(menuFor(t))) }
                 WeatherCard.SUN -> add(PageItem("sun") { Foldable(card) { SunCard(data, now) } })
                 WeatherCard.PRESSURE_CHART -> add(PageItem("pressure-chart") { Foldable(card) { PressureCard(data, now, todayMeasured) } })
                 WeatherCard.MOON -> add(PageItem("moon") { Foldable(card) { MoonCard(data, now) } })
@@ -284,9 +308,32 @@ private fun WeatherContent(
                 WeatherCard.MODELS -> add(PageItem("models") { Foldable(card) { ModelComparisonCard(state.models, now, onRequestModels) } })
                 else -> Unit
             }
+            if (size > from) present += card
+            // the long press on each card (the tiles have theirs inside their block)
+            if (card != WeatherCard.TILES) for (i in from until size) this[i] = this[i].withMenu(menuFor(card))
         }
+        // at the end of the page until answered: whoever got here has seen all of it
+        if (!cards.viewHintDone && arranging == null) add(PageItem("view-hint", true) {
+            ViewHint(cards.view(), onChoose = { v -> cardsChange { it.withView(v).copy(viewHintDone = true) } }, onKeep = { update { it.copy(viewHintDone = true) } })
+        })
         add(PageItem("sources", true) { SourcesFooter(data) })
     })
+    // Arranging a card: the sky, then every card down to its title line – the whole page on the screen
+    val items = if (arranging == null || tileArranging) built else listOf(
+        built.first(),
+        PageItem("arrange", true) {
+            ArrangeList(present, arranging!!, R.string.arrange_hint, onDone = { order ->
+                arranging = null
+                cardsChange { it.withPageOrder(order) }
+            }, onCancel = { arranging = null })
+        },
+    )
+    // Arranging a card starts at the page's top: the sky, then all cards as title lines (the small
+    // tiles stay where they were held – their list brings itself into view)
+    LaunchedEffect(arranging) {
+        if (arranging == null || tileArranging) return@LaunchedEffect
+        if (columns == 1) listState.scrollToItem(0) else gridState.scrollToItem(0)
+    }
     // Cards whose data comes after the page is shown (the extras of a new place) pop in
     val arrivals = remember(data.place.id) { Arrivals() }
     arrivals.note(items.map { it.key })
@@ -341,6 +388,7 @@ private fun WeatherContent(
         val start = side + if (sideways) 0.dp else cutStart
         val end = side + cutEnd
         CompositionLocalProvider(
+            LocalPageMenus provides menuFor,
             dev.nimbus.weather.ui.components.LocalPinLine provides pinLine,
             dev.nimbus.weather.ui.components.LocalCoveredTop provides { (expandedPx - scrolled).coerceAtLeast(collapsedPx) },
         ) {
@@ -370,6 +418,7 @@ private fun WeatherContent(
     }
         // read while drawing only: scrolling never recomposes the page (and rebuilds its cards)
         if (!sideways) PageHeader(data, { progress }, statusTop, compact, location, onLocate, modelLabel = modelLabel) { headerPx = it }
+        dev.nimbus.weather.ui.components.NimbusSnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = navBottom + 12.dp))
     }
 }
 

@@ -19,6 +19,14 @@ package dev.nimbus.weather.ui.components
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.rounded.DragHandle
+import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.foundation.layout.Arrangement
@@ -88,6 +96,14 @@ val LocalCardFold = androidx.compose.runtime.compositionLocalOf<CardFold?> { nul
 /** Inside a card that folds itself ([GlassCard]'s foldsInside): whether it is folded – it then shows less. */
 val LocalCardFolded = androidx.compose.runtime.compositionLocalOf { false }
 
+/**
+ * What a long press on a card of the weather page offers besides folding ([LocalCardFold]): [hide]
+ * it, [arrange] the page's cards. Null: the card has no menu.
+ */
+class CardMenu(val hide: () -> Unit, val arrange: () -> Unit)
+
+val LocalCardMenu = androidx.compose.runtime.compositionLocalOf<CardMenu?> { null }
+
 /** Frosted translucent card, the building block of all weather modules. */
 @Composable
 fun GlassCard(
@@ -106,6 +122,8 @@ fun GlassCard(
 ) {
     val fold = LocalCardFold.current?.takeIf { (summary != null || foldsInside) && title != null }
     val folded = fold?.folded == true
+    val menu = LocalCardMenu.current
+    var menuOpen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     val pin = LocalPinLine.current
     val covered = LocalCoveredTop.current
     // Read only while drawing: scrolling never recomposes the cards
@@ -144,8 +162,11 @@ fun GlassCard(
                     onClick != null -> Modifier.clickable(onClick = onClick)
                     else -> Modifier
                 },
-            ),
+            )
+            // a card without a title opens its menu by a long press anywhere
+            .then(if (menu != null && title == null) Modifier.longPress { menuOpen = true } else Modifier),
     ) {
+        if (menu != null) CardMenuPopup(menuOpen, { menuOpen = false }, fold, menu)
         if (title != null) {
             // The title stays at the line while the card slides under it
             Column(
@@ -154,7 +175,10 @@ fun GlassCard(
                     .zIndex(1f)
                     .graphicsLayer { translationY = overlap(cardH.floatValue) },
             ) {
-                CardHeader(title, icon, Modifier.padding(start = 14.dp, end = 6.dp, top = 4.dp, bottom = 0.dp), info, fold)
+                CardHeader(
+                    title, icon, Modifier.padding(start = 14.dp, end = 6.dp, top = 4.dp, bottom = 0.dp), info, fold,
+                    onLongPress = menu?.let { { menuOpen = true } }, onTap = onClick,
+                )
                 if (contentPadding) HairlineDivider(Modifier.padding(horizontal = 14.dp))
             }
         }
@@ -185,7 +209,7 @@ fun GlassCard(
             // the content's own view: the header and this card's held title above it
             val below = if (covered == null || title == null) covered else ({ covered() + titleH.floatValue })
             // the fold is this card's, not that of a card inside it
-            androidx.compose.runtime.CompositionLocalProvider(LocalCoveredTop provides below, LocalCardFold provides null) {
+            androidx.compose.runtime.CompositionLocalProvider(LocalCoveredTop provides below, LocalCardFold provides null, LocalCardMenu provides null) {
                 if (folded && !foldsInside) androidx.compose.material3.Text(summary!!, fontSize = 15.sp, color = NimbusColors.Secondary, lineHeight = 20.sp, maxLines = 2)
                 else androidx.compose.runtime.CompositionLocalProvider(LocalCardFolded provides folded) { content() }
             }
@@ -209,13 +233,29 @@ data class HeaderStyle(val halo: Float = dev.nimbus.weather.ui.theme.Legibility.
 
 val LocalHeaderStyle = androidx.compose.runtime.compositionLocalOf { HeaderStyle() }
 
+/**
+ * A card's title line. [onLongPress]: its menu (the weather page's cards); [onTap]: what a tap on
+ * the card does, where the title does not fold it.
+ */
 @Composable
-fun CardHeader(title: String, icon: ImageVector?, modifier: Modifier = Modifier, info: Term? = null, fold: CardFold? = null) {
+fun CardHeader(
+    title: String, icon: ImageVector?, modifier: Modifier = Modifier, info: Term? = null, fold: CardFold? = null,
+    onLongPress: (() -> Unit)? = null, onTap: (() -> Unit)? = null,
+) {
     val status = LocalCardStatus.current
     val foldLabel = fold?.let { androidx.compose.ui.res.stringResource(if (it.folded) dev.nimbus.weather.R.string.card_unfold else dev.nimbus.weather.R.string.card_fold) }
+    val menuLabel = androidx.compose.ui.res.stringResource(dev.nimbus.weather.R.string.card_menu)
     Row(
-        // a card that folds: its whole title line folds and unfolds it
-        (if (fold != null) Modifier.clickable(onClickLabel = foldLabel) { fold.toggle() } else Modifier).then(modifier).heightIn(min = 40.dp),
+        // a card that folds: its whole title line folds and unfolds it; held, it opens the card's menu
+        when {
+            onLongPress != null && (fold != null || onTap != null) -> Modifier.combinedClickable(
+                onClickLabel = foldLabel, onLongClickLabel = menuLabel, onLongClick = onLongPress,
+                onClick = { if (fold != null) fold.toggle() else onTap?.invoke() },
+            )
+            onLongPress != null -> Modifier.longPress(menuLabel, onLongPress)
+            fold != null -> Modifier.clickable(onClickLabel = foldLabel) { fold.toggle() }
+            else -> Modifier
+        }.then(modifier).heightIn(min = 40.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         if (icon != null) Icon(icon, contentDescription = null, tint = NimbusColors.Tertiary, modifier = Modifier.size(14.dp))
@@ -278,4 +318,44 @@ fun InfoButton(term: Term, modifier: Modifier = Modifier) {
 @Composable
 fun HairlineDivider(modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth().height(0.6.dp).background(NimbusColors.Divider))
+}
+
+/** A long press (with its feel) runs [action]; taps go on to what lies below. */
+@Composable
+internal fun Modifier.longPress(label: String? = null, action: () -> Unit): Modifier {
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val current by androidx.compose.runtime.rememberUpdatedState(action)
+    return this
+        .pointerInput(Unit) {
+            detectTapGestures(onLongPress = {
+                haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                current()
+            })
+        }
+        .semantics { onLongClick(label) { current(); true } }
+}
+
+/** The card's menu: fold or unfold (where it folds), hide, arrange. */
+@Composable
+private fun CardMenuPopup(open: Boolean, onDismiss: () -> Unit, fold: CardFold?, menu: CardMenu) {
+    @Composable
+    fun item(text: Int, icon: ImageVector, action: () -> Unit) = androidx.compose.material3.DropdownMenuItem(
+        text = { androidx.compose.material3.Text(androidx.compose.ui.res.stringResource(text), color = Color.White) },
+        leadingIcon = { Icon(icon, null, tint = NimbusColors.Secondary) },
+        onClick = { onDismiss(); action() },
+    )
+    // anchored at the card's top left (no room taken in it), the menu below the title line
+    Box(Modifier.height(0.dp)) {
+        androidx.compose.material3.DropdownMenu(
+            expanded = open, onDismissRequest = onDismiss, offset = androidx.compose.ui.unit.DpOffset(14.dp, 40.dp),
+            containerColor = Color(0xFF16233A), shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
+        ) {
+            if (fold != null) {
+                if (fold.folded) item(dev.nimbus.weather.R.string.card_menu_unfold, androidx.compose.material.icons.Icons.Rounded.ExpandMore, fold.toggle)
+                else item(dev.nimbus.weather.R.string.card_menu_fold, androidx.compose.material.icons.Icons.Rounded.ExpandLess, fold.toggle)
+            }
+            item(dev.nimbus.weather.R.string.card_menu_hide, androidx.compose.material.icons.Icons.Outlined.VisibilityOff, menu.hide)
+            item(dev.nimbus.weather.R.string.card_menu_arrange, androidx.compose.material.icons.Icons.Rounded.DragHandle, menu.arrange)
+        }
+    }
 }

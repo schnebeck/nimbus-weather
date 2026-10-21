@@ -18,6 +18,7 @@
 package dev.nimbus.weather.ui.components
 
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -89,7 +90,8 @@ object Reorder {
  * `handle` (a drag handle icon). The dragged row follows the finger in absolute terms – its offset is computed from its
  * actual place in the layout, so it never jumps when the rows around it change places. Rows may
  * differ in height (an expanded group moves as a whole). The new order goes to [onMove] when the
- * row is dropped; [moveUp]/[moveDown] label the TalkBack actions on the handle.
+ * row is dropped; [moveUp]/[moveDown] label the TalkBack actions on the handle. [immediate]: the
+ * handle moves its row at once, without holding it first (where nothing else scrolls by it).
  */
 @Composable
 fun <T> ReorderableColumn(
@@ -100,6 +102,7 @@ fun <T> ReorderableColumn(
     moveDown: String,
     modifier: Modifier = Modifier,
     gap: Dp = 0.dp,
+    immediate: Boolean = false,
     row: @Composable (item: T, dragging: Boolean, handle: Modifier) -> Unit,
 ) {
     // One state for the lifetime of the list: the drag handlers keep a reference to it. (Keyed by
@@ -130,21 +133,19 @@ fun <T> ReorderableColumn(
             key(k) {
                 val dragging = dragKey == k
                 val handle = Modifier
-                    .pointerInput(k) {
-                        // Hold the handle first: a swipe that merely starts on a handle scrolls
-                        // the page instead of moving a row by accident
-                        detectDragGesturesAfterLongPress(
-                            onDragStart = {
-                                dragKey = k
-                                dragTop = bounds[k]?.top ?: 0f
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            },
-                            onDrag = { change, amount ->
-                                change.consume()
-                                // The movement always counts; only the decision waits for the layout
-                                // to catch up with the last move (otherwise fast drags lagged behind)
-                                dragTop += amount.y
-                                val rows = rows() ?: return@detectDragGesturesAfterLongPress
+                    .pointerInput(k, immediate) {
+                        val start: (androidx.compose.ui.geometry.Offset) -> Unit = {
+                            dragKey = k
+                            dragTop = bounds[k]?.top ?: 0f
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        }
+                        val drag: (androidx.compose.ui.input.pointer.PointerInputChange, androidx.compose.ui.geometry.Offset) -> Unit = { change, amount ->
+                            change.consume()
+                            // The movement always counts; only the decision waits for the layout
+                            // to catch up with the last move (otherwise fast drags lagged behind)
+                            dragTop += amount.y
+                            val rows = rows()
+                            if (rows != null) {
                                 val i = order.indexOfFirst { key(it) == k }
                                 dragTop = Reorder.clampTop(rows, i, dragTop)
                                 val to = Reorder.target(rows, i, dragTop)
@@ -152,10 +153,13 @@ fun <T> ReorderableColumn(
                                     move(i, to)
                                     haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 }
-                            },
-                            onDragEnd = { dragKey = null; onMove(order) },
-                            onDragCancel = { dragKey = null; onMove(order) },
-                        )
+                            }
+                        }
+                        val end: () -> Unit = { dragKey = null; onMove(order) }
+                        // Hold the handle first: a swipe that merely starts on a handle scrolls
+                        // the page instead of moving a row by accident
+                        if (immediate) detectDragGestures(onDragStart = start, onDrag = drag, onDragEnd = end, onDragCancel = end)
+                        else detectDragGesturesAfterLongPress(onDragStart = start, onDrag = drag, onDragEnd = end, onDragCancel = end)
                     }
                     .semantics {
                         customActions = listOf(

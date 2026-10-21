@@ -185,10 +185,16 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   position out of date, so are all data of "My location". Stored data nobody needs is deleted: data
   of a moment after 4 days (as far as the look-back reaches), lists (gauges, bathing waters, tides)
   after 30 days without use, the weather of removed places at once.
-- **Places, settings**: my location and saved places (long press to sort and delete); the forecast
-  model (preset: Automatic – the finest model for each place and time, named with its grid in the
-  data sources), units (on first start to suit the country), station values, animations, order and
-  visibility of the cards. The 10-day forecast folds to "Today", larger cards (sun, moon, air quality, pressure, pollen, gauges, bathing
+- **Places, settings**: my location and saved places (long press to sort and delete); units (on
+  first start to suit the country), cards, radar, display (station values, full screen,
+  animations), pollen, bathing waters, the forecast model (one line, the list on a tap; preset:
+  Automatic – the finest model for each place and time, named with its grid in the data sources).
+- **Tidying the weather page**: hold a card – fold/expand, hide (with undo), arrange (every card
+  shrinks to its title line, drag the chosen one to its new place; "Position changed · Undo"). The
+  small tiles alike, within their block. Three views by importance: compact (precipitation, hours,
+  10 days, radar, pollen), normal (all, sun, moon, air quality and the special cards folded),
+  detailed (all open) – under Settings → Cards and once as a question at the page's end until
+  answered (also "All fine as it is"). The order stays. The 10-day forecast folds to "Today", larger cards (sun, moon, air quality, pressure, pollen, gauges, bathing
   waters, sensor network, model comparison) fold to one line with the arrow in their title; the app
   keeps that per card, and whether "Today" in the 10-day forecast is open or closed. Under
   "Diagnostics" an activity log (off until switched on): network calls

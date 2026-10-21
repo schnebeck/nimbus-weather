@@ -73,8 +73,20 @@ enum class WeatherCard {
         /** Alternatives that are off until switched on (e.g. the pressure chart next to the small tile). */
         val OPT_IN = setOf(PRESSURE_CHART)
         val DEFAULT_TILES = listOf(FEELS_LIKE, UV_INDEX, WIND, HUMIDITY, VISIBILITY, PRESSURE)
+
+        // How much each card matters to most people – it decides the views ([PageView]), not the
+        // order: the core, then the pollen (for many a must), the small tiles, sky and air, the special.
+        val CORE = setOf(PRECIPITATION, HOURLY, DAILY, RADAR)
+        val SKY = setOf(SUN, MOON, AIR_QUALITY)
+        val SPECIAL = setOf(GAUGES, BATHING, COMMUNITY, MODELS, PRESSURE_CHART)
     }
 }
+
+/**
+ * The weather page at a glance: [COMPACT] the core and the pollen; [NORMAL] all, sky, air and the
+ * special cards folded; [FULL] all open.
+ */
+enum class PageView { COMPACT, NORMAL, FULL }
 
 /** Colour scale of the radar: high-contrast (green/yellow/red, turquoise/white/violet) or the calm blue one (blue/violet/magenta, grey/white). */
 @Serializable
@@ -141,6 +153,8 @@ data class Settings(
     val todayMeasuredVsForecast: Boolean = false,
     /** The precipitation card on a dry day: one line with the next precipitation – off, hidden. */
     val showDryPrecipitation: Boolean = true,
+    /** The note at the end of the weather page offering the views ([PageView]) was answered or closed. */
+    val viewHintDone: Boolean = false,
     /** Radius of the bathing water card in km. */
     val bathingRadiusKm: Int = 50,
     /** Favourite bathing waters (EU ids), shown at any distance. */
@@ -157,7 +171,41 @@ data class Settings(
     fun orderedCards(): List<WeatherCard> = merged(cardOrder, WeatherCard.DEFAULT_ORDER)
     fun orderedTiles(): List<WeatherCard> = merged(tileOrder, WeatherCard.DEFAULT_TILES)
 
+    /**
+     * The cards [shown] on the page in a new order: they take the places they had among all
+     * cards, those not on the page (hidden, without data here) keep theirs.
+     */
+    fun withPageOrder(shown: List<WeatherCard>): Settings = copy(cardOrder = placed(orderedCards(), shown))
+    /** The small tiles [shown] in a new order, as [withPageOrder]. */
+    fun withTileOrder(shown: List<WeatherCard>): Settings = copy(tileOrder = placed(orderedTiles(), shown))
+
+    /** The page as [view] has it: which cards are on and which folded; the order stays. */
+    fun withView(view: PageView): Settings {
+        val extra = WeatherCard.SKY + WeatherCard.SPECIAL
+        return when (view) {
+            PageView.COMPACT -> copy(
+                hiddenCards = extra + WeatherCard.TILES - WeatherCard.OPT_IN,
+                enabledCards = enabledCards - WeatherCard.OPT_IN, foldedCards = emptySet(),
+            )
+            PageView.NORMAL -> copy(hiddenCards = emptySet(), foldedCards = extra)
+            PageView.FULL -> copy(hiddenCards = emptySet(), foldedCards = emptySet())
+        }
+    }
+
+    /** The view the page is in; null: arranged by hand, none of them. */
+    fun view(): PageView? = PageView.entries.firstOrNull { v ->
+        val s = withView(v)
+        s.hiddenCards == hiddenCards && s.enabledCards == enabledCards && s.foldedCards == foldedCards
+    }
+
     companion object {
+        /** [all] with the places of the cards in [shown] taken by them in their new order. */
+        private fun placed(all: List<WeatherCard>, shown: List<WeatherCard>): List<WeatherCard> {
+            val set = shown.toSet()
+            val next = shown.filter { it in all }.iterator()
+            return all.map { if (it in set && next.hasNext()) next.next() else it }
+        }
+
         /** [own] order with the cards it lacks inserted after their default predecessor. */
         fun merged(own: List<WeatherCard>, default: List<WeatherCard>): List<WeatherCard> {
             val out = own.filter { it in default }.distinct().toMutableList()

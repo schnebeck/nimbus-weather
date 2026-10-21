@@ -1,0 +1,3 @@
+• Wetterseite aufräumen: Kachel lange drücken – einklappen, ausblenden (mit Rückgängig) oder anordnen; kleine Kacheln ebenso
+• Drei Ansichten: Kompakt, Normal, Ausführlich – in den Einstellungen und als Frage am Ende der Seite
+• Einstellungen neu geordnet, Vorhersagemodell als eine Zeile

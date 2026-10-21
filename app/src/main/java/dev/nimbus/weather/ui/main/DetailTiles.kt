@@ -101,7 +101,13 @@ fun detailTiles(data: WeatherData, now: Long): List<Pair<WeatherCard, @Composabl
 /** The small tiles in one column of cards: two side by side, square. */
 @Composable
 fun DetailTiles(data: WeatherData, now: Long) {
-    val tiles = detailTiles(data, now).map { it.second }
+    // each tile with its own long press (hide it, arrange the block)
+    val menus = LocalPageMenus.current
+    val tiles = detailTiles(data, now).map { (t, tile) ->
+        @Composable { m: Modifier ->
+            androidx.compose.runtime.CompositionLocalProvider(dev.nimbus.weather.ui.components.LocalCardMenu provides menus?.invoke(t)) { tile(m) }
+        }
+    }
     if (tiles.isEmpty()) return
     androidx.compose.foundation.layout.BoxWithConstraints {
     val side = (maxWidth - 12.dp) / 2

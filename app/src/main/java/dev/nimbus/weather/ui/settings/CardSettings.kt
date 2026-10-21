@@ -18,7 +18,6 @@
 package dev.nimbus.weather.ui.settings
 
 import kotlinx.coroutines.launch
-import dev.nimbus.weather.ui.components.ReorderableColumn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.graphics.graphicsLayer
@@ -30,7 +29,6 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
-import androidx.compose.material.icons.rounded.DragHandle
 import dev.nimbus.weather.data.model.WeatherCard
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -61,9 +59,10 @@ import dev.nimbus.weather.data.model.Settings
 import dev.nimbus.weather.ui.theme.NimbusColors
 
 /**
- * Wraps the changes of the cards list: each one shows a snackbar with what changed and "Undo",
- * which restores the cards as they were before (order, tiles order, hidden and opted-in cards).
- * A drop on the same place changes nothing and shows nothing.
+ * Wraps the changes of the cards – in the settings and on the weather page: each one shows a
+ * snackbar with what changed and "Undo", which restores the cards as they were before (order,
+ * tiles order, hidden, opted-in and folded cards). A drop on the same place changes nothing and
+ * shows nothing; folding alone shows nothing either (it is seen at once and undone the same way).
  */
 @Composable
 internal fun undoableCardsChange(
@@ -76,12 +75,16 @@ internal fun undoableCardsChange(
     val msgReset = stringResource(R.string.cards_undo_reset)
     val msgShown = stringResource(R.string.cards_undo_shown)
     val msgHidden = stringResource(R.string.cards_undo_hidden)
+    val msgView = stringResource(R.string.cards_undo_view)
+    val views = dev.nimbus.weather.data.model.PageView.entries.associateWith { stringResource(viewLabel(it)) }
     val current by androidx.compose.runtime.rememberUpdatedState(settings)
     return { transform ->
         val before = current
         val after = transform(before)
         val toggled = WeatherCard.entries.firstOrNull { before.shows(it) != after.shows(it) }
+        val view = after.view()
         val message = when {
+            view != null && view != before.view() -> msgView.format(views.getValue(view))
             toggled != null -> (if (after.shows(toggled)) msgShown else msgHidden).format(labels.getValue(toggled))
             before.orderedCards() == after.orderedCards() && before.orderedTiles() == after.orderedTiles() -> null
             after.cardOrder.isEmpty() && after.tileOrder.isEmpty() -> msgReset
@@ -92,14 +95,24 @@ internal fun undoableCardsChange(
             snackbar.currentSnackbarData?.dismiss()
             val r = snackbar.showSnackbar(message, actionLabel = undo, duration = androidx.compose.material3.SnackbarDuration.Long)
             if (r == androidx.compose.material3.SnackbarResult.ActionPerformed) onChange {
-                it.copy(cardOrder = before.cardOrder, tileOrder = before.tileOrder, hiddenCards = before.hiddenCards, enabledCards = before.enabledCards)
+                it.copy(
+                    cardOrder = before.cardOrder, tileOrder = before.tileOrder, hiddenCards = before.hiddenCards,
+                    enabledCards = before.enabledCards, foldedCards = before.foldedCards,
+                )
             }
         }
     }
 }
 
+/** The names of the views as the settings and the page's note show them. */
+internal fun viewLabel(v: dev.nimbus.weather.data.model.PageView): Int = when (v) {
+    dev.nimbus.weather.data.model.PageView.COMPACT -> R.string.view_compact
+    dev.nimbus.weather.data.model.PageView.NORMAL -> R.string.view_normal
+    dev.nimbus.weather.data.model.PageView.FULL -> R.string.view_full
+}
+
 /** Card symbols as on the weather page. */
-private fun cardIcon(c: WeatherCard): androidx.compose.ui.graphics.vector.ImageVector = when (c) {
+internal fun cardIcon(c: WeatherCard): androidx.compose.ui.graphics.vector.ImageVector = when (c) {
     WeatherCard.ALERTS -> Icons.Rounded.WarningAmber
     WeatherCard.HOURLY -> Icons.Outlined.Schedule
     WeatherCard.DAILY -> Icons.Outlined.CalendarMonth
@@ -124,9 +137,11 @@ private fun cardIcon(c: WeatherCard): androidx.compose.ui.graphics.vector.ImageV
 }
 
 /**
- * Settings → Cards: an accordion. Closed it tells how many cards are shown; open it lists them
- * in page order – the handle ≡ sorts, the switch shows or hides. The small tiles are one block
- * on the page and open into a list of their own. Weather alerts always stay on top.
+ * Settings → Cards: the page's view in one choice ([PageView]), then an accordion – closed it
+ * tells how many cards are shown, open it lists them in page order, each with its switch. The
+ * small tiles are one block on the page and open into a list of their own. Arranging, folding
+ * and hiding happen on the page itself (hold a card); here the order can go back to the default.
+ * Weather alerts always stay on top.
  */
 @Composable
 internal fun CardsAccordion(settings: Settings, onChange: ((Settings) -> Settings) -> Unit) {
@@ -134,6 +149,14 @@ internal fun CardsAccordion(settings: Settings, onChange: ((Settings) -> Setting
     var tilesOpen by rememberSaveable { mutableStateOf(false) }
     val all = WeatherCard.entries.filter { it != WeatherCard.TILES }
     val rotation by androidx.compose.animation.core.animateFloatAsState(if (open) 180f else 0f, label = "chevron")
+    Text(stringResource(R.string.settings_view), fontSize = 16.sp, color = Color.White)
+    Text(stringResource(R.string.settings_view_desc), fontSize = 13.sp, color = NimbusColors.Secondary, lineHeight = 18.sp)
+    Spacer(Modifier.size(10.dp))
+    val views = dev.nimbus.weather.data.model.PageView.entries
+    Segmented(views.map { stringResource(viewLabel(it)) }, views.indexOf(settings.view())) { i ->
+        onChange { it.withView(views[i]) }
+    }
+    Spacer(Modifier.size(14.dp))
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { open = !open }.padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -153,25 +176,12 @@ internal fun CardsAccordion(settings: Settings, onChange: ((Settings) -> Setting
         Column(Modifier.padding(top = 6.dp)) {
             Text(stringResource(R.string.settings_cards_desc), fontSize = 13.sp, color = NimbusColors.Secondary, lineHeight = 18.sp)
             Spacer(Modifier.size(6.dp))
-            CardRow(WeatherCard.ALERTS, settings, onChange, handle = null)
-            val up = stringResource(R.string.move_up)
-            val down = stringResource(R.string.move_down)
-            ReorderableColumn(
-                settings.orderedCards(), key = { it }, moveUp = up, moveDown = down,
-                onMove = { list -> onChange { it.copy(cardOrder = list) } },
-            ) { card, dragging, handle ->
-                Column(Modifier.clip(RoundedCornerShape(10.dp)).background(if (dragging) Color(0xFF2A3A55) else Color.Transparent)) {
-                    CardRow(card, settings, onChange, handle, expandable = card == WeatherCard.TILES, expanded = tilesOpen) { tilesOpen = !tilesOpen }
-                    if (card == WeatherCard.TILES && tilesOpen) {
-                        ReorderableColumn(
-                            settings.orderedTiles(), key = { it }, moveUp = up, moveDown = down,
-                            onMove = { list -> onChange { it.copy(tileOrder = list) } },
-                            modifier = Modifier.padding(start = 28.dp),
-                        ) { tile, tileDragging, tileHandle ->
-                            Box(Modifier.clip(RoundedCornerShape(10.dp)).background(if (tileDragging) Color(0xFF2A3A55) else Color.Transparent)) {
-                                CardRow(tile, settings, onChange, tileHandle, enabled = settings.shows(WeatherCard.TILES))
-                            }
-                        }
+            CardRow(WeatherCard.ALERTS, settings, onChange, fixed = true)
+            settings.orderedCards().forEach { card ->
+                CardRow(card, settings, onChange, expandable = card == WeatherCard.TILES, expanded = tilesOpen) { tilesOpen = !tilesOpen }
+                if (card == WeatherCard.TILES && tilesOpen) {
+                    Column(Modifier.padding(start = 28.dp)) {
+                        settings.orderedTiles().forEach { tile -> CardRow(tile, settings, onChange, enabled = settings.shows(WeatherCard.TILES)) }
                     }
                 }
             }
@@ -186,25 +196,20 @@ internal fun CardsAccordion(settings: Settings, onChange: ((Settings) -> Setting
     }
 }
 
-/** One card: handle, symbol, name, (group: open/close), switch. Without [handle] it is fixed. */
+/** One card: symbol, name, (group: open/close), switch. [fixed]: it always stays on top. */
 @Composable
 private fun CardRow(
-    card: WeatherCard, settings: Settings, onChange: ((Settings) -> Settings) -> Unit, handle: Modifier?,
+    card: WeatherCard, settings: Settings, onChange: ((Settings) -> Settings) -> Unit, fixed: Boolean = false,
     expandable: Boolean = false, expanded: Boolean = false, enabled: Boolean = true, onExpand: () -> Unit = {},
 ) {
     val shown = settings.shows(card)
     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (handle != null) {
-            Icon(
-                Icons.Rounded.DragHandle, stringResource(R.string.places_drag), tint = NimbusColors.Secondary,
-                modifier = handle.size(40.dp).padding(8.dp),
-            )
-        } else Spacer(Modifier.size(40.dp))
+        Spacer(Modifier.size(8.dp))
         Icon(cardIcon(card), null, tint = if (shown && enabled) NimbusColors.Secondary else NimbusColors.Tertiary, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.size(10.dp))
+        Spacer(Modifier.size(12.dp))
         Column(Modifier.weight(1f).then(if (expandable) Modifier.clickable(onClick = onExpand) else Modifier)) {
             Text(stringResource(cardLabel(card)), fontSize = 15.sp, color = if (shown && enabled) Color.White else NimbusColors.Tertiary)
-            if (handle == null) Text(stringResource(R.string.settings_cards_fixed), fontSize = 12.sp, color = NimbusColors.Tertiary)
+            if (fixed) Text(stringResource(R.string.settings_cards_fixed), fontSize = 12.sp, color = NimbusColors.Tertiary)
         }
         if (expandable) {
             IconButton(onClick = onExpand) {
@@ -223,7 +228,7 @@ private fun CardRow(
 }
 
 /** Card titles as shown on the weather page. */
-private fun cardLabel(c: WeatherCard): Int = when (c) {
+internal fun cardLabel(c: WeatherCard): Int = when (c) {
     WeatherCard.ALERTS -> R.string.alerts
     WeatherCard.HOURLY -> R.string.hourly_forecast
     WeatherCard.DAILY -> R.string.ten_day_forecast

@@ -196,8 +196,10 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   mit seiner Auflösung).
 - **Wetterseite aufräumen**: Kachel lange drücken – Einklappen/Erweitern, Ausblenden (mit
   Rückgängig), Anordnen (alle Kacheln schrumpfen auf ihre Titelzeile, die gewählte an ihre neue
-  Stelle ziehen; „Position geändert · Rückgängig“). Die kleinen Kacheln ebenso, innerhalb ihres
-  Blocks. Drei Ansichten nach Wichtigkeit: Kompakt (Niederschlag, Stunden, 10 Tage, Radar, Pollen),
+  Stelle ziehen; „Position geändert · Rückgängig“, „Abbrechen“ lässt alles, wie es war). Die
+  kleinen Kacheln ebenso, untereinander in ihrem Block. Meldungen mit „Rückgängig“ lassen sich
+  zur Seite wegwischen. Drei Ansichten nach Wichtigkeit: Kompakt (Niederschlag, Stunden, 10 Tage,
+  Radar, Pollen),
   Normal (alles, Sonne, Mond, Luftqualität und Spezielles eingeklappt), Ausführlich (alles offen) –
   unter Einstellungen → Kacheln und einmal als Frage am Ende der Seite, bis sie beantwortet ist
   (auch „Alles prima, wie es ist“). Die Reihenfolge bleibt dabei. Die 10-Tage-Vorhersage lässt

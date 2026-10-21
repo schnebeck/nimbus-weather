@@ -318,8 +318,9 @@ private fun WeatherContent(
         })
         add(PageItem("sources", true) { SourcesFooter(data) })
     })
-    // Arranging a card: the sky, then every card down to its title line – the whole page on the screen
-    val items = if (arranging == null || tileArranging) built else listOf(
+    // Arranging: the sky, then the list alone – every card down to its title line (the whole page
+    // on the screen), or the small tiles of their block; nothing else to touch meanwhile
+    val items = if (arranging == null) built else if (tileArranging) listOf(built.first()) + built.filter { it.key == "arrange-tiles" } else listOf(
         built.first(),
         PageItem("arrange", true) {
             ArrangeList(present, arranging!!, R.string.arrange_hint, onDone = { order ->
@@ -328,15 +329,15 @@ private fun WeatherContent(
             }, onCancel = { arranging = null })
         },
     )
-    // Arranging a card starts at the page's top: the sky, then all cards as title lines (the small
-    // tiles stay where they were held – their list brings itself into view)
+    // Arranging starts at the page's top: the sky, then the list
     LaunchedEffect(arranging) {
-        if (arranging == null || tileArranging) return@LaunchedEffect
+        if (arranging == null) return@LaunchedEffect
         if (columns == 1) listState.scrollToItem(0) else gridState.scrollToItem(0)
     }
     // Cards whose data comes after the page is shown (the extras of a new place) pop in
     val arrivals = remember(data.place.id) { Arrivals() }
-    arrivals.note(items.map { it.key })
+    // arranging is no arrival: the cards back afterwards do not pop in
+    if (arranging == null) arrivals.note(items.map { it.key })
 
     // Only show the spinner for a refresh the user pulled, not for automatic background updates.
     var pulled by remember { mutableStateOf(false) }

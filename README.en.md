@@ -190,8 +190,9 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   animations), pollen, bathing waters, the forecast model (one line, the list on a tap; preset:
   Automatic – the finest model for each place and time, named with its grid in the data sources).
 - **Tidying the weather page**: hold a card – fold/expand, hide (with undo), arrange (every card
-  shrinks to its title line, drag the chosen one to its new place; "Position changed · Undo"). The
-  small tiles alike, within their block. Three views by importance: compact (precipitation, hours,
+  shrinks to its title line, drag the chosen one to its new place; "Position changed · Undo",
+  "Cancel" leaves all as it was). The small tiles alike, among themselves in their block. Notes
+  with "Undo" can be wiped aside. Three views by importance: compact (precipitation, hours,
   10 days, radar, pollen), normal (all, sun, moon, air quality and the special cards folded),
   detailed (all open) – under Settings → Cards and once as a question at the page's end until
   answered (also "All fine as it is"). The order stays. The 10-day forecast folds to "Today", larger cards (sun, moon, air quality, pressure, pollen, gauges, bathing

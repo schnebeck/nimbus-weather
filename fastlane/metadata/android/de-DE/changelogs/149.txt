@@ -1,0 +1,2 @@
+• Hinweise mit „Rückgängig“ lassen sich zur Seite wegwischen
+• Anordnen mit „Abbrechen“; beim Anordnen der kleinen Kacheln nur deren Liste

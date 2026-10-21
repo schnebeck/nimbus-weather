@@ -642,6 +642,7 @@
     <string name="card_menu_arrange">Arrange</string>
     <string name="arrange_hint">Drag the card to its new place</string>
     <string name="arrange_tiles_hint">Drag the small tile to its new place</string>
+    <string name="arrange_cancel">Cancel</string>
     <string name="view_compact">Compact</string>
     <string name="view_normal">Normal</string>
     <string name="view_full">Detailed</string>

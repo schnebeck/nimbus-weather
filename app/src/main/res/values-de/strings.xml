@@ -631,6 +631,7 @@
     <string name="card_menu_arrange">Anordnen</string>
     <string name="arrange_hint">Kachel an die neue Stelle ziehen</string>
     <string name="arrange_tiles_hint">Kleine Kachel an die neue Stelle ziehen</string>
+    <string name="arrange_cancel">Abbrechen</string>
     <string name="view_compact">Kompakt</string>
     <string name="view_normal">Normal</string>
     <string name="view_full">Ausführlich</string>

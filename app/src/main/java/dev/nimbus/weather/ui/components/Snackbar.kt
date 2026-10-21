@@ -22,19 +22,33 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
-/** Snackbar host with the app's dark glass look and a light blue action ("Undo"). */
+/**
+ * Snackbar host with the app's dark glass look and a light blue action ("Undo"). Wiped aside to
+ * either side, the snackbar goes at once – what it reported stays as it is.
+ */
 @Composable
 fun NimbusSnackbarHost(state: SnackbarHostState, modifier: Modifier = Modifier) {
     SnackbarHost(state, modifier) { data ->
-        Snackbar(
-            data, Modifier.padding(horizontal = 16.dp),
-            shape = RoundedCornerShape(14.dp),
-            containerColor = Color(0xF21C2A40), contentColor = Color.White, actionColor = Color(0xFF9CC8FF),
-        )
+        key(data) {
+            val swipe = rememberSwipeToDismissBoxState()
+            LaunchedEffect(swipe.currentValue) { if (swipe.currentValue != SwipeToDismissBoxValue.Settled) data.dismiss() }
+            SwipeToDismissBox(swipe, backgroundContent = {}) {
+                Snackbar(
+                    data, Modifier.padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    containerColor = Color(0xF21C2A40), contentColor = Color.White, actionColor = Color(0xFF9CC8FF),
+                )
+            }
+        }
     }
 }

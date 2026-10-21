@@ -39,6 +39,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.unit.dp
 import dev.nimbus.weather.data.model.Condition
 import dev.nimbus.weather.data.model.CurrentWeather
@@ -203,16 +205,57 @@ class PageTidyTest {
         assertEquals(before, settings.orderedCards())
     }
 
-    /** A tap beside the held card ends arranging and leaves everything as it was. */
-    @Test fun arrangingLeftAsItWas() {
+    /** The snackbar wiped aside: gone at once, the card stays hidden. */
+    @Test fun theSnackbarWipedAway() {
         page()
         hold(str(R.string.moon).uppercase())
-        compose.onNodeWithText(str(R.string.card_menu_arrange)).performClick()
+        compose.onNodeWithText(str(R.string.card_menu_hide)).performClick()
         compose.waitForIdle()
+        val message = str(R.string.cards_undo_hidden, str(R.string.moon))
+        compose.onNodeWithText(message).performTouchInput { swipeRight() }
+        compose.waitForIdle()
+        compose.onNodeWithText(message).assertDoesNotExist()
+        assertFalse(settings.shows(WeatherCard.MOON))
+        // to the other side as well
+        hold(str(R.string.sun).uppercase())
+        compose.onNodeWithText(str(R.string.card_menu_hide)).performClick()
+        compose.waitForIdle()
+        val sun = str(R.string.cards_undo_hidden, str(R.string.sun))
+        compose.onNodeWithText(sun).performTouchInput { swipeLeft() }
+        compose.waitForIdle()
+        compose.onNodeWithText(sun).assertDoesNotExist()
+        assertFalse(settings.shows(WeatherCard.SUN))
+    }
+
+    /** "Cancel", a tap beside the held card or Back: arranging ends, everything as it was. */
+    @Test fun arrangingLeftAsItWas() {
+        page()
+        fun arrange(title: String) {
+            hold(title)
+            compose.onNodeWithText(str(R.string.card_menu_arrange)).performClick()
+            compose.waitForIdle()
+            compose.onNodeWithTag("arrange").assertIsDisplayed()
+        }
+        arrange(str(R.string.moon).uppercase())
+        compose.onNodeWithText(str(R.string.arrange_cancel)).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag("arrange").assertDoesNotExist()
+        arrange(str(R.string.moon).uppercase())
         compose.onNodeWithTag("arrange-hourly").performClick()
         compose.waitForIdle()
         compose.onNodeWithTag("arrange").assertDoesNotExist()
-        assertTrue(settings.cardOrder.isEmpty())
+        // the small tiles: "Cancel" too, a tap on another tile as well; the other cards are not there
+        // meanwhile (nothing else to set off)
+        arrange(str(R.string.wind).uppercase())
+        compose.onNodeWithText(str(R.string.sun).uppercase()).assertDoesNotExist()
+        compose.onNodeWithText(str(R.string.arrange_cancel)).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag("arrange").assertDoesNotExist()
+        arrange(str(R.string.wind).uppercase())
+        compose.onNodeWithTag("arrange-uv_index").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag("arrange").assertDoesNotExist()
+        assertTrue(settings.cardOrder.isEmpty() && settings.tileOrder.isEmpty())
     }
 
     /** The small tiles alike, within their block: no folding there, arranging among themselves. */
@@ -223,7 +266,7 @@ class PageTidyTest {
         compose.onNodeWithText(str(R.string.card_menu_arrange)).performClick()
         compose.waitForIdle()
         compose.onNodeWithTag("arrange").assertIsDisplayed()
-        // only the tiles to arrange, the other cards stay on the page; all the tiles in view
+        // only the tiles to arrange, all of them in view
         compose.onNodeWithTag("arrange-moon").assertDoesNotExist()
         compose.onNodeWithTag("arrange-feels_like").assertIsDisplayed()
         compose.onNodeWithTag("arrange-pressure").assertIsDisplayed()

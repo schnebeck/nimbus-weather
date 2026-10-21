@@ -40,10 +40,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.foundation.relocation.bringIntoViewRequester
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,23 +55,23 @@ import dev.nimbus.weather.ui.theme.NimbusColors
 /**
  * Arranging [chosen] among the [cards] on the page: every card down to its title line, so the
  * whole page fits on the screen; the chosen one stands out and follows the finger. Let go, the new
- * order goes to [onDone]; a tap on another card leaves it as it was ([onCancel]).
+ * order goes to [onDone]; "Cancel" or a tap on another card leaves it as it was ([onCancel]).
  */
 @Composable
 internal fun ArrangeList(cards: List<WeatherCard>, chosen: WeatherCard, hint: Int, onDone: (List<WeatherCard>) -> Unit, onCancel: () -> Unit) {
-    // all of it in view, below what covers the list (the page's header)
-    val bring = androidx.compose.runtime.remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
-    val covered = dev.nimbus.weather.ui.components.LocalCoveredTop.current
-    var height by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
-    androidx.compose.runtime.LaunchedEffect(height > 0) {
-        if (height > 0) bring.bringIntoView(androidx.compose.ui.geometry.Rect(0f, -(covered?.invoke() ?: 0f), 1f, height.toFloat()))
-    }
-    Column(
-        Modifier.fillMaxWidth().testTag("arrange")
-            .bringIntoViewRequester(bring)
-            .onSizeChanged { height = it.height },
-    ) {
-        Text(stringResource(hint), fontSize = 14.sp, color = Color.White, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
+    Column(Modifier.fillMaxWidth().testTag("arrange")) {
+        // on the card's glass: readable on any sky
+        Row(
+            Modifier.padding(bottom = 6.dp).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(LocalCardFill.current).padding(start = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(stringResource(hint), Modifier.weight(1f).padding(start = 4.dp), fontSize = 14.sp, color = Color.White)
+            Text(
+                stringResource(R.string.arrange_cancel),
+                Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onCancel).padding(horizontal = 12.dp, vertical = 10.dp),
+                fontSize = 14.sp, color = Color(0xFF9CC8FF), fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+            )
+        }
         ReorderableColumn(
             cards, key = { it }, onMove = onDone, gap = 6.dp, immediate = true,
             moveUp = stringResource(R.string.move_up), moveDown = stringResource(R.string.move_down),

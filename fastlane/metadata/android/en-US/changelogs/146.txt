@@ -1,0 +1,1 @@
+• Look-back "Today so far": the radar of the day says "midnight until now" instead of "midnight to midnight"

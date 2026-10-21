@@ -226,7 +226,7 @@ fun HistoryPage(
                         // The composites keep days of radar (DWD, KNMI, MET Norway): the whole day, in 5-minute steps
                         if (dev.nimbus.weather.ui.radar.RadarComposites.covered(place.latitude, place.longitude)) item(key = "radar") {
                             val start = day.date.atStartOfDay(history.zone).toInstant().toEpochMilli()
-                            RadarDayCard(start, tf) { onOpenRadarDay(start) }
+                            RadarDayCard(start, tf, onOpen = { onOpenRadarDay(start) }, soFar = dayIndex == HISTORY_DAYS - 1)
                         }
                     }
                 }

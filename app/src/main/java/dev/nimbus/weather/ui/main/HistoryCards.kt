@@ -172,13 +172,14 @@ internal fun DayCourseCard(
 
 /** Entry to the radar of the shown day (look-back). */
 @Composable
-internal fun RadarDayCard(dayStart: Long, tf: TimeFormat, onOpen: () -> Unit) {
+internal fun RadarDayCard(dayStart: Long, tf: TimeFormat, onOpen: () -> Unit, soFar: Boolean = false) {
     dev.nimbus.weather.ui.components.GlassCard(
         title = stringResource(R.string.history_radar_title), icon = Icons.Outlined.Map, onClick = onOpen,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.history_radar_text, tf.weekdayLong(dayStart)), fontSize = 15.sp, color = Color.White, lineHeight = 20.sp)
+                // today the radar runs up to its latest picture, not to midnight
+                Text(stringResource(if (soFar) R.string.history_radar_text_so_far else R.string.history_radar_text, tf.weekdayLong(dayStart)), fontSize = 15.sp, color = Color.White, lineHeight = 20.sp)
                 Text(stringResource(R.string.history_radar_hint), fontSize = 12.sp, color = NimbusColors.Secondary, lineHeight = 16.sp)
             }
             Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = NimbusColors.Secondary)

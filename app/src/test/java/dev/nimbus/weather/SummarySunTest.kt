@@ -29,6 +29,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
 import dev.nimbus.weather.data.model.Condition
@@ -39,6 +41,7 @@ import dev.nimbus.weather.data.remote.HistoryDay
 import dev.nimbus.weather.data.remote.HistoryHour
 import dev.nimbus.weather.ui.main.LocalSettings
 import dev.nimbus.weather.ui.main.LocalTimeFormat
+import dev.nimbus.weather.ui.main.RadarDayCard
 import dev.nimbus.weather.ui.main.SummaryCard
 import dev.nimbus.weather.util.TimeFormat
 import org.junit.Rule
@@ -103,5 +106,19 @@ class SummarySunTest {
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/summary_so_far.png")
         compose.onNodeWithText("Tagesbilanz bisher", ignoreCase = true).assertIsDisplayed()
+    }
+
+    /** The radar of the day: a past day from 0 to 24 h, today from 0 h until now. */
+    @Test fun theRadarOfTodaySoFar() {
+        val t0 = 1_790_812_800_000L
+        var today by androidx.compose.runtime.mutableStateOf(false)
+        compose.setContent {
+            Box(Modifier.width(360.dp).background(Color(0xFF2B3A4E)).padding(12.dp)) { RadarDayCard(t0, TimeFormat("UTC", true), onOpen = {}, soFar = today) }
+        }
+        compose.onNodeWithText("0–24 Uhr", substring = true).assertIsDisplayed()
+        today = true
+        compose.waitForIdle()
+        compose.onNodeWithText("0 Uhr bis jetzt", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("0–24 Uhr", substring = true).assertDoesNotExist()
     }
 }

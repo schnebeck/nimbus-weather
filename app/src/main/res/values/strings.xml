@@ -579,6 +579,7 @@
     <string name="pn_hail">Thunderstorms with hail</string>
     <string name="history_radar_title">Radar of the day</string>
     <string name="history_radar_text">Rain radar for %1$s, midnight to midnight in 5-minute steps</string>
+    <string name="history_radar_text_so_far">Rain radar for %1$s, midnight until now in 5-minute steps</string>
     <string name="history_radar_hint">Play, pan and zoom · where a weather service radar measures (DWD, KNMI, MET Norway)</string>
     <string name="bathing_title">Bathing waters</string>
     <string name="bathing_off_season">Outside the bathing season (May 15 – Sept 15): the values come from the last samples of the season.</string>

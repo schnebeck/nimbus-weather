@@ -568,6 +568,7 @@
     <string name="pn_hail">Gewitter mit Hagel</string>
     <string name="history_radar_title">Radar des Tages</string>
     <string name="history_radar_text">Niederschlagsradar für %1$s, 0–24 Uhr in 5-Minuten-Schritten</string>
+    <string name="history_radar_text_so_far">Niederschlagsradar für %1$s, 0 Uhr bis jetzt in 5-Minuten-Schritten</string>
     <string name="history_radar_hint">Abspielen, verschieben und zoomen · wo ein Wetterdienst-Radar misst (DWD, KNMI, MET Norway)</string>
     <string name="bathing_title">Badegewässer</string>
     <string name="bathing_off_season">Außerhalb der Badesaison (15. Mai – 15. Sept.): die Werte stammen aus den letzten Proben der Saison.</string>

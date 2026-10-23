@@ -19,7 +19,7 @@
 
 # Privacy policy – Nimbus
 
-Last updated: 21 October 2026
+Last updated: 23 October 2026
 
 ## In short
 
@@ -84,8 +84,14 @@ Processing at these services is governed by their own privacy policies.
 The setting "Preload radar" (on by default) loads the radar pictures of the place where you last
 opened the radar about every 30 minutes – only on Wi-Fi (or mobile data if you allow it), only with
 enough battery, and only if you opened the radar in the last 7 days. These requests contain no
-precise position: only whole radar pictures and the temperature and wind grid (rounded to 1°). The
-app never determines a location in the background.
+precise position: only whole radar pictures and the temperature and wind grid (rounded to 1°).
+
+If a **Nimbus widget** is on your home screen, it fetches the weather for its place about every 30
+minutes (and when you tap it) – the same requests the app makes when opened, so with the coordinates
+of that place to the same services. If it shows "My Location", it uses the position the app last
+determined while it was open. Without a widget there are no such requests.
+
+The app never determines a location in the background.
 
 ## On your device
 

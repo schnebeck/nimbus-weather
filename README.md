@@ -163,9 +163,9 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
 - **Akku**: Der animierte Himmel läuft mit 30 Bildern/s (Regen, Schnee: 60), nach einer Minute ohne
   Berührung mit 15; im Energiesparmodus des Systems, bei abgeschalteten System-Animationen oder
   abgeschalteter Animation steht er still – ohne Regen, Schnee, Blitze und Blätter. Nimbus arbeitet
-  nur, solange es zu sehen ist – bis auf das Vorladen des Radars (abschaltbar): keine Aktualisierung
-  des Wetters im Hintergrund, keine Zeitgeber hinter dem Sperrbildschirm, beim Sperren hält auch das
-  Radar an. Beim Öffnen lädt die App, was abgelaufen ist –
+  nur, solange es zu sehen ist – bis auf das Vorladen des Radars (abschaltbar) und das Widget (nur
+  solange eines auf dem Startbildschirm liegt): keine Zeitgeber hinter dem Sperrbildschirm, beim
+  Sperren hält auch das Radar an. Beim Öffnen lädt die App, was abgelaufen ist –
   bis dahin zeigt sie die letzten Daten mit gelbem Punkt –, den Rückblick nur für den sichtbaren Ort.
 - **Barrierefreiheit**: große Systemschrift bis 200 % und kleine Displays ab 320 dp – nichts überlappt
   oder wird abgeschnitten, lange Wörter werden getrennt oder abgekürzt; die 10-Tage-Zeilen werden
@@ -212,6 +212,23 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   wie die anderen antworten, wann alle Bilder aufbereitet sind, ausgesetzte Quellen, Vorladen im
   Hintergrund), für Akku- und Datenanalysen – ohne Koordinaten und Ortsnamen, auf dem
   Handy, bis man es teilt.
+- **Widget für den Startbildschirm** („Uhr & Wetter“, auch für den Sperrbildschirm, wo das System
+  es anbietet): oben Datum und Ort, darunter Uhrzeit und Wetter (Symbol, Temperatur, Höchst- und
+  Tiefstwert, bei Niederschlagssymbol die Wahrscheinlichkeit), unter der Uhr der nächste Wecker;
+  darunter über die ganze Breite die nächsten 90 Minuten auf den Viertelstunden der Uhr – ein
+  Diagramm mit Sonne (Anteil der Viertelstunde in %, hinten) und Niederschlag (mm/h, davor), nur
+  wenn es etwas zu zeichnen gibt, sonst eine Zeile („Kein Niederschlag, keine Sonne bis 11:45“) –
+  mit dem Satz der Niederschlagskarte, und die gewählten Pollenarten: als Balken mit Zwischenstufen,
+  bei wenig Platz nur die nennenswert fliegenden als farbige Punkte. Datum mit ausgeschriebenem
+  Monat (Wochentag, wo Platz ist) oder in Ziffern mit Kalenderwoche. Jedes Teil abschaltbar; was
+  nicht in die Größe passt, blendet es aus, die übrige Höhe nimmt das Diagramm oder verteilt sich
+  zwischen den Gruppen; „Stand“ mit ↻ unten. Tippen auf die Uhrzeit öffnet den Wecker, auf das
+  Datum den Kalender, auf das Wetter Nimbus beim Ort des Widgets. Farben des Systems (hell/dunkel,
+  ab Android 12 aus dem Hintergrundbild), Deckkraft einstellbar. Ort: „Mein Standort“ – wo die App
+  das Handy zuletzt gefunden hat; das Widget sucht nicht selbst (keine Standortabfrage im
+  Hintergrund), nach einem Ortswechsel einmal Nimbus öffnen oder aufs Wetter tippen – oder ein
+  gespeicherter Ort. Es holt das Wetter etwa alle 30 Minuten und auf ↻; was die App gerade geladen
+  hat, übernimmt es sofort.
 - **Modell je Ort**: In der Ortsliste (lange drücken) wählt man für jeden Ort zuerst „Wie in den
   App-Einstellungen“ oder „Eigenes Modell für diesen Ort“, dann das Modell – auch regionale wie MET
   Nordic (1 km) oder KNMI Harmonie (2 km); außerhalb ihres Gebiets und nach ihren letzten Stunden
@@ -301,6 +318,7 @@ app/src/main/java/dev/nimbus/weather/
   ui/radar        Radar: Komposite von DWD, KNMI und MET Norway, RainViewer, Radarspeicher, Vorschau,
                   Farbskala, Temperatur-/Windebene
   ui/places, ui/settings, ui/components, ui/theme
+  widget          Widget für den Startbildschirm: Inhalt, Ansicht, Einrichtung, Abruf
   util            Einheiten und Formatierung, Sonne und Mond
 ```
 

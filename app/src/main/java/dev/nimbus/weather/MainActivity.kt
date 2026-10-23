@@ -41,6 +41,7 @@ class MainActivity : ComponentActivity() {
         )
         super.onCreate(savedInstanceState)
         applyDemoExtras()
+        openWidgetPlace()
         setContent {
             NimbusTheme {
                 NimbusRoot(viewModel)
@@ -52,6 +53,12 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         applyDemoExtras()
+        openWidgetPlace()
+    }
+
+    /** Opened from a widget: the page of its place. */
+    private fun openWidgetPlace() {
+        intent?.getStringExtra(dev.nimbus.weather.widget.WidgetViews.EXTRA_PLACE)?.let(viewModel::select)
     }
 
     override fun onResume() {

@@ -57,12 +57,13 @@ object Insights {
      * 15-minute forecast; null when it stays dry that long. The kind comes from the hourly
      * condition at the start (or the current one; hail from WMO 96/99), the intensity from the highest rate:
      * rain light below 2.5 mm/h, moderate up to 10 mm/h, heavy above (DWD classes); snow (water
-     * equivalent) light below 1 mm/h, moderate up to 4 mm/h.
+     * equivalent) light below 1 mm/h, moderate up to 4 mm/h. [horizonMs]: how far it looks ahead.
      */
     fun precipNotice(
         minutely: List<MinutelyPoint>, hourly: List<HourlyPoint>, current: Condition, now: Long, rainingNow: Boolean,
+        horizonMs: Long = NOTICE_HORIZON_MS,
     ): PrecipNotice? {
-        val points = nowcastPoints(minutely, now).filter { it.time < now + NOTICE_HORIZON_MS }
+        val points = nowcastPoints(minutely, now).filter { it.time < now + horizonMs }
         val state = nowcast(points, now, rainingNow)
         if (state == Nowcast.Dry) return null
         val wet = points.map { it.precipitation >= RAIN_THRESHOLD_MM_15 }
@@ -94,7 +95,7 @@ object Insights {
                 val stop = points.indices.firstOrNull { i -> i > 0 && points[i].precipitation < RAIN_THRESHOLD_MM_15 }
                 round5(stop?.let { points[it].time } ?: (now + state.minutes * 60_000L))
             }
-            else -> (now + NOTICE_HORIZON_MS) / 300_000L * 300_000L
+            else -> (now + horizonMs) / 300_000L * 300_000L
         }
         return PrecipNotice(kind, intensity, state, at)
     }

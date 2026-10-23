@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Nimbus - app/src/main/res/values/widget_colors.xml
+  Widget colours: the system's light look (before Android 12 fixed, from then on the wallpaper's – values-v31).
+
+    Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
+    Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
+    Written by Anthropic Claude Opus 5.5 - AI generated content.
+
+    Free software under the GNU General Public License, version 3 or later.
+    There is no warranty, to the extent permitted by law. The full text is in
+    LICENSES/GPL-3.0-or-later.txt.
+
+  SPDX-FileCopyrightText: (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
+  SPDX-FileContributor: Anthropic Claude Opus 5.5 (AI generated content)
+  SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<resources>
+    <color name="widget_bg">#FFF4F3F8</color>
+    <color name="widget_text">#FF1B1B1F</color>
+    <color name="widget_text_dim">#FF5E5D66</color>
+    <color name="widget_accent">#FF2F64B5</color>
+    <color name="widget_chance">#FF2F6FD0</color>
+</resources>

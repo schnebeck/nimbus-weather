@@ -59,15 +59,17 @@ fun WeatherIcon(
 ) {
     Canvas(
         modifier.size(size).then(if (description != null) Modifier.semantics { contentDescription = description } else Modifier),
-    ) {
-        if (wind < 0.05f) {
-            drawWeatherGlyph(condition, isDay)
-        } else {
-            // Combined symbol: weather glyph shrinks to the upper right, wind streaks in front.
-            val s = this.size.minDimension
-            withTransform({ scale(0.8f, 0.8f, Offset(s, 0f)) }) { drawWeatherGlyph(condition, isDay) }
-            drawWindStreaks(s, wind)
-        }
+    ) { drawWeatherSymbol(condition, isDay, wind) }
+}
+
+/** The glyph of [condition] – with [wind] (see [windiness]) shrunk to the upper right, wind streaks in front. */
+fun DrawScope.drawWeatherSymbol(condition: Condition, isDay: Boolean, wind: Float = 0f) {
+    if (wind < 0.05f) {
+        drawWeatherGlyph(condition, isDay)
+    } else {
+        val s = this.size.minDimension
+        withTransform({ scale(0.8f, 0.8f, Offset(s, 0f)) }) { drawWeatherGlyph(condition, isDay) }
+        drawWindStreaks(s, wind)
     }
 }
 

@@ -399,6 +399,8 @@ class MainViewModel(
                 // no new answer (failed, too late, a stored one standing in): asked again after a while
                 d.stale.forEach { shelf.part(place.id, it).stale(retryMs = dev.nimbus.weather.data.repo.Freshness.STALE_RETRY_MS) }
                 runCatching { store.cacheWeather(d) }
+                // the widgets showing this place: its new data – after a move, "my location"'s new place
+                viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) { runCatching { dev.nimbus.weather.widget.Widgets.showAll(getApplication()) } }
                 maybePrefetchRadar(place, settings)
                 // Radar preview of this place, so switching to it shows a picture at once
                 // (own job: must not keep the load job of the place active; only while shown)

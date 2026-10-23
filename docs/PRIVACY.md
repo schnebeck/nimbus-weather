@@ -19,7 +19,7 @@
 
 # Datenschutzerklärung – Nimbus
 
-Stand: 21. Oktober 2026
+Stand: 23. Oktober 2026
 
 ## Kurz gesagt
 
@@ -87,7 +87,14 @@ Die Einstellung „Radar vorladen“ (voreingestellt an) lädt etwa alle 30 Minu
 Ortes vor, an dem du das Radar zuletzt geöffnet hast – nur im WLAN (oder mobil, wenn du es
 erlaubst), nur bei ausreichendem Akku und nur, wenn du das Radar in den letzten 7 Tagen geöffnet
 hast. Diese Anfragen enthalten keine genaue Position: nur ganze Radarbilder und das Temperatur- und
-Windraster (auf 1° gerundet). Einen Standort bestimmt die App im Hintergrund nie.
+Windraster (auf 1° gerundet).
+
+Liegt ein **Nimbus-Widget** auf dem Startbildschirm, holt es etwa alle 30 Minuten (und wenn du es
+antippst) das Wetter für seinen Ort – dieselben Abrufe wie die App beim Öffnen, also mit den
+Koordinaten dieses Ortes an dieselben Dienste. Zeigt es „Mein Standort“, nimmt es die Position, die
+die App zuletzt bestimmt hat, während sie geöffnet war. Ohne Widget gibt es diese Abrufe nicht.
+
+Einen Standort bestimmt die App im Hintergrund nie.
 
 ## Auf deinem Gerät
 

@@ -67,7 +67,8 @@ class NimbusApp : Application() {
         // so let MapLibre always ask: the stored map and radar appear immediately.
         MapLibre.setConnected(true)
         HttpRequestUtil.setOkHttpClient(container.mapHttp)
-        // no work in the background: work still scheduled under BackgroundWork's names is called off
+        // work still scheduled under BackgroundWork's former names is called off (the widgets' and
+        // the radar's own work stay)
         dev.nimbus.weather.data.repo.BackgroundWork.stopAll(this)
     }
 }

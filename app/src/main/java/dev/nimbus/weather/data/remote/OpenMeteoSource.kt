@@ -147,7 +147,7 @@ class OpenMeteoSource(
             .addQueryParameter("daily", DAILY)
             // 15-minute steps: the nowcast of precipitation, and the temperature curve of the day
             // charts – today from midnight (a day back) and two days ahead (ICON-D2's range)
-            .addQueryParameter("minutely_15", "precipitation,temperature_2m")
+            .addQueryParameter("minutely_15", "precipitation,temperature_2m,sunshine_duration")
             .addQueryParameter("past_minutely_15", "96")
             .addQueryParameter("forecast_minutely_15", "192")
             .build()
@@ -403,9 +403,10 @@ class OpenMeteoSource(
                 val t = m.longs("time")
                 val p = m.doubles("precipitation")
                 val tt = m.doubles("temperature_2m")
+                val sun = m.doubles("sunshine_duration")
                 t.indices.mapNotNull { i ->
                     val time = t[i] ?: return@mapNotNull null
-                    MinutelyPoint(time * 1000, p.at(i) ?: return@mapNotNull null, tt.at(i))
+                    MinutelyPoint(time * 1000, p.at(i) ?: return@mapNotNull null, tt.at(i), sun.at(i)?.let { it / 60.0 })
                 }
             } ?: emptyList()
             return ModelForecast(

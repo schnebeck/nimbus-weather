@@ -123,7 +123,11 @@ data class DailyPoint(
 
 /** A 15-minute step: precipitation of the quarter hour before [time], temperature at [time]. */
 @Serializable
-data class MinutelyPoint(val time: Long, val precipitation: Double, val temperature: Double? = null)
+data class MinutelyPoint(
+    val time: Long, val precipitation: Double, val temperature: Double? = null,
+    /** Minutes of sunshine in the quarter hour (0–15); null where the model gives none. */
+    val sunshine: Double? = null,
+)
 
 @Serializable
 enum class AlertSeverity { MINOR, MODERATE, SEVERE, EXTREME }

@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -225,11 +226,12 @@ private val ClosedUmbrella by lazy {
     )
 }
 
-/** One line on top of the precipitation card: "Light rain in about 40 min", "Thunderstorms until about 11:30". */
-@Composable
-fun PrecipNoticeText(n: Insights.PrecipNotice, now: Long) {
-    val tf = LocalTimeFormat.current
-    val what = stringResource(
+/**
+ * "Light rain from about 11:15", "until about 11:45", "until at least 13:00" – clock times
+ * throughout; the card's line and the widget's alike.
+ */
+fun precipNoticeText(res: android.content.res.Resources, n: Insights.PrecipNotice, now: Long, tf: TimeFormat): String {
+    val what = res.getString(
         when (n.kind) {
             Insights.PrecipKind.THUNDERSTORM -> R.string.pn_thunderstorm
             Insights.PrecipKind.HAIL -> R.string.pn_hail
@@ -247,13 +249,18 @@ fun PrecipNoticeText(n: Insights.PrecipNotice, now: Long) {
             }
         },
     )
-    // Clock times throughout ("from about 11:15", "until about 11:45", "until at least 13:00")
     val time = tf.time(n.at ?: now)
-    val text = when (n.state) {
-        is Insights.Nowcast.StartsIn -> stringResource(R.string.pn_starts, what, time)
-        is Insights.Nowcast.StopsIn -> stringResource(R.string.pn_until, what, time)
-        else -> stringResource(R.string.pn_continues, what, time)
+    return when (n.state) {
+        is Insights.Nowcast.StartsIn -> res.getString(R.string.pn_starts, what, time)
+        is Insights.Nowcast.StopsIn -> res.getString(R.string.pn_until, what, time)
+        else -> res.getString(R.string.pn_continues, what, time)
     }
+}
+
+/** One line on top of the precipitation card: "Light rain in about 40 min", "Thunderstorms until about 11:30". */
+@Composable
+fun PrecipNoticeText(n: Insights.PrecipNotice, now: Long) {
+    val text = precipNoticeText(LocalContext.current.resources, n, now, LocalTimeFormat.current)
     // An umbrella – the line only ever announces unpleasant weather: open while it is wet,
     // closed while the precipitation is still to come.
     Row(verticalAlignment = Alignment.CenterVertically) {

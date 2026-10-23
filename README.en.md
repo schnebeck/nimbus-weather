@@ -161,8 +161,8 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
 - **Battery**: the animated sky runs at 30 frames/s (rain, snow: 60), after a minute without touch at
   15; in the system's battery saver, with the system's animations off or the animation switched off it
   stands still – without rain, snow, lightning and leaves. Nimbus works only while it is shown –
-  apart from loading the radar ahead (can be switched off): no weather update in the background, no
-  timers behind the lock screen, and the radar stops too when the phone is locked. On opening the app loads what has expired – until then it shows the last data with a
+  apart from loading the radar ahead (can be switched off) and the widget (only while one is on the
+  home screen): no timers behind the lock screen, and the radar stops too when the phone is locked. On opening the app loads what has expired – until then it shows the last data with a
   yellow dot –, the look-back for the place shown only.
 - **Accessibility**: large system font up to 200 % and small displays from 320 dp – nothing overlaps
   or is cut off, long words are hyphenated or shortened; the 10-day rows go to two lines with a large
@@ -203,6 +203,22 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   its own one is complete, how the others answer, when all pictures are prepared, sources resting,
   loading ahead in the background), for battery and data analyses – without
   coordinates or place names, on the phone until shared.
+- **Home-screen widget** ("Clock & weather", on the lock screen too where the system offers it):
+  on top the date and the place, below them the time and the weather (symbol, temperature, high
+  and low, with a precipitation symbol its chance), under the clock the next alarm; below over the
+  whole width the next 90 minutes on the clock's quarter hours – a chart of sunshine (share of the
+  quarter hour in %, behind) and precipitation (mm/h, in front), only when there is something to
+  draw, else a line ("No precipitation, no sunshine until 11:45") – with the precipitation card's
+  line, and the chosen pollen types: as gauges with their half steps, with little room only those
+  flying noteworthily as coloured points. The date with the month written out (the weekday where
+  there is room) or in figures with the calendar week. Each part can be switched off; what does
+  not fit its size it leaves out, the height left goes to the chart or spreads between the groups;
+  "As of" with ↻ at the bottom. A tap on the time opens the alarms, on the date the calendar, on
+  the weather Nimbus at the widget's place. The system's colours (light/dark, from Android 12 on
+  from the wallpaper), adjustable opacity. Place: "My Location" – where the app last found the
+  phone; the widget does not look for it itself (no location in the background): after moving
+  elsewhere open Nimbus once or tap the weather – or a saved place. It fetches the weather about
+  every 30 minutes and on ↻; what the app has just loaded it takes over at once.
 - **A model per place**: in the list of places (long press) each place first gets "As in the app
   settings" or "A model of its own for this place", then the model – regional ones too, like MET
   Nordic (1 km) or KNMI Harmonie (2 km); outside their area and after their last hours "Automatic"
@@ -292,6 +308,7 @@ app/src/main/java/dev/nimbus/weather/
   ui/radar        radar: composites of the DWD, the KNMI and MET Norway, RainViewer, radar store, preview,
                   colour scale, temperature/wind layers
   ui/places, ui/settings, ui/components, ui/theme
+  widget          Home-screen widget: content, views, setup, fetching
   util            units and formatting, sun and moon
 ```
 

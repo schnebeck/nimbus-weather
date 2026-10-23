@@ -1,0 +1,3 @@
+• Neu: Widget „Uhr & Wetter“ – Datum, Uhrzeit (Tipp: Wecker), Weckzeit, Ort und Wetter mit Wahrscheinlichkeit, 90 Minuten Sonne und Niederschlag auf den Viertelstunden, Pollen
+• Jedes Teil wählbar, nutzt die Höhe, Systemfarben; Datum ausgeschrieben oder mit KW
+• Ort: Mein Standort (wo Nimbus dich zuletzt fand) oder gespeichert; Abruf etwa alle 30 Minuten und auf Antippen

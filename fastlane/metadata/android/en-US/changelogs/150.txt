@@ -1,0 +1,3 @@
+• New: "Clock & weather" widget – date, time (tap: alarms), next alarm, place and weather with its chance, 90 minutes of sunshine and precipitation on the quarter hours, pollen
+• Each part your choice, uses the height, system colours; date written out or with the week
+• Place: My Location (where Nimbus last found you) or a saved one; fetched about every 30 minutes and on a tap

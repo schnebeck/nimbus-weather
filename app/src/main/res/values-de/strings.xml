@@ -786,4 +786,36 @@
     <string name="settings_preload_radar_mobile">Auch über mobile Daten</string>
     <string name="settings_preload_radar_mobile_desc">Sonst nur im WLAN; je Vorladen etwa 1–2 MB</string>
     <string name="settings_radar">Radar</string>
+    <!-- Widget -->
+    <string name="widget_label">Uhr &amp; Wetter</string>
+    <string name="widget_description">Uhrzeit, Datum, Wecker, Wetter, Niederschlag und Sonne der nächsten 90 Minuten, Pollen – jedes Teil wählbar</string>
+    <string name="widget_no_data">Nimbus öffnen</string>
+    <string name="widget_rain_dry">Kein Niederschlag bis %1$s</string>
+    <string name="widget_rain_dry_dull">Kein Niederschlag, keine Sonne bis %1$s</string>
+    <string name="widget_as_of">Stand %1$s</string>
+    <string name="widget_updating">Wird geholt …</string>
+    <string name="widget_refresh">Wetter jetzt holen</string>
+    <string name="widget_alarm_desc">Nächster Wecker %1$s</string>
+    <string name="widget_setup_title">Widget einrichten</string>
+    <string name="widget_setup_place">Ort</string>
+    <string name="widget_setup_my_location_hint">Der Ort, an dem Nimbus dich zuletzt gefunden hat. Das Widget sucht nicht selbst nach dem Standort: Nach einem Ortswechsel einmal Nimbus öffnen oder auf das Wetter im Widget tippen, dann zieht es mit.</string>
+    <string name="widget_setup_parts">Anzeige</string>
+    <string name="widget_part_clock">Uhrzeit</string>
+    <string name="widget_part_clock_desc">Tippen öffnet den Wecker</string>
+    <string name="widget_part_date">Datum</string>
+    <string name="widget_part_date_desc">Tippen öffnet den Kalender</string>
+    <string name="widget_week">KW %1$d</string>
+    <string name="widget_date_written">Wochentag und Monat</string>
+    <string name="widget_date_figures">In Ziffern mit Kalenderwoche</string>
+    <string name="widget_pollen_quiet">Pollen: %1$s</string>
+    <string name="widget_part_alarm">Nächster Wecker</string>
+    <string name="widget_part_weather">Wetter jetzt</string>
+    <string name="widget_part_weather_desc">Mit Höchst- und Tiefstwert des Tages; Tippen öffnet Nimbus</string>
+    <string name="widget_part_rain">Niederschlag und Sonne, nächste 90 Minuten</string>
+    <string name="widget_part_rain_desc">Auf den Viertelstunden der Uhr, mit dem Radar, wo es den Ort abdeckt</string>
+    <string name="widget_setup_pollen">Pollen</string>
+    <string name="widget_setup_pollen_desc">Die gewählten Arten mit ihrer Belastung heute; ist wenig Platz, nur die nennenswert fliegenden als Punkte. Keine gewählt: keine Pollen.</string>
+    <string name="widget_setup_opacity">Hintergrund: %1$d\u00A0%%</string>
+    <string name="widget_setup_updates">Das Widget holt das Wetter etwa alle 30 Minuten, über WLAN wie mobile Daten. Was nicht in seine Größe passt, blendet es aus.</string>
+    <string name="widget_setup_done">Fertig</string>
 </resources>

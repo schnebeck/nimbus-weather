@@ -1,0 +1,670 @@
+/*
+ * Nimbus - app/src/main/java/dev/nimbus/weather/widget/WidgetViews.kt
+ * The widget's picture in two columns: its parts as chosen and as its size allows, the weather
+ * symbol, the 90 minutes' chart and the pollen gauges drawn, a tap on each part to where it leads.
+ *
+ *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
+ *   Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
+ *   Written by Anthropic Claude Opus 5.5 - AI generated content.
+ *
+ *   Free software under the GNU General Public License, version 3 or later.
+ *   There is no warranty, to the extent permitted by law. The full text is in
+ *   LICENSES/GPL-3.0-or-later.txt.
+ *
+ * SPDX-FileCopyrightText: (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
+ * SPDX-FileContributor: Anthropic Claude Opus 5.5 (AI generated content)
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+package dev.nimbus.weather.widget
+
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.ContentUris
+import android.content.Context
+import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BlurMaskFilter
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.RectF
+import android.provider.AlarmClock
+import android.provider.CalendarContract
+import android.util.TypedValue
+import android.view.View
+import android.widget.RemoteViews
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
+import dev.nimbus.weather.MainActivity
+import dev.nimbus.weather.R
+import dev.nimbus.weather.data.model.PrecipitationUnit
+import dev.nimbus.weather.data.model.TemperatureUnit
+import dev.nimbus.weather.ui.components.drawWeatherSymbol
+import dev.nimbus.weather.ui.main.HourBars
+import dev.nimbus.weather.ui.main.Insights
+import dev.nimbus.weather.ui.main.pollenLevelColor
+import dev.nimbus.weather.ui.main.pollenName
+import dev.nimbus.weather.ui.main.pollenLevelText
+import dev.nimbus.weather.ui.main.precipNoticeText
+import dev.nimbus.weather.util.Texts
+import dev.nimbus.weather.util.TimeFormat
+import dev.nimbus.weather.util.Units
+import java.util.Locale
+
+/** The widget's size in dp (as the launcher gives it: its width and height in portrait). */
+data class WidgetSize(val widthDp: Int, val heightDp: Int)
+
+/**
+ * Which parts the widget shows. On top two columns while there is room for both: on the left
+ * the date, the time and the next alarm; on the right the place and the weather. Below them,
+ * with some space, over the whole width: the next 90 minutes (the chart of precipitation and
+ * sunshine, its line), the pollen ([pollenPerRow] side by side) and the time of the data. Those
+ * chosen, as far as they fit: the clock and the weather first, then the chart, the pollen, the
+ * 90 minutes' line, the time of the data with its refresh last; what height is left the chart
+ * takes. The big figures ([bigDp]: the clock's height, the symbol's size) grow with the room;
+ * [secondLine]: the date over the clock and the place over the weather fit; [longDate]: the
+ * weekday and month written out. The pollen as gauges below ([pollenRows]) where they all fit, else
+ * as points in a line under the columns ([pollenDots]) – only those that fly noteworthily –,
+ * beside the alarm where it stands there. The chart only with something to draw (sunshine,
+ * precipitation); else its line takes its place. Precipitation coming, its line comes before the
+ * pollen – where it has no room over the chart, in the line under the columns ([midRain]).
+ * The alarm on a line under the clock ([alarm]) where there is the
+ * height for it – or small beside it ([alarmBeside]) where that line would cost the chart its room.
+ */
+data class WidgetLayout(
+    val clock: Boolean, val date: Boolean, val alarm: Boolean, val alarmBeside: Boolean, val weather: Boolean, val right: Boolean,
+    val secondLine: Boolean, val rain: Boolean, val rainLine: Boolean, val midRain: Boolean, val chart: Boolean, val chartDp: Float,
+    val pollenRows: Int, val pollenPerRow: Int, val pollenDots: Boolean, val status: Boolean, val bigDp: Float, val longDate: Boolean, val widthDp: Float,
+) {
+    companion object {
+        private const val PADDING_V = 16
+        private const val PADDING_H = 28
+        private const val BIG_MAX = 46f
+        private const val BIG_MIN = 16f
+        /** A line of the big font, by its size (no font padding). */
+        private const val BIG_LINE = 1.17f
+        /** The clock "10:20" and the weather (symbol and temperature) by the big size; the weather's high and low besides. */
+        private const val CLOCK_W = 2.5f
+        private const val WEATHER_W = 2.4f
+        private const val WEATHER_FIX = 40f
+        /** Room between the columns. */
+        private const val GAP = 10f
+        /** The small texts at font scale 1: a line, the dates, a character of the alarm and of the 90 minutes' line. */
+        private const val LINE = 19f
+        /** A character of the head line (14 sp); the place's pin. */
+        private const val HEAD_CHAR = 7.6f
+        private const val PIN = 15f
+        private const val ALARM_ICON = 26f
+        private const val CHAR = 7.2f
+        /** The alarm beside the clock: its distance, its icon, a character of its smaller text. */
+        private const val BESIDE_GAP = 6f
+        private const val BESIDE_ICON = 14f
+        private const val BESIDE_CHAR = 6.8f
+        /** Below the columns: the space above the 90 minutes, the chart's least height and the times under it. */
+        private const val BELOW_GAP = 10f
+        private const val CHART_TOP = 3f
+        private const val CHART_MIN = 34f
+        private const val AXIS = 14f
+        /** The pollen: the space above, a row, the least width of a type with its gauge. */
+        private const val POLLEN_TOP = 6f
+        private const val POLLEN_ROW = 18f
+        private const val POLLEN_CELL = 92f
+        private const val STATUS = 24f
+
+        /**
+         * [alarm]: the next alarm as the widget writes it, null: none; [rainText]: the 90 minutes'
+         * line; [pollenText]: the pollen as points; [placeText] and [longDateText]: the head line's
+         * place and the date with its weekday written out.
+         */
+        fun of(
+            config: WidgetConfig, size: WidgetSize, alarm: String?, weather: WidgetWeather?,
+            fontScale: Float = 1f, rainText: String? = null, pollenText: String? = null,
+            placeText: String? = null, longDateText: String? = null,
+        ): WidgetLayout {
+            val line = LINE * fontScale
+            val height = (size.heightDp - PADDING_V).toFloat()
+            val width = (size.widthDp - PADDING_H).toFloat()
+            val pollenCount = if (config.pollen.isEmpty()) 0 else weather?.pollen?.size ?: 0
+            val rainWanted = config.rain && weather?.rain != null
+            val rightWanted = config.weather || weather == null
+            // narrow: one column on top – the weather when chosen
+            val narrow = size.widthDp < 200
+            val showClock = (config.clock || config.date) && !(narrow && rightWanted)
+            val bigClock = showClock && config.clock
+            val bigWeather = config.weather
+            val perDp = (if (bigClock) CLOCK_W else 0f) + (if (bigWeather) WEATHER_W else 0f)
+            val byWidth = if (perDp > 0f) (width - (if (bigWeather) WEATHER_FIX else 0f) - (if (showClock && rightWanted) GAP else 0f)) / perDp else BIG_MAX
+            val secondLine = height >= 50
+            val byHeight = (height - if (secondLine) line + 2 else 0f) / BIG_LINE
+            val date = showClock && config.date && (secondLine || !bigClock)
+            val fitBig = minOf(BIG_MAX, byWidth, byHeight).coerceAtLeast(BIG_MIN)
+            // the head line over both columns: the date and the place
+            val headH = if (date || (rightWanted && secondLine)) line + 2 else 0f
+            val alarmWanted = showClock && config.alarm && alarm != null
+            val perRow = (width / (POLLEN_CELL * fontScale)).toInt().coerceIn(1, 3)
+            val pollenRowsWanted = (pollenCount + perRow - 1) / perRow
+            val rainLines = if (rainText != null && rainText.length * CHAR * fontScale > width) 2 else 1
+
+            class Plan(
+                val big: Float, val below: Boolean, val beside: Boolean, val chart: Boolean, val rows: Int,
+                val dots: Boolean, val rainLine: Boolean, val midRain: Boolean, val status: Boolean, val chartDp: Float,
+            ) {
+                val rainShown get() = rainLine || midRain
+            }
+            val dotsW = (pollenText?.length ?: 0) * CHAR * fontScale
+            val rainW = (rainText?.length ?: 0) * CHAR * fontScale
+            val rain = weather?.rain
+            // the chart only with something to draw; else, as when precipitation comes, the line comes first
+            val chartWanted = rainWanted && rain?.eventful == true
+            val rainFirst = rainWanted && (rain?.notice != null || !chartWanted)
+            /** The parts with the alarm [below] the clock or [beside] it (the figures smaller where it would not fit beside). */
+            fun plan(below: Boolean, beside: Boolean): Plan {
+                var big = fitBig
+                val besideW = BESIDE_GAP + BESIDE_ICON + BESIDE_CHAR * (alarm?.length ?: 0) * fontScale
+                if (beside) big = minOf(big, (width - (if (bigWeather) WEATHER_FIX else 0f) - (if (rightWanted) GAP else 0f) - besideW) / perDp)
+                val bigH = if (bigClock || bigWeather) big * BIG_LINE else 0f
+                // the line under both columns: the alarm (under the clock), beside it the 90 minutes' line or the pollen as points
+                var left = height - headH - bigH - (if (below) line + 2 else 0f)
+                fun fits(h: Float) = (left >= h).also { if (it) left -= h }
+                val alarmW = if (below) ALARM_ICON + CHAR * (alarm?.length ?: 0) * fontScale + GAP else 0f
+                val chart = chartWanted && fits(BELOW_GAP + CHART_TOP + CHART_MIN + AXIS)
+                fun rainLineFits(): Boolean {
+                    val top = if (chart) 0f else BELOW_GAP
+                    return fits(top + line * rainLines) || rainLines == 2 && fits(top + line)
+                }
+                // precipitation coming, or nothing to draw: the line over the chart – else in the line under the columns
+                var rainLine = rainFirst && rainLineFits()
+                var midRain = false
+                if (rainFirst && !rainLine) midRain = rainW <= width - alarmW && (below || fits(line + 2))
+                // the pollen: all as gauges below; else as points in the line under the columns
+                var rows = 0
+                var dots = false
+                if (pollenRowsWanted > 0) {
+                    when {
+                        fits((if (chart || rainLine) POLLEN_TOP else BELOW_GAP) + pollenRowsWanted * POLLEN_ROW * fontScale) -> rows = pollenRowsWanted
+                        !midRain && dotsW <= width - alarmW && (below || fits(line + 2)) -> dots = true
+                    }
+                }
+                if (rainWanted && !rainFirst) rainLine = rainLineFits()
+                val status = fits(STATUS * fontScale)
+                return Plan(big, below, beside, chart, rows, dots, rainLine, midRain, status, if (chart) CHART_MIN + left.coerceAtLeast(0f) else 0f)
+            }
+            val none = plan(below = false, beside = false)
+            val p = when {
+                !alarmWanted -> none
+                else -> {
+                    val under = plan(below = true, beside = false)
+                    val by = if (bigClock) plan(below = false, beside = true).takeIf { it.big >= BIG_MIN } else null
+                    val leftFits = height - headH - (if (bigClock || bigWeather) fitBig * BIG_LINE else 0f) >= line + 2
+                    // under the clock where there is the height – the pollen give way; the chart and a
+                    // coming precipitation's line do not: else beside it
+                    val keeps = under.chart == none.chart && (under.rainShown || !(by ?: none).rainShown || !rainFirst)
+                    when {
+                        leftFits && keeps -> under
+                        by != null -> by
+                        leftFits -> under
+                        else -> none
+                    }
+                }
+            }
+            val besideW = BESIDE_GAP + BESIDE_ICON + BESIDE_CHAR * (alarm?.length ?: 0) * fontScale
+            // the weekday written out where the place leaves the room for it
+            val placeW = if (rightWanted && secondLine) PIN + (placeText?.length ?: 0) * HEAD_CHAR * fontScale + GAP else 0f
+            val longDate = date && !config.dateWithWeek && (longDateText?.length ?: 22) * HEAD_CHAR * fontScale <= width - placeW
+            return WidgetLayout(
+                clock = bigClock, date = date, alarm = p.below, alarmBeside = p.beside && besideW > 0, weather = bigWeather, right = rightWanted,
+                secondLine = secondLine, rain = p.chart || p.rainLine, rainLine = p.rainLine, midRain = p.midRain, chart = p.chart, chartDp = p.chartDp,
+                pollenRows = p.rows, pollenPerRow = perRow, pollenDots = p.dots, status = p.status, bigDp = p.big, longDate = longDate, widthDp = width,
+            )
+        }
+    }
+}
+
+object WidgetViews {
+    const val EXTRA_PLACE = "dev.nimbus.weather.widget.PLACE"
+
+    /** The pollen rows, and in them the cells: their row, name and gauge. */
+    private val POLLEN_ROWS = listOf(
+        R.id.widget_pollen_row_0, R.id.widget_pollen_row_1, R.id.widget_pollen_row_2, R.id.widget_pollen_row_3, R.id.widget_pollen_row_4,
+        R.id.widget_pollen_row_5, R.id.widget_pollen_row_6, R.id.widget_pollen_row_7, R.id.widget_pollen_row_8,
+    )
+    private val POLLEN_CELLS = listOf(
+        Triple(R.id.widget_pollen_0, R.id.widget_pollen_0_name, R.id.widget_pollen_0_gauge),
+        Triple(R.id.widget_pollen_1, R.id.widget_pollen_1_name, R.id.widget_pollen_1_gauge),
+        Triple(R.id.widget_pollen_2, R.id.widget_pollen_2_name, R.id.widget_pollen_2_gauge),
+        Triple(R.id.widget_pollen_3, R.id.widget_pollen_3_name, R.id.widget_pollen_3_gauge),
+        Triple(R.id.widget_pollen_4, R.id.widget_pollen_4_name, R.id.widget_pollen_4_gauge),
+        Triple(R.id.widget_pollen_5, R.id.widget_pollen_5_name, R.id.widget_pollen_5_gauge),
+        Triple(R.id.widget_pollen_6, R.id.widget_pollen_6_name, R.id.widget_pollen_6_gauge),
+        Triple(R.id.widget_pollen_7, R.id.widget_pollen_7_name, R.id.widget_pollen_7_gauge),
+        Triple(R.id.widget_pollen_8, R.id.widget_pollen_8_name, R.id.widget_pollen_8_gauge),
+        Triple(R.id.widget_pollen_9, R.id.widget_pollen_9_name, R.id.widget_pollen_9_gauge),
+        Triple(R.id.widget_pollen_10, R.id.widget_pollen_10_name, R.id.widget_pollen_10_gauge),
+        Triple(R.id.widget_pollen_11, R.id.widget_pollen_11_name, R.id.widget_pollen_11_gauge),
+        Triple(R.id.widget_pollen_12, R.id.widget_pollen_12_name, R.id.widget_pollen_12_gauge),
+        Triple(R.id.widget_pollen_13, R.id.widget_pollen_13_name, R.id.widget_pollen_13_gauge),
+        Triple(R.id.widget_pollen_14, R.id.widget_pollen_14_name, R.id.widget_pollen_14_gauge),
+        Triple(R.id.widget_pollen_15, R.id.widget_pollen_15_name, R.id.widget_pollen_15_gauge),
+        Triple(R.id.widget_pollen_16, R.id.widget_pollen_16_name, R.id.widget_pollen_16_gauge),
+        Triple(R.id.widget_pollen_17, R.id.widget_pollen_17_name, R.id.widget_pollen_17_gauge),
+        Triple(R.id.widget_pollen_18, R.id.widget_pollen_18_name, R.id.widget_pollen_18_gauge),
+        Triple(R.id.widget_pollen_19, R.id.widget_pollen_19_name, R.id.widget_pollen_19_gauge),
+        Triple(R.id.widget_pollen_20, R.id.widget_pollen_20_name, R.id.widget_pollen_20_gauge),
+        Triple(R.id.widget_pollen_21, R.id.widget_pollen_21_name, R.id.widget_pollen_21_gauge),
+        Triple(R.id.widget_pollen_22, R.id.widget_pollen_22_name, R.id.widget_pollen_22_gauge),
+        Triple(R.id.widget_pollen_23, R.id.widget_pollen_23_name, R.id.widget_pollen_23_gauge),
+        Triple(R.id.widget_pollen_24, R.id.widget_pollen_24_name, R.id.widget_pollen_24_gauge),
+        Triple(R.id.widget_pollen_25, R.id.widget_pollen_25_name, R.id.widget_pollen_25_gauge),
+        Triple(R.id.widget_pollen_26, R.id.widget_pollen_26_name, R.id.widget_pollen_26_gauge),
+    )
+
+    /**
+     * The widget [id] showing [weather] (null: none yet – "Open Nimbus") as [config] chooses at
+     * [size]; [placeId]: the place a tap opens; [updating]: a fetch is under way.
+     */
+    fun build(
+        context: Context, id: Int, config: WidgetConfig, size: WidgetSize, weather: WidgetWeather?,
+        placeId: String?, unit: TemperatureUnit, now: Long, updating: Boolean = false,
+        precip: PrecipitationUnit = PrecipitationUnit.MM,
+    ): RemoteViews {
+        val res = context.resources
+        val v = RemoteViews(context.packageName, R.layout.widget_nimbus)
+        val use24h = android.text.format.DateFormat.is24HourFormat(context)
+        val locale = res.configuration.locales[0] ?: Locale.getDefault()
+        val tf = TimeFormat(weather?.timezone ?: java.util.TimeZone.getDefault().id, use24h, locale)
+        val alarm = nextAlarm(context)?.let { alarmText(it, now, use24h, locale) }
+        val rain = weather?.rain
+        // the precipitation card's words; dry: with "no sunshine" by day where none comes either
+        val rainText = rain?.let { r ->
+            r.notice?.let { precipNoticeText(res, it, now, tf) }
+                ?: res.getString(if (!r.eventful && weather.isDay) R.string.widget_rain_dry_dull else R.string.widget_rain_dry, tf.time(r.to))
+        }
+        val dots = weather?.pollen?.takeIf { it.isNotEmpty() && config.pollen.isNotEmpty() }?.let { pollenDots(context, it) }
+        val placeText = weather?.place ?: res.getString(R.string.widget_no_data)
+        val longDateText = android.text.format.DateFormat.format(android.text.format.DateFormat.getBestDateTimePattern(locale, "EEEEdMMMM"), now).toString()
+        val l = WidgetLayout.of(config, size, alarm, weather, res.configuration.fontScale, rainText, dots?.toString(), placeText, longDateText)
+        val density = res.displayMetrics.density
+
+        v.setInt(R.id.widget_bg, "setImageAlpha", (config.opacity.coerceIn(0f, 1f) * 255).toInt())
+
+        // left: the date, the time, the next alarm – the system keeps the clock and the date going
+        v.visible(R.id.widget_clock_block, l.clock || l.date)
+        v.visible(R.id.widget_clock_row, l.clock)
+        v.visible(R.id.widget_date_row, l.date)
+        // the month always written out, the weekday too where there is the room; or the date in figures with
+        // the weekday short and the calendar week
+        val datePattern = android.text.format.DateFormat.getBestDateTimePattern(
+            locale, if (config.dateWithWeek) "EEEddMMyyyy" else if (l.longDate) "EEEEdMMMM" else "EEEdMMMM",
+        )
+        v.setCharSequence(R.id.widget_date, "setFormat24Hour", datePattern)
+        v.setCharSequence(R.id.widget_date, "setFormat12Hour", datePattern)
+        v.visible(R.id.widget_week, config.dateWithWeek)
+        if (config.dateWithWeek) v.setTextViewText(R.id.widget_week, res.getString(R.string.widget_week, weekOf(now, locale)))
+        v.visible(R.id.widget_clock, l.clock)
+        v.setTextViewTextSize(R.id.widget_clock, TypedValue.COMPLEX_UNIT_DIP, l.bigDp)
+        v.visible(R.id.widget_alarm_line, l.alarm)
+        v.visible(R.id.widget_alarm_beside, l.alarmBeside)
+        if (alarm != null) {
+            v.setTextViewText(R.id.widget_alarm, alarm)
+            v.setContentDescription(R.id.widget_alarm_line, res.getString(R.string.widget_alarm_desc, alarm))
+            v.setTextViewText(R.id.widget_alarm_beside_text, alarm)
+            v.setContentDescription(R.id.widget_alarm_beside, res.getString(R.string.widget_alarm_desc, alarm))
+        }
+        if (l.alarmBeside) {
+            // where the widest time ends ("00:00": figures of one width), on the clock's baseline
+            val big = clockPaint(l.bigDp * density)
+            val small = Paint().apply { textSize = 12 * res.configuration.fontScale * density }
+            v.setViewPadding(
+                R.id.widget_alarm_beside, (big.measureText("00:00") + 6 * density).toInt(), 0, 0,
+                (big.fontMetrics.descent - small.fontMetrics.descent).toInt().coerceAtLeast(0),
+            )
+        }
+        val alarms = activity(context, id, 1, Intent(AlarmClock.ACTION_SHOW_ALARMS))
+        v.setOnClickPendingIntent(R.id.widget_clock, alarms)
+        v.setOnClickPendingIntent(R.id.widget_alarm_line, alarms)
+        v.setOnClickPendingIntent(R.id.widget_alarm_beside, alarms)
+        val calendar = CalendarContract.CONTENT_URI.buildUpon().appendPath("time").also { ContentUris.appendId(it, now) }.build()
+        v.setOnClickPendingIntent(R.id.widget_date_row, activity(context, id, 2, Intent(Intent.ACTION_VIEW, calendar)))
+
+        // right: the place and its weather, as the head of its page
+        val open = activity(context, id, 3, Intent(context, MainActivity::class.java).putExtra(EXTRA_PLACE, placeId).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP))
+        v.setOnClickPendingIntent(android.R.id.background, open)
+        v.setOnClickPendingIntent(R.id.widget_weather, open)
+        v.visible(R.id.widget_weather, l.right)
+        v.setOnClickPendingIntent(R.id.widget_rain, open)
+        v.setOnClickPendingIntent(R.id.widget_pollen, open)
+        v.visible(R.id.widget_place_row, l.right && (l.secondLine || weather == null))
+        v.visible(R.id.widget_head, l.date || (l.right && (l.secondLine || weather == null)))
+        val side = if (l.clock || l.date) android.view.Gravity.END else android.view.Gravity.START
+        v.setInt(R.id.widget_place_row, "setGravity", (if (l.date) android.view.Gravity.END else side) or android.view.Gravity.CENTER_VERTICAL)
+        v.setInt(R.id.widget_now, "setGravity", side or android.view.Gravity.CENTER_VERTICAL)
+        v.visible(R.id.widget_now, l.weather && weather != null)
+        if (weather == null) {
+            v.visible(R.id.widget_pin, false)
+            v.setTextViewText(R.id.widget_place, res.getString(R.string.widget_no_data))
+        } else {
+            v.visible(R.id.widget_pin, weather.myLocation)
+            v.setTextViewText(R.id.widget_place, weather.place)
+            v.setImageViewBitmap(R.id.widget_icon, symbol(weather, (l.bigDp * (if (weather.chance != null) 0.8f else 1f) * density).toInt()))
+            v.setContentDescription(R.id.widget_icon, res.getString(Texts.condition(weather.condition, weather.isDay)))
+            v.visible(R.id.widget_chance, weather.chance != null)
+            // small under the symbol, the sign close to the figure
+            weather.chance?.let { v.setTextViewText(R.id.widget_chance, "$it%") }
+            v.setTextViewText(R.id.widget_temp, Units.temp(weather.temperature, unit))
+            v.setTextViewTextSize(R.id.widget_temp, TypedValue.COMPLEX_UNIT_DIP, l.bigDp * 0.87f)
+            v.visible(R.id.widget_maxmin, weather.max != null && weather.min != null)
+            // two lines beside the temperature: never taller than it
+            val small = minOf(13f * res.configuration.fontScale, l.bigDp * 0.45f)
+            v.setTextViewTextSize(R.id.widget_max, TypedValue.COMPLEX_UNIT_DIP, small)
+            v.setTextViewTextSize(R.id.widget_min, TypedValue.COMPLEX_UNIT_DIP, small)
+            v.setTextViewText(R.id.widget_max, "↑" + Units.temp(weather.max, unit))
+            v.setTextViewText(R.id.widget_min, "↓" + Units.temp(weather.min, unit))
+        }
+
+        // the next 90 minutes: the precipitation card's line, the chart of precipitation and sunshine
+        v.visible(R.id.widget_rain, l.rain && rain != null)
+        if (rain != null && rainText != null) {
+            v.setTextViewText(R.id.widget_rain_text, rainText)
+            v.visible(R.id.widget_rain_text, l.rainLine)
+            v.visible(R.id.widget_chart, l.chart)
+            if (l.chart) {
+                val fontScale = res.configuration.fontScale
+                val chartPx = ((l.chartDp + AXIS_DP * fontScale) * density).toInt()
+                v.setImageViewBitmap(R.id.widget_chart, chart(rain, (l.widthDp.coerceAtLeast(60f) * density).toInt(), chartPx, density, scales(context, precip, locale), tf, fontScale))
+            }
+        }
+
+        // today's pollen of the chosen types: as points in a line, or side by side with a gauge each, as the pollen card's
+        // the line under the columns: the alarm, beside it the 90 minutes' line or the pollen as points
+        v.visible(R.id.widget_mid, l.alarm || l.pollenDots || l.midRain)
+        v.visible(R.id.widget_pollen_dots, l.pollenDots || l.midRain)
+        if (l.midRain && rainText != null) v.setTextViewText(R.id.widget_pollen_dots, rainText)
+        else if (dots != null) v.setTextViewText(R.id.widget_pollen_dots, dots)
+        v.setInt(R.id.widget_pollen_dots, "setGravity", (if (l.midRain && !l.alarm) android.view.Gravity.START else android.view.Gravity.END) or android.view.Gravity.CENTER_VERTICAL)
+        v.visible(R.id.widget_pollen, l.pollenRows > 0)
+        POLLEN_ROWS.forEachIndexed { r, row -> v.visible(row, r < l.pollenRows) }
+        POLLEN_CELLS.forEachIndexed { i, (cell, name, gauge) ->
+            val r = i / 3
+            val c = i % 3
+            val k = r * l.pollenPerRow + c
+            val p = weather?.pollen?.getOrNull(k)?.takeIf { c < l.pollenPerRow && r < l.pollenRows }
+            // a cell of the row with no type left keeps its room: the gauges stay in their columns
+            v.setViewVisibility(cell, if (c >= l.pollenPerRow) View.GONE else if (p == null) View.INVISIBLE else View.VISIBLE)
+            if (p != null) {
+                v.setTextViewText(name, res.getString(pollenName(p.first)))
+                v.setImageViewBitmap(gauge, pollenGauge(p.second, (40 * density).toInt(), (7 * density).toInt(), density))
+                v.setContentDescription(gauge, res.getString(pollenLevelText(p.second)))
+            }
+        }
+
+        // when the data were fetched; a tap fetches them anew
+        v.visible(R.id.widget_status, l.status)
+        v.setTextViewText(
+            R.id.widget_as_of,
+            when {
+                updating -> res.getString(R.string.widget_updating)
+                weather == null -> ""
+                tf.isSameDay(weather.asOf, now) -> res.getString(R.string.widget_as_of, tf.time(weather.asOf))
+                else -> res.getString(R.string.widget_as_of, tf.dayMonth(weather.asOf) + " " + tf.time(weather.asOf))
+            },
+        )
+        v.setContentDescription(R.id.widget_refresh, res.getString(R.string.widget_refresh))
+
+        // the height spread in equal gaps between what does not belong together: the head with the
+        // clock, the weather and the alarm; the 90 minutes; the pollen; the time of the data at the bottom.
+        // The line under the columns without the alarm stands on its own.
+        val parts = listOf(
+            R.id.widget_gap_top to false,
+            R.id.widget_gap_mid to (!l.alarm && (l.pollenDots || l.midRain)),
+            R.id.widget_gap_rain to (l.rain && rain != null),
+            R.id.widget_gap_pollen to (l.pollenRows > 0),
+            R.id.widget_gap_status to l.status,
+        )
+        var before = true
+        for ((gap, shown) in parts) {
+            v.visible(gap, shown && before)
+            before = before || shown
+        }
+        v.setOnClickPendingIntent(R.id.widget_refresh, refresh(context, id))
+        return v
+    }
+
+    /** The clock's font at [px]: light, its figures of one width. */
+    fun clockPaint(px: Float) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = android.graphics.Typeface.create("sans-serif-light", android.graphics.Typeface.NORMAL)
+        textSize = px
+        fontFeatureSettings = "tnum"
+    }
+
+    private fun RemoteViews.visible(viewId: Int, on: Boolean) = setViewVisibility(viewId, if (on) View.VISIBLE else View.GONE)
+
+    private fun activity(context: Context, id: Int, kind: Int, intent: Intent): PendingIntent =
+        PendingIntent.getActivity(
+            context, id * 8 + kind, intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+    private fun refresh(context: Context, id: Int): PendingIntent =
+        PendingIntent.getBroadcast(
+            context, id,
+            Intent(context, NimbusWidget::class.java).setAction(NimbusWidget.ACTION_REFRESH).putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID, id),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+    /** The calendar week of [now] on the phone's clock, counted as is usual where [locale] is (ISO weeks in Germany). */
+    fun weekOf(now: Long, locale: Locale): Int =
+        java.time.Instant.ofEpochMilli(now).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+            .get(java.time.temporal.WeekFields.of(locale).weekOfWeekBasedYear())
+
+    /** When the next alarm rings (the system's clock app sets it), or null. */
+    fun nextAlarm(context: Context): Long? =
+        runCatching { (context.getSystemService(Context.ALARM_SERVICE) as AlarmManager).nextAlarmClock?.triggerTime }.getOrNull()
+
+    /** "6:30" within the next day, "Mo 6:30" after. */
+    fun alarmText(at: Long, now: Long, use24h: Boolean, locale: Locale): String {
+        val tf = TimeFormat(java.util.TimeZone.getDefault().id, use24h, locale)
+        return if (at - now < 20 * 3_600_000L) tf.time(at) else tf.weekdayShort(at) + " " + tf.time(at)
+    }
+
+    /** The weather symbol of the page's head, [px] square, with a soft shadow: it stands out on light and dark alike. */
+    fun symbol(weather: WidgetWeather, px: Int): Bitmap {
+        val glyph = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
+        val inset = px * 0.08f
+        val inner = px - 2 * inset
+        val canvas = Canvas(glyph)
+        canvas.translate(inset, inset)
+        CanvasDrawScope().draw(Density(1f), LayoutDirection.Ltr, androidx.compose.ui.graphics.Canvas(canvas), Size(inner, inner)) {
+            drawWeatherSymbol(weather.condition, weather.isDay, weather.wind)
+        }
+        val out = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
+        val c = Canvas(out)
+        val offset = IntArray(2)
+        val shadow = glyph.extractAlpha(Paint().apply { maskFilter = BlurMaskFilter(px * 0.04f, BlurMaskFilter.Blur.NORMAL) }, offset)
+        c.drawBitmap(shadow, offset[0].toFloat(), offset[1] + px * 0.015f, Paint().apply { color = 0x59102030 })
+        c.drawBitmap(glyph, 0f, 0f, null)
+        return out
+    }
+
+    private const val WET_MM_H = WidgetWeather.Rain.WET_MM_H
+    /** Grey lines and empty tracks: seen on the light and the dark background alike. */
+    private const val GREY = 0x66808080
+
+    /** The times under the chart, by font scale 1. */
+    private const val AXIS_DP = 14f
+    /** Grey of the times: read on the light and the dark background alike. */
+    private const val TIME_GREY = 0xFF8C8C94.toInt()
+
+    /** The chart's scales: the sunshine's share of the quarter hour (all of it at the top), the precipitation's top and middle (mm/h; square root). */
+    private const val SUN_TOP = 15.0
+    private const val RAIN_TOP = 10.0
+    private const val RAIN_MID = 2.5
+
+    /** The labels of the chart's two scales: their units over the axes, the values at their ticks. */
+    data class Scales(val sunUnit: String, val sunTop: String, val sunMid: String, val rainUnit: String, val rainTop: String, val rainMid: String)
+
+    /** The scales in [unit] (precipitation) and the language of [locale]. */
+    fun scales(context: Context, unit: PrecipitationUnit, locale: Locale): Scales {
+        val f = java.text.DecimalFormat("0.##", java.text.DecimalFormatSymbols.getInstance(locale))
+        return Scales(
+            "%", "100", "50",
+            context.getString(Texts.precipUnit(unit)) + "/h", f.format(Units.precipitationValue(RAIN_TOP, unit)), f.format(Units.precipitationValue(RAIN_MID, unit)),
+        )
+    }
+
+    /** Where the chart's drawing lies within its picture: the room its scales take at the left, right and top, in px. */
+    data class Plot(val left: Float, val right: Float, val top: Float)
+
+    private fun labelPaint(color: Int, density: Float, fontScale: Float) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        this.color = color; textSize = 10 * fontScale * density
+    }
+
+    /** The room the [s] labels take beside and above the drawing. */
+    fun plot(s: Scales, density: Float, fontScale: Float): Plot {
+        val p = labelPaint(0, density, fontScale)
+        val pad = 4 * density
+        return Plot(
+            maxOf(p.measureText(s.sunTop), p.measureText(s.sunMid), p.measureText(s.sunUnit)) + pad,
+            maxOf(p.measureText(s.rainTop), p.measureText(s.rainMid), p.measureText(s.rainUnit)) + pad,
+            // the units over the axes, some room down to the top values
+            p.fontSpacing + 5 * density,
+        )
+    }
+
+    /**
+     * The quarter hours of [rain] over the 90 minutes on one axis, [w] × [h] px – as the day charts
+     * draw an expected hour, in unfilled frames of their colours: the sunshine behind, a little
+     * wider than the precipitation in front of it, its top seen through the precipitation's bar.
+     * Each over its quarter hour as the notice reads it, from the running one on, a tick under
+     * each and the clock's quarter hours under them – as many as there is room for (every half
+     * hour, every 45 minutes, the start and end); a fine line at now. Two scales in the colours of their bars: on the left how
+     * much of the quarter hour is sunny (all of it fills the height), on the right the precipitation
+     * per hour (10 mm/h fills it, 2.5 mm/h – moderate rain – half of it: square root, so light
+     * rain still shows); their units over them.
+     */
+    fun chart(rain: WidgetWeather.Rain, w: Int, h: Int, density: Float, s: Scales, tf: TimeFormat, fontScale: Float = 1f): Bitmap {
+        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
+        val plot = plot(s, density, fontScale)
+        val x0 = plot.left
+        val x1 = w - plot.right
+        val span = (rain.to - rain.from).toFloat()
+        fun x(t: Long) = x0 + ((t - rain.from) / span).coerceIn(0f, 1f) * (x1 - x0)
+        val gap = density * 2f
+        val narrower = density * 1.5f
+        val times = labelPaint(TIME_GREY, density, fontScale * 1.1f).apply { textAlign = Paint.Align.CENTER }
+        val top = plot.top + density * 2
+        val base = h - AXIS_DP * fontScale * density - density
+        fun sunY(m: Double) = base - (m / SUN_TOP).toFloat().coerceIn(0f, 1f) * (base - top)
+        fun rainY(mmH: Double) = base - kotlin.math.sqrt((mmH / RAIN_TOP).coerceIn(0.0, 1.0)).toFloat() * (base - top)
+        val sunFrame = HourBars.Sun.frame.toArgb()
+        val rainFrame = HourBars.Rain.frame.toArgb()
+        for (q in rain.quarters) {
+            val l = x(q.at) + gap / 2
+            val r = x(q.at + 15 * 60_000L) - gap / 2
+            if (r - 2 * narrower <= l) continue
+            // both unfilled: the sunshine's top stays seen through the precipitation's bar in front
+            q.sunMinutes?.takeIf { it >= WidgetWeather.Rain.SUN_LEAST }?.let { m -> frame(c, RectF(l, sunY(m), r, base), sunFrame, 1.5f * density, density) }
+            if (q.mmPerHour >= WET_MM_H) frame(c, RectF(l + narrower, rainY(q.mmPerHour), r - narrower, base), rainFrame, 2f * density, density)
+        }
+        // the axes: the ground line with a tick each quarter hour and their clock times, now, the two scales at the sides
+        val line = Paint().apply { color = GREY; strokeWidth = density }
+        c.drawLine(x0, base + density / 2, x1, base + density / 2, line)
+        val quarter = 15 * 60_000L
+        val marks = ((rain.to - rain.from) / quarter).toInt()
+        val labelW = times.measureText(tf.time(rain.from)) + 8 * density
+        val every = listOf(2, 3, marks).first { (x1 - x0) * it / marks >= labelW }
+        for (k in 0..marks) {
+            val t = rain.from + k * quarter
+            c.drawLine(x(t), base, x(t), base + 3 * density, line)
+            if (k % every == 0) {
+                val label = tf.time(t)
+                val tx = x(t).coerceIn(times.measureText(label) / 2, w - times.measureText(label) / 2)
+                c.drawText(label, tx, h - times.descent(), times)
+            }
+        }
+        val nowX = x(rain.now)
+        val dash = Paint(line).apply { pathEffect = android.graphics.DashPathEffect(floatArrayOf(2 * density, 2 * density), 0f) }
+        if (rain.now > rain.from) c.drawLine(nowX, top, nowX, base, dash)
+        c.drawLine(x0, top, x0, base, line)
+        c.drawLine(x1, top, x1, base, line)
+        // the units in the colours of their bars, the values grey; the middle values only where the drawing has the height
+        val sunText = labelPaint(sunFrame, density, fontScale)
+        val rainText = labelPaint(rainFrame, density, fontScale).apply { textAlign = Paint.Align.LEFT }
+        val values = labelPaint(TIME_GREY, density, fontScale)
+        val half = -(sunText.ascent() + sunText.descent()) / 2
+        val roomy = base - top >= 34 * density
+        fun tick(x: Float, y: Float, toLeft: Boolean) = c.drawLine(x, y, x + if (toLeft) -3 * density else 3 * density, y, line)
+        // left: how much of the quarter hour is sunny
+        for ((m, label) in listOf(SUN_TOP to s.sunTop, SUN_TOP / 2 to s.sunMid)) {
+            val y = sunY(m)
+            tick(x0, y, true)
+            if (m == SUN_TOP || roomy) c.drawText(label, x0 - 4 * density - values.measureText(label), (y + half).coerceAtLeast(top + half), values)
+        }
+        // the unit over its values, ending where they end
+        c.drawText(s.sunUnit, x0 - 4 * density - sunText.measureText(s.sunUnit), -sunText.ascent(), sunText)
+        // right: the precipitation per hour
+        for ((v, label) in listOf(RAIN_TOP to s.rainTop, RAIN_MID to s.rainMid)) {
+            val y = rainY(v)
+            tick(x1, y, false)
+            if (v == RAIN_TOP || roomy) c.drawText(label, x1 + 4 * density, (y + half).coerceAtLeast(top + half), values)
+        }
+        c.drawText(s.rainUnit, x1 + 4 * density, -rainText.ascent(), rainText)
+        return bmp
+    }
+
+    /** An unfilled frame, the line inside [r]: an expected amount, as the day charts draw it. */
+    private fun frame(c: Canvas, r: RectF, color: Int, stroke: Float, density: Float) {
+        val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color; style = Paint.Style.STROKE; strokeWidth = stroke }
+        if (r.height() < stroke) {
+            c.drawLine(r.left, r.bottom - stroke / 2, r.right, r.bottom - stroke / 2, p)
+            return
+        }
+        c.drawRoundRect(RectF(r.left + stroke / 2, r.top + stroke / 2, r.right - stroke / 2, r.bottom - stroke / 2), 2 * density, 2 * density, p)
+    }
+
+    /** From this level on a type is worth its point: yellow (low to medium, medium) and red – green is the rule, not news. */
+    private const val NOTEWORTHY = 1f
+
+    /**
+     * "● Birch  ● Grasses": the types that fly noteworthily, each with a point in the pollen card's
+     * colour of its level – yellow up to medium, red above. None of them: the highest level in
+     * words ("Pollen: none to low") – so the line says the pollen were looked at.
+     */
+    fun pollenDots(context: Context, pollen: List<Pair<dev.nimbus.weather.data.model.PollenType, Float>>): CharSequence {
+        val sb = android.text.SpannableStringBuilder()
+        val noteworthy = pollen.filter { it.second > NOTEWORTHY }
+        if (noteworthy.isEmpty()) {
+            val highest = pollen.maxOf { it.second }
+            return context.getString(R.string.widget_pollen_quiet, context.getString(pollenLevelText(highest)).lowercase(context.resources.configuration.locales[0]))
+        }
+        noteworthy.forEachIndexed { i, (type, level) ->
+            if (i > 0) sb.append("  ")
+            val start = sb.length
+            sb.append("●")
+            sb.setSpan(android.text.style.ForegroundColorSpan(pollenLevelColor(level).toArgb() or (0xFF shl 24)), start, sb.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            sb.append('\u00A0').append(context.getString(pollenName(type)))
+        }
+        return sb
+    }
+
+    /** Today's [level] (0..3) in three segments, half steps half filled – the pollen card's gauge, [w] × [h] px. */
+    fun pollenGauge(level: Float, w: Int, h: Int, density: Float): Bitmap {
+        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
+        val gap = 2 * density
+        val sw = (w - 2 * gap) / 3
+        val r = h / 2f
+        val track = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = GREY }
+        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = pollenLevelColor(level).toArgb() }
+        for (i in 0 until 3) {
+            val x = i * (sw + gap)
+            c.drawRoundRect(RectF(x, 0f, x + sw, h.toFloat()), r, r, track)
+            val f = (level - i).coerceIn(0f, 1f)
+            if (f > 0f) c.drawRoundRect(RectF(x, 0f, x + sw * f, h.toFloat()), r, r, fill)
+        }
+        return bmp
+    }
+}

@@ -1,6 +1,6 @@
 /*
  * Nimbus - app/src/main/java/dev/nimbus/weather/data/repo/BackgroundWork.kt
- * Nimbus works only while it is shown: periodic background work still scheduled is called off.
+ * Background work: the radar loop ahead and the widgets' weather; work under former names is called off.
  *
  *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
  *   Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
@@ -30,8 +30,9 @@ import dev.nimbus.weather.util.ActivityLog
 import java.util.concurrent.TimeUnit
 
 /**
- * Work in the background: only the radar loop ahead ([RadarAheadWorker]) – switched in the
- * settings, about every half hour while the battery is not low, over Wi-Fi or any network as set.
+ * Work in the background: the radar loop ahead ([RadarAheadWorker]) – switched in the settings,
+ * about every half hour while the battery is not low, over Wi-Fi or any network as set – and the
+ * widgets' weather while there is one on the home screen ([dev.nimbus.weather.widget.Widgets]).
  * Work scheduled under former names (hourly weather, the 15-minute radar) is called off at the
  * start: opened, the app loads what is out of date anyway.
  */

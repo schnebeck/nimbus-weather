@@ -71,7 +71,11 @@ import dev.nimbus.weather.ui.theme.NimbusColors
 
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Unit, onOpenLicenses: () -> Unit, onBack: () -> Unit) {
+fun SettingsScreen(
+    settings: Settings, onChange: ((Settings) -> Settings) -> Unit, onOpenLicenses: () -> Unit, onBack: () -> Unit,
+    /** The place the notices are about: the one shown last. */
+    noticePlace: String? = null,
+) {
     val navBottom = dev.nimbus.weather.ui.components.navBarBottom()
     val snackbar = remember { androidx.compose.material3.SnackbarHostState() }
     val cardsChange = undoableCardsChange(settings, onChange, snackbar)
@@ -125,6 +129,7 @@ fun SettingsScreen(settings: Settings, onChange: ((Settings) -> Settings) -> Uni
                     }
                 }
             }
+            item { NoticeSettings(settings, noticePlace, onChange) }
             item {
                 // everything of the radar in one place: what is on when it opens, loading ahead, colours
                 Section(stringResource(R.string.settings_radar)) {

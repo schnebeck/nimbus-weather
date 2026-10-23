@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -59,10 +60,17 @@ fun severityColor(s: AlertSeverity): Color = when (s) {
     AlertSeverity.EXTREME -> Color(0xFFB0189A)
 }
 
+/**
+ * The warnings: the DWD's from the level chosen ([dev.nimbus.weather.data.model.Settings.warningLevel])
+ * and the states' flood warnings; the weaker ones as a line of their own, shown on a tap.
+ */
 @Composable
-fun AlertsCard(alerts: List<WeatherAlert>) {
+fun AlertsCard(all: List<WeatherAlert>) {
     val tf = LocalTimeFormat.current
     var expanded by rememberSaveable { mutableStateOf(false) }
+    val level = LocalSettings.current.warningLevel
+    val (main, weaker) = all.partition { dev.nimbus.weather.notify.Notices.isFlood(it) || dev.nimbus.weather.notify.Notices.level(it) >= level }
+    val alerts = if (expanded) main + weaker else main
     GlassCard(
         title = stringResource(R.string.alerts) + " · DWD",
         icon = Icons.Rounded.WarningAmber,
@@ -101,6 +109,13 @@ fun AlertsCard(alerts: List<WeatherAlert>) {
         }
         if (!expanded && alerts.size > 2) {
             Text(stringResource(R.string.more_alerts, alerts.size - 2), Modifier.padding(top = 6.dp), fontSize = 13.sp, color = NimbusColors.Secondary)
+        }
+        // the weaker warnings in a line: a tap shows them
+        if (!expanded && weaker.isNotEmpty()) {
+            Text(
+                pluralStringResource(R.plurals.alerts_weaker, weaker.size, weaker.size),
+                Modifier.padding(top = if (shown.isEmpty()) 0.dp else 6.dp), fontSize = 13.sp, color = NimbusColors.Secondary,
+            )
         }
         Text(
             stringResource(if (expanded) R.string.show_less else R.string.show_more),

@@ -216,6 +216,16 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   wie die anderen antworten, wann alle Bilder aufbereitet sind, ausgesetzte Quellen, Vorladen im
   Hintergrund), für Akku- und Datenanalysen – ohne Koordinaten und Ortsnamen, auf dem
   Handy, bis man es teilt.
+- **Hinweise** (voreingestellt aus, einzeln abschaltbar): amtliche Wetterwarnungen des DWD ab der
+  gewählten Stufe (dieselbe Stufe zeigt die Warnkarte, schwächere stehen dort in einer Zeile), Pegel
+  beim angezeigten Ort und mit Stern markierte, wenn sie eine Melde- oder Alarmstufe erreichen,
+  auf Wunsch die Hochwasserwarnungen der Länder, und „Regen in Sicht“: nur wenn es vorher drei
+  Stunden trocken war und das Radar Regen in der nächsten Stunde sicher zeigt, höchstens zweimal am
+  Tag. Jede Meldung einmal, erneut nur bei höherer Stufe; sie verschwindet, wenn ihr Anlass vorbei
+  ist. Die Quelle steht ausgeschrieben darunter. „Bitte nicht stören“ und Schlafenszeit gelten wie
+  eingestellt, bei „Bitte nicht stören“ kein Regenhinweis. Geprüft wird etwa alle 15–30 Minuten der
+  zuletzt angezeigte Ort, ohne Standortabfrage im Hintergrund. Kein Ersatz für NINA oder Cell
+  Broadcast.
 - **Widget für den Startbildschirm** („Uhr & Wetter“, auch für den Sperrbildschirm, wo das System
   es anbietet): oben Datum und Ort, darunter Uhrzeit und Wetter (Symbol, Temperatur, Höchst- und
   Tiefstwert, bei Niederschlagssymbol die Wahrscheinlichkeit), unter der Uhr der nächste Wecker;

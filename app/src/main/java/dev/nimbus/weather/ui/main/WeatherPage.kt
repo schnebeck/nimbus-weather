@@ -302,7 +302,7 @@ private fun WeatherContent(
                 WeatherCard.MOON -> add(PageItem("moon") { Foldable(card) { MoonCard(data, now) } })
                 WeatherCard.AIR_QUALITY -> if (data.airQuality?.europeanAqi != null) add(PageItem("aqi") { Foldable(card) { AirQualityCard(data) } })
                 WeatherCard.POLLEN -> data.pollen?.let { p -> add(PageItem("pollen") { Foldable(card) { PollenForecastCard(p, now) } }) }
-                WeatherCard.GAUGES -> if (data.gauges.isNotEmpty()) add(PageItem("gauge") { Foldable(card) { GaugeCard(data.gauges, now) } })
+                WeatherCard.GAUGES -> if (data.gauges.isNotEmpty()) add(PageItem("gauge") { Foldable(card) { GaugeCard(data.gauges, now, data.place) } })
                 WeatherCard.BATHING -> if (data.bathing.isNotEmpty()) add(PageItem("bathing") { Foldable(card) { BathingCard(data.bathing, now) } })
                 WeatherCard.COMMUNITY -> if (data.community != null) add(PageItem("community") { Foldable(card) { CommunityCard(data) } })
                 WeatherCard.MODELS -> add(PageItem("models") { Foldable(card) { ModelComparisonCard(state.models, now, onRequestModels) } })

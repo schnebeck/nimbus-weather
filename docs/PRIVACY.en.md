@@ -91,6 +91,12 @@ minutes (and when you tap it) – the same requests the app makes when opened, s
 of that place to the same services. If it shows "My Location", it uses the position the app last
 determined while it was open. Without a widget there are no such requests.
 
+If you switch on the **notices** (off by default), Nimbus checks the place shown last about every 15
+to 30 minutes for weather warnings, gauge alert levels and rain ahead – the same requests as the app
+makes when opened, with the coordinates of that place; for gauges marked with the star, the gauge
+services around them. The notifications are made on your device; what was told is remembered only
+there.
+
 The app never determines a location in the background.
 
 ## On your device

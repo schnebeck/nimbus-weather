@@ -105,13 +105,14 @@ class AppContainer(app: Application) {
     val store = Store(app)
     val location = LocationProvider(app, http)
     val openMeteo = OpenMeteoSource(http)
-    private val spot = dev.nimbus.weather.data.remote.SpotSource(http)
+    val spot = dev.nimbus.weather.data.remote.SpotSource(http)
+    val gauges = dev.nimbus.weather.data.remote.GaugeSource(http, File(app.cacheDir, "tides"))
     val history = dev.nimbus.weather.data.remote.HistorySource(
         http, spot = spot, lightning = dev.nimbus.weather.data.remote.LightningSource(http),
     )
     val repository = WeatherRepository(
         openMeteo, BrightSkySource(http), CommunitySource(http), PollenSource(http),
-        dev.nimbus.weather.data.remote.GaugeSource(http, File(app.cacheDir, "tides")),
+        gauges,
         bathing = dev.nimbus.weather.data.remote.BathingSource(http, File(app.cacheDir, "bathing")) {
             dev.nimbus.weather.ui.radar.RadarPrefetcher.isUnmetered(app)
         },

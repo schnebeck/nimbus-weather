@@ -94,6 +94,12 @@ antippst) das Wetter für seinen Ort – dieselben Abrufe wie die App beim Öffn
 Koordinaten dieses Ortes an dieselben Dienste. Zeigt es „Mein Standort“, nimmt es die Position, die
 die App zuletzt bestimmt hat, während sie geöffnet war. Ohne Widget gibt es diese Abrufe nicht.
 
+Schaltest du die **Hinweise** ein (voreingestellt aus), prüft Nimbus etwa alle 15 bis 30 Minuten den
+zuletzt angezeigten Ort auf Wetterwarnungen, Pegelstufen und kommenden Regen – dieselben Abrufe wie
+die App beim Öffnen, mit den Koordinaten dieses Ortes; für mit Stern markierte Pegel die Pegeldienste
+in deren Umgebung. Die Benachrichtigungen entstehen auf deinem Gerät; was gemeldet wurde, merkt sich
+die App nur dort.
+
 Einen Standort bestimmt die App im Hintergrund nie.
 
 ## Auf deinem Gerät

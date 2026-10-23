@@ -113,6 +113,7 @@ fun NimbusRoot(viewModel: MainViewModel) {
                     onChange = viewModel::updateSettings,
                     onOpenLicenses = { viewModel.navigate(Screen.Licenses) },
                     onBack = { viewModel.back() },
+                    noticePlace = (state.pages.firstOrNull { it.id == state.selectedPlaceId } ?: state.pages.firstOrNull())?.name,
                 )
                 Screen.Licenses -> dev.nimbus.weather.ui.settings.LicensesScreen(onBack = { viewModel.back() })
                 is Screen.Radar -> {

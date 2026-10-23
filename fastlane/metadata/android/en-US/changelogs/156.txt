@@ -1,0 +1,4 @@
+• New: notices (off by default) – weather warnings from the level chosen, gauges reaching an alert level (starred ones too), the states' flood warnings, rain ahead after three dry hours
+• Each notice only once, do not disturb applies
+• Warnings card from the level chosen, weaker ones in a line
+• Data sources: gauge operators written out

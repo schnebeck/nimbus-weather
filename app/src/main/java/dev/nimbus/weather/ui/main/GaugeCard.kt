@@ -37,6 +37,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Waves
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.StarBorder
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -67,7 +70,7 @@ private val HighColor = Color(0xFFFF7A5C)
  * selected row shows its details below (level, rating, course of the week).
  */
 @Composable
-fun GaugeCard(gauges: List<GaugeInfo>, now: Long) {
+fun GaugeCard(gauges: List<GaugeInfo>, now: Long, place: dev.nimbus.weather.data.model.Place? = null) {
     if (gauges.isEmpty()) return
     val tide = gauges.firstOrNull { it.tidal && it.extremes.isNotEmpty() }
     val others = gauges.filter { it !== tide }
@@ -111,7 +114,39 @@ fun GaugeCard(gauges: List<GaugeInfo>, now: Long) {
                 LevelContent(g, now)
                 Spacer(Modifier.height(8.dp))
                 StationLine(g)
+                place?.let { WatchRow(g, it) }
             }
+        }
+    }
+}
+
+/**
+ * The star: the gauge watched – a notice when it reaches an alert level, also while another place
+ * is shown (it is looked for near [place], where it was starred).
+ */
+@Composable
+private fun WatchRow(g: GaugeInfo, place: dev.nimbus.weather.data.model.Place) {
+    val update = LocalSettingsUpdater.current
+    val watched = LocalSettings.current.watchedGauges.any { it.uuid == g.uuid }
+    Row(
+        Modifier.fillMaxWidth().padding(top = 6.dp).clip(RoundedCornerShape(10.dp)).clickable {
+            update { st ->
+                st.copy(
+                    watchedGauges = if (st.watchedGauges.any { it.uuid == g.uuid }) st.watchedGauges.filter { it.uuid != g.uuid }
+                    else st.watchedGauges + dev.nimbus.weather.data.model.WatchedGauge(g.uuid, g.name, g.water, place.latitude, place.longitude),
+                )
+            }
+        }.padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            if (watched) Icons.Rounded.Star else Icons.Rounded.StarBorder, null,
+            tint = if (watched) Color(0xFFFFC94D) else NimbusColors.Secondary, modifier = Modifier.size(20.dp),
+        )
+        Spacer(Modifier.width(8.dp))
+        Column {
+            Text(stringResource(R.string.gauge_watch), fontSize = 14.sp, color = Color.White)
+            Text(stringResource(R.string.gauge_watch_desc), fontSize = 12.sp, color = NimbusColors.Secondary, lineHeight = 15.sp)
         }
     }
 }

@@ -159,6 +159,25 @@ data class Settings(
     val bathingRadiusKm: Int = 50,
     /** Favourite bathing waters (EU ids), shown at any distance. */
     val bathingFavorites: Set<String> = emptySet(),
+    /**
+     * The DWD's weather warnings from this level on (1 weather warning … 4 extreme): the warnings
+     * card shows them, the weaker ones in a line of their own, and the notices tell of them.
+     */
+    val warningLevel: Int = 2,
+    /** Notices at all (off until switched on: the system's permission is asked for then). */
+    val notices: Boolean = false,
+    /** … of the weather warnings from [warningLevel] on. */
+    val noticeWarnings: Boolean = true,
+    /** … of the gauges reaching an alert level ([gaugeStage]): those shown for the place and the [watchedGauges]. */
+    val noticeGauges: Boolean = true,
+    /** The alert level from which a gauge is told of (1–3). */
+    val gaugeStage: Int = 1,
+    /** … of the states' flood warnings for the place. */
+    val noticeFloods: Boolean = false,
+    /** … of precipitation coming after hours without ([dev.nimbus.weather.notify.Notices.rain]). */
+    val noticeRain: Boolean = true,
+    /** Gauges marked with the star: told of wherever the place shown is. */
+    val watchedGauges: List<WatchedGauge> = emptyList(),
 ) {
     fun shows(card: WeatherCard) = if (card in WeatherCard.OPT_IN) card in enabledCards else card !in hiddenCards
 
@@ -278,3 +297,7 @@ val ComparisonModels = listOf(
     "metno_seamless" to "MET Norway",
     "gfs_seamless" to "NOAA GFS",
 )
+
+/** A gauge marked with the star: its id, names and position (the gauges near it are asked for to find it). */
+@Serializable
+data class WatchedGauge(val uuid: String, val name: String, val water: String, val latitude: Double, val longitude: Double)

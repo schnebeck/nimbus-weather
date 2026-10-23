@@ -33,10 +33,11 @@
 
 <p><b>Details</b></p>
 <ul>
+<li>Notices if wished: weather warnings, gauge alert levels and rain after dry hours – each notice only once</li>
 <li>An ⓘ on every card explains the terms</li>
 <li>English and German, units follow your country (°C/°F, km/h, mph, m/s, knots, Beaufort, mm/inch)</li>
 <li>Forecast model: automatically the finest for each place and time, or DWD ICON, ECMWF, Météo-France and regional models such as MET Nordic (1 km) or KNMI Harmonie (2 km) – a model of its own for each place too</li>
-<li>Battery friendly: Nimbus updates the weather only while it is shown; in the background it at most preloads the radar – on Wi-Fi and optional – and for a widget fetches the weather about every 30 minutes; the animation slows down when the phone is left alone and stops in battery saver mode</li>
+<li>Battery friendly: Nimbus updates the weather only while it is shown; in the background it at most preloads the radar – on Wi-Fi and optional – and for a widget fetches the weather about every 30 minutes; the animation rests in battery saver mode</li>
 </ul>
 
 <p>Data: Deutscher Wetterdienst (via Bright Sky and Open-Meteo), Open-Meteo, MET Norway, GeoSphere Austria, MeteoSwiss, DMI, KNMI, airport reports (METAR), Copernicus CAMS, RainViewer, Sensor.Community, PEGELONLINE (WSV), NLWKN, LANUK NRW, LfULG Sachsen, HLNUG, Länderübergreifendes Hochwasserportal, OpenStreetMap/Nominatim. Maps © OpenFreeMap, OpenMapTiles, OpenStreetMap contributors.</p>

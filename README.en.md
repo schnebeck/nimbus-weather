@@ -207,6 +207,14 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   its own one is complete, how the others answer, when all pictures are prepared, sources resting,
   loading ahead in the background), for battery and data analyses – without
   coordinates or place names, on the phone until shared.
+- **Notices** (off by default, each kind on its own): official weather warnings of the DWD from
+  the level chosen (the warnings card shows the same level, weaker ones in a line there), gauges at
+  the place shown and those marked with the star when they reach an alert level, the states' flood
+  warnings if wished, and "Rain ahead": only after three dry hours and when the radar surely shows
+  rain within the next hour, at most twice a day. Each notice once, again only at a higher level;
+  it goes when its reason is over. The source is written out below it. Do not disturb and bedtime
+  apply as set; with do not disturb no rain notice. The place shown last is checked about every
+  15–30 minutes, without locating in the background. No replacement for NINA or Cell Broadcast.
 - **Home-screen widget** ("Clock & weather", on the lock screen too where the system offers it):
   on top the date and the place, below them the time and the weather (symbol, temperature, high
   and low, with a precipitation symbol its chance), under the clock the next alarm; below over the

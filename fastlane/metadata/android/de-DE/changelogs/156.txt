@@ -1,0 +1,4 @@
+• Neu: Hinweise (voreingestellt aus) – Wetterwarnungen ab der gewählten Stufe, Pegel bei Melde- oder Alarmstufe (auch mit Stern markierte), Hochwasserwarnungen der Länder, Regen in Sicht nach drei trockenen Stunden
+• Jede Meldung nur einmal, „Bitte nicht stören“ gilt
+• Warnkarte ab der gewählten Stufe, schwächere in einer Zeile
+• Datenquellen: Pegelbetreiber ausgeschrieben

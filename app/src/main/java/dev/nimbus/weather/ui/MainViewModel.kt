@@ -38,7 +38,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.job
@@ -109,6 +111,11 @@ class MainViewModel(
     init {
         // DWD radar area for the RainViewer tiles (from disk after the first time)
         viewModelScope.launch { dev.nimbus.weather.ui.radar.RadarComposites.prepare(container.http) }
+        // the place shown: the notices in the background are about it
+        viewModelScope.launch {
+            val notices = dev.nimbus.weather.notify.NoticeState(getApplication())
+            _state.map { st -> if (st.initialized) shownPlaceId(st) else null }.distinctUntilChanged().collect { id -> if (id != null) notices.shownPlace = id }
+        }
         // Once the preview card has its size: prepare the radar previews of all places, so that
         // switching places shows a picture at once (base maps only on Wi-Fi, see RadarPreview).
         launchWhileShown {
@@ -135,6 +142,10 @@ class MainViewModel(
                 val first = !_state.value.initialized
                 val prev = lastSettings
                 lastSettings = settings
+                // the check in the background: on, off, or every quarter of an hour with the precipitation notice
+                if (first || prev?.notices != settings.notices || prev.noticeRain != settings.noticeRain) {
+                    dev.nimbus.weather.notify.NoticeWork.schedule(getApplication(), settings)
+                }
                 val cached = places.filter { _state.value.states[it.id]?.data == null }
                     .mapNotNull { p -> store.cachedWeather(p.id)?.let { p.id to PlaceState(it) } }
                 _state.update { st ->

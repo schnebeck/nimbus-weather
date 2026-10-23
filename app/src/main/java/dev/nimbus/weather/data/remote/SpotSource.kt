@@ -68,6 +68,10 @@ class SpotSource(
         }.flatMap { it.await().entries }.associate { it.key to it.value }.let(::hourEchoes)
     }
 
+    /** RY's measured 5-minute steps over the place (mm by their ends) from [from] to [to]; empty outside the radar's area or without an answer. */
+    suspend fun radarSteps(lat: Double, lon: Double, from: Long, to: Long): Map<Long, Double> =
+        runCatching { series(http.getJson(pointUrl(RY, lat, lon, from, to))) }.getOrDefault(emptyMap())
+
     /**
      * Precipitation over the place now: RY's newest 5-minute steps (up to [NOW_STEPS]) as a rate,
      * stamped with the newest one; null outside the radar's area.

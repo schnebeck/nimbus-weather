@@ -171,6 +171,19 @@ class WidgetTest {
         assertEquals("Vielleicht etwas Niesel ab etwa 11:00", render(WidgetConfig(), WidgetSize(320, 200), with(0.13)).text(R.id.widget_rain_text))
     }
 
+    /**
+     * A launcher whose frame keeps a margin inside shows the widget a few dp smaller than it
+     * reports: each picture is planned for and offered at a little less, so it still fits the
+     * frame – and a 4×3 keeps its chart.
+     */
+    @Test fun offeredALittleBelowTheReportedSize() {
+        val o = dev.nimbus.weather.widget.Widgets.offered(android.util.SizeF(320f, 280f))
+        assertTrue("$o", o.widthDp <= 320 - 16 && o.heightDp <= 280 - 24)
+        assertTrue("$o", o.widthDp >= 290 && o.heightDp >= 240)
+        val v = render(WidgetConfig(), o, data(rainFrom = 40))
+        assertEquals(android.view.View.VISIBLE, v.findViewById<android.view.View>(R.id.widget_chart).visibility)
+    }
+
     /** Today's high and low hold the temperature measured now – the other days stay as forecast. */
     @Test fun theDaysHighAndLowHoldTheTemperatureNow() {
         val d = data()

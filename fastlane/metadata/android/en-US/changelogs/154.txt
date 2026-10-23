@@ -1,0 +1,2 @@
+• Widget: fits launchers that take a margin off the frame too (e.g. Nova) – no half-empty widget any more
+• Look-back: yesterday and the day before show the hour table only while the cursor is held – it read like the day figures otherwise

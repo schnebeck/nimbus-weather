@@ -192,7 +192,9 @@ object Widgets {
             val data = place?.let { store.cachedWeather(it.id) }
             val weather = data?.let { WidgetWeather.of(it, now, config.pollen) }
             val build = { size: WidgetSize -> WidgetViews.build(app, id, config, size, weather, place?.id, settings.temperatureUnit, now, updating, settings.precipitationUnit) }
-            val views = sizesOf(manager, id)?.let { sizes -> RemoteViews(sizes.associateWith { build(WidgetSize(it.width.toInt(), it.height.toInt())) }) }
+            val sizes = sizesOf(manager, id)
+            noteSizes(id, sizes, manager)
+            val views = sizes?.let { all -> RemoteViews(all.associate { s -> offered(s).let { o -> android.util.SizeF(o.widthDp.toFloat(), o.heightDp.toFloat()) to build(o) } }) }
                 ?: build(sizeOf(manager, id))
             runCatching { manager.updateAppWidget(id, views) }
         }
@@ -213,6 +215,34 @@ object Widgets {
 
     /** At most this many pictures in one update (each carries its bitmaps). */
     private const val MAX_SIZES = 4
+
+    /**
+     * The size a picture is planned for and offered at: a little below the size the launcher
+     * reports. The system takes the largest picture whose size fits the frame, the smallest when
+     * none fits – and a launcher whose frame keeps a margin inside it shows the widget a few dp
+     * smaller than it reports: a picture offered at the full size fits nowhere, the smallest (for
+     * the other orientation) came, and the frame stayed half empty.
+     */
+    fun offered(reported: android.util.SizeF): WidgetSize = WidgetSize(
+        (reported.width - maxOf(OFFER_MARGIN_W_DP, reported.width * OFFER_SHARE_W)).toInt().coerceAtLeast(40),
+        (reported.height - maxOf(OFFER_MARGIN_H_DP, reported.height * OFFER_SHARE_H)).toInt().coerceAtLeast(40),
+    )
+
+    private const val OFFER_MARGIN_W_DP = 16f
+    private const val OFFER_SHARE_W = 0.06f
+    private const val OFFER_MARGIN_H_DP = 24f
+    private const val OFFER_SHARE_H = 0.10f
+
+    /** What each widget was last told of its sizes – noted when it changes, for a look at a launcher's figures. */
+    private val noted = java.util.concurrent.ConcurrentHashMap<Int, String>()
+
+    private fun noteSizes(id: Int, sizes: List<android.util.SizeF>?, manager: AppWidgetManager) {
+        val o = runCatching { manager.getAppWidgetOptions(id) }.getOrNull()
+        val text = "sizes ${sizes?.joinToString { "${it.width.toInt()}×${it.height.toInt()}" } ?: "none"}; " +
+            "min ${o?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)}×${o?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)}, " +
+            "max ${o?.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH)}×${o?.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT)} dp"
+        if (noted.put(id, text) != text) ActivityLog.note("widget $id: $text")
+    }
 
     fun sizeOf(manager: AppWidgetManager, id: Int): WidgetSize {
         val o = runCatching { manager.getAppWidgetOptions(id) }.getOrNull()

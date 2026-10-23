@@ -89,6 +89,9 @@ internal val ForecastLine = Color(0xD9FFFFFF)
 
 private const val CURSOR_TIMEOUT_MS = 10_000L
 
+/** How fast a day over opens and closes its hour table with the cursor. */
+private const val READOUT_MS = 200
+
 /** The block of a shower less than the sums count (mm): low, but seen. */
 private const val FELL_BAR_MM = 0.03
 
@@ -469,11 +472,21 @@ fun Meteogram(
                 temperature = tm ?: sel.temperature,
                 compare = sel.compare?.let { c -> c.copy(tempM = if (c.tempM != null) tm ?: c.tempM else null, tempF = tfc ?: c.tempF) },
             )
-            Readout(
-                shown, highlighted = cursorOn, compare = compare,
-                extraRows = pts.any { it.compare?.feelsF != null || it.compare?.humidityF != null }, day = dayOverview,
-                lightningRow = pts.any { (it.compare?.lightningM ?: 0) > 0 },
-            )
+            // a day over (the look-back's yesterday and the day before) shows an hour only while the
+            // cursor stands on it: without, the table stood on midday and read as the day's figures;
+            // today it follows the line of now, a day to come shows the whole day or its midday
+            val readout = cursorOn || now <= end || dayOverview != null
+            androidx.compose.animation.AnimatedVisibility(
+                readout,
+                enter = androidx.compose.animation.expandVertically(tween(READOUT_MS)) + androidx.compose.animation.fadeIn(tween(READOUT_MS)),
+                exit = androidx.compose.animation.shrinkVertically(tween(READOUT_MS)) + androidx.compose.animation.fadeOut(tween(READOUT_MS)),
+            ) {
+                Readout(
+                    shown, highlighted = cursorOn, compare = compare,
+                    extraRows = pts.any { it.compare?.feelsF != null || it.compare?.humidityF != null }, day = dayOverview,
+                    lightningRow = pts.any { (it.compare?.lightningM ?: 0) > 0 },
+                )
+            }
             summary?.invoke()
             BarLegend(
                 rainTotals, sunTotals.takeIf { sunShown }, chance = separatePrecip,

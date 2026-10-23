@@ -312,7 +312,7 @@ class LookTest {
         assertEquals("the card's height after the cursor", height, bitmap().height)
     }
 
-    /** Today and the look-back: the hour as before (no day overview given). */
+    /** A day not over without a day overview: the hour as before. */
     @Test fun withoutADayOverviewTheHour() {
         compose.setContent { Card { Meteogram(forecastDay(), day, day + 24 * h, emptyList(), day - 30 * h) } }
         compose.waitForIdle()
@@ -519,7 +519,7 @@ class LookTest {
     private val hannoverNights = dev.nimbus.weather.ui.main.nights(day, day + 25 * h, 52.3759, 9.7320)
 
     @Test fun nightShadingCoversThe00And24Columns() {
-        compose.setContent { Card { Meteogram(forecastDay(), day, day + 24 * h, hannoverNights, day + 30 * h) } }
+        compose.setContent { Card { Meteogram(forecastDay(), day, day + 24 * h, hannoverNights, day - 30 * h) } }
         compose.waitForIdle()
         val img = bitmap()
         fun lum(x: Int, y: Int) = img.rgb(x, y).let { (r, g, b) -> 0.2126 * r + 0.7152 * g + 0.0722 * b }

@@ -1,0 +1,2 @@
+• Widget: passt jetzt auch in Launchern, die vom Rahmen etwas abziehen (z. B. Nova) – kein halb leeres Widget mehr
+• Rückblick: Gestern und vorgestern zeigen die Stundentabelle nur, solange der Schieber steht – sie wirkte sonst wie die Tageswerte

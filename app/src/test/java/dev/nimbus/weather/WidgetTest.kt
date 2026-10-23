@@ -206,6 +206,24 @@ class WidgetTest {
         assertEquals(android.view.View.VISIBLE, v.findViewById<android.view.View>(R.id.widget_chart).visibility)
     }
 
+    /**
+     * No chance beside perhaps some drizzle (the radar's weak echo, not the model's precipitation),
+     * and never "0%" – beside precipitation coming it only contradicts.
+     */
+    @Test fun noChanceThatContradicts() {
+        val eleven = day + 11 * h
+        fun with(peak: Double, mm: Double) = data().let { d ->
+            d.copy(
+                minutely = d.minutely.map { if (it.time == eleven) it.copy(precipitation = mm, peak = peak) else it },
+                hourly = d.hourly.map { it.copy(precipitationProbability = 0.0) },
+            )
+        }
+        assertEquals("Vielleicht etwas Niesel ab etwa 11:00", render(WidgetConfig(), WidgetSize(320, 200), with(0.13, 0.01)).text(R.id.widget_rain_text))
+        assertNull(WidgetWeather.of(with(0.13, 0.01), now, emptyList()).rain!!.chance)
+        // a sure shower, the model's hour at 0 %: the sentence without a chance
+        assertEquals("Leichter Regen ab etwa 11:00", render(WidgetConfig(), WidgetSize(320, 200), with(0.4, 0.1)).text(R.id.widget_rain_text))
+    }
+
     /** Today's high and low hold the temperature measured now – the other days stay as forecast. */
     @Test fun theDaysHighAndLowHoldTheTemperatureNow() {
         val d = data()

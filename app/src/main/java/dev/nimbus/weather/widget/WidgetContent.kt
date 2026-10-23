@@ -121,8 +121,9 @@ data class WidgetWeather(
             val notice = Insights.precipNotice(
                 data.minutely, data.hourly, data.current.condition, now, data.current.condition.isPrecipitation, horizonMs = to - now,
             )
-            // the hour it starts in – falling now: the running one
-            val chance = notice?.let { n -> chanceAt(data, if (n.state is Insights.Nowcast.StartsIn) n.at ?: now else now) }
+            // the hour it starts in – falling now: the running one; not for perhaps some drizzle (the
+            // radar's weak echo, not the model's precipitation the chance is of)
+            val chance = notice?.takeIf { !it.possible }?.let { n -> chanceAt(data, if (n.state is Insights.Nowcast.StartsIn) n.at ?: now else now) }
             return Rain(from, to, quarters.map { q ->
                 // the hour a quarter lies in: the data point at its end
                 val hourSun = data.hourly.firstOrNull { it.time > q.time }?.sunshine?.let { it / 4 }
@@ -136,10 +137,13 @@ data class WidgetWeather(
          */
         fun chance(data: WeatherData, now: Long): String? = chanceAt(data, now)
 
-        /** The chance of the hour running at [time], written as [chance] writes it. */
+        /**
+         * The chance of the hour running at [time], written as [chance] writes it; none at 0: beside
+         * precipitation the radar sees (or the symbol shows) "0%" says nothing but a contradiction.
+         */
         fun chanceAt(data: WeatherData, time: Long): String? {
             val hour = data.hourly.firstOrNull { it.time > time } ?: return null
-            return Insights.chanceText(hour.precipitationProbability ?: hour.modelChance, hour.precipitation)
+            return Insights.chanceText(hour.precipitationProbability ?: hour.modelChance, hour.precipitation)?.takeIf { it != "0" }
         }
 
         /** Today's level (0..3) of each of [types] the forecast gives; the others are left out. */

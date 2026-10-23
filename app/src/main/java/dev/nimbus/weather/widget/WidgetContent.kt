@@ -45,14 +45,21 @@ data class WidgetWeather(
     val pollen: List<Pair<PollenType, Float>>,
     val asOf: Long,
 ) {
+    /** The chosen types that fly at all today, the strongest first – the others are no news. */
+    val pollenFlying: List<Pair<PollenType, Float>> get() = pollen.filter { it.second > 0f }.sortedByDescending { it.second }
+
     /**
      * Six quarter hours on the clock's quarters, [from] the running one's start (10:15 at 10:20)
      * [to] 90 minutes later: the [quarters], each by the time the precipitation notice reads it at
      * – the very quarter hours it looks at, so bars and words agree (the radar's nowcast in them
      * where it covers them); [notice] as the precipitation card words it, looking just as far –
-     * null: it stays dry until [to]. [now] lies in the first quarter hour.
+     * null: it stays dry until [to]. [now] lies in the first quarter hour. [chance]: the chance of
+     * the hour the notice's precipitation falls in ([chanceAt]); null: none known, or dry.
      */
-    data class Rain(val from: Long, val to: Long, val quarters: List<Quarter>, val notice: Insights.PrecipNotice?, val now: Long = from) {
+    data class Rain(
+        val from: Long, val to: Long, val quarters: List<Quarter>, val notice: Insights.PrecipNotice?, val now: Long = from,
+        val chance: String? = null,
+    ) {
         /** Anything to draw: sunshine or precipitation in one of the quarter hours. */
         val eventful: Boolean get() = quarters.any { (it.sunMinutes ?: 0.0) >= SUN_LEAST || it.mmPerHour >= WET_MM_H }
 
@@ -107,19 +114,24 @@ data class WidgetWeather(
             val notice = Insights.precipNotice(
                 data.minutely, data.hourly, data.current.condition, now, data.current.condition.isPrecipitation, horizonMs = to - now,
             )
+            // the hour it starts in – falling now: the running one
+            val chance = notice?.let { n -> chanceAt(data, if (n.state is Insights.Nowcast.StartsIn) n.at ?: now else now) }
             return Rain(from, to, quarters.map { q ->
                 // the hour a quarter lies in: the data point at its end
                 val hourSun = data.hourly.firstOrNull { it.time > q.time }?.sunshine?.let { it / 4 }
                 Quarter(q.time, q.precipitation * 4, (q.sunshine ?: hourSun)?.coerceIn(0.0, 15.0))
-            }, notice, now)
+            }, notice, now, chance)
         }
 
         /**
          * The running hour's chance as the hour strip writes it ("40", "<10") – an hour the radar
          * tells with the model's chance, as the day chart's line has it; null: none known.
          */
-        fun chance(data: WeatherData, now: Long): String? {
-            val hour = data.hourly.firstOrNull { it.time > now } ?: return null
+        fun chance(data: WeatherData, now: Long): String? = chanceAt(data, now)
+
+        /** The chance of the hour running at [time], written as [chance] writes it. */
+        fun chanceAt(data: WeatherData, time: Long): String? {
+            val hour = data.hourly.firstOrNull { it.time > time } ?: return null
             return Insights.chanceText(hour.precipitationProbability ?: hour.modelChance, hour.precipitation)
         }
 

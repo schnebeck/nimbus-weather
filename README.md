@@ -84,7 +84,8 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   Station in der Höhe des Ortes (höchstens 300 m Unterschied) und nahe am Modell. Der Himmel „jetzt“
   folgt dem gemessenen Sonnenschein, wie die Stunden dem Sonnenschein des Modells – dünne Schleierwolken
   machen keinen bewölkten Himmel, wenn die Sonne durchscheint; die laufende Stunde im Tagesdiagramm
-  zeigt dasselbe Wetter wie die Kopfzeile. ⓘ am Hinweis „Gemessen an …“ nennt für jeden Wert, ob er
+  zeigt dasselbe Wetter wie die Kopfzeile. Höchst- und Tiefstwert des Tages schließen die
+  Temperatur jetzt ein (das Modell kann darunter bleiben, gemessen ist sie erreicht). ⓘ am Hinweis „Gemessen an …“ nennt für jeden Wert, ob er
   gemessen ist (und wo) oder vom Modell kommt. Netze und Regeln: [docs/STATIONS.md](docs/STATIONS.md).
 - **Meteogramm** je Tag (00–24 Uhr): Temperatur (Vorhersage alle 15 Minuten, Messwerte der
   DWD-Station alle 10 Minuten), Niederschlag, Sonnenscheindauer und Wind pro Stunde,
@@ -218,10 +219,13 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   darunter über die ganze Breite die nächsten 90 Minuten auf den Viertelstunden der Uhr – ein
   Diagramm mit Sonne (Anteil der Viertelstunde in %, hinten) und Niederschlag (mm/h, davor), nur
   wenn es etwas zu zeichnen gibt, sonst eine Zeile („Kein Niederschlag, keine Sonne bis 11:45“) –
-  mit dem Satz der Niederschlagskarte, und die gewählten Pollenarten: als Balken mit Zwischenstufen,
+  mit dem Satz der Niederschlagskarte und der Wahrscheinlichkeit seiner Stunde („… ab etwa 11:00
+  · 40%“), und die gewählten Pollenarten, die heute fliegen, die stärkste zuerst: als Balken mit
+  Zwischenstufen rechts neben dem Diagramm (ein Drittel der Breite), wo das nicht passt darunter,
   bei wenig Platz nur die nennenswert fliegenden als farbige Punkte. Datum mit ausgeschriebenem
   Monat (Wochentag, wo Platz ist) oder in Ziffern mit Kalenderwoche. Jedes Teil abschaltbar; was
-  nicht in die Größe passt, blendet es aus, die übrige Höhe nimmt das Diagramm oder verteilt sich
+  nicht in die Größe passt, blendet es aus (ab Android 12 für jede Größe, in der der Launcher es
+  zeigt), die übrige Höhe nimmt das Diagramm oder verteilt sich
   zwischen den Gruppen; „Stand“ mit ↻ unten. Tippen auf die Uhrzeit öffnet den Wecker, auf das
   Datum den Kalender, auf das Wetter Nimbus beim Ort des Widgets. Farben des Systems (hell/dunkel,
   ab Android 12 aus dem Hintergrundbild), Deckkraft einstellbar. Ort: „Mein Standort“ – wo die App

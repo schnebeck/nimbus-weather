@@ -68,7 +68,8 @@ data class WidgetSize(val widthDp: Int, val heightDp: Int)
  * [secondLine]: the date over the clock and the place over the weather fit; [longDate]: the
  * weekday and month written out. The pollen as gauges below ([pollenRows]) where they all fit, else
  * as points in a line under the columns ([pollenDots]) – only those that fly noteworthily –,
- * beside the alarm where it stands there. The chart only with something to draw (sunshine,
+ * beside the alarm where it stands there; with the chart, on the third beside it, one under the
+ * other ([pollenSide], [pollenSideRows] of them). Only the types that fly at all. The chart only with something to draw (sunshine,
  * precipitation); else its line takes its place. Precipitation coming, its line comes before the
  * pollen – where it has no room over the chart, in the line under the columns ([midRain]).
  * The alarm on a line under the clock ([alarm]) where there is the
@@ -77,10 +78,12 @@ data class WidgetSize(val widthDp: Int, val heightDp: Int)
 data class WidgetLayout(
     val clock: Boolean, val date: Boolean, val alarm: Boolean, val alarmBeside: Boolean, val weather: Boolean, val right: Boolean,
     val secondLine: Boolean, val rain: Boolean, val rainLine: Boolean, val midRain: Boolean, val chart: Boolean, val chartDp: Float,
-    val pollenRows: Int, val pollenPerRow: Int, val pollenDots: Boolean, val status: Boolean, val bigDp: Float, val longDate: Boolean, val widthDp: Float,
+    val pollenRows: Int, val pollenPerRow: Int, val pollenDots: Boolean, val pollenSide: Boolean, val pollenSideRows: Int, val status: Boolean, val bigDp: Float, val longDate: Boolean, val widthDp: Float,
 ) {
     companion object {
         private const val PADDING_V = 16
+        /** Room to spare below the head: estimated lines may come out taller on the phone. */
+        private const val SPARE = 6f
         private const val PADDING_H = 28
         private const val BIG_MAX = 46f
         private const val BIG_MIN = 16f
@@ -112,6 +115,8 @@ data class WidgetLayout(
         private const val POLLEN_TOP = 6f
         private const val POLLEN_ROW = 18f
         private const val POLLEN_CELL = 92f
+        /** The least width of the third beside the chart: a name and its gauge. */
+        private const val SIDE_MIN = 92f
         private const val STATUS = 24f
 
         /**
@@ -127,7 +132,9 @@ data class WidgetLayout(
             val line = LINE * fontScale
             val height = (size.heightDp - PADDING_V).toFloat()
             val width = (size.widthDp - PADDING_H).toFloat()
-            val pollenCount = if (config.pollen.isEmpty()) 0 else weather?.pollen?.size ?: 0
+            // the pollen: those flying; chosen but none flying, a line saying so
+            val pollenWanted = config.pollen.isNotEmpty() && weather?.pollen?.isNotEmpty() == true
+            val pollenCount = if (pollenWanted) weather!!.pollenFlying.size else 0
             val rainWanted = config.rain && weather?.rain != null
             val rightWanted = config.weather || weather == null
             // narrow: one column on top – the weather when chosen
@@ -150,7 +157,7 @@ data class WidgetLayout(
 
             class Plan(
                 val big: Float, val below: Boolean, val beside: Boolean, val chart: Boolean, val rows: Int,
-                val dots: Boolean, val rainLine: Boolean, val midRain: Boolean, val status: Boolean, val chartDp: Float,
+                val dots: Boolean, val side: Boolean, val rainLine: Boolean, val midRain: Boolean, val status: Boolean, val chartDp: Float,
             ) {
                 val rainShown get() = rainLine || midRain
             }
@@ -167,7 +174,7 @@ data class WidgetLayout(
                 if (beside) big = minOf(big, (width - (if (bigWeather) WEATHER_FIX else 0f) - (if (rightWanted) GAP else 0f) - besideW) / perDp)
                 val bigH = if (bigClock || bigWeather) big * BIG_LINE else 0f
                 // the line under both columns: the alarm (under the clock), beside it the 90 minutes' line or the pollen as points
-                var left = height - headH - bigH - (if (below) line + 2 else 0f)
+                var left = height - SPARE - headH - bigH - (if (below) line + 2 else 0f)
                 fun fits(h: Float) = (left >= h).also { if (it) left -= h }
                 val alarmW = if (below) ALARM_ICON + CHAR * (alarm?.length ?: 0) * fontScale + GAP else 0f
                 val chart = chartWanted && fits(BELOW_GAP + CHART_TOP + CHART_MIN + AXIS)
@@ -179,18 +186,21 @@ data class WidgetLayout(
                 var rainLine = rainFirst && rainLineFits()
                 var midRain = false
                 if (rainFirst && !rainLine) midRain = rainW <= width - alarmW && (below || fits(line + 2))
-                // the pollen: all as gauges below; else as points in the line under the columns
+                // the pollen: beside the chart, one under the other; without the chart all as gauges
+                // below, else as points in the line under the columns
                 var rows = 0
                 var dots = false
-                if (pollenRowsWanted > 0) {
+                // beside the chart only where its third holds a name and a gauge
+                val side = chart && pollenWanted && (width - 12f) / 3f >= SIDE_MIN * fontScale
+                if (pollenWanted && !side) {
                     when {
-                        fits((if (chart || rainLine) POLLEN_TOP else BELOW_GAP) + pollenRowsWanted * POLLEN_ROW * fontScale) -> rows = pollenRowsWanted
+                        pollenRowsWanted > 0 && fits((if (chart || rainLine) POLLEN_TOP else BELOW_GAP) + pollenRowsWanted * POLLEN_ROW * fontScale) -> rows = pollenRowsWanted
                         !midRain && dotsW <= width - alarmW && (below || fits(line + 2)) -> dots = true
                     }
                 }
                 if (rainWanted && !rainFirst) rainLine = rainLineFits()
                 val status = fits(STATUS * fontScale)
-                return Plan(big, below, beside, chart, rows, dots, rainLine, midRain, status, if (chart) CHART_MIN + left.coerceAtLeast(0f) else 0f)
+                return Plan(big, below, beside, chart, rows, dots, side, rainLine, midRain, status, if (chart) CHART_MIN + left.coerceAtLeast(0f) else 0f)
             }
             val none = plan(below = false, beside = false)
             val p = when {
@@ -217,7 +227,8 @@ data class WidgetLayout(
             return WidgetLayout(
                 clock = bigClock, date = date, alarm = p.below, alarmBeside = p.beside && besideW > 0, weather = bigWeather, right = rightWanted,
                 secondLine = secondLine, rain = p.chart || p.rainLine, rainLine = p.rainLine, midRain = p.midRain, chart = p.chart, chartDp = p.chartDp,
-                pollenRows = p.rows, pollenPerRow = perRow, pollenDots = p.dots, status = p.status, bigDp = p.big, longDate = longDate, widthDp = width,
+                pollenRows = p.rows, pollenPerRow = perRow, pollenDots = p.dots, pollenSide = p.side,
+                pollenSideRows = if (p.side) ((CHART_TOP + p.chartDp + AXIS) / (POLLEN_ROW * fontScale)).toInt().coerceIn(1, 6) else 0, status = p.status, bigDp = p.big, longDate = longDate, widthDp = width,
             )
         }
     }
@@ -225,6 +236,16 @@ data class WidgetLayout(
 
 object WidgetViews {
     const val EXTRA_PLACE = "dev.nimbus.weather.widget.PLACE"
+
+    /** The rows of the pollen beside the chart: row, name, gauge. */
+    private val SIDE_ROWS = listOf(
+        Triple(R.id.widget_side_0, R.id.widget_side_0_name, R.id.widget_side_0_gauge),
+        Triple(R.id.widget_side_1, R.id.widget_side_1_name, R.id.widget_side_1_gauge),
+        Triple(R.id.widget_side_2, R.id.widget_side_2_name, R.id.widget_side_2_gauge),
+        Triple(R.id.widget_side_3, R.id.widget_side_3_name, R.id.widget_side_3_gauge),
+        Triple(R.id.widget_side_4, R.id.widget_side_4_name, R.id.widget_side_4_gauge),
+        Triple(R.id.widget_side_5, R.id.widget_side_5_name, R.id.widget_side_5_gauge),
+    )
 
     /** The pollen rows, and in them the cells: their row, name and gauge. */
     private val POLLEN_ROWS = listOf(
@@ -279,7 +300,10 @@ object WidgetViews {
         val rain = weather?.rain
         // the precipitation card's words; dry: with "no sunshine" by day where none comes either
         val rainText = rain?.let { r ->
-            r.notice?.let { precipNoticeText(res, it, now, tf) }
+            r.notice?.let { n ->
+                val words = precipNoticeText(res, n, now, tf)
+                r.chance?.let { res.getString(R.string.widget_rain_chance, words, it) } ?: words
+            }
                 ?: res.getString(if (!r.eventful && weather.isDay) R.string.widget_rain_dry_dull else R.string.widget_rain_dry, tf.time(r.to))
         }
         val dots = weather?.pollen?.takeIf { it.isNotEmpty() && config.pollen.isNotEmpty() }?.let { pollenDots(context, it) }
@@ -373,7 +397,25 @@ object WidgetViews {
             if (l.chart) {
                 val fontScale = res.configuration.fontScale
                 val chartPx = ((l.chartDp + AXIS_DP * fontScale) * density).toInt()
-                v.setImageViewBitmap(R.id.widget_chart, chart(rain, (l.widthDp.coerceAtLeast(60f) * density).toInt(), chartPx, density, scales(context, precip, locale), tf, fontScale))
+                val chartW = if (l.pollenSide) (l.widthDp - 12f) * 2f / 3f else l.widthDp
+                v.setImageViewBitmap(R.id.widget_chart, chart(rain, (chartW.coerceAtLeast(60f) * density).toInt(), chartPx, density, scales(context, precip, locale), tf, fontScale))
+            }
+        }
+
+        // beside the chart: the pollen flying, the strongest first, each with the pollen card's gauge; none: a line saying so
+        v.visible(R.id.widget_side, l.pollenSide)
+        val flying = weather?.pollenFlying.orEmpty()
+        v.visible(R.id.widget_side_quiet, l.pollenSide && flying.isEmpty())
+        if (l.pollenSide && flying.isEmpty() && weather != null) {
+            v.setTextViewText(R.id.widget_side_quiet, res.getString(R.string.widget_pollen_quiet, res.getString(pollenLevelText(0f)).lowercase(locale)))
+        }
+        SIDE_ROWS.forEachIndexed { i, (row, name, gauge) ->
+            val p = flying.getOrNull(i)?.takeIf { l.pollenSide && i < l.pollenSideRows }
+            v.visible(row, p != null)
+            if (p != null) {
+                v.setTextViewText(name, res.getString(pollenName(p.first)))
+                v.setImageViewBitmap(gauge, pollenGauge(p.second, (36 * density).toInt(), (7 * density).toInt(), density))
+                v.setContentDescription(gauge, res.getString(pollenLevelText(p.second)))
             }
         }
 
@@ -390,7 +432,7 @@ object WidgetViews {
             val r = i / 3
             val c = i % 3
             val k = r * l.pollenPerRow + c
-            val p = weather?.pollen?.getOrNull(k)?.takeIf { c < l.pollenPerRow && r < l.pollenRows }
+            val p = weather?.pollenFlying?.getOrNull(k)?.takeIf { c < l.pollenPerRow && r < l.pollenRows }
             // a cell of the row with no type left keeps its room: the gauges stay in their columns
             v.setViewVisibility(cell, if (c >= l.pollenPerRow) View.GONE else if (p == null) View.INVISIBLE else View.VISIBLE)
             if (p != null) {
@@ -575,7 +617,8 @@ object WidgetViews {
         val quarter = 15 * 60_000L
         val marks = ((rain.to - rain.from) / quarter).toInt()
         val labelW = times.measureText(tf.time(rain.from)) + 8 * density
-        val every = listOf(2, 3, marks).first { (x1 - x0) * it / marks >= labelW }
+        // as many times as there is room for: every half hour, every 45 minutes, start and end – or the start alone
+        val every = listOf(2, 3, marks).firstOrNull { (x1 - x0) * it / marks >= labelW } ?: (marks + 1)
         for (k in 0..marks) {
             val t = rain.from + k * quarter
             c.drawLine(x(t), base, x(t), base + 3 * density, line)

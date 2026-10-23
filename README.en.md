@@ -82,7 +82,8 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   MeteoSwiss and DMI every 10 minutes, else an airport (METAR). Each value counts only from a station
   at the place's height (at most 300 m apart) and near the model. The sky "now" follows the measured
   sunshine as the hours follow the model's – thin veil clouds do not make a cloudy sky while the sun
-  shines through; the running hour in the day chart shows the same weather as the header. The ⓘ of
+  shines through; the running hour in the day chart shows the same weather as the header. The day's high and low
+  hold the temperature now (the model may stay below it; measured, it has been reached). The ⓘ of
   "Measured at …" names for each value whether it was measured (and where) or comes from the model.
   Networks and rules: [docs/STATIONS.en.md](docs/STATIONS.en.md).
 - **Meteogram** per day (00–24 h): temperature (forecast every 15 minutes, the DWD station's readings
@@ -209,10 +210,12 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   whole width the next 90 minutes on the clock's quarter hours – a chart of sunshine (share of the
   quarter hour in %, behind) and precipitation (mm/h, in front), only when there is something to
   draw, else a line ("No precipitation, no sunshine until 11:45") – with the precipitation card's
-  line, and the chosen pollen types: as gauges with their half steps, with little room only those
-  flying noteworthily as coloured points. The date with the month written out (the weekday where
+  line and the chance of its hour ("… from about 11:00 · 40%"), and the chosen pollen types flying
+  today, the strongest first: as gauges with their half steps beside the chart (a third of the
+  width), below it where that does not fit, with little room only those flying noteworthily as
+  coloured points. The date with the month written out (the weekday where
   there is room) or in figures with the calendar week. Each part can be switched off; what does
-  not fit its size it leaves out, the height left goes to the chart or spreads between the groups;
+  not fit its size it leaves out (from Android 12 on for each size the launcher shows it in), the height left goes to the chart or spreads between the groups;
   "As of" with ↻ at the bottom. A tap on the time opens the alarms, on the date the calendar, on
   the weather Nimbus at the widget's place. The system's colours (light/dark, from Android 12 on
   from the wallpaper), adjustable opacity. Place: "My Location" – where the app last found the

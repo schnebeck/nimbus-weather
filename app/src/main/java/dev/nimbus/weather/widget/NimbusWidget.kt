@@ -24,6 +24,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.widget.RemoteViews
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -190,11 +191,28 @@ object Widgets {
             val place = placeOf(store, config)
             val data = place?.let { store.cachedWeather(it.id) }
             val weather = data?.let { WidgetWeather.of(it, now, config.pollen) }
-            val views = WidgetViews.build(app, id, config, sizeOf(manager, id), weather, place?.id, settings.temperatureUnit, now, updating, settings.precipitationUnit)
+            val build = { size: WidgetSize -> WidgetViews.build(app, id, config, size, weather, place?.id, settings.temperatureUnit, now, updating, settings.precipitationUnit) }
+            val views = sizesOf(manager, id)?.let { sizes -> RemoteViews(sizes.associateWith { build(WidgetSize(it.width.toInt(), it.height.toInt())) }) }
+                ?: build(sizeOf(manager, id))
             runCatching { manager.updateAppWidget(id, views) }
         }
         scheduleNewDay(app)
     }
+
+    /**
+     * The sizes the launcher shows the widget at (from Android 12 on: portrait, landscape, …) – a
+     * picture is made for each and the launcher takes the one of the size it gives: nothing
+     * planned for more room than there is. Null: not told, [sizeOf] stands in.
+     */
+    fun sizesOf(manager: AppWidgetManager, id: Int): List<android.util.SizeF>? {
+        if (android.os.Build.VERSION.SDK_INT < 31) return null
+        @Suppress("DEPRECATION")
+        val sizes = runCatching { manager.getAppWidgetOptions(id).getParcelableArrayList<android.util.SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES) }.getOrNull()
+        return sizes?.filter { it.width > 0 && it.height > 0 }?.distinct()?.take(MAX_SIZES)?.takeIf { it.isNotEmpty() }
+    }
+
+    /** At most this many pictures in one update (each carries its bitmaps). */
+    private const val MAX_SIZES = 4
 
     fun sizeOf(manager: AppWidgetManager, id: Int): WidgetSize {
         val o = runCatching { manager.getAppWidgetOptions(id) }.getOrNull()

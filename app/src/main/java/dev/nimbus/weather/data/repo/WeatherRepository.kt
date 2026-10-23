@@ -221,7 +221,7 @@ class WeatherRepository(
             utcOffsetSeconds = forecast.utcOffsetSeconds,
             current = now,
             hourly = hourly,
-            daily = forecast.daily,
+            daily = NowWeather.dailyWithNow(forecast.daily, now, clock()),
             minutely = RadarAhead.minutely(forecast.minutely, radarNow, clock()),
             alerts = alerts + flood,
             airQuality = aq,

@@ -1,0 +1,4 @@
+• Widget: der Regensatz nennt die Wahrscheinlichkeit seiner Stunde („Leichter Regen ab etwa 17:15 · 40%“)
+• Widget: Pollen rechts neben dem Diagramm untereinander (ein Drittel der Breite), nur Arten, die heute fliegen, die stärkste zuerst
+• Widget: ab Android 12 eine eigene Ansicht für jede Größe des Launchers – nichts wird mehr abgeschnitten
+• Höchst- und Tiefstwert des Tages schließen die gemessene Temperatur ein

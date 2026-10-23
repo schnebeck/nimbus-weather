@@ -20,6 +20,7 @@ package dev.nimbus.weather.data.repo
 
 import dev.nimbus.weather.data.model.Condition
 import dev.nimbus.weather.data.model.CurrentWeather
+import dev.nimbus.weather.data.model.DailyPoint
 import dev.nimbus.weather.data.model.HourlyPoint
 import dev.nimbus.weather.data.model.MeasuredValue
 import dev.nimbus.weather.data.model.NowValue
@@ -123,6 +124,20 @@ object NowWeather {
         val c = WeatherCodes.forMeasured(current.condition, r.mmPerHour, current.cloudCover, current.temperature, byRadar = true) ?: current.condition
         if (c == current.condition) return current
         return current.copy(condition = c, sky = SkyBasis.RADAR, measured = current.measured.filter { it.value != NowValue.SKY })
+    }
+
+    /**
+     * Today's high and low hold the temperature now: the model's day may top out below what is
+     * measured, the day reached at least that. The day running at [now] only; the others as forecast.
+     */
+    fun dailyWithNow(daily: List<DailyPoint>, current: CurrentWeather, now: Long): List<DailyPoint> {
+        val i = daily.indexOfLast { it.date <= now }
+        if (i < 0) return daily
+        val d = daily[i]
+        val end = daily.getOrNull(i + 1)?.date ?: (d.date + 25 * 3_600_000L)
+        val t = current.temperature
+        if (now >= end || t in d.tempMin..d.tempMax) return daily
+        return daily.toMutableList().also { it[i] = d.copy(tempMax = maxOf(d.tempMax, t), tempMin = minOf(d.tempMin, t)) }
     }
 
     /** The hour running at [now]: its values cover the hour before their time stamp. */

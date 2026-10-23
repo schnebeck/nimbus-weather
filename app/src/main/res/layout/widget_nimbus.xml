@@ -329,13 +329,189 @@
                 android:textColor="@color/widget_text"
                 android:textSize="13sp" />
 
-            <ImageView
-                android:id="@+id/widget_chart"
+            <!-- the chart on two thirds, beside it the pollen flying, one under the other -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="3dp"
-                android:importantForAccessibility="no"
-                android:scaleType="fitXY" />
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/widget_chart"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
+                    android:importantForAccessibility="no"
+                    android:scaleType="fitXY" />
+
+                <LinearLayout
+                    android:id="@+id/widget_side"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/widget_side_quiet"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:maxLines="3"
+                        android:textColor="@color/widget_text_dim"
+                        android:textSize="12sp" />
+
+                    <LinearLayout
+                        android:id="@+id/widget_side_0"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/widget_side_0_name"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:textColor="@color/widget_text"
+                            android:textSize="12sp" />
+
+                        <ImageView
+                            android:id="@+id/widget_side_0_gauge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:importantForAccessibility="no" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/widget_side_1"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/widget_side_1_name"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:textColor="@color/widget_text"
+                            android:textSize="12sp" />
+
+                        <ImageView
+                            android:id="@+id/widget_side_1_gauge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:importantForAccessibility="no" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/widget_side_2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/widget_side_2_name"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:textColor="@color/widget_text"
+                            android:textSize="12sp" />
+
+                        <ImageView
+                            android:id="@+id/widget_side_2_gauge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:importantForAccessibility="no" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/widget_side_3"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/widget_side_3_name"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:textColor="@color/widget_text"
+                            android:textSize="12sp" />
+
+                        <ImageView
+                            android:id="@+id/widget_side_3_gauge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:importantForAccessibility="no" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/widget_side_4"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/widget_side_4_name"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:textColor="@color/widget_text"
+                            android:textSize="12sp" />
+
+                        <ImageView
+                            android:id="@+id/widget_side_4_gauge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:importantForAccessibility="no" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/widget_side_5"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/widget_side_5_name"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:textColor="@color/widget_text"
+                            android:textSize="12sp" />
+
+                        <ImageView
+                            android:id="@+id/widget_side_5_gauge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:importantForAccessibility="no" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
 
 

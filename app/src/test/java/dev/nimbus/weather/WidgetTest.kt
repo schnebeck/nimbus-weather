@@ -141,6 +141,34 @@ class WidgetTest {
         assertEquals("Kein Niederschlag bis 11:45", views.text(R.id.widget_rain_text))
     }
 
+    /** The rain sentence ends with the chance of the hour the rain starts in, as the hour strip writes it. */
+    @Test fun theChanceOfTheHourTheRainStartsIn() {
+        val d = data(rainFrom = 40).let { d ->
+            d.copy(hourly = d.hourly.map { it.copy(precipitationProbability = if (it.time == day + 12 * h) 40.0 else 20.0) })
+        }
+        val rain = WidgetWeather.of(d, now, emptyList()).rain!!
+        assertEquals(day + 11 * h, rain.notice!!.at)
+        assertEquals("40", rain.chance)
+        val words = precipNoticeText(app.resources, rain.notice!!, now, tf)
+        assertEquals("$words\u00A0· 40%", render(WidgetConfig(), WidgetSize(320, 200), d).text(R.id.widget_rain_text))
+        // dry: no chance to tell
+        assertNull(WidgetWeather.of(data(rainFrom = 100), now, emptyList()).rain!!.chance)
+    }
+
+    /** Today's high and low hold the temperature measured now – the other days stay as forecast. */
+    @Test fun theDaysHighAndLowHoldTheTemperatureNow() {
+        val d = data()
+        fun at(t: Double) = d.current.copy(temperature = t)
+        val warm = dev.nimbus.weather.data.repo.NowWeather.dailyWithNow(d.daily, at(14.6), now)
+        assertEquals(14.6, warm[0].tempMax, 0.0)
+        assertEquals(6.0, warm[0].tempMin, 0.0)
+        assertEquals(d.daily.drop(1), warm.drop(1))
+        assertEquals(5.2, dev.nimbus.weather.data.repo.NowWeather.dailyWithNow(d.daily, at(5.2), now)[0].tempMin, 0.0)
+        assertEquals(d.daily, dev.nimbus.weather.data.repo.NowWeather.dailyWithNow(d.daily, at(12.4), now))
+        // a forecast whose days are all over: nothing to hold
+        assertEquals(d.daily, dev.nimbus.weather.data.repo.NowWeather.dailyWithNow(d.daily, at(20.0), day + 4 * 24 * h))
+    }
+
     /** Today's level of each chosen type, in the order chosen; a type the forecast does not give is left out. */
     @Test fun theChosenPollenOfToday() {
         val w = WidgetWeather.of(data(), now, listOf(PollenType.BIRCH, PollenType.RAGWEED, PollenType.GRASS))
@@ -151,13 +179,18 @@ class WidgetTest {
         assertEquals(medium, gauge.getPixel(50, 15))
         assertEquals(medium, gauge.getPixel(150, 15))
         assertTrue(gauge.getPixel(250, 15) != medium)
-        val v = render(WidgetConfig(pollen = listOf(PollenType.BIRCH, PollenType.GRASS)), WidgetSize(320, 300), data())
-        assertEquals("Birke", v.text(R.id.widget_pollen_0_name))
-        assertEquals("Gräser", v.text(R.id.widget_pollen_1_name))
-        // side by side over the whole width: one row, its third place kept empty
-        assertEquals(View.VISIBLE, v.findViewById<View>(R.id.widget_pollen_row_0).visibility)
-        assertEquals(View.GONE, v.findViewById<View>(R.id.widget_pollen_row_1).visibility)
-        assertEquals(View.INVISIBLE, v.findViewById<View>(R.id.widget_pollen_2).visibility)
+        // beside the chart, one under the other: those flying, the strongest first
+        val v = render(WidgetConfig(pollen = listOf(PollenType.GRASS, PollenType.HAZEL, PollenType.BIRCH)), WidgetSize(320, 300), data())
+        assertEquals("Birke", v.text(R.id.widget_side_0_name))
+        assertEquals("Gräser", v.text(R.id.widget_side_1_name))
+        assertEquals(View.GONE, v.findViewById<View>(R.id.widget_side_2).visibility)
+        // without the chart: side by side over the whole width – one row, its third place kept empty
+        val dull = data(rainFrom = 100).let { d -> d.copy(minutely = d.minutely.map { it.copy(sunshine = 0.0) }) }
+        val g = render(WidgetConfig(pollen = listOf(PollenType.GRASS, PollenType.HAZEL, PollenType.BIRCH)), WidgetSize(320, 300), dull)
+        assertEquals("Birke", g.text(R.id.widget_pollen_0_name))
+        assertEquals(View.VISIBLE, g.findViewById<View>(R.id.widget_pollen_row_0).visibility)
+        assertEquals(View.GONE, g.findViewById<View>(R.id.widget_pollen_row_1).visibility)
+        assertEquals(View.INVISIBLE, g.findViewById<View>(R.id.widget_pollen_2).visibility)
         assertTrue(WidgetWeather.of(data(), now, emptyList()).pollen.isEmpty())
     }
 
@@ -169,8 +202,14 @@ class WidgetTest {
     @Test fun thePollenAsPointsWhereGaugesDoNotFit() {
         val all = listOf(PollenType.BIRCH, PollenType.GRASS, PollenType.HAZEL)
         val w = WidgetWeather.of(data(), now, all)
+        // with the chart: beside it, not as points
         val l = WidgetLayout.of(WidgetConfig(pollen = all), WidgetSize(320, 180), alarm = "06:00", weather = w, pollenText = WidgetViews.pollenDots(app, w.pollen).toString())
-        assertTrue(l.pollenDots && l.pollenRows == 0 && l.alarm && l.chart)
+        assertTrue(l.pollenSide && !l.pollenDots && l.pollenRows == 0 && l.chart)
+        // nothing to draw and little height: as points beside the alarm
+        val dull = data(rainFrom = 100).let { d -> d.copy(minutely = d.minutely.map { it.copy(sunshine = 0.0) }) }
+        val wd = WidgetWeather.of(dull, now, all)
+        val low = WidgetLayout.of(WidgetConfig(pollen = all, rain = false), WidgetSize(320, 140), alarm = "06:00", weather = wd, pollenText = WidgetViews.pollenDots(app, wd.pollen).toString())
+        assertTrue(low.pollenDots && !low.chart && low.alarm)
         // birch "medium" yellow; grass "none to low" and hazel "none" left out
         val dots = WidgetViews.pollenDots(app, w.pollen) as android.text.Spanned
         assertEquals("● Birke", dots.toString().replace('\u00A0', ' '))
@@ -180,9 +219,9 @@ class WidgetTest {
         assertEquals("● Birke  ● Gräser", red.toString().replace('\u00A0', ' '))
         assertEquals(0xFFFF5B36.toInt(), red.getSpans(0, red.length, android.text.style.ForegroundColorSpan::class.java).first().foregroundColor)
         assertEquals("Pollen: keine bis gering", WidgetViews.pollenDots(app, listOf(PollenType.BIRCH to 0.5f, PollenType.GRASS to 0f)).toString())
-        // taller: the gauges with their half steps, every type chosen
+        // taller: the gauges with their half steps – beside the chart
         val tall = WidgetLayout.of(WidgetConfig(pollen = all), WidgetSize(320, 300), alarm = "06:00", weather = w, pollenText = dots.toString())
-        assertTrue(!tall.pollenDots && tall.pollenRows == 1)
+        assertTrue(!tall.pollenDots && tall.pollenSide && tall.pollenSideRows >= 2)
     }
 
     /**
@@ -270,7 +309,7 @@ class WidgetTest {
         val all = WidgetConfig(pollen = listOf(PollenType.BIRCH))
         val w = WidgetWeather.of(data(), now, all.pollen)
         val big = WidgetLayout.of(all, WidgetSize(320, 300), alarm = "06:30", weather = w)
-        assertTrue(big.clock && big.date && big.alarm && big.weather && big.rain && big.chart && big.pollenRows == 1 && big.status)
+        assertTrue(big.clock && big.date && big.alarm && big.weather && big.rain && big.chart && big.pollenSide && big.status)
         assertEquals(46f, big.bigDp, 0f)
         // two rows of cells: the alarm under the clock where there is the height, the chart still there
         val two = WidgetLayout.of(all, WidgetSize(320, 180), alarm = "06:30", weather = w)
@@ -452,7 +491,7 @@ class WidgetTest {
         alarmAt(day + 30 * h)                                          // tomorrow 06:00
         val v = render(WidgetConfig(pollen = listOf(PollenType.BIRCH, PollenType.GRASS, PollenType.HAZEL)), WidgetSize(320, 200), data(rainFrom = 40))
         assertEquals(View.VISIBLE, v.findViewById<View>(R.id.widget_chart).visibility)
-        assertTrue(v.findViewById<View>(R.id.widget_pollen).visibility == View.VISIBLE || v.findViewById<View>(R.id.widget_pollen_dots).visibility == View.VISIBLE)
+        assertTrue(listOf(R.id.widget_pollen, R.id.widget_pollen_dots, R.id.widget_side).any { v.findViewById<View>(it).visibility == View.VISIBLE })
         assertNotNull(v.findViewById<TextView>(R.id.widget_rain_text).text)
         assertEquals("06:00", v.text(R.id.widget_alarm))
         assertTrue(v.findViewById<View>(R.id.widget_alarm_line).visibility == View.VISIBLE || v.findViewById<View>(R.id.widget_alarm_beside).visibility == View.VISIBLE)

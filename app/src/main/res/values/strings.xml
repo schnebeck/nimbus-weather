@@ -802,6 +802,7 @@
     <string name="widget_description">Time, date, alarm, weather, precipitation and sunshine in the next 90 minutes, pollen – each part your choice</string>
     <string name="widget_no_data">Open Nimbus</string>
     <string name="widget_rain_dry">No precipitation until %1$s</string>
+    <string name="widget_rain_chance">%1$s\u00A0· %2$s%%</string>
     <string name="widget_rain_dry_dull">No precipitation, no sunshine until %1$s</string>
     <string name="widget_as_of">As of %1$s</string>
     <string name="widget_updating">Fetching …</string>

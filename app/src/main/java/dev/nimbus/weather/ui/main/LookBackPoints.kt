@@ -54,9 +54,10 @@ fun History.lookBackPoints(
         compare = HourCompare(
             m?.temperature, f?.temperature, rain, f?.precipitation, f?.chance ?: chanceOf(h.time),
             m?.windSpeed, m?.windDirection, f?.windSpeed, m?.windGust, f?.windGust, sun, f?.sunshineMinutes,
-            lightningM = m?.lightning,
+            lightningM = m?.lightning, precipFellM = m?.trace == true,
         ),
         precipMeasured = rain != null,
+        precipFell = m?.trace == true,
         sunMeasured = sun != null,
         forecastSunshine = f?.sunshineMinutes.takeIf { sun != null },
     )

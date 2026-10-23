@@ -77,7 +77,8 @@ fun HourlyCard(data: WeatherData, now: Long) {
     }
     val summary = outlookText(data, now)
     val mmUnit = stringResource(dev.nimbus.weather.util.Texts.precipUnit(settings.precipitationUnit))
-    fun radarAmount(mm: Double?) = Units.precipitationNumber(mm ?: 0.0, settings.precipitationUnit) + NBSP + mmUnit
+    // an hour the radar saw a shower in, however little its sum: ">0 mm"
+    fun radarAmount(mm: Double?, fell: Boolean) = Units.precipitationNumber(mm ?: 0.0, settings.precipitationUnit, fell) + NBSP + mmUnit
     // One width for every cell: wide enough for the widest label, chance and temperature in the
     // font size set ("Jetzt", "07:25", "-12°") – the cells grow with a large font, all alike
     val nowLabel = stringResource(R.string.now)
@@ -88,7 +89,7 @@ fun HourlyCard(data: WeatherData, now: Long) {
             with(density) { (texts.maxOfOrNull { measurer.measure(it, style, softWrap = false, density = density).size.width } ?: 0).toDp() }
         val labels = items.map { if (it is HourItem.Hour) (if (it.isNow) nowLabel else tf.hour(it.time)) else tf.time(it.time) }
         val temps = items.mapNotNull { (it as? HourItem.Hour)?.let { h -> Units.temp(if (h.isNow) data.current.temperature else h.hour.temperature, settings.temperatureUnit) } }
-        val chances = items.mapNotNull { (it as? HourItem.Hour)?.hour?.let { h -> if (h.radar) radarAmount(h.amount) else Insights.chanceText(h.chance, h.amount) + NBSP + "%" } }
+        val chances = items.mapNotNull { (it as? HourItem.Hour)?.hour?.let { h -> if (h.radar) radarAmount(h.amount, h.condition.isPrecipitation) else Insights.chanceText(h.chance, h.amount) + NBSP + "%" } }
         maxOf(
             52.dp,
             widest(labels, androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.SemiBold)) + 8.dp,
@@ -122,7 +123,7 @@ fun HourlyCard(data: WeatherData, now: Long) {
                         isDay = if (item.isNow) data.current.isDay else item.hour.isDay,
                         precipProb = item.hour.chance,
                         precipAmount = item.hour.amount,
-                        radarAmount = if (item.hour.radar) radarAmount(item.hour.amount) else null,
+                        radarAmount = if (item.hour.radar) radarAmount(item.hour.amount, item.hour.condition.isPrecipitation) else null,
                         value = Units.temp(if (item.isNow) data.current.temperature else item.hour.temperature, settings.temperatureUnit),
                         bold = item.isNow,
                         width = cellWidth,

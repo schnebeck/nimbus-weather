@@ -557,6 +557,7 @@
     <string name="pn_rain_moderate">Mäßiger Regen</string>
     <string name="pn_rain_heavy">Starker Regen</string>
     <string name="pn_drizzle">Nieselregen</string>
+    <string name="pn_drizzle_maybe">Vielleicht etwas Niesel</string>
     <string name="pn_snow_light">Leichter Schneefall</string>
     <string name="pn_snow_moderate">Mäßiger Schneefall</string>
     <string name="pn_snow_heavy">Starker Schneefall</string>

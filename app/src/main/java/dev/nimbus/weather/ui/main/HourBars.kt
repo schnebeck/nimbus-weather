@@ -100,11 +100,11 @@ private fun DrawScope.frame(look: BarLook, left: Float, top: Float, width: Float
 @Composable
 fun BarLegendItems(
     look: BarLook, totals: HourBar, @StringRes plain: Int, @StringRes measured: Int, @StringRes expected: Int,
-    @StringRes notMeasured: Int? = null, amount: @Composable (Double) -> String,
+    @StringRes notMeasured: Int? = null, measuredAmount: (@Composable (Double) -> String)? = null, amount: @Composable (Double) -> String,
 ) {
     when {
         totals.measured != null -> {
-            LegendItem(look.fill, stringResource(measured, amount(totals.measured)))
+            LegendItem(look.fill, stringResource(measured, (measuredAmount ?: amount)(totals.measured)))
             if (totals.expected != null) LegendItem(look.frame, stringResource(expected, amount(totals.expected)), frameDp = look.frameDp)
         }
         notMeasured != null -> {

@@ -89,6 +89,9 @@ internal val ForecastLine = Color(0xD9FFFFFF)
 
 private const val CURSOR_TIMEOUT_MS = 10_000L
 
+/** The block of a shower less than the sums count (mm): low, but seen. */
+private const val FELL_BAR_MM = 0.03
+
 /** Wind colour by speed (km/h): calm white → Bft 6 yellow → gale orange → storm red. */
 fun windColor(kmh: Double): Color = when {
     kmh < 39 -> Color.White
@@ -350,7 +353,9 @@ fun Meteogram(
                     }
                     // Measured precipitation as blocks, the forecast as frames (in front of a block)
                     pts.filter { it.time > start }.forEach { h ->
-                        hourBar(HourBars.Rain, h.rainBar(), barX(h.time), barW, pBottom, 2.dp.toPx()) { v ->
+                        // a shower less than the sums count: a low block, as ">0" reads
+                        val bar = h.rainBar().let { b -> if (h.precipFell) b.copy(measured = maxOf(b.measured ?: 0.0, FELL_BAR_MM)) else b }
+                        hourBar(HourBars.Rain, bar, barX(h.time), barW, pBottom, 2.dp.toPx()) { v ->
                             yP(Units.precipitationValue(v, s.precipitationUnit))
                         }
                     }
@@ -474,7 +479,7 @@ fun Meteogram(
                 rainTotals, sunTotals.takeIf { sunShown }, chance = separatePrecip,
                 tempColors = Insights.temperatureColor(pts.minOf { it.temperature }) to Insights.temperatureColor(pts.maxOf { it.temperature }),
                 tempForecast = compare && dashCurve.isNotEmpty(), forecastSoFar = forecastSoFar != null,
-                rainNotMeasured = rainNotMeasured, sunNotMeasured = sunNotMeasured,
+                rainNotMeasured = rainNotMeasured, sunNotMeasured = sunNotMeasured, rainFell = pts.any { it.precipFell },
             )
             if (measuredBy != null) Text(measuredBy, fontSize = 11.sp, lineHeight = 15.sp, color = NimbusColors.Secondary, modifier = Modifier.padding(top = 4.dp))
             // Always laid out (only faded), so the card does not change height with the cursor

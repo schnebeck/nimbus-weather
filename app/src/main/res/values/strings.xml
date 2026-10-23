@@ -568,6 +568,7 @@
     <string name="pn_rain_moderate">Moderate rain</string>
     <string name="pn_rain_heavy">Heavy rain</string>
     <string name="pn_drizzle">Drizzle</string>
+    <string name="pn_drizzle_maybe">Possibly some drizzle</string>
     <string name="pn_snow_light">Light snow</string>
     <string name="pn_snow_moderate">Moderate snow</string>
     <string name="pn_snow_heavy">Heavy snow</string>

@@ -44,10 +44,28 @@ class SpotSource(
 ) {
     /** Precipitation (mm) at the place, by the hour's end, for the hours ending [from] … [to]; empty outside the radar's area. */
     suspend fun radarPrecipitation(lat: Double, lon: Double, from: Long, to: Long): Map<Long, Double> = coroutineScope {
-        // RW keeps a day: asked for more, the service takes seconds longer
-        val rw = async { runCatching { http.getJson(pointUrl(RW, lat, lon, maxOf(from, to - RW_SPAN_MS), to)) }.getOrNull()?.let(::series) }
+        // RW at its full hours only: the whole span (it keeps about 3½ days) in one request – asked
+        // for as a range, every 10-minute sum of it came and took seconds longer
+        val rw = async { runCatching { http.getJson(pointUrl(RW, lat, lon, fullHours(from, to))) }.getOrNull()?.let(::series) }
         val ry = async { runCatching { http.getJson(pointUrl(RY, lat, lon, maxOf(from, to - RY_SPAN_MS), to)) }.getOrNull()?.let(::series) }
         hourly(rw.await().orEmpty(), ry.await().orEmpty())
+    }
+
+    /**
+     * The radar's 5-minute steps over the place, hour by hour ([hourEchoes]): for each hour ending
+     * [from] … [to] its strongest step (mm/h, 0: no echo); the steps the radar map shows (WN
+     * analysis, about 3½ days back). Asked for in stretches of [ECHO_STRETCH_MS] at once, each
+     * waiting at most [waitMs]: an hour missing (not all its steps come) is not known.
+     */
+    suspend fun radarEchoes(lat: Double, lon: Double, from: Long, to: Long, waitMs: Long): Map<Long, Double> = coroutineScope {
+        val start = from / HOUR_MS * HOUR_MS
+        (start until to step ECHO_STRETCH_MS).map { s ->
+            async {
+                kotlinx.coroutines.withTimeoutOrNull(waitMs) {
+                    runCatching { analysis(http.getJson(pointUrl(WN_ANALYSIS, lat, lon, s + STEP_MS, minOf(s + ECHO_STRETCH_MS, to)))) }.getOrNull()
+                }.orEmpty()
+            }
+        }.flatMap { it.await().entries }.associate { it.key to it.value }.let(::hourEchoes)
     }
 
     /**
@@ -78,13 +96,16 @@ class SpotSource(
     }.getOrDefault(emptyMap())
 
     /** The values of [layer] at the place from [from] to [to] (GetFeatureInfo with a time range). */
-    private fun pointUrl(layer: String, lat: Double, lon: Double, from: Long, to: Long): String {
+    private fun pointUrl(layer: String, lat: Double, lon: Double, from: Long, to: Long): String = pointUrl(layer, lat, lon, "${iso(from)}/${iso(to)}")
+
+    /** The values of [layer] at the place at [times] (GetFeatureInfo: a time range or a list). */
+    private fun pointUrl(layer: String, lat: Double, lon: Double, times: String): String {
         // a box of a few metres around the place, its middle pixel asked for
         val d = 0.002
         return "$wms?service=WMS&version=1.3.0&request=GetFeatureInfo&layers=dwd:$layer&query_layers=dwd:$layer" +
             "&crs=EPSG:4326&bbox=${OpenMeteoSource.fmt(lat - d)},${OpenMeteoSource.fmt(lon - d)},${OpenMeteoSource.fmt(lat + d)},${OpenMeteoSource.fmt(lon + d)}" +
             "&width=5&height=5&i=2&j=2&info_format=application/json&feature_count=$MAX_FEATURES" +
-            "&time=${iso(from)}/${iso(to)}"
+            "&time=$times"
     }
 
     companion object {
@@ -94,14 +115,38 @@ class SpotSource(
         const val SATELLITE_MODEL = "dwd_sis_europe_africa_v4"
         private const val HOUR_MS = 3_600_000L
         private const val STEP_MS = 5 * 60_000L
-        /** What RW keeps: a day (and an hour to spare). */
-        private const val RW_SPAN_MS = 25 * HOUR_MS
+        /** The radar map's analysis: reflectivity every 5 minutes, kept about 3½ days. */
+        private const val WN_ANALYSIS = "Radar_wn-analysis_1x1km_ger"
+        /** The analysis is asked for in stretches of 6 hours: a day at once took the service too long. */
+        const val ECHO_STRETCH_MS = 6 * HOUR_MS
         /** RY is asked for the last hours only: those RW does not have yet. */
         private const val RY_SPAN_MS = 3 * HOUR_MS
-        /** RW every 10 minutes for a day, RY every 5 minutes for three hours – and room to spare. */
+        /** RW at the full hours of 3½ days, RY every 5 minutes for three hours – and room to spare. */
         private const val MAX_FEATURES = 400
 
         private fun iso(ms: Long) = Instant.ofEpochMilli(ms / 60_000L * 60_000L).toString()
+
+        /** The full hours from [from] to [to] as a list of times. */
+        fun fullHours(from: Long, to: Long): String =
+            ((from + HOUR_MS - 1) / HOUR_MS * HOUR_MS..to step HOUR_MS).joinToString(",") { iso(it) }
+
+        /** The analysis' answer: the time of each step → its rate (mm/h, 0: no echo); a step without a value left out. */
+        fun analysis(root: JsonElement): Map<Long, Double> = root.obj()?.a("features").orEmpty().mapNotNull { e ->
+            val p = (e as? JsonObject)?.o("properties") ?: return@mapNotNull null
+            val t = runCatching { Instant.parse(p.s("TIME")).toEpochMilli() }.getOrNull() ?: return@mapNotNull null
+            val dbz = p.keys.firstOrNull { it != "TIME" && it != "REFERENCE_TIME" }?.let { p.d(it) } ?: return@mapNotNull null
+            t to kotlin.math.round(rate(dbz) * 100) / 100
+        }.toMap()
+
+        /**
+         * Each hour (by its end) with all twelve of its steps ([steps]: time → mm/h, each covering
+         * the 5 minutes before it): its strongest step.
+         */
+        fun hourEchoes(steps: Map<Long, Double>): Map<Long, Double> =
+            steps.keys.map { (it + HOUR_MS - 1) / HOUR_MS * HOUR_MS }.toSortedSet().mapNotNull { end ->
+                val hour = (0 until 12).map { steps[end - it * STEP_MS] ?: return@mapNotNull null }
+                end to hour.max()
+            }.toMap()
 
         /** The DWD's nowcast: reflectivity every 5 minutes for two hours from each analysis. */
         private const val WN = "Radar_wn-product_1x1km_ger"

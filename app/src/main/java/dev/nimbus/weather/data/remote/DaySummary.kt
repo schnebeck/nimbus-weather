@@ -31,6 +31,8 @@ data class DaySummary(
     val lightning: Int? = null, val lightningFrom: Long? = null, val lightningTo: Long? = null,
     /** The model's sunshine (h) of the same hours; null unless sunshine was measured – else [sunshineHours] is the model's. */
     val modelSunshineHours: Double? = null,
+    /** A shower the radar saw fell, less than the sums count ([HistoryHour.Measured.trace]): [precipitation] reads at least ">0". */
+    val precipitationFell: Boolean = false,
 ) {
     companion object {
         /** Summary of the hours up to [now] (today's forecast for the rest of the day is left out). */
@@ -65,6 +67,7 @@ data class DaySummary(
                 lightningFrom = stormy.minOfOrNull { it.time }?.minus(3_600_000L),
                 lightningTo = stormy.maxOfOrNull { it.time },
                 modelSunshineHours = h.mapNotNull { it.model?.sunshineMinutes }.takeIf { sunMeasured && it.isNotEmpty() }?.sum()?.div(60.0),
+                precipitationFell = h.any { it.measured?.trace == true },
             )
         }
 

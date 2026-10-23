@@ -48,6 +48,8 @@ data class MeteoPoint(
     val compare: HourCompare? = null,
     /** [precipitation] is a reading (a block in the chart); else the forecast (a frame). */
     val precipMeasured: Boolean = false,
+    /** The reading is less than the sums count, over a shower the radar saw: ">0", a low block. */
+    val precipFell: Boolean = false,
     /** [sunshine] is a reading; else the forecast. */
     val sunMeasured: Boolean = false,
     /** Look-back: the forecast sunshine beside the measured (a frame in front of its block). */
@@ -65,6 +67,8 @@ data class HourCompare(
     val feelsF: Double? = null, val humidityF: Double? = null,
     /** Flashes near the place in the hour, by the satellite; null: not known. */
     val lightningM: Int? = null,
+    /** [precipM] less than the sums count, over a shower the radar saw: ">0". */
+    val precipFellM: Boolean = false,
 )
 
 /**

@@ -29,6 +29,18 @@ import dev.nimbus.weather.data.model.WeatherCodes
 object Insights {
     const val RAIN_THRESHOLD_MM_15 = 0.05
 
+    /**
+     * From this rate (mm/h) on a 5-minute radar step is precipitation reaching the ground: about
+     * 12 dBZ, where the radar map paints opaque. Weaker echoes often evaporate on the way down.
+     */
+    const val WET_RATE_MM_H = RAIN_THRESHOLD_MM_15 * 4
+
+    /** A quarter hour with precipitation: by its sum, or by one of the radar's 5-minute steps in it. */
+    fun wet(p: MinutelyPoint): Boolean = p.precipitation >= RAIN_THRESHOLD_MM_15 || (p.peak ?: 0.0) >= WET_RATE_MM_H
+
+    /** A quarter hour whose radar echo is too weak to be sure it reaches the ground: perhaps drizzle. */
+    fun possible(p: MinutelyPoint): Boolean = !wet(p) && (p.peak ?: 0.0) > 0.0
+
     sealed interface Nowcast {
         data object Dry : Nowcast
         data class StartsIn(val minutes: Int) : Nowcast
@@ -47,6 +59,8 @@ object Insights {
         val kind: PrecipKind, val intensity: Intensity, val state: Nowcast,
         /** Clock time for the line, on 5 minutes: start ([Nowcast.StartsIn]), end ([Nowcast.StopsIn]) or the end of the horizon ([Nowcast.Continues]). */
         val at: Long? = null,
+        /** Only an echo too weak to be sure ([possible]): perhaps some drizzle. */
+        val possible: Boolean = false,
     ) {
         /** Falling now (open umbrella) rather than still to come (closed one). */
         val now: Boolean get() = state !is Nowcast.StartsIn
@@ -58,18 +72,25 @@ object Insights {
      * condition at the start (or the current one; hail from WMO 96/99), the intensity from the highest rate:
      * rain light below 2.5 mm/h, moderate up to 10 mm/h, heavy above (DWD classes); snow (water
      * equivalent) light below 1 mm/h, moderate up to 4 mm/h. [horizonMs]: how far it looks ahead.
+     * A quarter hour counts by [wet]: its sum, or one of the radar's 5-minute steps; with no such
+     * quarter, only weak echoes ([possible]) give a notice of perhaps some drizzle.
      */
     fun precipNotice(
         minutely: List<MinutelyPoint>, hourly: List<HourlyPoint>, current: Condition, now: Long, rainingNow: Boolean,
         horizonMs: Long = NOTICE_HORIZON_MS,
     ): PrecipNotice? {
         val points = nowcastPoints(minutely, now).filter { it.time < now + horizonMs }
-        val state = nowcast(points, now, rainingNow)
+        val sure = nowcast(points, now, rainingNow)
+        val possible = sure == Nowcast.Dry
+        val counts: (MinutelyPoint) -> Boolean = if (possible) { p -> possible(p) } else ::wet
+        val state = if (possible) nowcast(points, now, false, counts) else sure
         if (state == Nowcast.Dry) return null
-        val wet = points.map { it.precipitation >= RAIN_THRESHOLD_MM_15 }
+        val wet = points.mapIndexed { i, p -> counts(p) || (i == 0 && rainingNow && !possible) }
         val first = if (state is Nowcast.StartsIn) wet.indexOfFirst { it } else 0
         val last = (first until points.size).firstOrNull { !wet[it] && it > first }?.let { it - 1 } ?: points.lastIndex
-        val rate = points.subList(first.coerceAtLeast(0), (last + 1).coerceAtLeast(first.coerceAtLeast(0))).maxOfOrNull { it.precipitation * 4 } ?: 0.0
+        val rate = points.subList(first.coerceAtLeast(0), (last + 1).coerceAtLeast(first.coerceAtLeast(0)))
+            .maxOfOrNull { maxOf(it.precipitation * 4, it.peak ?: 0.0) } ?: 0.0
+        if (possible) return PrecipNotice(PrecipKind.DRIZZLE, Intensity.LIGHT, state, noticeAt(state, points, wet, first, now, horizonMs), possible = true)
         val hour = hourly.firstOrNull { it.time > if (state is Nowcast.StartsIn) points[first].time else now }
         val condition = if (state !is Nowcast.StartsIn && current.isPrecipitation) current else hour?.condition ?: current
         val kind = if (hour?.hail == true) PrecipKind.HAIL else when (condition) {
@@ -88,16 +109,20 @@ object Insights {
             rate < WeatherCodes.HEAVY_RAIN_MM_H -> Intensity.MODERATE
             else -> Intensity.HEAVY
         }
+        return PrecipNotice(kind, intensity, state, noticeAt(state, points, wet, first, now, horizonMs))
+    }
+
+    /** The clock time of a notice, on 5 minutes: its start, its end, or the end of the horizon. */
+    private fun noticeAt(state: Nowcast, points: List<MinutelyPoint>, wet: List<Boolean>, first: Int, now: Long, horizonMs: Long): Long {
         fun round5(t: Long) = (t + 150_000L) / 300_000L * 300_000L
-        val at = when (state) {
+        return when (state) {
             is Nowcast.StartsIn -> round5(points[first].time.coerceAtLeast(now))
             is Nowcast.StopsIn -> {
-                val stop = points.indices.firstOrNull { i -> i > 0 && points[i].precipitation < RAIN_THRESHOLD_MM_15 }
+                val stop = points.indices.firstOrNull { i -> i > 0 && !wet[i] }
                 round5(stop?.let { points[it].time } ?: (now + state.minutes * 60_000L))
             }
             else -> (now + horizonMs) / 300_000L * 300_000L
         }
-        return PrecipNotice(kind, intensity, state, at)
     }
 
     /** 15-minute points covering the next three hours, starting with the current interval. */
@@ -108,11 +133,12 @@ object Insights {
 
     /**
      * @param rainingNow precipitation is currently observed (e.g. by the DWD station) – the
-     * first interval then counts as wet even if the model has it dry.
+     * first interval then counts as wet even if the model has it dry. [counts]: which quarter hours
+     * are wet ([wet]).
      */
-    fun nowcast(points: List<MinutelyPoint>, now: Long, rainingNow: Boolean = false): Nowcast {
+    fun nowcast(points: List<MinutelyPoint>, now: Long, rainingNow: Boolean = false, counts: (MinutelyPoint) -> Boolean = ::wet): Nowcast {
         if (points.isEmpty()) return if (rainingNow) Nowcast.Continues else Nowcast.Dry
-        val wet = points.mapIndexed { i, p -> p.precipitation >= RAIN_THRESHOLD_MM_15 || (i == 0 && rainingNow) }
+        val wet = points.mapIndexed { i, p -> counts(p) || (i == 0 && rainingNow) }
         return if (wet.first()) {
             val stop = wet.indexOfFirst { !it }
             if (stop == -1) Nowcast.Continues else Nowcast.StopsIn(minutesUntil(points[stop].time, now))

@@ -105,10 +105,12 @@ internal fun BarLegend(
     forecastSoFar: Boolean = false,
     /** The hours over have no precipitation / sunshine reading at all. */
     rainNotMeasured: Boolean = false, sunNotMeasured: Boolean = false,
+    /** A shower the radar saw fell in an hour over, less than the sums count: the measured total reads at least ">0". */
+    rainFell: Boolean = false,
 ) {
     val s = LocalSettings.current
     val unit = stringResource(Texts.precipUnit(s.precipitationUnit))
-    fun amount(v: Double?) = Units.precipitationNumber(v ?: 0.0, s.precipitationUnit) + NBSP + unit
+    fun amount(v: Double?, fell: Boolean = false) = Units.precipitationNumber(v ?: 0.0, s.precipitationUnit, fell) + NBSP + unit
     // Temperature, sunshine, precipitation – each named, the chart shows all of them
     LegendRow {
         val temp = Brush.horizontalGradient(listOf(tempColors.first, tempColors.second))
@@ -122,7 +124,7 @@ internal fun BarLegend(
         ) { hoursMinutes(it) }
         BarLegendItems(
             HourBars.Rain, rain, R.string.legend_precip, R.string.legend_precip_measured, R.string.legend_precip_forecast,
-            R.string.legend_precip_not_measured.takeIf { rainNotMeasured },
+            R.string.legend_precip_not_measured.takeIf { rainNotMeasured }, measuredAmount = { amount(it, rainFell) },
         ) { amount(it) }
         if (chance) LegendItem(ChanceLine, stringResource(R.string.legend_chance), line = true)
     }
@@ -149,7 +151,7 @@ internal fun Readout(
     val wUnit = stringResource(Texts.windUnit(s.windUnit))
     val pUnit = stringResource(Texts.precipUnit(s.precipitationUnit))
     fun t(v: Double?) = v?.let { Units.temp(it, s.temperatureUnit) } ?: NO_VALUE
-    fun p(v: Double?) = v?.let { Units.precipitationNumber(it, s.precipitationUnit) + NBSP + pUnit } ?: NO_VALUE
+    fun p(v: Double?, fell: Boolean = false) = v?.let { Units.precipitationNumber(it, s.precipitationUnit, fell) + NBSP + pUnit } ?: NO_VALUE
     fun w(v: Double?, dir: Double? = null) =
         v?.let { Units.windNumber(it, s.windUnit) + NBSP + wUnit + (dir?.let { d -> NBSP + dirs[Units.compassIndex(d)] } ?: "") } ?: NO_VALUE
     fun sun(v: Double?) = v?.let { "${it.roundToInt()}" + NBSP + "min" } ?: NO_VALUE
@@ -204,7 +206,7 @@ internal fun Readout(
                     listOfNotNull(
                         lTemp to listOf(t(c.tempM), t(c.tempF)),
                         if (extraRows) stringResource(R.string.readout_feels) to listOf(NO_VALUE, t(c.feelsF)) else null,
-                        lPrecip to listOf(p(c.precipM), p(c.precipF)),
+                        lPrecip to listOf(p(c.precipM, c.precipFellM), p(c.precipF)),
                         lChance to listOf(NO_VALUE, pct(c.chanceF, c.precipF)),
                         lWind to listOf(w(c.windM, c.windDirM), w(c.windF)),
                         lGust to listOf(w(c.gustM), w(c.gustF)),

@@ -530,7 +530,6 @@ object WidgetViews {
         return out
     }
 
-    private const val WET_MM_H = WidgetWeather.Rain.WET_MM_H
     /** Grey lines and empty tracks: seen on the light and the dark background alike. */
     private const val GREY = 0x66808080
 
@@ -609,7 +608,8 @@ object WidgetViews {
             if (r - 2 * narrower <= l) continue
             // both unfilled: the sunshine's top stays seen through the precipitation's bar in front
             q.sunMinutes?.takeIf { it >= WidgetWeather.Rain.SUN_LEAST }?.let { m -> frame(c, RectF(l, sunY(m), r, base), sunFrame, 1.5f * density, density) }
-            if (q.mmPerHour >= WET_MM_H) frame(c, RectF(l + narrower, rainY(q.mmPerHour), r - narrower, base), rainFrame, 2f * density, density)
+            // perhaps drizzle (an echo too weak to be sure): the bar faint
+            if (q.wet || q.possible) frame(c, RectF(l + narrower, rainY(q.rate), r - narrower, base), if (q.wet) rainFrame else faint(rainFrame), 2f * density, density)
         }
         // the axes: the ground line with a tick each quarter hour and their clock times, now, the two scales at the sides
         val line = Paint().apply { color = GREY; strokeWidth = density }
@@ -657,6 +657,9 @@ object WidgetViews {
         c.drawText(s.rainUnit, x1 + 4 * density, -rainText.ascent(), rainText)
         return bmp
     }
+
+    /** [color] at half its opacity. */
+    private fun faint(color: Int) = (((color ushr 24) / 2) shl 24) or (color and 0xFFFFFF)
 
     /** An unfilled frame, the line inside [r]: an expected amount, as the day charts draw it. */
     private fun frame(c: Canvas, r: RectF, color: Int, stroke: Float, density: Float) {

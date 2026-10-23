@@ -65,7 +65,7 @@ internal fun SummaryCard(
     val t = { v: Double? -> Units.temp(v, settings.temperatureUnit) }
     val pUnit = stringResource(Texts.precipUnit(settings.precipitationUnit))
     val wUnit = stringResource(Texts.windUnit(settings.windUnit))
-    val p = { v: Double? -> Units.precipitationNumber(v, settings.precipitationUnit) + NBSP + pUnit }
+    val p = { v: Double?, fell: Boolean -> Units.precipitationNumber(v, settings.precipitationUnit, fell) + NBSP + pUnit }
     val model = stringResource(R.string.history_model_value, "")
     GlassCard(title = stringResource(if (soFar) R.string.history_summary_so_far else R.string.history_summary), icon = Icons.Outlined.History, info = Term.HISTORY) {
         SummaryRow(
@@ -74,8 +74,8 @@ internal fun SummaryCard(
         )
         HairlineDivider(Modifier.padding(vertical = 6.dp))
         SummaryRow(
-            stringResource(R.string.precipitation) to stringResource(R.string.precipitation_short), p(sum.precipitation),
-            if (sum.measured && sum.modelPrecipitation != null) model + p(sum.modelPrecipitation) else null,
+            stringResource(R.string.precipitation) to stringResource(R.string.precipitation_short), p(sum.precipitation, sum.precipitationFell),
+            if (sum.measured && sum.modelPrecipitation != null) model + p(sum.modelPrecipitation, false) else null,
         )
         sum.sunshineHours?.let {
             HairlineDivider(Modifier.padding(vertical = 6.dp))

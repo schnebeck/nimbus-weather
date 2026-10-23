@@ -155,6 +155,22 @@ class WidgetTest {
         assertNull(WidgetWeather.of(data(rainFrom = 100), now, emptyList()).rain!!.chance)
     }
 
+    /**
+     * A shower of five minutes the radar sees in a quarter hour counts, however little its sum; an
+     * echo too weak to be sure is perhaps drizzle – said, and drawn faint.
+     */
+    @Test fun aShowerByTheRadarsSteps() {
+        val eleven = day + 11 * h
+        fun with(peak: Double) = data().let { d -> d.copy(minutely = d.minutely.map { if (it.time == eleven) it.copy(precipitation = 0.02, peak = peak) else it }) }
+        val shower = WidgetWeather.of(with(0.4), now, emptyList()).rain!!
+        assertTrue(shower.quarters.single { it.at == eleven }.wet)
+        assertEquals("Leichter Regen ab etwa 11:00", render(WidgetConfig(), WidgetSize(320, 200), with(0.4)).text(R.id.widget_rain_text))
+        val weak = WidgetWeather.of(with(0.13), now, emptyList()).rain!!
+        assertTrue(weak.quarters.single { it.at == eleven }.possible)
+        assertTrue(weak.eventful)
+        assertEquals("Vielleicht etwas Niesel ab etwa 11:00", render(WidgetConfig(), WidgetSize(320, 200), with(0.13)).text(R.id.widget_rain_text))
+    }
+
     /** Today's high and low hold the temperature measured now – the other days stay as forecast. */
     @Test fun theDaysHighAndLowHoldTheTemperatureNow() {
         val d = data()

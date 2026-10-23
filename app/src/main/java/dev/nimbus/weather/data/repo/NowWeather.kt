@@ -107,6 +107,9 @@ object NowWeather {
      */
     const val RADAR_VALID_MS = 30 * 60_000L
 
+    /** What the radar says of now: its newest quarter hour of measured steps. */
+    private const val NOW_QUARTER_MS = 15 * 60_000L
+
     /** [radar] while it still stands for [now]; null: too old or none. */
     fun radarValid(radar: RadarNow?, now: Long): RadarNow? = radar?.takeIf { now - it.time in 0..RADAR_VALID_MS }
 
@@ -121,7 +124,9 @@ object NowWeather {
         val r = radarValid(radar, now) ?: return current
         val near = (current.stationDistanceKm ?: Double.MAX_VALUE) < HistorySource.RADAR_PIXEL_KM
         if (near && (current.sky == SkyBasis.OBSERVED || current.sky == SkyBasis.MEASURED_SUNSHINE)) return current
-        val c = WeatherCodes.forMeasured(current.condition, r.mmPerHour, current.cloudCover, current.temperature, byRadar = true) ?: current.condition
+        // a shower of a few minutes in the newest quarter hour falls now, however little its average
+        val falling = (RadarAhead.peak(r.steps, r.time, NOW_QUARTER_MS) ?: 0.0) >= dev.nimbus.weather.ui.main.Insights.WET_RATE_MM_H
+        val c = WeatherCodes.forMeasured(current.condition, r.mmPerHour, current.cloudCover, current.temperature, byRadar = true, falling) ?: current.condition
         if (c == current.condition) return current
         return current.copy(condition = c, sky = SkyBasis.RADAR, measured = current.measured.filter { it.value != NowValue.SKY })
     }

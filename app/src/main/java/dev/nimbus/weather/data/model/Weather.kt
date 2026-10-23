@@ -127,6 +127,11 @@ data class MinutelyPoint(
     val time: Long, val precipitation: Double, val temperature: Double? = null,
     /** Minutes of sunshine in the quarter hour (0–15); null where the model gives none. */
     val sunshine: Double? = null,
+    /**
+     * The radar's strongest 5-minute step in the quarter hour (mm/h); null where the radar does
+     * not tell it. A shower of five minutes stands out in it – the quarter's sum spreads it thin.
+     */
+    val peak: Double? = null,
 )
 
 @Serializable

@@ -1,0 +1,4 @@
+• A shower over the place counts: one 5-minute radar step from 0.2 mm/h makes a quarter hour wet – notice, symbol, hourly strip and widget tell of it even when its sum stays smaller
+• Only weak echoes ahead: "Possibly some drizzle"
+• Look-back: the radar's 0.0 sum no longer wipes out a measured amount when the radar map showed the shower; without a measurement it reads ">0 mm"
+• Radar in the look-back for all three days

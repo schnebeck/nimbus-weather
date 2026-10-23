@@ -61,12 +61,10 @@ data class WidgetWeather(
         val chance: String? = null,
     ) {
         /** Anything to draw: sunshine or precipitation in one of the quarter hours. */
-        val eventful: Boolean get() = quarters.any { (it.sunMinutes ?: 0.0) >= SUN_LEAST || it.mmPerHour >= WET_MM_H }
+        val eventful: Boolean get() = quarters.any { (it.sunMinutes ?: 0.0) >= SUN_LEAST || it.wet || it.possible }
 
         companion object {
             const val SPAN_MS = 90 * 60_000L
-            /** Precipitation from about 0.2 mm/h on – below it is dry, as the notice counts it. */
-            const val WET_MM_H = Insights.RAIN_THRESHOLD_MM_15 * 4
             /** Less sunshine than this in a quarter hour is none to draw. */
             const val SUN_LEAST = 0.5
         }
@@ -74,9 +72,18 @@ data class WidgetWeather(
 
     /**
      * A quarter hour from [at]: precipitation in [mmPerHour], [sunMinutes] of sunshine (0–15) – the
-     * model's own quarter hour, else a quarter of its hour's; null: none known.
+     * model's own quarter hour, else a quarter of its hour's; null: none known. [peak]: the radar's
+     * strongest 5-minute step (mm/h), null where the radar does not tell it.
      */
-    data class Quarter(val at: Long, val mmPerHour: Double, val sunMinutes: Double?)
+    data class Quarter(val at: Long, val mmPerHour: Double, val sunMinutes: Double?, val peak: Double? = null) {
+        private val point get() = dev.nimbus.weather.data.model.MinutelyPoint(at, mmPerHour / 4, peak = peak)
+        /** Precipitation, as the notice counts it ([Insights.wet]). */
+        val wet: Boolean get() = Insights.wet(point)
+        /** Only an echo too weak to be sure: perhaps drizzle ([Insights.possible]). */
+        val possible: Boolean get() = Insights.possible(point)
+        /** The bar's rate: the strongest 5 minutes where the radar tells them, else the quarter's. */
+        val rate: Double get() = maxOf(mmPerHour, peak ?: 0.0)
+    }
 
     companion object {
         private const val QUARTER_MS = 15 * 60_000L
@@ -119,7 +126,7 @@ data class WidgetWeather(
             return Rain(from, to, quarters.map { q ->
                 // the hour a quarter lies in: the data point at its end
                 val hourSun = data.hourly.firstOrNull { it.time > q.time }?.sunshine?.let { it / 4 }
-                Quarter(q.time, q.precipitation * 4, (q.sunshine ?: hourSun)?.coerceIn(0.0, 15.0))
+                Quarter(q.time, q.precipitation * 4, (q.sunshine ?: hourSun)?.coerceIn(0.0, 15.0), q.peak)
             }, notice, now, chance)
         }
 

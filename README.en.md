@@ -101,6 +101,9 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   reading is still on its way shows the forecast's frame until then, an hour without a reading stays empty, the legend says "not measured". Precipitation is measured by the DWD radar
   over the place, sunshine by the satellite – not by a station 20–40 km away
   ([docs/STATIONS.en.md](docs/STATIONS.en.md)); below the chart it says where the measurements come from.
+  A shower of a few minutes the radar map shows over the place counts as precipitation everywhere –
+  in the notice ("Light rain from about 16:15"), in the symbol, in the widget and in the look-back,
+  where it reads ">0 mm" when no measurement caught it; weak echoes only: "Possibly some drizzle".
 - **Look back** by swiping right: today so far, yesterday, the day before – DWD readings against the
   forecast of the chosen model, on top the day in parts (early to night) with symbol and weather, the
   sky showing them one after the other; the mean deviation, the hourly values as a table

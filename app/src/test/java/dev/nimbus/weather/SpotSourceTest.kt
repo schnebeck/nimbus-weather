@@ -94,7 +94,7 @@ class SpotSourceTest {
         assertTrue(sun.values.all { it in 0.0..60.0 })
     }
 
-    /** One request each: RW over the time asked for, RY over the last hours – a time series at the place. */
+    /** One request each: RW at the full hours of the time asked for (a list), RY over the last hours – a time series at the place. */
     @Test fun oneRequestPerProduct() = runBlocking {
         val asked = java.util.Collections.synchronizedList(mutableListOf<okhttp3.HttpUrl>())
         val server = MockWebServer()
@@ -113,7 +113,7 @@ class SpotSourceTest {
             assertEquals(0.03, hours.getValue(at("2026-10-06T19:00:00Z")), 1e-6)
             assertEquals(2, asked.size)
             val rw = asked.first { it.queryParameter("layers") == "dwd:RADOLAN-RW" }
-            assertEquals("2026-10-06T14:00:00Z/2026-10-06T19:25:00Z", rw.queryParameter("time"))
+            assertEquals((14..19).joinToString(",") { "2026-10-06T%02d:00:00Z".format(it) }, rw.queryParameter("time"))
             assertEquals("GetFeatureInfo", rw.queryParameter("request"))
             val ry = asked.first { it.queryParameter("layers") == "dwd:RADOLAN-RY" }
             assertEquals("2026-10-06T16:25:00Z/2026-10-06T19:25:00Z", ry.queryParameter("time"))

@@ -109,15 +109,25 @@ object WeatherCodes {
      * A measured hour's weather matched with the amount that stands for the place: precipitation
      * without an amount ([precipitation] below 0.05 mm) shows the sky by the [cloudCover], rain is
      * told by its amount ([rainBy]); where the amount is the radar's over the place ([byRadar]) and
-     * the station saw nothing fall, it falls as [derive] gives it. Thunder stays.
+     * the station saw nothing fall, it falls as [derive] gives it. Thunder stays. [falling]: one of
+     * the radar's 5-minute steps in it was precipitation reaching the ground – a shower of a few
+     * minutes is precipitation however little its sum, the least that counts as one then.
      */
-    fun forMeasured(c: Condition?, precipitation: Double?, cloudCover: Double?, temperature: Double?, byRadar: Boolean): Condition? = when {
-        precipitation == null || c == Condition.THUNDERSTORM -> c
-        c in wet && precipitation < 0.05 -> sky(cloudCover ?: 100.0)
-        c == Condition.DRIZZLE || c == Condition.RAIN || c == Condition.HEAVY_RAIN -> rainBy(precipitation)
-        byRadar && c !in wet && precipitation >= 0.1 -> derive(cloudCover, precipitation, temperature)
-        else -> c
+    fun forMeasured(
+        c: Condition?, precipitation: Double?, cloudCover: Double?, temperature: Double?, byRadar: Boolean, falling: Boolean = false,
+    ): Condition? {
+        val p = if (falling) maxOf(precipitation ?: 0.0, MEASURABLE_MM) else precipitation
+        return when {
+            p == null || c == Condition.THUNDERSTORM -> c
+            c in wet && p < 0.05 -> sky(cloudCover ?: 100.0)
+            c == Condition.DRIZZLE || c == Condition.RAIN || c == Condition.HEAVY_RAIN -> rainBy(p)
+            byRadar && c !in wet && p >= MEASURABLE_MM -> derive(cloudCover, p, temperature)
+            else -> c
+        }
     }
+
+    /** The least amount (mm in the hour) counted as precipitation. */
+    const val MEASURABLE_MM = 0.1
 
     /** Rain by its amount in the hour: drizzle below 0.3 mm, heavy rain from [HEAVY_RAIN_MM_H]. */
     fun rainBy(mm: Double): Condition = when {

@@ -232,7 +232,7 @@ private val ClosedUmbrella by lazy {
  */
 fun precipNoticeText(res: android.content.res.Resources, n: Insights.PrecipNotice, now: Long, tf: TimeFormat): String {
     val what = res.getString(
-        when (n.kind) {
+        if (n.possible) R.string.pn_drizzle_maybe else when (n.kind) {
             Insights.PrecipKind.THUNDERSTORM -> R.string.pn_thunderstorm
             Insights.PrecipKind.HAIL -> R.string.pn_hail
             Insights.PrecipKind.DRIZZLE -> R.string.pn_drizzle

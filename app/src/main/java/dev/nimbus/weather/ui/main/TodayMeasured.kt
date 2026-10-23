@@ -72,10 +72,11 @@ data class TodayMeasured(
             windGust = m?.windGust ?: p.windGust,
             measured = m != null,
             precipMeasured = m?.precipitation != null,
+            precipFell = m?.trace == true,
             sunMeasured = m?.sunshineMinutes != null,
             compare = expected.copy(
                 tempM = t, precipM = m?.precipitation, windM = m?.windSpeed, windDirM = m?.windDirection,
-                gustM = m?.windGust, sunM = m?.sunshineMinutes, lightningM = m?.lightning,
+                gustM = m?.windGust, sunM = m?.sunshineMinutes, lightningM = m?.lightning, precipFellM = m?.trace == true,
             ),
         )
     }

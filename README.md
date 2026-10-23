@@ -101,7 +101,10 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   Meteogramm, Niederschlag und Luftdruck für die vergangenen Stunden die Messwerte, danach die
   Vorhersage; eine Stunde, deren Messung noch unterwegs ist, zeigt bis dahin den Rahmen der Vorhersage, eine Stunde ohne Messung bleibt leer, die Legende sagt „nicht gemessen“. Niederschlag
   misst das DWD-Radar über dem Ort, Sonnenschein der Satellit – nicht eine Station 20–40 km entfernt
-  ([docs/STATIONS.md](docs/STATIONS.md)); unter dem Diagramm steht, woher die Messungen stammen.
+  ([docs/STATIONS.md](docs/STATIONS.md)); unter dem Diagramm steht, woher die Messungen stammen. Ein
+  Schauer von wenigen Minuten, den das Radarbild über dem Ort zeigt, zählt überall als Niederschlag –
+  im Hinweis („Leichter Regen ab etwa 16:15“), im Symbol, im Widget und im Rückblick, wo er mit
+  „>0 mm“ steht, wenn keine Messung ihn erfasst hat; nur schwache Echos: „Vielleicht etwas Niesel“.
 - **Rückblick** per Wischen nach rechts: heute bisher, gestern, vorgestern – DWD-Messwerte im
   Vergleich zur Vorhersage des gewählten Modells, oben der Tag in Abschnitten (früh bis nachts)
   mit Symbol und Wetter, der Himmel zeigt sie nacheinander; mit mittlerer Abweichung, Stundenwerte als Tabelle

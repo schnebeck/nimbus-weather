@@ -81,6 +81,7 @@ the place itself:
 |---|---|---|---|
 | Precipitation | DWD radar RADOLAN RW (hourly sum, adjusted to the rain gauges, 1 km) | Germany | about 30 min |
 | Precipitation, the newest hour | DWD radar RADOLAN RY (5-minute sums) | Germany | a few minutes |
+| Showers over the place | DWD radar map (WN analysis, reflectivity every 5 minutes – the picture the radar shows), about 3½ days back | Germany | a few minutes |
 | Sunshine | DWD from EUMETSAT MTG satellite data, via Open-Meteo (2.5 km) | Europe | about 20 min |
 | Lightning | DWD from MTG's Lightning Imager; flashes within about 15 km make an hour a thunderstorm | Europe, Africa | a few minutes |
 
@@ -89,16 +90,29 @@ radar only fills its gaps. An hour's weather symbol follows the amount that hold
 station saw and the radar did not measure over the place leaves the hour dry; rain the radar
 measured where the station saw nothing fall shows as rain. No amount, no rain symbol.
 
+The radar's hourly sums count in tenths of a millimetre: a shower of a few minutes sums to 0.0
+there. Whether one fell over the place, the radar map's 5-minute steps tell: a step from about
+12 dBZ (0.2 mm/h, where the map paints opaque) is precipitation reaching the ground; weaker echoes
+often evaporate on the way down. When a shower fell, a radar sum below a tenth does not wipe out a
+station's amount – it stays – and where no station measured anything the hour reads ">0 mm" with a
+drizzle symbol. When the radar map saw nothing over the place, an hour stays dry even if a distant
+station measured rain. Where the steps are not known, the station's amount stays as well.
+
 The same holds for the weather now: the radar's (RY) latest quarter of an hour over the place
-decides whether and how it falls just now – before a distant station and before the model. The page
+decides whether and how it falls just now – before a distant station and before the model. A
+single 5-minute step from 0.2 mm/h in it is enough: a short shower falls now even when the quarter
+hour's average stays below. The page
 does not wait for it, the radar follows. When an answer does not come, the last one holds for
 another half hour: the sky does not change its source with every load.
 
 For the next two hours Nimbus takes the DWD's radar nowcast (WN, reflectivity every 5 minutes,
 turned into rain by Marshall–Palmer, Z = 200·R^1.6; weaker than 8 dBZ: none). With the measured
 steps of the running hour it replaces the model in the quarter hours and hours it covers in full:
-amount and symbol by the radar, and in the hourly strip the amount instead of the chance. After
-that the model holds again. The look-back shows today's hours to come the same way.
+amount and symbol by the radar, and in the hourly strip the amount instead of the chance (">0 mm"
+where a shower brings less than a tenth of a millimetre). A quarter hour counts as wet when its
+sum reaches 0.05 mm or one of its 5-minute steps 0.2 mm/h – so the precipitation notice tells of a
+shower of five minutes too. When the next quarter hours show only weaker echoes, it says "Possibly
+some drizzle". After that the model holds again. The look-back shows today's hours to come the same way.
 
 Temperature and wind still come from the station. Below the chart it says where the measurements
 come from. An hour without a measurement shows no bar; the forecast stands in the value table's

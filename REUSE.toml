@@ -174,9 +174,9 @@ path = "app/src/test/resources/fixtures/nordic_*.png"
 SPDX-FileCopyrightText = "Norwegian Meteorological Institute (MET Norway), Nordic radar composite"
 SPDX-License-Identifier = "CC-BY-4.0"
 
-# The DWD's radar (RADOLAN RW, RY) at a point, recorded
+# The DWD's radar (RADOLAN RW, RY; the radar map's analysis WN) at a point, recorded
 [[annotations]]
-path = "app/src/test/resources/fixtures/radolan_*.json"
+path = ["app/src/test/resources/fixtures/radolan_*.json", "app/src/test/resources/fixtures/radar_wn_*.json"]
 SPDX-FileCopyrightText = "Deutscher Wetterdienst (DWD), RADOLAN"
 SPDX-License-Identifier = "CC-BY-4.0"
 

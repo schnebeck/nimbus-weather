@@ -81,6 +81,7 @@ Niederschlag, Sonnenschein und Blitze der Tagesdiagramme (heute und Rückblick) 
 |---|---|---|---|
 | Niederschlag | DWD-Radar RADOLAN RW (Stundensumme, an Bodenmessungen angeglichen, 1 km) | Deutschland | ca. 30 min |
 | Niederschlag, jüngste Stunde | DWD-Radar RADOLAN RY (5-Minuten-Summen) | Deutschland | wenige Minuten |
+| Schauer über dem Ort | DWD-Radarbild (WN-Analyse, Reflektivität alle 5 Minuten – dasselbe Bild wie im Radar), etwa 3½ Tage zurück | Deutschland | wenige Minuten |
 | Sonnenschein | DWD aus EUMETSAT-MTG-Satellitendaten, über Open-Meteo (2,5 km) | Europa | ca. 20 min |
 | Blitze | DWD aus dem Lightning Imager von MTG; Blitze im Umkreis von etwa 15 km machen eine Stunde zum Gewitter | Europa, Afrika | wenige Minuten |
 
@@ -89,8 +90,19 @@ Radar füllt nur ihre Lücken. Das Wettersymbol einer Stunde folgt der Menge, di
 entfernte Station Regen, den das Radar über dem Ort nicht misst, bleibt die Stunde trocken; misst
 das Radar Regen, wo die Station nichts fallen sah, zeigt sie Regen. Ohne Menge kein Regensymbol.
 
+Die Stundensummen des Radars zählen in Zehntelmillimetern: Ein Schauer von wenigen Minuten ergibt
+dort 0,0. Ob einer über dem Ort fiel, zeigen die 5-Minuten-Schritte des Radarbilds: Ein Schritt ab
+etwa 12 dBZ (0,2 mm/h, ab hier malt die Karte deckend) ist Niederschlag, der den Boden erreicht;
+schwächere Echos verdunsten oft auf dem Weg nach unten. Fiel ein Schauer, löscht eine Radarsumme
+unter einem Zehntel die Menge einer Station nicht – sie bleibt stehen –, und hat keine Station etwas
+gemessen, steht „>0 mm“ mit Nieselsymbol. Sah das Radarbild nichts über dem Ort, bleibt eine Stunde
+trocken, auch wenn eine entfernte Station Regen maß. Sind die Schritte nicht bekannt, bleibt die
+Menge der Station ebenfalls stehen.
+
 Dasselbe gilt für das Wetter jetzt: Die jüngste Viertelstunde des Radars (RY) über dem Ort
-entscheidet, ob und wie es gerade fällt – vor einer entfernten Station und vor dem Modell. Die Seite
+entscheidet, ob und wie es gerade fällt – vor einer entfernten Station und vor dem Modell. Ein
+einzelner 5-Minuten-Schritt ab 0,2 mm/h darin genügt: Ein kurzer Schauer fällt jetzt, auch wenn
+der Mittelwert der Viertelstunde darunter bleibt. Die Seite
 wartet nicht darauf, das Radar kommt nach. Bleibt eine Antwort aus, gilt die letzte noch eine halbe
 Stunde: Der Himmel wechselt seine Quelle nicht mit jedem Laden.
 
@@ -98,7 +110,11 @@ Für die nächsten zwei Stunden nimmt Nimbus die Radarvorhersage des DWD (WN, Re
 5 Minuten, in Regen umgerechnet nach Marshall–Palmer, Z = 200·R^1,6; schwächer als 8 dBZ: nichts).
 Mit den gemessenen Schritten der laufenden Stunde ersetzt sie das Modell in den Viertelstunden und
 Stunden, die sie ganz abdeckt: Menge und Symbol nach dem Radar, statt der Wahrscheinlichkeit steht
-im Stundenstreifen die Menge. Danach gilt wieder das Modell. Der Rückblick zeigt die kommenden
+im Stundenstreifen die Menge („>0 mm“, wo ein Schauer weniger als einen Zehntelmillimeter bringt).
+Eine Viertelstunde gilt als nass, wenn ihre Summe 0,05 mm erreicht oder einer ihrer
+5-Minuten-Schritte 0,2 mm/h – so meldet der Niederschlagshinweis auch einen Schauer von fünf
+Minuten. Zeigen die nächsten Viertelstunden nur schwächere Echos, heißt es „Vielleicht etwas
+Niesel“. Danach gilt wieder das Modell. Der Rückblick zeigt die kommenden
 Stunden von heute ebenso.
 
 Temperatur und Wind kommen weiter von der Station. Unter dem Diagramm steht, woher die Messungen

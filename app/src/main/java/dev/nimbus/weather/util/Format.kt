@@ -77,15 +77,20 @@ object Units {
     fun precipitationValue(mm: Double, unit: PrecipitationUnit): Double =
         if (unit == PrecipitationUnit.INCH) mm / 25.4 else mm
 
-    fun precipitationNumber(mm: Double?, unit: PrecipitationUnit): String {
+    /**
+     * [mm] as written. [fell]: precipitation fell, however little – an amount that would read as
+     * nothing reads ">0" (a shower the radar saw, below what its sums count).
+     */
+    fun precipitationNumber(mm: Double?, unit: PrecipitationUnit, fell: Boolean = false): String {
         if (mm == null) return "–"
         val v = precipitationValue(mm, unit)
-        return when {
+        val text = when {
             unit == PrecipitationUnit.INCH -> String.format(Locale.getDefault(), "%.2f", v)
             v == 0.0 -> "0"
             v < 10 -> String.format(Locale.getDefault(), "%.1f", v)
             else -> v.roundToInt().toString()
         }
+        return if (fell && text.none { it in '1'..'9' }) ">0" else text
     }
 
     /** 0..7 index for N, NE, E, SE, S, SW, W, NW. */

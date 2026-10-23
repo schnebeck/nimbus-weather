@@ -1,0 +1,4 @@
+• Ein Schauer über dem Ort zählt: Ein einzelner 5-Minuten-Schritt des Radars ab 0,2 mm/h macht eine Viertelstunde nass – Hinweis, Symbol, Stundenstreifen und Widget sagen ihn an, auch wenn die Summe kleiner bleibt
+• Nur schwache Echos voraus: „Vielleicht etwas Niesel“
+• Rückblick: Die Radarsumme 0,0 löscht keine gemessene Menge mehr, wenn das Radarbild den Schauer zeigte; ohne Messung steht „>0 mm“
+• Radar im Rückblick für alle drei Tage

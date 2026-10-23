@@ -1,0 +1,1 @@
+• Widget: fits launchers that report larger sizes than they show (e.g. Nova) – no half-empty widget any more

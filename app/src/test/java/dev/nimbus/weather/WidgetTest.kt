@@ -184,6 +184,28 @@ class WidgetTest {
         assertEquals(android.view.View.VISIBLE, v.findViewById<android.view.View>(R.id.widget_chart).visibility)
     }
 
+    /**
+     * A launcher reporting sizes well above its frame (Nova: a frame of 411 × 260 dp): among the
+     * pictures one from the least size it reports, which fits – and one between that keeps the
+     * chart; at most six.
+     */
+    @Test fun aPictureThatFitsTheFrame() {
+        val reported = listOf(android.util.SizeF(432f, 380f), android.util.SizeF(860f, 190f))
+        val bounds = dev.nimbus.weather.widget.Widgets.Bounds(minWidth = 400, minHeight = 190, maxWidth = 860, maxHeight = 380)
+        val offers = dev.nimbus.weather.widget.Widgets.offers(reported, bounds)
+        assertTrue("$offers", offers.size <= 6)
+        val frame = 410.67f to 259.56f
+        val fitting = offers.filter { it.widthDp <= frame.first && it.heightDp <= frame.second }
+        assertTrue("$offers", fitting.isNotEmpty())
+        // the system takes the closest that fits: a step of height 22 dp below the frame, tall enough for the chart
+        val taken = fitting.minBy { (frame.first - it.widthDp) * (frame.first - it.widthDp) + (frame.second - it.heightDp) * (frame.second - it.heightDp) }
+        assertEquals(dev.nimbus.weather.widget.WidgetSize(400, 237), taken)
+        // a launcher whose least and largest sizes are its frames (upright and sideways): both among them
+        assertTrue(offers.contains(dev.nimbus.weather.widget.WidgetSize(400, 380)) && offers.contains(dev.nimbus.weather.widget.WidgetSize(860, 190)))
+        val v = render(WidgetConfig(), taken, data(rainFrom = 40))
+        assertEquals(android.view.View.VISIBLE, v.findViewById<android.view.View>(R.id.widget_chart).visibility)
+    }
+
     /** Today's high and low hold the temperature measured now – the other days stay as forecast. */
     @Test fun theDaysHighAndLowHoldTheTemperatureNow() {
         val d = data()

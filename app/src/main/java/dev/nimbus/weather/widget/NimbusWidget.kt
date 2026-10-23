@@ -194,8 +194,14 @@ object Widgets {
             val build = { size: WidgetSize -> WidgetViews.build(app, id, config, size, weather, place?.id, settings.temperatureUnit, now, updating, settings.precipitationUnit) }
             val sizes = sizesOf(manager, id)
             noteSizes(id, sizes, manager)
-            val views = sizes?.let { all -> RemoteViews(all.associate { s -> offered(s).let { o -> android.util.SizeF(o.widthDp.toFloat(), o.heightDp.toFloat()) to build(o) } }) }
-                ?: build(sizeOf(manager, id))
+            val options = runCatching { manager.getAppWidgetOptions(id) }.getOrNull()
+            val offers = offers(sizes, options?.let { o ->
+                Bounds(o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH), o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT),
+                    o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH), o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT))
+            })
+            val views = if (android.os.Build.VERSION.SDK_INT >= 31 && offers.isNotEmpty())
+                RemoteViews(offers.associate { o -> android.util.SizeF(o.widthDp.toFloat(), o.heightDp.toFloat()) to build(o) })
+            else build(sizeOf(manager, id))
             runCatching { manager.updateAppWidget(id, views) }
         }
         scheduleNewDay(app)
@@ -213,8 +219,11 @@ object Widgets {
         return sizes?.filter { it.width > 0 && it.height > 0 }?.distinct()?.take(MAX_SIZES)?.takeIf { it.isNotEmpty() }
     }
 
-    /** At most this many pictures in one update (each carries its bitmaps). */
-    private const val MAX_SIZES = 4
+    /** At most this many pictures in one update (each carries its bitmaps; the sizes reported come after those from the bounds). */
+    private const val MAX_SIZES = 6
+
+    /** The steps of height between the least and the largest ([offers]). */
+    private const val HEIGHT_STEPS = 4
 
     /**
      * The size a picture is planned for and offered at: a little below the size the launcher
@@ -227,6 +236,31 @@ object Widgets {
         (reported.width - maxOf(OFFER_MARGIN_W_DP, reported.width * OFFER_SHARE_W)).toInt().coerceAtLeast(40),
         (reported.height - maxOf(OFFER_MARGIN_H_DP, reported.height * OFFER_SHARE_H)).toInt().coerceAtLeast(40),
     )
+
+    /** The launcher's least and largest size of the widget (dp; 0: not told). */
+    data class Bounds(val minWidth: Int, val minHeight: Int, val maxWidth: Int, val maxHeight: Int)
+
+    /**
+     * The sizes a picture is made for: those the launcher reports ([offered]), and from its least
+     * and largest size ([bounds]) the least one and one between – the system takes the closest
+     * that fits the frame, the smallest when none fits. A launcher may report sizes well above
+     * its frame (one showed a widget of 411 × 260 dp and none of its sizes fitted): with the least
+     * size among them, one always fits, and the heights between keep the chart where there is room.
+     * Those from the bounds first (they hold for any launcher), then the reported ones, the
+     * largest first – at most [MAX_SIZES].
+     */
+    fun offers(sizes: List<android.util.SizeF>?, bounds: Bounds?): List<WidgetSize> {
+        val all = mutableListOf<WidgetSize>()
+        if (bounds != null && bounds.minWidth > 0 && bounds.minHeight > 0) {
+            // upright: the least width, the height in steps from the least to the largest
+            val top = maxOf(bounds.maxHeight, bounds.minHeight)
+            for (k in 0..HEIGHT_STEPS) all += WidgetSize(bounds.minWidth, bounds.minHeight + (top - bounds.minHeight) * k / HEIGHT_STEPS)
+            // sideways: the largest width, the least height
+            if (bounds.maxWidth > bounds.minWidth) all += WidgetSize(bounds.maxWidth, bounds.minHeight)
+        }
+        sizes?.map { offered(it) }?.sortedByDescending { it.widthDp * it.heightDp }?.let { all += it }
+        return all.filter { it.widthDp >= 40 && it.heightDp >= 40 }.distinct().take(MAX_SIZES)
+    }
 
     private const val OFFER_MARGIN_W_DP = 16f
     private const val OFFER_SHARE_W = 0.06f
@@ -241,7 +275,11 @@ object Widgets {
         val text = "sizes ${sizes?.joinToString { "${it.width.toInt()}×${it.height.toInt()}" } ?: "none"}; " +
             "min ${o?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)}×${o?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)}, " +
             "max ${o?.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH)}×${o?.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT)} dp"
-        if (noted.put(id, text) != text) ActivityLog.note("widget $id: $text")
+        if (noted.put(id, text) != text) {
+            // in the system's log as well: a launcher's figures can be read off the phone without the activity log on
+            android.util.Log.i("NimbusWidget", "widget $id: $text")
+            ActivityLog.note("widget $id: $text")
+        }
     }
 
     fun sizeOf(manager: AppWidgetManager, id: Int): WidgetSize {

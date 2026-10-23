@@ -235,6 +235,8 @@ class WidgetTest {
         assertEquals("● Birke  ● Gräser", red.toString().replace('\u00A0', ' '))
         assertEquals(0xFFFF5B36.toInt(), red.getSpans(0, red.length, android.text.style.ForegroundColorSpan::class.java).first().foregroundColor)
         assertEquals("Pollen: keine bis gering", WidgetViews.pollenDots(app, listOf(PollenType.BIRCH to 0.5f, PollenType.GRASS to 0f)).toString())
+        // a German noun keeps its capital
+        assertEquals("Pollen: keine Belastung", WidgetViews.quietPollen(app, 0f))
         // taller: the gauges with their half steps – beside the chart
         val tall = WidgetLayout.of(WidgetConfig(pollen = all), WidgetSize(320, 300), alarm = "06:00", weather = w, pollenText = dots.toString())
         assertTrue(!tall.pollenDots && tall.pollenSide && tall.pollenSideRows >= 2)

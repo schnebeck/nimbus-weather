@@ -407,7 +407,7 @@ object WidgetViews {
         val flying = weather?.pollenFlying.orEmpty()
         v.visible(R.id.widget_side_quiet, l.pollenSide && flying.isEmpty())
         if (l.pollenSide && flying.isEmpty() && weather != null) {
-            v.setTextViewText(R.id.widget_side_quiet, res.getString(R.string.widget_pollen_quiet, res.getString(pollenLevelText(0f)).lowercase(locale)))
+            v.setTextViewText(R.id.widget_side_quiet, quietPollen(context, 0f))
         }
         SIDE_ROWS.forEachIndexed { i, (row, name, gauge) ->
             val p = flying.getOrNull(i)?.takeIf { l.pollenSide && i < l.pollenSideRows }
@@ -679,12 +679,19 @@ object WidgetViews {
      * colour of its level – yellow up to medium, red above. None of them: the highest level in
      * words ("Pollen: none to low") – so the line says the pollen were looked at.
      */
+    /**
+     * "Pollen: none to low": the level's words after the colon, only their first letter small –
+     * a German noun keeps its capital ("keine Belastung").
+     */
+    fun quietPollen(context: Context, level: Float): String =
+        context.getString(R.string.widget_pollen_quiet, context.getString(pollenLevelText(level)).replaceFirstChar { it.lowercase(context.resources.configuration.locales[0]) })
+
     fun pollenDots(context: Context, pollen: List<Pair<dev.nimbus.weather.data.model.PollenType, Float>>): CharSequence {
         val sb = android.text.SpannableStringBuilder()
         val noteworthy = pollen.filter { it.second > NOTEWORTHY }
         if (noteworthy.isEmpty()) {
             val highest = pollen.maxOf { it.second }
-            return context.getString(R.string.widget_pollen_quiet, context.getString(pollenLevelText(highest)).lowercase(context.resources.configuration.locales[0]))
+            return quietPollen(context, highest)
         }
         noteworthy.forEachIndexed { i, (type, level) ->
             if (i > 0) sb.append("  ")

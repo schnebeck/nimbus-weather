@@ -91,7 +91,8 @@ data class History(
     val allHours: List<HistoryHour> = days.flatMap { it.hours },
 ) {
     /** The hours of the day chart starting at [dayStart]: its 00:00 value through the 24 column. */
-    fun chartHours(dayStart: Long): List<HistoryHour> = allHours.filter { it.time in dayStart..dayStart + 25 * 3_600_000L }
+    fun chartHours(dayStart: Long): List<HistoryHour> =
+        allHours.filter { it.time in dayStart..dev.nimbus.weather.util.Days.end(dayStart, zone) + 3_600_000L }
 }
 
 /** A 10-minute station report (SYNOP). Sums refer to the period before [time]. */

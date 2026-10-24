@@ -131,7 +131,7 @@ fun DailyCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) {
                 },
                 // 00:00 of the next day closes the curve at 24 h
                 // 00:00 of the day through 01:00 of the next: the 24 column
-                hours = data.hourly.filter { it.time in d.date..d.date + 25 * 3_600_000L },
+                hours = data.hourly.filter { it.time in d.date..HourAxis.dayAxisEnd(dev.nimbus.weather.util.Days.end(d.date, tf.zone)) },
                 minutely = data.minutely,
                 place = data.place,
                 daily = data.daily,
@@ -162,7 +162,7 @@ private fun DayRow(
     val zone = LocalTimeFormat.current.zone
     // the day told by its hours (the model's daily code names its worst weather only); with too few, by that code
     val dayWeather = remember(hours, zone) {
-        dev.nimbus.weather.data.model.DayWeather.of(hours.filter { it.time > day.date && it.time <= day.date + 24 * 3_600_000L }, zone)
+        dev.nimbus.weather.data.model.DayWeather.of(hours.filter { it.time > day.date && it.time <= dev.nimbus.weather.util.Days.end(day.date, zone) }, zone)
     }
     // Opened by a tap: once unfolded, the day is brought into view – a day open above it closes at
     // the same time and pulls it up out of the screen
@@ -231,7 +231,7 @@ private fun DayRow(
                 bring.bringIntoView(androidx.compose.ui.geometry.Rect(0f, -above, 1f, minOf(height.toFloat(), window * 0.85f - above)))
                 tapped = false
             }
-            val end = day.date + 24 * 3_600_000L
+            val end = dev.nimbus.weather.util.Days.end(day.date, zone)
             // today with readings: measured against the forecast (the readings alone), or one curve going on as the forecast
             val apart = measured != null && settings.todayMeasuredVsForecast
             Meteogram(

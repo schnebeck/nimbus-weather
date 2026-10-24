@@ -124,7 +124,7 @@ fun PollenForecastCard(pollenAll: PollenForecast, now: Long) {
     val hiddenCount = remember(pollenAll, selected) {
         pollenAll.days.flatMap { it.levels.keys }.plus(pollenAll.hourly.keys).distinct().count { it !in selected }
     }
-    val days = remember(pollen, now) { pollen.days.filter { it.date + 24 * 3600_000L > now }.take(3) }
+    val days = remember(pollen, now) { pollen.days.filter { dev.nimbus.weather.util.Days.end(it.date, tf.zone) > now }.take(3) }
     val today = days.firstOrNull()
     // Rows: every type that is active on any of the shown days; the rest is summarised.
     val allTypes = remember(pollen) { pollen.days.flatMap { it.levels.keys }.distinct().sortedBy { it.ordinal } }

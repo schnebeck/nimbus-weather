@@ -96,7 +96,7 @@ fun fastFallHours(p: List<Double?>): Set<Int> = buildSet {
 fun PressureCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) {
     val tf = LocalTimeFormat.current
     val start = remember(now / 3_600_000L) { tf.zoned(now).toLocalDate().atStartOfDay(tf.zone).toInstant().toEpochMilli() }
-    val end = start + 24 * 3_600_000L
+    val end = dev.nimbus.weather.util.Days.end(start, tf.zone)
     // Hours already over show the station's reading instead of the forecast (the comparison of the
     // two is in the look-back)
     val readings = measured?.pressure.orEmpty()

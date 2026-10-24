@@ -145,8 +145,8 @@ internal fun DayCourseCard(
     val curves = remember(day, history) { lookBackCurves(history, start) }
     GlassCard(title = stringResource(R.string.history_course), icon = Icons.Outlined.Thermostat) {
         Meteogram(
-            points, start, start + 24 * 3_600_000L,
-            remember(start) { nights(start, HourAxis.dayAxisEnd(start + 24 * 3_600_000L), place.latitude, place.longitude) }, now,
+            points, start, dev.nimbus.weather.util.Days.end(start, tf.zone),
+            remember(start) { nights(start, HourAxis.dayAxisEnd(dev.nimbus.weather.util.Days.end(start, tf.zone)), place.latitude, place.longitude) }, now,
             Modifier.fillMaxWidth().bleed(CARD_BLEED),
             curve = curves.first, forecastCurve = curves.second,
             // "today so far": the line at the time now (the other days do not hold it)
@@ -195,7 +195,7 @@ internal fun RadarDayCard(dayStart: Long, tf: TimeFormat, onOpen: () -> Unit, so
  * same in both, and where the forecast was off it shows.
  */
 internal fun lookBackCurves(history: dev.nimbus.weather.data.remote.History, start: Long): Pair<List<CurvePoint>, List<CurvePoint>> {
-    val from = start - 3_600_000L; val to = start + 25 * 3_600_000L
+    val from = start - 3_600_000L; val to = HourAxis.dayAxisEnd(dev.nimbus.weather.util.Days.end(start, history.zone))
     val measured = Curve.merge(
         Curve.reports(history.fineMeasured.filterKeys { it in from..to }, 10 * 60_000L),
         history.chartHours(start).mapNotNull { h -> h.measured?.temperature?.let { CurvePoint(h.time, it) } },

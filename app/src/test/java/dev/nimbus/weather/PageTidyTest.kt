@@ -289,6 +289,8 @@ class PageTidyTest {
         scrollTo(str(R.string.view_hint_title))
         // a note, no data: no status dot
         assertNull(dev.nimbus.weather.ui.main.cardParts("view-hint"))
+        // its choices in view too (the title alone may stand at the bottom edge, as long as the page above is)
+        scrollTo(str(R.string.view_compact))
         compose.onNodeWithText(str(R.string.view_compact)).performClick()
         compose.waitForIdle()
         assertEquals(PageView.COMPACT, settings.view())

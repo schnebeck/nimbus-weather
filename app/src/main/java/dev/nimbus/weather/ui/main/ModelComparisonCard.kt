@@ -84,7 +84,7 @@ fun ModelComparisonCard(models: List<ModelSeries>?, now: Long, onRequest: () -> 
     // folded: how far the models lie apart for tomorrow's high
     val highs = remember(models, now / 3_600_000L) {
         val from = tf.zoned(now).toLocalDate().plusDays(1).atStartOfDay(tf.zone).toInstant().toEpochMilli()
-        models.orEmpty().mapNotNull { m -> m.times.indices.filter { m.times[it] > from && m.times[it] <= from + 24 * 3_600_000L }.mapNotNull { m.temperature[it] }.maxOrNull() }
+        models.orEmpty().mapNotNull { m -> m.times.indices.filter { m.times[it] > from && m.times[it] <= dev.nimbus.weather.util.Days.end(from, tf.zone) }.mapNotNull { m.temperature[it] }.maxOrNull() }
     }
     val summary = if (highs.isEmpty()) stringResource(R.string.model_comparison_hint)
     else stringResource(R.string.models_summary, Units.temp(highs.min(), s.temperatureUnit), Units.temp(highs.max(), s.temperatureUnit), highs.size)

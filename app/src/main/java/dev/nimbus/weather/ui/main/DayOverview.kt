@@ -36,14 +36,12 @@ data class DayOverview(
     val sunMinutes: Double?, val uv: Double?,
 ) {
     companion object {
-        private const val DAY_MS = 24 * 3_600_000L
-
         /** [hours]: any hours – those of the day (stamped after its midnight, up to the next) count. */
-        fun of(day: DailyPoint, hours: List<HourlyPoint>, zone: java.time.ZoneId? = null): DayOverview {
-            val own = hours.filter { it.time > day.date && it.time <= day.date + DAY_MS }
+        fun of(day: DailyPoint, hours: List<HourlyPoint>, zone: java.time.ZoneId): DayOverview {
+            val own = hours.filter { it.time > day.date && it.time <= dev.nimbus.weather.util.Days.end(day.date, zone) }
             return DayOverview(
                 condition = day.condition,
-                weather = zone?.let { dev.nimbus.weather.data.model.DayWeather.of(own, it) },
+                weather = dev.nimbus.weather.data.model.DayWeather.of(own, zone),
                 high = day.tempMax, low = day.tempMin,
                 precipitation = own.mapNotNull { it.precipitation }.takeIf { it.isNotEmpty() }?.sum() ?: day.precipitationSum,
                 chance = day.precipitationProbability ?: own.mapNotNull { it.precipitationProbability }.maxOrNull(),

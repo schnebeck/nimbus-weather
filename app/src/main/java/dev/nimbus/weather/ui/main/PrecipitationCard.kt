@@ -86,7 +86,7 @@ class PrecipToday(
         fun of(data: WeatherData, now: Long, raining: Boolean, measured: TodayMeasured?, tf: TimeFormat): PrecipToday? {
             // Today from 00:00 to 24:00 (like the meteogram); each value covers the hour before its time
             val dayStart = tf.zoned(now).toLocalDate().atStartOfDay(tf.zone).toInstant().toEpochMilli()
-            val hours = data.hourly.filter { it.time > dayStart && it.time <= dayStart + 24 * HOUR }
+            val hours = data.hourly.filter { it.time > dayStart && it.time <= dev.nimbus.weather.util.Days.end(dayStart, tf.zone) }
             if (hours.size < 2) return null
             val today = data.daily.lastOrNull { it.date <= now } ?: data.daily.firstOrNull()
             // Hours already over with a station reading count as measured, the others as forecast

@@ -17,6 +17,8 @@
 
 package dev.nimbus.weather.ui.main
 
+import dev.nimbus.weather.util.Days
+import java.time.ZoneId
 import kotlin.math.abs
 
 /**
@@ -70,10 +72,13 @@ class HourAxis(private val start: Long, private val end: Long, val left: Float, 
 
     /**
      * Starts of the labelled hours: every [every] hours from the axis start (00, 03 … 21; with the
-     * day's axis running into the next day's first hour, 24 as well – see [dayAxisEnd]).
+     * day's axis running into the next day's first hour, 24 as well – see [dayAxisEnd]); with a
+     * [zone] the hours its clock names so ([Days.clockHours]) – the day the clocks go back has
+     * the 03 four hours in.
      */
-    fun labelHours(every: Int = 3): List<Long> =
-        generateSequence(start) { it + every * HOUR }.takeWhile { it < end }.toList()
+    fun labelHours(every: Int = 3, zone: ZoneId? = null): List<Long> =
+        if (zone != null) Days.clockHours(start, end, every, zone)
+        else generateSequence(start) { it + every * HOUR }.takeWhile { it < end }.toList()
 
     /** The hour ([times] index) whose bar is nearest to [pos]; only hours within the axis count. */
     fun indexAt(pos: Float, times: List<Long>, last: Long = end): Int {

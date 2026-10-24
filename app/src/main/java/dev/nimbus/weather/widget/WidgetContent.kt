@@ -23,6 +23,7 @@ import dev.nimbus.weather.data.model.PollenType
 import dev.nimbus.weather.data.model.WeatherData
 import dev.nimbus.weather.ui.components.windiness
 import dev.nimbus.weather.ui.main.Insights
+import dev.nimbus.weather.util.TimeFormat
 
 /**
  * A place's weather for the widget: the header's values ([temperature], [condition] with [wind],
@@ -87,7 +88,6 @@ data class WidgetWeather(
 
     companion object {
         private const val QUARTER_MS = 15 * 60_000L
-        private const val DAY_MS = 24 * 3_600_000L
 
         /** [data] at [now], with the [pollenTypes] chosen for the widget (in their order). */
         fun of(data: WeatherData, now: Long, pollenTypes: List<PollenType>): WidgetWeather {
@@ -146,7 +146,7 @@ data class WidgetWeather(
 
         /** Today's level (0..3) of each of [types] the forecast gives; the others are left out. */
         fun pollen(data: WeatherData, now: Long, types: List<PollenType>): List<Pair<PollenType, Float>> {
-            val today = data.pollen?.days?.firstOrNull { it.date + DAY_MS > now } ?: return emptyList()
+            val today = data.pollen?.days?.firstOrNull { dev.nimbus.weather.util.Days.end(it.date, TimeFormat(data.timezone, true).zone) > now } ?: return emptyList()
             return types.mapNotNull { t -> today.levels[t]?.let { t to it } }
         }
     }

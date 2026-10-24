@@ -116,13 +116,17 @@ private val NowMark = Color(0xB3FFFFFF)
  * (00:30, 03:30 …): the values of that hour (00–01, 03–04 …) – the thunderstorm of an hour with
  * lightning near the place in any of the three: a measured storm is never left out.
  */
-internal fun symbolBlocks(pts: List<MeteoPoint>, start: Long, axisEnd: Long): List<Pair<Long, MeteoPoint>> =
-    generateSequence(start) { it + 3 * 3_600_000L }.takeWhile { it < axisEnd }.mapNotNull { b ->
+internal fun symbolBlocks(pts: List<MeteoPoint>, start: Long, axisEnd: Long, zone: java.time.ZoneId? = null): List<Pair<Long, MeteoPoint>> {
+    // the blocks start at the labelled hours, each up to the next (the day the clocks go back has one of four hours)
+    val starts = HourAxis(start, axisEnd, 0f, 1f).labelHours(zone = zone)
+    return starts.mapIndexedNotNull { i, b ->
+        val next = starts.getOrNull(i + 1) ?: (b + 3 * 3_600_000L)
         val centre = b + 30 * 60_000L
         val first = pts.firstOrNull { it.time == b + 3_600_000L } ?: pts.minByOrNull { kotlin.math.abs(it.time - centre) }
-        val storm = pts.firstOrNull { it.time in b + 3_600_000L..b + 3 * 3_600_000L && (it.compare?.lightningM ?: 0) > 0 }
+        val storm = pts.firstOrNull { it.time in b + 3_600_000L..next && (it.compare?.lightningM ?: 0) > 0 }
         first?.let { centre to if (storm != null) it.copy(condition = storm.condition, isDay = storm.isDay) else it }
-    }.toList()
+    }
+}
 
 @Composable
 fun Meteogram(
@@ -171,7 +175,7 @@ fun Meteogram(
     // The cursor stands on an hour (the value of the hour before its time stamp): today the hour
     // running now, else midday
     var selected by remember(start) {
-        mutableStateOf(pts.indexOfFirst { it.time > now }.takeIf { now in start..end && it > 0 } ?: pts.indexOfFirst { it.time >= start + 12 * 3_600_000L }.coerceAtLeast(1))
+        mutableStateOf(pts.indexOfFirst { it.time > now }.takeIf { now in start..end && it > 0 } ?: pts.indexOfFirst { it.time >= dev.nimbus.weather.util.Days.at(start, 12, tf.zone) }.coerceAtLeast(1))
     }
     var cursorOn by remember { mutableStateOf(false) }
     var touched by remember { mutableIntStateOf(0) }
@@ -208,7 +212,7 @@ fun Meteogram(
     val unitStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Secondary, fontWeight = FontWeight.SemiBold)
     val tUnit = if (s.temperatureUnit == TemperatureUnit.FAHRENHEIT) "°F" else "°C"
     val pUnit = stringResource(Texts.precipUnit(s.precipitationUnit))
-    val blocks = remember(pts, start, end) { symbolBlocks(pts, start, axisEnd) }
+    val blocks = remember(pts, start, end, tf.zone) { symbolBlocks(pts, start, axisEnd, tf.zone) }
 
     // Vertical layout: time labels | symbols | plot | wind arrows. Units sit in the top corners,
     // the axes carry numbers only and are exactly as wide as their widest label.
@@ -329,7 +333,7 @@ fun Meteogram(
                 }
                 // Time labels every 3 hours in the middle of their hour: under its bar and cursor
                 val labelAxis = HourAxis(start, axisEnd, l, r)
-                labelAxis.labelHours().forEach { hs ->
+                labelAxis.labelHours(zone = tf.zone).forEach { hs ->
                     val xm = labelAxis.label(hs)
                     drawLine(GridLine, Offset(xm, top), Offset(xm, bottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
                     if (separatePrecip) drawLine(GridLine, Offset(xm, pTop), Offset(xm, pBottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))

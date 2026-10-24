@@ -140,6 +140,8 @@ class MyLocationTest {
         val store = Store(app)
         runBlocking {
             store.updateSettings { Settings(preloadRadar = false) }
+            // no saved places: the store outlives a test, an earlier one's Berlin would load along
+            store.updatePlaces { emptyList() }
             // "my location" was Hannover, its data current
             store.cacheWeather(repo.load(cached, Settings(), german = true))
         }

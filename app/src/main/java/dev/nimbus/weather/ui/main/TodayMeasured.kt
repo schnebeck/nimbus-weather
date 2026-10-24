@@ -92,7 +92,7 @@ data class TodayMeasured(
             val hours = day.hours.mapNotNull { h -> h.measured?.let { h.time to it } }.toMap()
             if (hours.isEmpty()) return null
             val start = today.atStartOfDay(history.zone).toInstant().toEpochMilli()
-            val fine = history.fineMeasured.filterKeys { it in start - 3_600_000L..start + 24 * 3_600_000L }
+            val fine = history.fineMeasured.filterKeys { it in start - 3_600_000L..dev.nimbus.weather.util.Days.end(start, history.zone) }
             val from = day.hours.filter { it.measured?.precipitation != null }.map { it.measured!!.precipitationFrom }
             // the last readings, of today or the day before (just after midnight today has none yet)
             val read = history.allHours.filter { it.measured != null }

@@ -26,7 +26,7 @@
 <p><b>Widget für den Startbildschirm</b></p>
 <ul>
 <li>Uhrzeit (antippen: Wecker), Datum (antippen: Kalender), nächster Wecker, Ort und Wetter mit Höchst- und Tiefstwert</li>
-<li>Die nächsten 90 Minuten: Regen und Sonne je Viertelstunde – „Leichter Regen ab etwa 17:15 · 40%“</li>
+<li>Die nächsten zwei Stunden: Regen und Sonne je Viertelstunde – „Leichter Regen ab etwa 17:15 · 40%“</li>
 <li>Gewählte Pollenarten, die heute fliegen</li>
 <li>Jedes Teil abschaltbar, passt sich der Größe an, Systemfarben, auch für den Sperrbildschirm</li>
 </ul>

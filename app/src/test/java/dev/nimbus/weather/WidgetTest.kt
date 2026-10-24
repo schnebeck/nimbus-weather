@@ -1,6 +1,6 @@
 /*
  * Nimbus - app/src/test/java/dev/nimbus/weather/WidgetTest.kt
- * The home-screen widget: the page's values and words, the rain of the next 90 minutes, the
+ * The home-screen widget: the page's values and words, the rain of the next two hours, the
  * chosen pollen, its parts as chosen and as they fit, the taps, its place, its setup and its look.
  *
  *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
@@ -116,17 +116,18 @@ class WidgetTest {
     }
 
     /**
-     * The next 90 minutes in quarter hours on the clock's quarters; rain within them worded as the precipitation card
-     * words it – rain after them is not announced (the bars would not show it).
+     * The next two hours in quarter hours on the clock's quarters, as the precipitation card looks
+     * ahead; rain within them worded as the card words it – rain after them is not announced
+     * (the bars would not show it).
      */
-    @Test fun theRainOfTheNext90Minutes() {
+    @Test fun theRainOfTheNextTwoHours() {
         val soon = data(rainFrom = 40)
         val rain = WidgetWeather.of(soon, now, emptyList()).rain!!
-        // on the clock's quarters: from the running one's start (10:15), six of them
+        // on the clock's quarters: from the running one's start (10:15) to the end of the one two hours from now ends in (12:30)
         assertEquals(day + 10 * h + 15 * 60_000L, rain.from)
-        assertEquals(rain.from + 90 * 60_000L, rain.to)
+        assertEquals(day + 12 * h + 30 * 60_000L, rain.to)
         assertEquals(now, rain.now)
-        assertEquals(6, rain.quarters.size)
+        assertEquals(9, rain.quarters.size)
         // the quarter hours the notice looks at: the running one first, the last one reaching the end
         assertTrue("quarters ${rain.quarters.map { tf.time(it.at) }}", rain.quarters.first().at in now - q..now && rain.quarters.last().at + q >= rain.to)
         assertEquals(Insights.nowcastPoints(soon.minutely, now).filter { it.time >= rain.from && it.time < rain.to }.map { it.time }, rain.quarters.map { it.at })
@@ -134,11 +135,26 @@ class WidgetTest {
         val card = Insights.precipNotice(soon.minutely, soon.hourly, soon.current.condition, now, false)!!
         assertEquals(precipNoticeText(app.resources, card, now, tf), precipNoticeText(app.resources, rain.notice!!, now, tf))
 
-        val later = WidgetWeather.of(data(rainFrom = 100), now, emptyList()).rain!!
+        val later = WidgetWeather.of(data(rainFrom = 130), now, emptyList()).rain!!
         assertNull(later.notice)
         assertTrue(later.quarters.all { it.mmPerHour == 0.0 })
-        val views = render(WidgetConfig(), WidgetSize(320, 200), data(rainFrom = 100))
-        assertEquals("Kein Niederschlag bis 11:45", views.text(R.id.widget_rain_text))
+        val views = render(WidgetConfig(), WidgetSize(320, 200), data(rainFrom = 130))
+        assertEquals("Kein Niederschlag bis 12:30", views.text(R.id.widget_rain_text))
+    }
+
+    /**
+     * Strong rain an hour and three quarters ahead, moderate before it: the widget words it as the
+     * weather page's card does, looking just as far – not milder for a shorter look.
+     */
+    @Test fun theWordsOfTheWeatherPage() {
+        val d = data(rainFrom = 40, mm = 0.4).let { d ->
+            d.copy(minutely = d.minutely.map { if (it.time - now in 100 * 60_000L..120 * 60_000L) it.copy(precipitation = 3.0) else it })
+        }
+        val card = Insights.precipNotice(d.minutely, d.hourly, d.current.condition, now, false)!!
+        val widget = WidgetWeather.of(d, now, emptyList()).rain!!
+        assertEquals(Insights.Intensity.HEAVY, card.intensity)
+        assertEquals(card, widget.notice)
+        assertTrue(widget.quarters.any { it.mmPerHour >= 12.0 })
     }
 
     /** The rain sentence ends with the chance of the hour the rain starts in, as the hour strip writes it. */
@@ -152,7 +168,7 @@ class WidgetTest {
         val words = precipNoticeText(app.resources, rain.notice!!, now, tf)
         assertEquals("$words\u00A0· 40%", render(WidgetConfig(), WidgetSize(320, 200), d).text(R.id.widget_rain_text))
         // dry: no chance to tell
-        assertNull(WidgetWeather.of(data(rainFrom = 100), now, emptyList()).rain!!.chance)
+        assertNull(WidgetWeather.of(data(rainFrom = 130), now, emptyList()).rain!!.chance)
     }
 
     /**
@@ -254,7 +270,7 @@ class WidgetTest {
         assertEquals("Gräser", v.text(R.id.widget_side_1_name))
         assertEquals(View.GONE, v.findViewById<View>(R.id.widget_side_2).visibility)
         // without the chart: side by side over the whole width – one row, its third place kept empty
-        val dull = data(rainFrom = 100).let { d -> d.copy(minutely = d.minutely.map { it.copy(sunshine = 0.0) }) }
+        val dull = data(rainFrom = 130).let { d -> d.copy(minutely = d.minutely.map { it.copy(sunshine = 0.0) }) }
         val g = render(WidgetConfig(pollen = listOf(PollenType.GRASS, PollenType.HAZEL, PollenType.BIRCH)), WidgetSize(320, 300), dull)
         assertEquals("Birke", g.text(R.id.widget_pollen_0_name))
         assertEquals(View.VISIBLE, g.findViewById<View>(R.id.widget_pollen_row_0).visibility)
@@ -275,7 +291,7 @@ class WidgetTest {
         val l = WidgetLayout.of(WidgetConfig(pollen = all), WidgetSize(320, 180), alarm = "06:00", weather = w, pollenText = WidgetViews.pollenDots(app, w.pollen).toString())
         assertTrue(l.pollenSide && !l.pollenDots && l.pollenRows == 0 && l.chart)
         // nothing to draw and little height: as points beside the alarm
-        val dull = data(rainFrom = 100).let { d -> d.copy(minutely = d.minutely.map { it.copy(sunshine = 0.0) }) }
+        val dull = data(rainFrom = 130).let { d -> d.copy(minutely = d.minutely.map { it.copy(sunshine = 0.0) }) }
         val wd = WidgetWeather.of(dull, now, all)
         val low = WidgetLayout.of(WidgetConfig(pollen = all, rain = false), WidgetSize(320, 140), alarm = "06:00", weather = wd, pollenText = WidgetViews.pollenDots(app, wd.pollen).toString())
         assertTrue(low.pollenDots && !low.chart && low.alarm)
@@ -296,17 +312,17 @@ class WidgetTest {
     }
 
     /**
-     * Nothing to draw in the 90 minutes (no sunshine, dry): no empty chart – its line in its place,
+     * Nothing to draw in the two hours (no sunshine, dry): no empty chart – its line in its place,
      * by day saying the sun stays away too. Precipitation coming in two rows of cells: its line
      * beside the alarm, the pollen give way.
      */
     @Test fun theChartOnlyWithSomethingToDraw() {
-        val dull = data(rainFrom = 100).let { d -> d.copy(minutely = d.minutely.map { it.copy(sunshine = 0.0) }) }
+        val dull = data(rainFrom = 130).let { d -> d.copy(minutely = d.minutely.map { it.copy(sunshine = 0.0) }) }
         val v = render(WidgetConfig(), WidgetSize(320, 200), dull)
         assertEquals(View.GONE, v.findViewById<View>(R.id.widget_chart).visibility)
-        assertEquals("Kein Niederschlag, keine Sonne bis 11:45", v.text(R.id.widget_rain_text))
+        assertEquals("Kein Niederschlag, keine Sonne bis 12:30", v.text(R.id.widget_rain_text))
         val night = dull.copy(current = dull.current.copy(isDay = false))
-        assertEquals("Kein Niederschlag bis 11:45", render(WidgetConfig(), WidgetSize(320, 200), night).text(R.id.widget_rain_text))
+        assertEquals("Kein Niederschlag bis 12:30", render(WidgetConfig(), WidgetSize(320, 200), night).text(R.id.widget_rain_text))
         // precipitation coming, two rows of cells: the line beside the alarm, the chart below
         alarmAt(day + 30 * h)
         val all = listOf(PollenType.BIRCH, PollenType.GRASS)

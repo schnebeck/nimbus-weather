@@ -2,7 +2,7 @@
 <!--
   Nimbus - app/src/main/res/layout/widget_nimbus.xml
   The home-screen widget: on top in two columns the date, the time and the next alarm on the
-  left, the place and its weather on the right; below over the whole width the next 90 minutes'
+  left, the place and its weather on the right; below over the whole width the next two hours'
   precipitation and sunshine and today's pollen. Each part shown or hidden as chosen and as the
   widget's size allows.
 
@@ -312,7 +312,7 @@
             android:layout_weight="1"
             android:orientation="vertical" />
 
-        <!-- below, over the whole width: the next 90 minutes, the pollen, the time of the data -->
+        <!-- below, over the whole width: the next two hours, the pollen, the time of the data -->
         <LinearLayout
             android:id="@+id/widget_rain"
             android:layout_width="match_parent"

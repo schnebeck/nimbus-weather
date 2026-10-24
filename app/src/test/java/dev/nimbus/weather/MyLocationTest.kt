@@ -76,8 +76,10 @@ class MyLocationTest {
         override fun hasPermission() = true
         override fun enabled() = true
         override suspend fun currentLocation(fresh: Boolean) = answer.await().also { askedFresh = fresh }
-        override suspend fun toPlace(location: Location, fallbackName: String) =
-            Place(CURRENT_LOCATION_ID, if (location.latitude < 52.0) "Bad Harzburg" else "Hannover", latitude = location.latitude, longitude = location.longitude, isCurrentLocation = true)
+        override suspend fun toPlace(location: Location, fallbackName: String): Place {
+            val name = if (location.latitude < 52.0) "Bad Harzburg" else "Hannover"
+            return Place(CURRENT_LOCATION_ID, name, latitude = location.latitude, longitude = location.longitude, isCurrentLocation = true, language = java.util.Locale.getDefault().language)
+        }
     }
 
     private fun at(lat: Double, lon: Double, time: Long) = Locate.Found(Location("gps").apply { latitude = lat; longitude = lon }, time)
@@ -126,7 +128,7 @@ class MyLocationTest {
         }
     }
 
-    private fun model(app: Application, phone: Phone): MainViewModel {
+    private fun model(app: Application, phone: Phone, cached: Place = hannover): MainViewModel {
         val http = OkHttpClient()
         val base = server.url("/").toString().trimEnd('/')
         val repo = WeatherRepository(
@@ -139,7 +141,7 @@ class MyLocationTest {
         runBlocking {
             store.updateSettings { Settings(preloadRadar = false) }
             // "my location" was Hannover, its data current
-            store.cacheWeather(repo.load(hannover, Settings(), german = true))
+            store.cacheWeather(repo.load(cached, Settings(), german = true))
         }
         asked.clear()
         return MainViewModel(app, ViewModelDeps(store, repo, phone, HistorySource(offline), offline, offline))
@@ -173,6 +175,28 @@ class MyLocationTest {
         until("Bad Harzburg loaded") { vm.state.value.states[hannover.id]?.data?.place?.name == "Bad Harzburg" && vm.state.value.states[hannover.id]?.loading == false }
         assertTrue("requests: $asked", asked.isNotEmpty() && asked.all { it == 51.88 })
         assertTrue(locationMark(vm.state.value, vm.shelf).current)
+    }
+
+    /**
+     * The phone switched to German, "my location" still named in English: at the same spot (no
+     * move) its name is asked for again – on the page and in the weather the widgets read.
+     */
+    @Test fun aNameInAnotherLanguageIsAskedAgain() {
+        val before = java.util.Locale.getDefault()
+        java.util.Locale.setDefault(java.util.Locale.GERMANY)
+        try {
+            val app = RuntimeEnvironment.getApplication()
+            val phone = Phone(app)
+            val vm = model(app, phone, hannover.copy(name = "Hanover", language = "en"))
+            until("the start's search") { vm.state.value.locationStatus == LocationStatus.LOADING }
+            phone.answer.complete(at(52.37, 9.73, System.currentTimeMillis()))
+            until("named in German") { vm.state.value.states[hannover.id]?.data?.place?.name == "Hannover" }
+            assertEquals("Hannover", vm.state.value.currentPlace?.name)
+            assertEquals("de", vm.state.value.currentPlace?.language)
+            until("stored for the widgets") { runBlocking { Store(app).cachedWeather(hannover.id)?.place?.name } == "Hannover" }
+        } finally {
+            java.util.Locale.setDefault(before)
+        }
     }
 
     /** The same place confirmed: its data load anew all the same (pulled to reload). */

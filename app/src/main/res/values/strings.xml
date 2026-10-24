@@ -800,7 +800,7 @@
     <string name="settings_radar">Radar</string>
     <!-- Widget -->
     <string name="widget_label">Clock &amp; weather</string>
-    <string name="widget_description">Time, date, alarm, weather, precipitation and sunshine in the next 90 minutes, pollen – each part your choice</string>
+    <string name="widget_description">Time, date, alarm, weather, precipitation and sunshine in the next two hours, pollen – each part your choice</string>
     <string name="widget_no_data">Open Nimbus</string>
     <string name="widget_rain_dry">No precipitation until %1$s</string>
     <string name="widget_rain_chance">%1$s\u00A0· %2$s%%</string>
@@ -824,7 +824,7 @@
     <string name="widget_part_alarm">Next alarm</string>
     <string name="widget_part_weather">Weather now</string>
     <string name="widget_part_weather_desc">With the day\'s high and low; a tap opens Nimbus</string>
-    <string name="widget_part_rain">Precipitation and sunshine, next 90 minutes</string>
+    <string name="widget_part_rain">Precipitation and sunshine, next two hours</string>
     <string name="widget_part_rain_desc">On the clock\'s quarter hours, with the radar where it covers the place</string>
     <string name="widget_setup_pollen">Pollen</string>
     <string name="widget_setup_pollen_desc">The chosen types with today\'s level; with little room only those flying noteworthily, as points. None chosen: no pollen.</string>

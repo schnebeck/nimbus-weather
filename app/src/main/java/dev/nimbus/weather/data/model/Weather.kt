@@ -42,6 +42,8 @@ data class Place(
     val isCurrentLocation: Boolean = false,
     /** The forecast model chosen for this place; null: the one of the settings (always for "my location"). */
     val model: ForecastModel? = null,
+    /** The language [name] was asked for in ("my location"; null: not known) – another one asks again. */
+    val language: String? = null,
 ) {
     val subtitle: String get() = listOfNotNull(region, country).distinct().joinToString(", ")
 }
@@ -148,7 +150,17 @@ data class WeatherAlert(
     val onset: Long?,
     val expires: Long?,
     val source: String,
-)
+) {
+    companion object {
+        /**
+         * In the order of their periods: the earliest start first (one without a start is in force
+         * already), at the same start the one ending first, then the stronger.
+         */
+        val chronological: Comparator<WeatherAlert> = compareBy<WeatherAlert> { it.onset ?: Long.MIN_VALUE }
+            .thenBy { it.expires ?: Long.MAX_VALUE }
+            .thenByDescending { it.severity.ordinal }
+    }
+}
 
 @Serializable
 data class AirQuality(

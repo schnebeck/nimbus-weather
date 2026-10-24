@@ -27,7 +27,7 @@ import dev.nimbus.weather.ui.main.Insights
 /**
  * A place's weather for the widget: the header's values ([temperature], [condition] with [wind],
  * the day's [max] and [min]) – with a precipitation symbol the running hour's [chance] in percent
- * as the hour strip writes it –, the [rain] and sunshine of the next 90 minutes and the chosen
+ * as the hour strip writes it –, the [rain] and sunshine of the next two hours and the chosen
  * [pollen] of today. [asOf]: when the forecast was fetched.
  */
 data class WidgetWeather(
@@ -49,12 +49,13 @@ data class WidgetWeather(
     val pollenFlying: List<Pair<PollenType, Float>> get() = pollen.filter { it.second > 0f }.sortedByDescending { it.second }
 
     /**
-     * Six quarter hours on the clock's quarters, [from] the running one's start (10:15 at 10:20)
-     * [to] 90 minutes later: the [quarters], each by the time the precipitation notice reads it at
-     * – the very quarter hours it looks at, so bars and words agree (the radar's nowcast in them
-     * where it covers them); [notice] as the precipitation card words it, looking just as far –
-     * null: it stays dry until [to]. [now] lies in the first quarter hour. [chance]: the chance of
-     * the hour the notice's precipitation falls in ([chanceAt]); null: none known, or dry.
+     * The quarter hours on the clock's quarters the precipitation card looks at in its two hours
+     * ([Insights.NOTICE_HORIZON_MS]): [from] the running one's start (10:15 at 10:20) [to] the end
+     * of the one the two hours end in (12:30) – the [quarters], each by the time the notice reads
+     * it at, so bars and words agree (the radar's nowcast in them where it covers them); [notice]
+     * worded as the card words it – null: it stays dry. [now] lies in the first quarter hour.
+     * [chance]: the chance of the hour the notice's precipitation falls in ([chanceAt]); null:
+     * none known, or dry.
      */
     data class Rain(
         val from: Long, val to: Long, val quarters: List<Quarter>, val notice: Insights.PrecipNotice?, val now: Long = from,
@@ -64,7 +65,6 @@ data class WidgetWeather(
         val eventful: Boolean get() = quarters.any { (it.sunMinutes ?: 0.0) >= SUN_LEAST || it.wet || it.possible }
 
         companion object {
-            const val SPAN_MS = 90 * 60_000L
             /** Less sunshine than this in a quarter hour is none to draw. */
             const val SUN_LEAST = 0.5
         }
@@ -110,17 +110,15 @@ data class WidgetWeather(
             )
         }
 
-        /** The quarter hours reaching into the next 90 minutes; null when the forecast no longer covers them. */
+        /** The quarter hours reaching into the next two hours; null when the forecast no longer covers them. */
         fun rain(data: WeatherData, now: Long): Rain? {
             // the clock's quarters (every zone's offset is whole quarter hours)
             val from = now / QUARTER_MS * QUARTER_MS
-            val to = from + Rain.SPAN_MS
+            val to = (now + Insights.NOTICE_HORIZON_MS + QUARTER_MS - 1) / QUARTER_MS * QUARTER_MS
             val quarters = Insights.nowcastPoints(data.minutely, now).filter { it.time >= from && it.time < to }
             if (quarters.isEmpty() || quarters.last().time + QUARTER_MS < to) return null
             // the words of the weather page's card ("raining" as the page has it: by the sky now)
-            val notice = Insights.precipNotice(
-                data.minutely, data.hourly, data.current.condition, now, data.current.condition.isPrecipitation, horizonMs = to - now,
-            )
+            val notice = Insights.precipNotice(data.minutely, data.hourly, data.current.condition, now, data.current.condition.isPrecipitation)
             // the hour it starts in – falling now: the running one; not for perhaps some drizzle (the
             // radar's weak echo, not the model's precipitation the chance is of)
             val chance = notice?.takeIf { !it.possible }?.let { n -> chanceAt(data, if (n.state is Insights.Nowcast.StartsIn) n.at ?: now else now) }

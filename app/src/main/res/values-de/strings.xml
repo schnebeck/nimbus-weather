@@ -789,7 +789,7 @@
     <string name="settings_radar">Radar</string>
     <!-- Widget -->
     <string name="widget_label">Uhr &amp; Wetter</string>
-    <string name="widget_description">Uhrzeit, Datum, Wecker, Wetter, Niederschlag und Sonne der nächsten 90 Minuten, Pollen – jedes Teil wählbar</string>
+    <string name="widget_description">Uhrzeit, Datum, Wecker, Wetter, Niederschlag und Sonne der nächsten zwei Stunden, Pollen – jedes Teil wählbar</string>
     <string name="widget_no_data">Nimbus öffnen</string>
     <string name="widget_rain_dry">Kein Niederschlag bis %1$s</string>
     <string name="widget_rain_chance">%1$s\u00A0· %2$s%%</string>
@@ -813,7 +813,7 @@
     <string name="widget_part_alarm">Nächster Wecker</string>
     <string name="widget_part_weather">Wetter jetzt</string>
     <string name="widget_part_weather_desc">Mit Höchst- und Tiefstwert des Tages; Tippen öffnet Nimbus</string>
-    <string name="widget_part_rain">Niederschlag und Sonne, nächste 90 Minuten</string>
+    <string name="widget_part_rain">Niederschlag und Sonne, nächste zwei Stunden</string>
     <string name="widget_part_rain_desc">Auf den Viertelstunden der Uhr, mit dem Radar, wo es den Ort abdeckt</string>
     <string name="widget_setup_pollen">Pollen</string>
     <string name="widget_setup_pollen_desc">Die gewählten Arten mit ihrer Belastung heute; ist wenig Platz, nur die nennenswert fliegenden als Punkte. Keine gewählt: keine Pollen.</string>

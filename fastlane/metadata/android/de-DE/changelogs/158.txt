@@ -1,0 +1,3 @@
+• Widget: Regen und Sonne der nächsten zwei Stunden, mit denselben Worten wie die Niederschlagskarte
+• Warnungen nach ihrem Zeitraum geordnet, die früheste zuerst
+• „Mein Standort“ heißt nach einem Sprachwechsel gleich in der neuen Sprache

@@ -218,9 +218,9 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
 - **Home-screen widget** ("Clock & weather", on the lock screen too where the system offers it):
   on top the date and the place, below them the time and the weather (symbol, temperature, high
   and low, with a precipitation symbol its chance), under the clock the next alarm; below over the
-  whole width the next 90 minutes on the clock's quarter hours – a chart of sunshine (share of the
+  whole width the next two hours on the clock's quarter hours – a chart of sunshine (share of the
   quarter hour in %, behind) and precipitation (mm/h, in front), only when there is something to
-  draw, else a line ("No precipitation, no sunshine until 11:45") – with the precipitation card's
+  draw, else a line ("No precipitation, no sunshine until 12:30") – with the precipitation card's
   line and the chance of its hour ("… from about 11:00 · 40%"), and the chosen pollen types flying
   today, the strongest first: as gauges with their half steps beside the chart (a third of the
   width), below it where that does not fit, with little room only those flying noteworthily as

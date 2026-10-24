@@ -62,14 +62,16 @@ fun severityColor(s: AlertSeverity): Color = when (s) {
 
 /**
  * The warnings: the DWD's from the level chosen ([dev.nimbus.weather.data.model.Settings.warningLevel])
- * and the states' flood warnings; the weaker ones as a line of their own, shown on a tap.
+ * and the states' flood warnings, in the order of their periods; the weaker ones as a line of
+ * their own, shown on a tap.
  */
 @Composable
 fun AlertsCard(all: List<WeatherAlert>) {
     val tf = LocalTimeFormat.current
     var expanded by rememberSaveable { mutableStateOf(false) }
     val level = LocalSettings.current.warningLevel
-    val (main, weaker) = all.partition { dev.nimbus.weather.notify.Notices.isFlood(it) || dev.nimbus.weather.notify.Notices.level(it) >= level }
+    // the states' flood warnings and the DWD's in one order: by their periods
+    val (main, weaker) = all.sortedWith(WeatherAlert.chronological).partition { dev.nimbus.weather.notify.Notices.isFlood(it) || dev.nimbus.weather.notify.Notices.level(it) >= level }
     val alerts = if (expanded) main + weaker else main
     GlassCard(
         title = stringResource(R.string.alerts) + " · DWD",

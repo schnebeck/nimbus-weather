@@ -84,6 +84,8 @@ class MainViewModel(
     private var sidebar = false
     /** The app in front: only then does an out-of-date record fetch anew (see [onDue]). */
     private var resumed = false
+    /** A name of "my location" being asked for in the app's language ([renameIfForeign]). */
+    private var renaming = false
     /** Places whose records went out of date while a load ran for them: loaded again after it. */
     private val dueAfter = HashSet<String>()
 
@@ -164,6 +166,7 @@ class MainViewModel(
                 val changed = if (prev == null) emptyList() else _state.value.pages.filter { stations || prev.modelFor(it) != settings.modelFor(it) }
                 if (first) {
                     if (_state.value.currentPlace == null || locationWanted(_state.value, sidebar)) refreshLocation()
+                    renameIfForeign()
                     _state.value.pages.forEach { load(it, force = false) }
                 } else if (changed.isNotEmpty()) {
                     changed.forEach { load(it, force = true) }
@@ -232,7 +235,45 @@ class MainViewModel(
         shelf.checkAll()
         // the position only while "my location" is shown (the first one always: it makes the place)
         if (_state.value.currentPlace == null || locationWanted(_state.value, sidebar)) refreshLocation()
+        renameIfForeign()
         refreshExpired()
+    }
+
+    /** "My location" named in another language than the app's now (the system's changed). */
+    private fun foreign(place: Place) = place.isCurrentLocation && place.language != Locale.getDefault().language
+
+    /**
+     * "My location" named in another language: its name asked for anew at its spot – no move
+     * needed (the place stays put after a change of language); not while a search runs, it names
+     * the place itself. Without an answer the old name stays.
+     */
+    private fun renameIfForeign() {
+        val old = _state.value.currentPlace ?: return
+        if (!foreign(old) || renaming || _state.value.locationStatus == LocationStatus.LOADING) return
+        renaming = true
+        viewModelScope.launch {
+            try {
+                val fallbackName = getApplication<Application>().getString(R.string.my_location)
+                val spot = android.location.Location("nimbus").apply { latitude = old.latitude; longitude = old.longitude }
+                val named = runCatching { location.toPlace(spot, fallbackName) }.getOrNull() ?: return@launch
+                // a search moved the place meanwhile: its own name stands
+                if (named.name == fallbackName || named.language == old.language || _state.value.currentPlace != old) return@launch
+                val place = old.copy(name = named.name, region = named.region, country = named.country, countryCode = named.countryCode, language = named.language)
+                _state.update { it.copy(currentPlace = place) }
+                rename(place)
+            } finally {
+                renaming = false
+            }
+        }
+    }
+
+    /** [place] under its new name: its page and stored weather (the widgets read it) – no reload. */
+    private suspend fun rename(place: Place) {
+        val renamed = _state.value.states[place.id]?.data?.copy(place = place) ?: return
+        updatePlace(place.id) { it.copy(data = renamed) }
+        shelf.take(renamed)
+        runCatching { store.cacheWeather(renamed) }
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) { runCatching { dev.nimbus.weather.widget.Widgets.showAll(getApplication()) } }
     }
 
     /**
@@ -300,6 +341,7 @@ class MainViewModel(
                 // the position: confirmed (the same, still current) – or out of date, asked again after the pause
                 if (missed) shelf.position.stale(retryMs = dev.nimbus.weather.data.repo.Freshness.locationPauseMs(_state.value.locationMisses))
                 else found?.let { shelf.position.arrived(it.at) }
+                renameIfForeign()
                 // the place stays: its data now (asked for anew: anew), the look-back waiting too
                 _state.value.currentPlace?.let { p ->
                     load(p, force = forced)
@@ -311,8 +353,8 @@ class MainViewModel(
             val old = _state.value.currentPlace
             val fallbackName = getApplication<Application>().getString(R.string.my_location)
             val moved = old == null || Geo.distanceKm(old.latitude, old.longitude, loc.latitude, loc.longitude) > 1.5
-            // A place without a real name (geocoding failed last time) asks again.
-            val unnamed = old != null && old.name == fallbackName
+            // A place without a real name (geocoding failed last time) asks again, as one named in another language.
+            val unnamed = old != null && (old.name == fallbackName || foreign(old))
             val place = if (moved || unnamed) {
                 val named = location.toPlace(loc, fallbackName)
                 // Geocoding failed again, but we are still near the last named place: keep its name.
@@ -337,15 +379,8 @@ class MainViewModel(
             // the position's record: current (its dot green) – an older one out of date, asked again after the pause
             if (current) shelf.position.arrived(found.at)
             else shelf.position.stale(retryMs = dev.nimbus.weather.data.repo.Freshness.locationPauseMs(_state.value.locationMisses))
-            // Only the name changed (it was missing before): show it right away, no reload needed.
-            if (!moved && place.name != old.name) {
-                val renamed = _state.value.states[place.id]?.data?.copy(place = place)
-                if (renamed != null) {
-                    updatePlace(place.id) { it.copy(data = renamed) }
-                    shelf.take(renamed)
-                    runCatching { store.cacheWeather(renamed) }
-                }
-            }
+            // Only the name changed (it was missing before, or in another language): shown right away, no reload needed.
+            if (!moved && (place.name != old.name || place.language != old.language)) rename(place)
             if (BuildConfig.DEBUG) android.util.Log.d("NimbusLocation", "place ${place.name} (was ${old?.name}, moved=$moved)")
             load(place, force = moved || forced)
             // the look-back: the one asked for meanwhile, or the place's anew where it moved

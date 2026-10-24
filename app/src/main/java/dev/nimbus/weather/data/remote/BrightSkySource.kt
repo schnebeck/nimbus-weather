@@ -286,7 +286,7 @@ class BrightSkySource(private val http: OkHttpClient, private val baseUrl: Strin
                     expires = parseTime(a.s("expires")),
                     source = "DWD",
                 )
-            }.sortedByDescending { it.severity.ordinal }
+            }.sortedWith(WeatherAlert.chronological)
         }
     }
 }

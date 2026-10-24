@@ -162,6 +162,7 @@ open class LocationProvider(private val context: Context, private val http: okht
     open suspend fun toPlace(location: Location, fallbackName: String): Place {
         val lat = location.latitude
         val lon = location.longitude
+        val language = Locale.getDefault().language
         val address = withContext(Dispatchers.IO) {
             if (!Geocoder.isPresent()) return@withContext null
             runCatching {
@@ -185,11 +186,11 @@ open class LocationProvider(private val context: Context, private val http: okht
         if (name != null) {
             return Place(
                 id = CURRENT_LOCATION_ID, name = name, region = address?.adminArea, country = address?.countryName,
-                countryCode = address?.countryCode, latitude = lat, longitude = lon, isCurrentLocation = true,
+                countryCode = address?.countryCode, latitude = lat, longitude = lon, isCurrentLocation = true, language = language,
             )
         }
         // No platform geocoder (devices without Google services) or it failed: OpenStreetMap.
-        osmReverse(lat, lon)?.let { return it }
+        osmReverse(lat, lon)?.let { return it.copy(language = language) }
         return Place(id = CURRENT_LOCATION_ID, name = fallbackName, latitude = lat, longitude = lon, isCurrentLocation = true)
     }
 

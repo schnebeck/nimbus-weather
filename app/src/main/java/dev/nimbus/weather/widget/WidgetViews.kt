@@ -1,7 +1,7 @@
 /*
  * Nimbus - app/src/main/java/dev/nimbus/weather/widget/WidgetViews.kt
  * The widget's picture in two columns: its parts as chosen and as its size allows, the weather
- * symbol, the 90 minutes' chart and the pollen gauges drawn, a tap on each part to where it leads.
+ * symbol, the two hours' chart and the pollen gauges drawn, a tap on each part to where it leads.
  *
  *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
  *   Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
@@ -60,10 +60,10 @@ data class WidgetSize(val widthDp: Int, val heightDp: Int)
 /**
  * Which parts the widget shows. On top two columns while there is room for both: on the left
  * the date, the time and the next alarm; on the right the place and the weather. Below them,
- * with some space, over the whole width: the next 90 minutes (the chart of precipitation and
+ * with some space, over the whole width: the next two hours (the chart of precipitation and
  * sunshine, its line), the pollen ([pollenPerRow] side by side) and the time of the data. Those
  * chosen, as far as they fit: the clock and the weather first, then the chart, the pollen, the
- * 90 minutes' line, the time of the data with its refresh last; what height is left the chart
+ * two hours' line, the time of the data with its refresh last; what height is left the chart
  * takes. The big figures ([bigDp]: the clock's height, the symbol's size) grow with the room;
  * [secondLine]: the date over the clock and the place over the weather fit; [longDate]: the
  * weekday and month written out. The pollen as gauges below ([pollenRows]) where they all fit, else
@@ -95,7 +95,7 @@ data class WidgetLayout(
         private const val WEATHER_FIX = 40f
         /** Room between the columns. */
         private const val GAP = 10f
-        /** The small texts at font scale 1: a line, the dates, a character of the alarm and of the 90 minutes' line. */
+        /** The small texts at font scale 1: a line, the dates, a character of the alarm and of the two hours' line. */
         private const val LINE = 19f
         /** A character of the head line (14 sp); the place's pin. */
         private const val HEAD_CHAR = 7.6f
@@ -106,7 +106,7 @@ data class WidgetLayout(
         private const val BESIDE_GAP = 6f
         private const val BESIDE_ICON = 14f
         private const val BESIDE_CHAR = 6.8f
-        /** Below the columns: the space above the 90 minutes, the chart's least height and the times under it. */
+        /** Below the columns: the space above the two hours, the chart's least height and the times under it. */
         private const val BELOW_GAP = 10f
         private const val CHART_TOP = 3f
         private const val CHART_MIN = 34f
@@ -120,7 +120,7 @@ data class WidgetLayout(
         private const val STATUS = 24f
 
         /**
-         * [alarm]: the next alarm as the widget writes it, null: none; [rainText]: the 90 minutes'
+         * [alarm]: the next alarm as the widget writes it, null: none; [rainText]: the two hours'
          * line; [pollenText]: the pollen as points; [placeText] and [longDateText]: the head line's
          * place and the date with its weekday written out.
          */
@@ -173,7 +173,7 @@ data class WidgetLayout(
                 val besideW = BESIDE_GAP + BESIDE_ICON + BESIDE_CHAR * (alarm?.length ?: 0) * fontScale
                 if (beside) big = minOf(big, (width - (if (bigWeather) WEATHER_FIX else 0f) - (if (rightWanted) GAP else 0f) - besideW) / perDp)
                 val bigH = if (bigClock || bigWeather) big * BIG_LINE else 0f
-                // the line under both columns: the alarm (under the clock), beside it the 90 minutes' line or the pollen as points
+                // the line under both columns: the alarm (under the clock), beside it the two hours' line or the pollen as points
                 var left = height - SPARE - headH - bigH - (if (below) line + 2 else 0f)
                 fun fits(h: Float) = (left >= h).also { if (it) left -= h }
                 val alarmW = if (below) ALARM_ICON + CHAR * (alarm?.length ?: 0) * fontScale + GAP else 0f
@@ -388,7 +388,7 @@ object WidgetViews {
             v.setTextViewText(R.id.widget_min, "↓" + Units.temp(weather.min, unit))
         }
 
-        // the next 90 minutes: the precipitation card's line, the chart of precipitation and sunshine
+        // the next two hours: the precipitation card's line, the chart of precipitation and sunshine
         v.visible(R.id.widget_rain, l.rain && rain != null)
         if (rain != null && rainText != null) {
             v.setTextViewText(R.id.widget_rain_text, rainText)
@@ -420,7 +420,7 @@ object WidgetViews {
         }
 
         // today's pollen of the chosen types: as points in a line, or side by side with a gauge each, as the pollen card's
-        // the line under the columns: the alarm, beside it the 90 minutes' line or the pollen as points
+        // the line under the columns: the alarm, beside it the two hours' line or the pollen as points
         v.visible(R.id.widget_mid, l.alarm || l.pollenDots || l.midRain)
         v.visible(R.id.widget_pollen_dots, l.pollenDots || l.midRain)
         if (l.midRain && rainText != null) v.setTextViewText(R.id.widget_pollen_dots, rainText)
@@ -456,7 +456,7 @@ object WidgetViews {
         v.setContentDescription(R.id.widget_refresh, res.getString(R.string.widget_refresh))
 
         // the height spread in equal gaps between what does not belong together: the head with the
-        // clock, the weather and the alarm; the 90 minutes; the pollen; the time of the data at the bottom.
+        // clock, the weather and the alarm; the two hours; the pollen; the time of the data at the bottom.
         // The line under the columns without the alarm stands on its own.
         val parts = listOf(
             R.id.widget_gap_top to false,
@@ -575,12 +575,12 @@ object WidgetViews {
     }
 
     /**
-     * The quarter hours of [rain] over the 90 minutes on one axis, [w] × [h] px – as the day charts
+     * The quarter hours of [rain] over the two hours on one axis, [w] × [h] px – as the day charts
      * draw an expected hour, in unfilled frames of their colours: the sunshine behind, a little
      * wider than the precipitation in front of it, its top seen through the precipitation's bar.
      * Each over its quarter hour as the notice reads it, from the running one on, a tick under
-     * each and the clock's quarter hours under them – as many as there is room for (every half
-     * hour, every 45 minutes, the start and end); a fine line at now. Two scales in the colours of their bars: on the left how
+     * each and the clock's quarter hours under them – as many as there is room for, evenly from
+     * the start to the end (every half hour, 45 minutes, hour, or the two ends); a fine line at now. Two scales in the colours of their bars: on the left how
      * much of the quarter hour is sunny (all of it fills the height), on the right the precipitation
      * per hour (10 mm/h fills it, 2.5 mm/h – moderate rain – half of it: square root, so light
      * rain still shows); their units over them.
@@ -617,8 +617,8 @@ object WidgetViews {
         val quarter = 15 * 60_000L
         val marks = ((rain.to - rain.from) / quarter).toInt()
         val labelW = times.measureText(tf.time(rain.from)) + 8 * density
-        // as many times as there is room for: every half hour, every 45 minutes, start and end – or the start alone
-        val every = listOf(2, 3, marks).firstOrNull { (x1 - x0) * it / marks >= labelW } ?: (marks + 1)
+        // as many times as there is room for, the end among them – or the start alone
+        val every = (2..marks).filter { marks % it == 0 }.firstOrNull { (x1 - x0) * it / marks >= labelW } ?: (marks + 1)
         for (k in 0..marks) {
             val t = rain.from + k * quarter
             c.drawLine(x(t), base, x(t), base + 3 * density, line)

@@ -26,7 +26,7 @@
 <p><b>Home-screen widget</b></p>
 <ul>
 <li>Time (tap: alarms), date (tap: calendar), next alarm, place and weather with high and low</li>
-<li>The next 90 minutes: rain and sunshine per quarter hour – "Light rain from about 17:15 · 40%"</li>
+<li>The next two hours: rain and sunshine per quarter hour – "Light rain from about 17:15 · 40%"</li>
 <li>The pollen types you chose that fly today</li>
 <li>Each part optional, fits its size, system colours, on the lock screen too</li>
 </ul>

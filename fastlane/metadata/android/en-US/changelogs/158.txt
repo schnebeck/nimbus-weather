@@ -1,0 +1,3 @@
+• Widget: rain and sunshine of the next two hours, in the same words as the precipitation card
+• Warnings in the order of their periods, the earliest first
+• "My location" takes the new language at once after a change of language

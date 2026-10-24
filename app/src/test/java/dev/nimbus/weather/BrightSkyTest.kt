@@ -18,6 +18,7 @@
 package dev.nimbus.weather
 
 import dev.nimbus.weather.data.model.AlertSeverity
+import dev.nimbus.weather.data.model.WeatherAlert
 import dev.nimbus.weather.data.model.Condition
 import dev.nimbus.weather.data.model.CurrentWeather
 import dev.nimbus.weather.data.remote.BrightSkySource
@@ -43,7 +44,7 @@ class BrightSkyTest {
     }
 
     @Test
-    fun `parses alerts in both languages sorted by severity`() {
+    fun `parses alerts in both languages in the order of their periods`() {
         val json = JsonCodec.parseToJsonElement(
             """{"alerts":[
               {"id":1,"alert_id":"a","status":"actual","severity":"minor","event_en":"frost","event_de":"FROST",
@@ -62,6 +63,25 @@ class BrightSkyTest {
         val en = BrightSkySource.parseAlerts(json, german = false)
         assertEquals("Official WARNING of FROST", en[1].headline)
         assertNotNull(en[1].onset)
+    }
+
+    /**
+     * The warnings in the order of their periods, not of their levels: the gusts from this evening
+     * before the storm from tomorrow, the frost running already before both.
+     */
+    @Test
+    fun `alerts are in the order of their periods`() {
+        val h = 3_600_000L
+        fun alert(id: String, severity: AlertSeverity, onset: Long?, expires: Long?) =
+            WeatherAlert(id, id, id, "", severity = severity, onset = onset, expires = expires, source = "DWD")
+        val storm = alert("storm", AlertSeverity.SEVERE, 30 * h, 40 * h)
+        val gusts = alert("gusts", AlertSeverity.MINOR, 18 * h, 22 * h)
+        val gustsLonger = alert("gusts longer", AlertSeverity.MINOR, 18 * h, 26 * h)
+        val thunder = alert("thunder", AlertSeverity.MODERATE, 18 * h, 22 * h)
+        val frost = alert("frost", AlertSeverity.MINOR, 2 * h, 10 * h)
+        val flood = alert("flood", AlertSeverity.MODERATE, null, null).copy(source = "LHP")
+        val ordered = listOf(storm, gusts, gustsLonger, thunder, frost, flood).sortedWith(WeatherAlert.chronological)
+        assertEquals(listOf("flood", "frost", "thunder", "gusts", "gusts longer", "storm"), ordered.map { it.id })
     }
 
     private val model = CurrentWeather(

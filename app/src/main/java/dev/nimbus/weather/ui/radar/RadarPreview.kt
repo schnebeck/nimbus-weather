@@ -41,7 +41,8 @@ import kotlin.math.tan
  * immediately – anywhere.
  */
 object RadarPreview {
-    const val ZOOM = 6.4
+    /** As the full view opens: the preview shows the same scale. */
+    const val ZOOM = RADAR_ZOOM
 
     /** The radar's zoom as the full view was last left (settings): the preview shows the same scale. */
     @Volatile var remembered: Double? = null
@@ -91,11 +92,12 @@ object RadarPreview {
     /** Bumped when the radar picture is drawn differently (9: from the composites' grids, 10: RainViewer at [RadarPicture.STILL_RV_ZOOM]). */
     private const val PICTURE_VERSION = 10
 
-    /** Same place, size and zoom share the pictures; a moving location gets new ones every ~100 m. */
+    /**
+     * Same place, size and zoom share the pictures; a moving location gets new ones every ~100 m.
+     * The zoom is always in the name: a picture kept on disk is never shown at another scale.
+     */
     fun key(lat: Double, lon: Double, wDp: Int, hDp: Int, zoom: Double = zoomNow()) =
-        String.format(Locale.ROOT, "%.3f_%.3f_%dx%d", lat, lon, wDp, hDp) +
-            // the preset zoom keeps the names the pictures had before there was another
-            if (zoom == ZOOM) "" else String.format(Locale.ROOT, "_z%.2f", zoom)
+        String.format(Locale.ROOT, "%.3f_%.3f_%dx%d_z%.2f", lat, lon, wDp, hDp, zoom)
 
     /**
      * The area of a [wDp] × [hDp] view at [zoom] around the place (MapLibre: 512 dp tiles), at

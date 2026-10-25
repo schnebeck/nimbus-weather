@@ -137,8 +137,10 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   contrast (rain green → yellow → red → magenta, snow turquoise → white → violet); the legend
   starts at the weakest step (drizzle, about 0.1 mm/h) and names the steps with mm/h; the radar
   cells smoothed at every zoom
-  level instead of blocks; zoom down to about 5 km across, the radar keeps its zoom for the next
-  time and the preview card; the radar opens on the current picture, loads the forecast first, then
+  level instead of blocks; zoom down to about 5 km across; the radar and its preview card open at
+  about 13 km across (the place and its streets), the radar keeps its zoom for the next time and the
+  preview card; the closer the map, the slower it plays (up to three times), so a shower does not
+  cross the map in a moment; the radar opens on the current picture, loads the forecast first, then
   the past, and starts playing once the forecast is there (can be switched off); each time round it
   stands two seconds on "now"; in the forecast what lies beyond its area is grey (no forecast, not
   dry); smooth playback:

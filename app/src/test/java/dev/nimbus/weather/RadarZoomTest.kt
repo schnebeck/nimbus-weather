@@ -45,22 +45,22 @@ class RadarZoomTest {
         assertEquals(RADAR_ZOOM, radarStartZoom(hasPlace = true, archive = false, remembered = null), 0.0)
         assertEquals(9.3, radarStartZoom(true, false, 9.3), 0.0)
         assertEquals(RADAR_MAX_ZOOM, radarStartZoom(true, false, 14.0), 0.0)
-        assertEquals(RADAR_ZOOM, radarStartZoom(true, archive = true, remembered = 9.3), 0.0)
+        assertEquals(dev.nimbus.weather.ui.radar.RADAR_DAY_ZOOM, radarStartZoom(true, archive = true, remembered = 9.3), 0.0)
         // kept in the settings
         assertNull(Settings().radarZoom)
         val kept = JsonCodec.decodeFromString(Settings.serializer(), JsonCodec.encodeToString(Settings.serializer(), Settings(radarZoom = 9.3)))
         assertEquals(9.3, kept.radarZoom!!, 0.0)
     }
 
-    /** The preview at the same scale: one zoom step closer, half the width; its pictures named apart. */
+    /** The preview at the same scale: one zoom step closer, half the width; its pictures named by their zoom. */
     @Test fun thePreviewAtTheSameScale() {
         val preset = RadarPreview.geo(52.15, 9.95, 380, 220)
         RadarPreview.remembered = RadarPreview.ZOOM + 1
         val closer = RadarPreview.geo(52.15, 9.95, 380, 220)
         assertEquals((preset.maxX - preset.minX) / 2, closer.maxX - closer.minX, 1.0)
-        // the preset keeps its pictures' names; another zoom has its own
-        assertEquals("52.150_9.950_380x220", RadarPreview.key(52.15, 9.95, 380, 220, RadarPreview.ZOOM))
-        assertEquals("52.150_9.950_380x220_z7.40", RadarPreview.key(52.15, 9.95, 380, 220))
+        // each zoom its own pictures – the preset's too: a picture is never shown at another scale
+        assertEquals("52.150_9.950_380x220_z10.50", RadarPreview.key(52.15, 9.95, 380, 220, RadarPreview.ZOOM))
+        assertEquals("52.150_9.950_380x220_z11.50", RadarPreview.key(52.15, 9.95, 380, 220))
         assertTrue(RadarPreview.key(52.15, 9.95, 380, 220, 9.0) != RadarPreview.key(52.15, 9.95, 380, 220, 9.5))
     }
 }

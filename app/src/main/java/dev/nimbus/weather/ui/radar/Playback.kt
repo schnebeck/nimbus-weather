@@ -144,6 +144,19 @@ object Playback {
     const val PICTURES_PER_SECOND = 20
     private const val PICTURE_NS = 1_000_000_000L / PICTURES_PER_SECOND
 
+    /**
+     * How much slower playback runs at [zoom]: closer in, a shower crosses the map in fewer steps –
+     * at the wide view (6.6, some 200 km across) as set, slowing down towards [RADAR_ZOOM] (about
+     * 13 km) to [MAX_SLOWDOWN] times and no more, so the loop stays watchable (2 h back and 2 ahead
+     * in about half a minute). The rain moves smoothly between the steps all the same.
+     */
+    fun slowdown(zoom: Double): Float {
+        val k = ((zoom - SLOW_FROM_ZOOM) / (RADAR_ZOOM - SLOW_FROM_ZOOM)).coerceIn(0.0, 1.0)
+        return Math.pow(MAX_SLOWDOWN, k).toFloat()
+    }
+    private const val SLOW_FROM_ZOOM = 6.6
+    const val MAX_SLOWDOWN = 3.0
+
     /** The next picture's time after the one [due], at [now] (ns): on the beat, anew after a pause of a beat or more. */
     fun nextDue(now: Long, due: Long) = if (now - due >= PICTURE_NS) now + PICTURE_NS else due + PICTURE_NS
 

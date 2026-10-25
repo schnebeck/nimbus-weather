@@ -63,7 +63,8 @@ class RadarPreviewTest {
 
     /** The small preview from the grid: the very picture of the radar loop, the preview's size. */
     @Test fun thePreviewIsTheLoopsPicture() = runBlocking {
-        val g = RadarPreview.geo(52.3759, 9.732, 380, 220)
+        // wide enough that the shower (some 25 km across) lies within, the corners dry
+        val g = RadarPreview.geo(52.3759, 9.732, 380, 220, zoom = 6.4)
         val still = RadarPicture.still(offline, timeline, frame, g) { c, w -> if (c == DwdRadar) DwdRadar.cut(shower, w) else null }!!
         assertEquals(760 to 440, still.width to still.height)
         val px = pixels(still)

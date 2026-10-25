@@ -1,0 +1,3 @@
+• Radar und Vorschau öffnen näher am Ort, etwa 13 km Bildbreite; der Zoom bleibt gemerkt
+• Je näher die Karte, desto langsamer spielt das Radar, damit Schauer nicht durchs Bild huschen
+• Schnelle Schauer wandern auch bei starkem Zoom fließend weiter

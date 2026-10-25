@@ -95,7 +95,13 @@ import org.maplibre.android.maps.MapView
 import java.util.TimeZone
 
 const val STYLE_URL = "https://tiles.openfreemap.org/styles/dark"
-const val RADAR_ZOOM = 6.6
+/**
+ * The zoom the live radar and its preview open at until zoomed: about 13 km across a phone in
+ * Germany – the place and its streets, the rain over it; playback slows down to match ([Playback.slowdown]).
+ */
+const val RADAR_ZOOM = 10.5
+/** A day of the look-back: the region's weather of that day, some 200 km across. */
+const val RADAR_DAY_ZOOM = 6.6
 /** The closest the radar's map goes: about 5 km across a phone, a radar cell (1 km) some 85 dp wide. */
 const val RADAR_MAX_ZOOM = 12.0
 /** The farthest out: Europe and beyond. */
@@ -103,12 +109,12 @@ const val RADAR_MIN_ZOOM = 3.0
 
 /**
  * The zoom the radar opens at: the live radar at the one it was last left at ([remembered], within
- * the map's limits), else [RADAR_ZOOM]; a day of the look-back always at [RADAR_ZOOM]; without a
+ * the map's limits), else [RADAR_ZOOM]; a day of the look-back always at [RADAR_DAY_ZOOM]; without a
  * place, all of Germany.
  */
 internal fun radarStartZoom(hasPlace: Boolean, archive: Boolean, remembered: Double?): Double = when {
     !hasPlace -> 5.2
-    archive -> RADAR_ZOOM
+    archive -> RADAR_DAY_ZOOM
     else -> remembered?.coerceIn(RADAR_MIN_ZOOM, RADAR_MAX_ZOOM) ?: RADAR_ZOOM
 }
 /** How long the radar waits for the temperature grid before it starts without (it follows). */
@@ -455,8 +461,10 @@ fun RadarScreen(
         val tl = timeline ?: return@LaunchedWhileShown
         if (!playing) { buffering = false; player.playing = false; player.position = frame.toFloat(); return@LaunchedWhileShown }
         val archived = tl.day != null
-        // time per 5-minute step: the live ranges show [HistoryRange.playMinutes] per beat
-        val stepMs = if (archived) ARCHIVE_STEP_MS else FRAME_MS * HistoryRange.STEP_MINUTES / tl.range.playMinutes
+        // time per 5-minute step: the live ranges show [HistoryRange.playMinutes] per beat – slower
+        // the closer the map (read on every beat: zoomed while playing, the pace follows at once)
+        val baseStepMs = if (archived) ARCHIVE_STEP_MS else FRAME_MS * HistoryRange.STEP_MINUTES / tl.range.playMinutes
+        val openedAt = radarStartZoom(place != null, archive, startZoom)
         player.playing = true
         // where no nowcast reaches into the area: the loop ends at "now"
         val lastIndex = tl.lastShown(nowcastHere)
@@ -474,7 +482,7 @@ fun RadarScreen(
             // the live loop starts over at "now" until the past (loaded after the forecast) can play
             val from = if (archived || state.position < lastIndex) 0 else Playback.liveLoopFrom(tl.nowIndex, lastIndex, player::canShow)
             state = Playback.step(
-                state, dt, lastIndex, loop = !archived, stepMs = stepMs, canShow = player::canShow,
+                state, dt, lastIndex, loop = !archived, stepMs = baseStepMs * Playback.slowdown(lastZoom ?: openedAt), canShow = player::canShow,
                 resumeAhead = BUFFER_RESUME, restMs = LOOP_PAUSE_MS.toFloat(), loopFrom = from,
                 // the live loop stands on "now" a while each time: the current picture is seen
                 holdAt = if (archived) -1 else tl.nowIndex, holdMs = NOW_HOLD_MS,

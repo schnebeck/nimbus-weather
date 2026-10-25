@@ -56,14 +56,16 @@ object RadarMotion {
      * alone) is not believed: a cell that dissolves while another forms nearby matches the new one
      * – the pictures cannot tell "moved" from "gone and new elsewhere", but rain drifts with the
      * flow it is in. Such a block takes the motion around it, and the cell fades where it is.
-     * [maxShift]: the largest motion to look for, in field pixels.
+     * [maxShift]: the largest motion to look for, in field pixels – found at any zoom: the coarse
+     * copy is coarse enough that [MAX_REACH] of its pixels reach that far (close in, a fast shower
+     * crosses many field pixels in five minutes).
      */
     fun motion(a: ViewFrame, b: ViewFrame, w: Int, h: Int, maxShift: Float): Flow {
-        val f = max(1, ceil(max(w, h) / 128.0).toInt())
+        val f = max(1, max(ceil(max(w, h) / 128.0).toInt(), ceil(maxShift / MAX_REACH).toInt()))
         val cw = (w + f - 1) / f; val ch = (h + f - 1) / f
         val ca = coarse(a, w, h, f, cw, ch); val cb = coarse(b, w, h, f, cw, ch)
         val bs = 12; val stride = 6
-        val r = ceil(maxShift / f).toInt().coerceIn(2, 16)
+        val r = ceil(maxShift / f).toInt().coerceIn(2, MAX_REACH)
         val gw = max(1, (cw - bs) / stride + 1); val gh = max(1, (ch - bs) / stride + 1)
         val u = FloatArray(gw * gh); val v = FloatArray(gw * gh); val wt = FloatArray(gw * gh)
         val sad = FloatArray((2 * r + 1) * (2 * r + 1))
@@ -120,6 +122,9 @@ object RadarMotion {
         val x0 = (bs / 2f) * f; val step = (stride * f).toFloat()
         return Flow(gw, gh, x0, x0, step, cu, cv)
     }
+
+    /** The widest search, in coarse pixels each way: (2 · 16 + 1)² shifts per block. */
+    private const val MAX_REACH = 16
 
     /** Blocks of the surroundings (beyond the block's own cell) that a block's motion is compared with. */
     private const val AROUND = 6

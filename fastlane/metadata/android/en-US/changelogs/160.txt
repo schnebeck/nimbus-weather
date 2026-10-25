@@ -1,0 +1,3 @@
+• The radar and its preview open closer to the place, about 13 km across; the zoom stays remembered
+• The closer the map, the slower the radar plays, so showers do not flit across it
+• Fast showers move on smoothly even when zoomed far in

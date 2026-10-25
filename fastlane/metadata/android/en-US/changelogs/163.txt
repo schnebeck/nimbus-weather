@@ -1,0 +1,3 @@
+• Settings: sections of hidden cards shrink to one line with a switch to show them – then they open
+• Widget: the date wholly in Nimbus's language, an up-to-date picture in the widget list, the setup tells where a tap leads
+• Radar: the loading hint goes while paused too, as soon as the picture is there

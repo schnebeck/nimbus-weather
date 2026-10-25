@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import dev.nimbus.weather.BuildConfig
 import dev.nimbus.weather.R
 import dev.nimbus.weather.data.model.PrecipitationUnit
+import dev.nimbus.weather.data.model.WeatherCard
 import dev.nimbus.weather.data.model.Settings
 import dev.nimbus.weather.data.model.TemperatureUnit
 import dev.nimbus.weather.data.model.WindUnit
@@ -121,11 +122,16 @@ fun SettingsScreen(
                     ToggleRow(stringResource(R.string.settings_separate_precip), stringResource(R.string.settings_separate_precip_desc), settings.separatePrecipitation) { v ->
                         onChange { it.copy(separatePrecipitation = v) }
                     }
-                    ToggleRow(stringResource(R.string.settings_today_apart), stringResource(R.string.settings_today_apart_desc), settings.todayMeasuredVsForecast) { v ->
-                        onChange { it.copy(todayMeasuredVsForecast = v) }
+                    // a card's own switches only while it is on the page (the separate chart is the look-back's too)
+                    if (settings.shows(WeatherCard.DAILY)) {
+                        ToggleRow(stringResource(R.string.settings_today_apart), stringResource(R.string.settings_today_apart_desc), settings.todayMeasuredVsForecast) { v ->
+                            onChange { it.copy(todayMeasuredVsForecast = v) }
+                        }
                     }
-                    ToggleRow(stringResource(R.string.settings_show_dry_precip), stringResource(R.string.settings_show_dry_precip_desc), settings.showDryPrecipitation) { v ->
-                        onChange { it.copy(showDryPrecipitation = v) }
+                    if (settings.shows(WeatherCard.PRECIPITATION)) {
+                        ToggleRow(stringResource(R.string.settings_show_dry_precip), stringResource(R.string.settings_show_dry_precip_desc), settings.showDryPrecipitation) { v ->
+                            onChange { it.copy(showDryPrecipitation = v) }
+                        }
                     }
                 }
             }
@@ -176,14 +182,14 @@ fun SettingsScreen(
                 }
             }
             item {
-                Section(stringResource(R.string.pollen_forecast)) {
+                CardSection(stringResource(R.string.pollen_forecast), settings.shows(WeatherCard.POLLEN), { cardsChange { it.withCard(WeatherCard.POLLEN, true) } }) {
                     Text(stringResource(R.string.settings_pollen_desc), fontSize = 13.sp, color = NimbusColors.Secondary, lineHeight = 18.sp)
                     Spacer(Modifier.size(10.dp))
                     dev.nimbus.weather.ui.main.PollenTypePicker(settings.pollenTypes) { types -> onChange { it.copy(pollenTypes = types) } }
                 }
             }
             item {
-                Section(stringResource(R.string.bathing_title)) {
+                CardSection(stringResource(R.string.bathing_title), settings.shows(WeatherCard.BATHING), { cardsChange { it.withCard(WeatherCard.BATHING, true) } }) {
                     Text(stringResource(R.string.settings_bathing_desc), fontSize = 13.sp, color = NimbusColors.Secondary, lineHeight = 18.sp)
                     Spacer(Modifier.size(10.dp))
                     Segmented(BathingRadii.map { "$it km" }, BathingRadii.indexOf(settings.bathingRadiusKm).coerceAtLeast(0)) { i ->

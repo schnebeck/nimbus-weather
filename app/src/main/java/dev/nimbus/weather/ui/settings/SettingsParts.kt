@@ -63,6 +63,29 @@ internal fun Section(title: String?, content: @Composable () -> Unit) {
     }
 }
 
+/**
+ * The settings of a card: while the card is on the page its [content]; hidden, the section folds
+ * to one line with a switch that brings the card back – and the section opens with it, as who
+ * switches a card on mostly sets it up. The line stays: a setting looked for is found.
+ */
+@Composable
+internal fun CardSection(title: String, shown: Boolean, onShow: () -> Unit, content: @Composable () -> Unit) {
+    Section(title) {
+        androidx.compose.animation.AnimatedVisibility(
+            shown,
+            enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut(),
+        ) { Column { content() } }
+        androidx.compose.animation.AnimatedVisibility(
+            !shown,
+            enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut(),
+        ) {
+            ToggleRow(stringResource(R.string.settings_card_hidden), stringResource(R.string.settings_card_hidden_desc), false) { on -> if (on) onShow() }
+        }
+    }
+}
+
 @Composable
 internal fun Label(text: String) {
     Text(text, fontSize = 14.sp, color = NimbusColors.Secondary, modifier = Modifier.padding(bottom = 6.dp))

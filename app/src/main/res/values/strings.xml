@@ -691,6 +691,8 @@
     <string name="legend_temp_forecast_so_far">Forecast so far</string>
     <string name="legend_chance">Precip. chance</string>
     <string name="radar_preparing">Preparing the radar…</string>
+    <string name="settings_card_hidden">Card hidden</string>
+    <string name="settings_card_hidden_desc">Showing it puts it on the weather page – and its settings here</string>
     <string name="settings_today_apart">Today: measured vs. forecast</string>
     <string name="settings_today_apart_desc">Today in the 10-day forecast: the coloured curve with the readings up to now only, the dashed one as the forecast for the whole day – as in the Course of the Day in “Today So Far”. Off: the coloured curve goes on as the forecast from the last reading on.</string>
     <string name="settings_show_dry_precip">Precipitation card on dry days</string>
@@ -823,13 +825,13 @@
     <string name="widget_pollen_quiet">Pollen: %1$s</string>
     <string name="widget_part_alarm">Next alarm</string>
     <string name="widget_part_weather">Weather now</string>
-    <string name="widget_part_weather_desc">With the day\'s high and low; a tap opens Nimbus</string>
+    <string name="widget_part_weather_desc">With the day\'s high and low; a tap opens the hourly forecast</string>
     <string name="widget_part_rain">Precipitation and sunshine, next two hours</string>
-    <string name="widget_part_rain_desc">On the clock\'s quarter hours, with the radar where it covers the place</string>
+    <string name="widget_part_rain_desc">On the clock\'s quarter hours, with the radar where it covers the place; a tap opens today in the daily forecast</string>
     <string name="widget_setup_pollen">Pollen</string>
-    <string name="widget_setup_pollen_desc">The chosen types with today\'s level; with little room only those flying noteworthily, as points. None chosen: no pollen.</string>
+    <string name="widget_setup_pollen_desc">The chosen types with today\'s level; with little room only those flying noteworthily, as points. None chosen: no pollen. A tap opens the pollen card.</string>
     <string name="widget_setup_opacity">Background: %1$d\u00A0%%</string>
-    <string name="widget_setup_updates">The widget fetches the weather about every 30 minutes, over Wi-Fi and mobile data alike. What does not fit its size it leaves out.</string>
+    <string name="widget_setup_updates">The widget fetches the weather about every 30 minutes, over Wi-Fi and mobile data alike. What does not fit its size it leaves out. A tap elsewhere opens the head of the page.</string>
     <string name="widget_setup_done">Done</string>
     <string name="notice_channel_warnings">Weather warnings</string>
     <string name="notice_channel_warnings_desc">Official warnings of the Deutscher Wetterdienst (German Weather Service) for the place, from the level chosen; the states\' flood warnings if wished</string>

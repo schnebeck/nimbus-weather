@@ -323,8 +323,9 @@ object WidgetViews {
         v.visible(R.id.widget_date_row, l.date)
         // the month always written out, the weekday too where there is the room; or the date in figures with
         // the weekday short and the calendar week
-        val datePattern = android.text.format.DateFormat.getBestDateTimePattern(
-            locale, if (config.dateWithWeek) "EEEddMMyyyy" else if (l.longDate) "EEEEdMMMM" else "EEEdMMMM",
+        val datePattern = datePattern(
+            if (config.dateWithWeek) "EEEddMMyyyy" else if (l.longDate) "EEEEdMMMM" else "EEEdMMMM",
+            locale, systemLocale(context) ?: locale, now,
         )
         v.setCharSequence(R.id.widget_date, "setFormat24Hour", datePattern)
         v.setCharSequence(R.id.widget_date, "setFormat12Hour", datePattern)
@@ -504,6 +505,48 @@ object WidgetViews {
             Intent(context, NimbusWidget::class.java).setAction(NimbusWidget.ACTION_REFRESH).putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID, id),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+
+    /**
+     * The phone's language – the one the launcher's clock writes in. Nimbus set to a language of its
+     * own (Android 13 on), its process sees that one everywhere, the system's resources too: the
+     * locale manager knows the phone's.
+     */
+    private fun systemLocale(context: Context): Locale? =
+        if (android.os.Build.VERSION.SDK_INT >= 33) context.getSystemService(android.app.LocaleManager::class.java)?.systemLocales?.get(0)
+        else android.content.res.Resources.getSystem().configuration.locales[0]
+
+    /**
+     * The date's pattern for [skeleton] in Nimbus's language [locale]. The system's clock writes
+     * the weekday's and the month's names in the phone's language [system]: where Nimbus speaks
+     * another, the names of [now] go in as text ("Sunday, October 25", not "Sonntag, October 25")
+     * – the widget is drawn anew just after midnight, the day's figure the clock keeps going.
+     */
+    fun datePattern(skeleton: String, locale: Locale, system: Locale, now: Long): String {
+        val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, skeleton)
+        if (system.language == locale.language) return pattern
+        val out = StringBuilder()
+        var i = 0
+        while (i < pattern.length) {
+            val c = pattern[i]
+            if (c == '\'') {
+                // quoted text stays as it is
+                val end = pattern.indexOf('\'', i + 1).let { if (it < 0) pattern.length - 1 else it }
+                out.append(pattern, i, end + 1)
+                i = end + 1
+                continue
+            }
+            var j = i
+            while (j < pattern.length && pattern[j] == c) j++
+            val run = pattern.substring(i, j)
+            val named = (c == 'E' || c == 'c') || ((c == 'M' || c == 'L') && run.length >= 3)
+            if (named) {
+                val name = java.text.SimpleDateFormat(run.replace('c', 'E').replace('L', 'M'), locale).format(java.util.Date(now))
+                out.append('\'').append(name.replace("'", "''")).append('\'')
+            } else out.append(run)
+            i = j
+        }
+        return out.toString()
+    }
 
     /** The calendar week of [now] on the phone's clock, counted as is usual where [locale] is (ISO weeks in Germany). */
     fun weekOf(now: Long, locale: Locale): Int =

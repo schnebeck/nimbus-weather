@@ -569,8 +569,8 @@ fun RadarScreen(
             }
         }
         val total = timeline?.frames?.size ?: 0
-        val stillLoading = timeline != null && styleReady &&
-            (buffering || !player.canShow(frame.toFloat()) || loadedFrames < total)
+        val showable = rememberCanShow(player.ready, frame, timeline, player::canShow)
+        val stillLoading = timeline != null && styleReady && (buffering || !showable || loadedFrames < total)
         RadarStatusHint(
             error, stillLoading, loadedFrames, total, netStatus,
             Modifier.align(Alignment.TopCenter).windowInsetsPadding(WindowInsets.statusBarsStable).padding(top = 64.dp, start = 24.dp, end = 24.dp),

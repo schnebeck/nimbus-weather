@@ -44,6 +44,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import kotlin.math.roundToInt
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -216,6 +218,17 @@ internal fun ToggleChip(label: String, selected: Boolean, onClick: () -> Unit) {
         fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
         color = if (selected) Color(0xFF14305E) else Color.White,
     )
+}
+
+/**
+ * Whether [frame] can be shown, asked anew with every frame made ready ([ready]) – what hangs on
+ * it, the loading hint, goes as soon as the step is there, also while paused (nothing else is
+ * drawn anew then).
+ */
+@Composable
+internal fun rememberCanShow(ready: kotlinx.coroutines.flow.StateFlow<Int>, frame: Int, timeline: Any?, canShow: (Float) -> Boolean): Boolean {
+    val count by ready.collectAsState()
+    return androidx.compose.runtime.remember(count, frame, timeline) { canShow(frame.toFloat()) }
 }
 
 /**

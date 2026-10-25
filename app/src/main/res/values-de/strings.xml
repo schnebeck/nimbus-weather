@@ -680,6 +680,8 @@
     <string name="legend_temp_forecast_so_far">Prognose bisher</string>
     <string name="legend_chance">Niederschl.-Wahrsch.</string>
     <string name="radar_preparing">Radar wird vorbereitet…</string>
+    <string name="settings_card_hidden">Kachel ausgeblendet</string>
+    <string name="settings_card_hidden_desc">Einblenden zeigt sie auf der Wetterseite – und hier ihre Einstellungen</string>
     <string name="settings_today_apart">Heute: Messung gegen Prognose</string>
     <string name="settings_today_apart_desc">Im heutigen Tag der 10-Tage-Vorhersage: die farbige Kurve nur mit den Messwerten bis jetzt, die gestrichelte als Prognose für den ganzen Tag – wie im Tagesverlauf von „Heute bisher“. Aus: Die farbige Kurve geht ab der letzten Messung in die Vorhersage über.</string>
     <string name="settings_show_dry_precip">Niederschlag-Kachel an trockenen Tagen</string>
@@ -812,13 +814,13 @@
     <string name="widget_pollen_quiet">Pollen: %1$s</string>
     <string name="widget_part_alarm">Nächster Wecker</string>
     <string name="widget_part_weather">Wetter jetzt</string>
-    <string name="widget_part_weather_desc">Mit Höchst- und Tiefstwert des Tages; Tippen öffnet Nimbus</string>
+    <string name="widget_part_weather_desc">Mit Höchst- und Tiefstwert des Tages; Tippen öffnet die stündliche Vorhersage</string>
     <string name="widget_part_rain">Niederschlag und Sonne, nächste zwei Stunden</string>
-    <string name="widget_part_rain_desc">Auf den Viertelstunden der Uhr, mit dem Radar, wo es den Ort abdeckt</string>
+    <string name="widget_part_rain_desc">Auf den Viertelstunden der Uhr, mit dem Radar, wo es den Ort abdeckt; Tippen öffnet Heute in der Tagesvorhersage</string>
     <string name="widget_setup_pollen">Pollen</string>
-    <string name="widget_setup_pollen_desc">Die gewählten Arten mit ihrer Belastung heute; ist wenig Platz, nur die nennenswert fliegenden als Punkte. Keine gewählt: keine Pollen.</string>
+    <string name="widget_setup_pollen_desc">Die gewählten Arten mit ihrer Belastung heute; ist wenig Platz, nur die nennenswert fliegenden als Punkte. Keine gewählt: keine Pollen. Tippen öffnet den Pollenflug.</string>
     <string name="widget_setup_opacity">Hintergrund: %1$d\u00A0%%</string>
-    <string name="widget_setup_updates">Das Widget holt das Wetter etwa alle 30 Minuten, über WLAN wie mobile Daten. Was nicht in seine Größe passt, blendet es aus.</string>
+    <string name="widget_setup_updates">Das Widget holt das Wetter etwa alle 30 Minuten, über WLAN wie mobile Daten. Was nicht in seine Größe passt, blendet es aus. Tippen anderswo öffnet den Kopf der Seite.</string>
     <string name="widget_setup_done">Fertig</string>
     <string name="notice_channel_warnings">Wetterwarnungen</string>
     <string name="notice_channel_warnings_desc">Amtliche Warnungen des Deutschen Wetterdienstes für den Ort, ab der gewählten Stufe; auf Wunsch die Hochwasserwarnungen der Länder</string>

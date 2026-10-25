@@ -509,6 +509,28 @@ class WidgetTest {
     }
 
     /**
+     * Nimbus in English on a German phone: the date in English all through ("Thursday, October 1"),
+     * not the clock's German names in the English order; the same language: the clock's pattern.
+     */
+    @Test fun theDateInNimbussLanguage() {
+        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("UTC"))
+        val english = WidgetViews.datePattern("EEEEdMMMM", java.util.Locale.US, java.util.Locale.GERMANY, now)
+        assertTrue(english, "'Thursday'" in english && "'October'" in english && "d" in english.replace("'Thursday'", "").replace("'October'", ""))
+        // written by a clock that speaks German
+        val before = java.util.Locale.getDefault()
+        java.util.Locale.setDefault(java.util.Locale.GERMANY)
+        try {
+            assertEquals("Thursday, October 1", android.text.format.DateFormat.format(english, now).toString())
+            val short = WidgetViews.datePattern("EEEddMMyyyy", java.util.Locale.US, java.util.Locale.GERMANY, now)
+            assertEquals("Thu, 10/01/2026", android.text.format.DateFormat.format(short, now).toString())
+        } finally {
+            java.util.Locale.setDefault(before)
+        }
+        val same = WidgetViews.datePattern("EEEEdMMMM", java.util.Locale.GERMANY, java.util.Locale.GERMANY, now)
+        assertEquals(android.text.format.DateFormat.getBestDateTimePattern(java.util.Locale.GERMANY, "EEEEdMMMM"), same)
+    }
+
+    /**
      * "My location" is where the app found the phone last – never located, the first place of the
      * list; a chosen place is that place. The widget asks for no position of its own.
      */
@@ -584,6 +606,39 @@ class WidgetTest {
         v.fixClocks()
         assertEquals("Light rain from about 11:00", v.text(R.id.widget_rain_text))
         v.picture(wallpaper = null).captureRoboImage("src/test/screenshots/widget_picker_en.png")
+    }
+
+    /**
+     * The pictures in the launcher's list are the widget of now: its reference pictures at two
+     * thirds – compared in blocks of 20 px, so a chart of another kind or length shows.
+     */
+    @Test fun thePickersPictureIsTheWidgetOfNow() {
+        fun img(path: String) = javax.imageio.ImageIO.read(java.io.File(path))
+        for ((ref, res) in listOf("widget_picker.png" to "drawable-de-nodpi", "widget_picker_en.png" to "drawable-nodpi")) {
+            val shown = img("src/main/res/$res/widget_preview.png")
+            val made = img("src/test/screenshots/$ref")
+            assertEquals(made.width * 2 / 3, shown.width)
+            assertEquals(made.height * 2 / 3, shown.height)
+            val scaled = java.awt.image.BufferedImage(shown.width, shown.height, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+            scaled.createGraphics().apply {
+                setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+                drawImage(made, 0, 0, shown.width, shown.height, null); dispose()
+            }
+            fun block(i: java.awt.image.BufferedImage, bx: Int, by: Int): Double {
+                var sum = 0.0
+                for (y in by until by + 20) for (x in bx until bx + 20) {
+                    // as seen: the colour by its opacity (a clear corner is clear, whatever its colour)
+                    val c = i.getRGB(x, y)
+                    val a = (c ushr 24) / 255.0
+                    sum += a * (((c shr 16) and 0xFF) + ((c shr 8) and 0xFF) + (c and 0xFF))
+                }
+                return sum / (20 * 20 * 3)
+            }
+            for (by in 0 until shown.height - 20 step 20) for (bx in 0 until shown.width - 20 step 20) {
+                val d = kotlin.math.abs(block(shown, bx, by) - block(scaled, bx, by))
+                assertTrue("$res at $bx,$by: $d", d < 12)
+            }
+        }
     }
 
     /**

@@ -203,7 +203,9 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   Einheiten (beim ersten Start passend zum Land), Kacheln, Radar, Anzeige (Stationswerte, Vollbild,
   Animationen), Pollen, Badestellen, Vorhersagemodell (eine Zeile, die Liste auf Antippen;
   voreingestellt: Automatisch – das feinste Modell je Ort und Zeitraum, die Datenquellen nennen es
-  mit seiner Auflösung).
+  mit seiner Auflösung). Die Einstellungen einer ausgeblendeten Kachel (Pollen, Badestellen)
+  schrumpfen auf eine Zeile „Kachel ausgeblendet“ mit Schalter zum Einblenden – dann klappen sie
+  auf; die Schalter einer Kachel im Abschnitt Kacheln stehen nur, solange sie zu sehen ist.
 - **Wetterseite aufräumen**: Kachel lange drücken – Einklappen/Erweitern, Ausblenden (mit
   Rückgängig), Anordnen (alle Kacheln schrumpfen auf ihre Titelzeile, die gewählte an ihre neue
   Stelle ziehen; „Position geändert · Rückgängig“, „Abbrechen“ lässt alles, wie es war). Die

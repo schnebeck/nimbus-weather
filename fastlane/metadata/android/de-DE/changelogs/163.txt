@@ -1,0 +1,3 @@
+• Einstellungen: Abschnitte ausgeblendeter Kacheln schrumpfen auf eine Zeile mit Schalter zum Einblenden – dann klappen sie auf
+• Widget: Datum ganz in der Sprache von Nimbus, Vorschau in der Widget-Auswahl aktuell, Einrichtung nennt, wohin ein Tippen führt
+• Radar: Ladehinweis verschwindet auch im Pausenzustand, sobald das Bild da ist

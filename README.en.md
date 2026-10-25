@@ -199,6 +199,9 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   first start to suit the country), cards, radar, display (station values, full screen,
   animations), pollen, bathing waters, the forecast model (one line, the list on a tap; preset:
   Automatic – the finest model for each place and time, named with its grid in the data sources).
+  The settings of a hidden card (pollen, bathing waters) shrink to one line "Card hidden" with a
+  switch to show it – then they open; a card's switches among the cards stand only while it is
+  shown.
 - **Tidying the weather page**: hold a card – fold/expand, hide (with undo), arrange (every card
   shrinks to its title line, drag the chosen one to its new place; "Position changed · Undo",
   "Cancel" leaves all as it was). The small tiles alike, among themselves in their block. Notes

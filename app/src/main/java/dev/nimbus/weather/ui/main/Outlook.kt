@@ -40,6 +40,11 @@ data class Outlook(
     val gust: Double?,
     /** Outlook for tomorrow, only in the afternoon and evening. */
     val tomorrow: DailyPoint?,
+    /**
+     * Tomorrow told by its hours, as the days' list tells it ("cloudy with showers"): the model's
+     * daily code names the day's worst weather only, one shower made the day "a shower".
+     */
+    val tomorrowWeather: dev.nimbus.weather.data.model.DayWeather? = null,
 ) {
     /** The weather from [at] on; [isDay]: the sun above the horizon then ("sunny", else "clear"). */
     data class Change(val condition: Condition, val at: Long, val isDay: Boolean)
@@ -83,6 +88,11 @@ data class Outlook(
                 .takeIf { it.time != null }?.let { Change(it.condition, maxOf(it.time!! - HOUR, now), it.isDay) }
             val today = data.daily.lastOrNull { it.date <= now }
             val tomorrow = data.daily.firstOrNull { it.date > now }
+            val zone = runCatching { java.time.ZoneId.of(data.timezone) }.getOrDefault(java.time.ZoneId.systemDefault())
+            val tomorrowWeather = tomorrow?.let { d ->
+                val end = dev.nimbus.weather.util.Days.end(d.date, zone)
+                dev.nimbus.weather.data.model.DayWeather.of(data.hourly.filter { it.time > d.date && it.time <= end }, zone)
+            }
             return Outlook(
                 now = current,
                 change = change,
@@ -90,6 +100,7 @@ data class Outlook(
                 precipitation = precipitation(current, hours, data.minutely, now),
                 gust = hours.mapNotNull { it.windGust }.maxOrNull()?.takeIf { it >= 50 },
                 tomorrow = if (isAfternoon && today != null) tomorrow else null,
+                tomorrowWeather = if (isAfternoon && today != null) tomorrowWeather else null,
             )
         }
 
@@ -202,7 +213,8 @@ fun outlookText(data: WeatherData, now: Long): String {
                     androidx.compose.ui.res.stringResource(dev.nimbus.weather.util.Texts.windUnit(s.windUnit))))
         }
         o.tomorrow?.let { d ->
-            add(str(dev.nimbus.weather.R.string.outlook_tomorrow, phrase(d.condition), temp(d.tempMin), temp(d.tempMax)))
+            val told = o.tomorrowWeather?.let { dayWeatherText(it, sentence = false) } ?: phrase(d.condition)
+            add(str(dev.nimbus.weather.R.string.outlook_tomorrow, told, temp(d.tempMin), temp(d.tempMax)))
         }
     }.map { sentence -> sentence.replaceFirstChar { it.uppercase() } }
 

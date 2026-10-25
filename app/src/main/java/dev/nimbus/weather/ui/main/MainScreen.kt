@@ -101,6 +101,8 @@ fun MainScreen(
     onRequestHistory: (String) -> Unit,
     onRequestLocation: () -> Unit,
     onSidebar: (Boolean) -> Unit = {},
+    /** The page went where a tapped widget part said. */
+    onJumped: (PageJump) -> Unit = {},
 ) {
     val pages = state.pages
     if (pages.isEmpty()) {
@@ -119,6 +121,10 @@ fun MainScreen(
     val location = if (place.isCurrentLocation) locationMark(state, shelf) else null
     // the same place more than once (each with its model): the model under the name
     val modelLabel = dev.nimbus.weather.ui.places.PlaceTwins.label(place, state.pages, state.settings)
+
+    // A widget part tapped: the page of now, not a day of the look-back
+    val jump = state.jump?.takeIf { it.placeId == place.id }
+    LaunchedEffect(jump?.at) { if (jump != null) pagerState.scrollToPage(pageCount - 1) }
 
     // Load the history as soon as the user starts swiping back.
     LaunchedEffect(pagerState, place.id) {
@@ -160,6 +166,8 @@ fun MainScreen(
                     onRequestHistory = { onRequestHistory(place.id) },
                     location = location,
                     modelLabel = modelLabel,
+                    jump = jump,
+                    onJumped = onJumped,
                 )
             } else {
                 // page 0 = two days ago, page HISTORY_DAYS - 1 = today so far

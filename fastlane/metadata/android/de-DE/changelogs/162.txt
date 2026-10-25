@@ -1,0 +1,3 @@
+• Widget als Lesezeichen: Wetter führt zur stündlichen Vorhersage, Niederschlag zum aufgeklappten Heute, Pollen zum Pollenflug, alles andere zum Kopf der Seite
+• Radar: keine zusätzliche Pause auf „jetzt“, wenn das Laden schon gedauert hat; ab dem zweiten Durchlauf nur eine halbe Sekunde
+• Ausblick auf morgen beschreibt den Tag nach seinen Stunden statt „ein Schauer“

@@ -605,6 +605,20 @@ class MainViewModel(
         if (st.states[placeId]?.data != null) maybePrefetchRadar(place, st.settings)
     }
 
+    /**
+     * A widget part was tapped: the page of [placeId] at [section], over whatever was open (the
+     * radar, the settings) – the weather page is what the widget leads to.
+     */
+    fun openFromWidget(placeId: String, section: dev.nimbus.weather.ui.main.PageSection) {
+        select(placeId)
+        _state.update { it.copy(backStack = listOf(Screen.Main), jump = dev.nimbus.weather.ui.main.PageJump(placeId, section)) }
+    }
+
+    /** The page went where [jump] said. */
+    fun jumped(jump: dev.nimbus.weather.ui.main.PageJump) {
+        _state.update { if (it.jump == jump) it.copy(jump = null) else it }
+    }
+
     fun updateSettings(f: (Settings) -> Settings) {
         viewModelScope.launch { store.updateSettings(f) }
     }

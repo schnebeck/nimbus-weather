@@ -144,7 +144,8 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   für das nächste Öffnen und die Vorschaukachel; je näher die Karte, desto langsamer spielt es (bis
   zum Dreifachen), damit ein Schauer nicht in einem Augenblick durchs Bild zieht; das Radar öffnet auf dem aktuellen Bild, lädt erst die
   Vorhersage, dann die Vergangenheit und spielt los, sobald die Vorhersage da ist (abschaltbar); in
-  jedem Durchlauf steht es zwei Sekunden auf „jetzt“; in der Vorhersage ist grau, was außerhalb ihres
+  zu Beginn steht es zwei Sekunden auf „jetzt“ (die Ladezeit zählt mit: dauerte sie länger,
+  spielt es sofort), nach dem ersten Durchlauf jedes Mal eine halbe Sekunde; in der Vorhersage ist grau, was außerhalb ihres
   Gebiets liegt (keine Vorhersage, nicht trocken);
   flüssiges Abspielen: zwischen zwei Radarbildern wird die
   Bewegung der Regengebiete berechnet; eigener Radarspeicher – jedes Bild eines Wetterdienstes (ganz
@@ -244,7 +245,10 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   nicht in die Größe passt, blendet es aus (ab Android 12 für jede Größe, in der der Launcher es
   zeigt), die übrige Höhe nimmt das Diagramm oder verteilt sich
   zwischen den Gruppen; „Stand“ mit ↻ unten. Tippen auf die Uhrzeit öffnet den Wecker, auf das
-  Datum den Kalender, auf das Wetter Nimbus beim Ort des Widgets. Farben des Systems (hell/dunkel,
+  Datum den Kalender; die übrigen Teile führen zu ihrer Stelle in Nimbus beim Ort des Widgets: das
+  Wetter zur stündlichen Vorhersage, der Niederschlag zur Tagesvorhersage mit aufgeklapptem Heute,
+  die Pollen zum Pollenflug (eingeklappt für den Moment geöffnet), alles andere – oder eine
+  ausgeblendete Kachel – zum Kopf der Seite. Farben des Systems (hell/dunkel,
   ab Android 12 aus dem Hintergrundbild), Deckkraft einstellbar. Ort: „Mein Standort“ – wo die App
   das Handy zuletzt gefunden hat; das Widget sucht nicht selbst (keine Standortabfrage im
   Hintergrund), nach einem Ortswechsel einmal Nimbus öffnen oder aufs Wetter tippen – oder ein

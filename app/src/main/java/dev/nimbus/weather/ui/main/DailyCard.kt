@@ -42,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -69,7 +70,11 @@ import dev.nimbus.weather.util.Units
 import kotlinx.coroutines.flow.first
 
 @Composable
-fun DailyCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) {
+fun DailyCard(
+    data: WeatherData, now: Long, measured: TodayMeasured? = null,
+    /** Changed: today opens (a widget's precipitation led here); 0: as it is. */
+    openToday: Long = 0L,
+) {
     val settings = LocalSettings.current
     val tf = LocalTimeFormat.current
     val days = remember(data, now) {
@@ -83,6 +88,7 @@ fun DailyCard(data: WeatherData, now: Long, measured: TodayMeasured? = null) {
     // every row can be opened and closed
     val updateSettings = LocalSettingsUpdater.current
     var expanded by rememberSaveable(data.place.id) { mutableStateOf<Long?>(if (settings.todayClosed) null else days.first().date) }
+    LaunchedEffect(openToday) { if (openToday != 0L) expanded = days.first().date }
     GlassCard(
         title = stringResource(if (days.size == 10) R.string.ten_day_forecast else R.string.n_day_forecast, days.size),
         icon = Icons.Outlined.CalendarMonth,
@@ -217,7 +223,7 @@ private fun DayRow(
         // card's padding (bleed), so the clip leaves the meteogram's axis labels there.
         androidx.compose.animation.AnimatedVisibility(
             visible = expanded && hours.size >= 2,
-            modifier = Modifier.fillMaxWidth().bleed(CARD_BLEED),
+            modifier = Modifier.fillMaxWidth().bleed(CARD_BLEED).testTag("day-chart"),
             enter = androidx.compose.animation.expandVertically(expandFrom = Alignment.Top) + androidx.compose.animation.fadeIn(),
             exit = androidx.compose.animation.shrinkVertically(shrinkTowards = Alignment.Top) + androidx.compose.animation.fadeOut(),
         ) {

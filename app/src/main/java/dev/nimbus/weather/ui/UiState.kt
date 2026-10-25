@@ -76,6 +76,8 @@ data class UiState(
     val locationForced: Boolean = false,
     val backStack: List<Screen> = listOf(Screen.Main),
     val demo: Demo? = null,
+    /** A widget part was tapped: the weather page goes there once it is shown. */
+    val jump: dev.nimbus.weather.ui.main.PageJump? = null,
 ) {
     /** Pages shown in the pager: current location first, then saved places. */
     val pages: List<Place> get() = listOfNotNull(currentPlace) + savedPlaces.filter { it.id != currentPlace?.id }

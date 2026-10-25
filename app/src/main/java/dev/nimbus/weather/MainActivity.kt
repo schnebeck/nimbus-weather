@@ -41,7 +41,8 @@ class MainActivity : ComponentActivity() {
         )
         super.onCreate(savedInstanceState)
         applyDemoExtras()
-        openWidgetPlace()
+        // recreated (the phone turned): the tap was taken the first time
+        if (savedInstanceState == null) openWidgetPlace()
         setContent {
             NimbusTheme {
                 NimbusRoot(viewModel)
@@ -56,9 +57,12 @@ class MainActivity : ComponentActivity() {
         openWidgetPlace()
     }
 
-    /** Opened from a widget: the page of its place. */
+    /** Opened from a widget: the page of its place – at the part tapped, where it says one. */
     private fun openWidgetPlace() {
-        intent?.getStringExtra(dev.nimbus.weather.widget.WidgetViews.EXTRA_PLACE)?.let(viewModel::select)
+        val i = intent ?: return
+        val place = i.getStringExtra(dev.nimbus.weather.widget.WidgetViews.EXTRA_PLACE) ?: return
+        val section = dev.nimbus.weather.ui.main.PageSection.of(i.getStringExtra(dev.nimbus.weather.widget.WidgetViews.EXTRA_SECTION))
+        if (section != null) viewModel.openFromWidget(place, section) else viewModel.select(place)
     }
 
     override fun onResume() {

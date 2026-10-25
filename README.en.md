@@ -142,8 +142,9 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   about 13 km across (the place and its streets), the radar keeps its zoom for the next time and the
   preview card; the closer the map, the slower it plays (up to three times), so a shower does not
   cross the map in a moment; the radar opens on the current picture, loads the forecast first, then
-  the past, and starts playing once the forecast is there (can be switched off); each time round it
-  stands two seconds on "now"; in the forecast what lies beyond its area is grey (no forecast, not
+  the past, and starts playing once the forecast is there (can be switched off); at first it stands
+  two seconds on "now" (the loading counts: if it took longer, it plays at once), after the first
+  round half a second each time; in the forecast what lies beyond its area is grey (no forecast, not
   dry); smooth playback:
   between two radar images the motion of the rain is
   computed; an own radar store – each image of a weather service (all of Germany, the Netherlands in
@@ -231,8 +232,10 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   coloured points. The date with the month written out (the weekday where
   there is room) or in figures with the calendar week. Each part can be switched off; what does
   not fit its size it leaves out (from Android 12 on for each size the launcher shows it in), the height left goes to the chart or spreads between the groups;
-  "As of" with ↻ at the bottom. A tap on the time opens the alarms, on the date the calendar, on
-  the weather Nimbus at the widget's place. The system's colours (light/dark, from Android 12 on
+  "As of" with ↻ at the bottom. A tap on the time opens the alarms, on the date the calendar; the
+  other parts lead to their place in Nimbus at the widget's place: the weather to the hourly
+  forecast, the precipitation to the daily forecast with today opened, the pollen to the pollen card
+  (opened for the moment if folded), anything else – or a card switched off – to the page's head. The system's colours (light/dark, from Android 12 on
   from the wallpaper), adjustable opacity. Place: "My Location" – where the app last found the
   phone; the widget does not look for it itself (no location in the background): after moving
   elsewhere open Nimbus once or tap the weather – or a saved place. It fetches the weather about

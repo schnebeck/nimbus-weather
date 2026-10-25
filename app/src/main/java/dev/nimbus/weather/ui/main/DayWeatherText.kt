@@ -38,7 +38,11 @@ import java.util.Locale
  * "mostly" where the sky changes over the day, the other sky left unsaid.
  */
 @Composable
-fun dayWeatherText(weather: DayWeather): String {
+fun dayWeatherText(
+    weather: DayWeather,
+    /** A sentence of its own (its first letter capital); false: within one, the words as they are. */
+    sentence: Boolean = true,
+): String {
     val adjective = stringArrayResource(R.array.day_kind_adjective)
     val noun = stringArrayResource(R.array.day_kind_noun)
     val some = stringArrayResource(R.array.day_kind_some)
@@ -65,5 +69,5 @@ fun dayWeatherText(weather: DayWeather): String {
             terms[p.term.ordinal], told(p.spell, p.form == Form.OTHERWISE), adjective[p.rest.ordinal],
         )
     }
-    return text.replaceFirstChar { it.titlecase(Locale.getDefault()) }
+    return if (sentence) text.replaceFirstChar { it.titlecase(Locale.getDefault()) } else text
 }

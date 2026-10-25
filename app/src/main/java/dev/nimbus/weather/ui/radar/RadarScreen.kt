@@ -55,6 +55,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -122,8 +123,12 @@ private const val GRID_WAIT_MS = 8_000L
 /** Time per step while playing: the live loop, and an archived day (5-minute steps, a day in ~55 s). */
 private const val FRAME_MS = 450f
 private const val ARCHIVE_STEP_MS = 180f
-/** The live loop stands this long on "now" each time it comes to it. */
+/**
+ * The live loop stands this long on "now" – at the start counted from the radar's opening, so a
+ * forecast that took as long to load starts at once – and [NOW_HOLD_AGAIN_MS] once it has run through.
+ */
 private const val NOW_HOLD_MS = 2000f
+private const val NOW_HOLD_AGAIN_MS = 500f
 /** The live loop rests this long on its last frame before starting over. */
 private const val LOOP_PAUSE_MS = 1400L
 private const val STYLE_TIMEOUT_MS = 15_000L
@@ -208,6 +213,10 @@ fun RadarScreen(
     val nowcastEverywhere by player.nowcastEverywhere.collectAsState()
     var frame by remember { mutableIntStateOf(0) }
     var playing by remember { mutableStateOf(false) }
+    /** How long "now" was seen while the loop loaded, until it started by itself (ms). */
+    var waitedOnNow by remember { mutableFloatStateOf(0f) }
+    /** The live loop has run through once: it stands on "now" the shorter while. */
+    var onceThrough by remember { mutableStateOf(false) }
     /** Archived day: playback holds until enough frames ahead are loaded. */
     var buffering by remember { mutableStateOf(false) }
     var satellite by rememberSaveable { mutableStateOf(dev.nimbus.weather.data.model.RadarOverlay.SATELLITE in overlays) }
@@ -314,7 +323,7 @@ fun RadarScreen(
             else Playback.liveStarts(tl.nowIndex, tl.lastShown(player.nowcastHere.value), player::canShow)
             if (!ready && canPlay) {
                 ready = true
-                if (autoplay && !tookOver) playing = true
+                if (autoplay && !tookOver) { waitedOnNow = (System.currentTimeMillis() - openedAt).toFloat(); playing = true }
                 if (BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "loop starts after ${System.currentTimeMillis() - openedAt} ms")
             }
         }
@@ -468,7 +477,10 @@ fun RadarScreen(
         player.playing = true
         // where no nowcast reaches into the area: the loop ends at "now"
         val lastIndex = tl.lastShown(nowcastHere)
-        var state = Playback.State(frame.coerceAtMost(lastIndex).toFloat(), buffering = !player.canShow(minOf(frame + BUFFER_START, lastIndex).toFloat()))
+        var state = Playback.State(
+            frame.coerceAtMost(lastIndex).toFloat(), buffering = !player.canShow(minOf(frame + BUFFER_START, lastIndex).toFloat()),
+            heldMs = if (tookOver) 0f else waitedOnNow, looped = onceThrough,
+        )
         // on the pictures' beat, not the display's: between them nothing asks for a frame
         var last = System.nanoTime()
         var due = last
@@ -485,8 +497,9 @@ fun RadarScreen(
                 state, dt, lastIndex, loop = !archived, stepMs = baseStepMs * Playback.slowdown(lastZoom ?: openedAt), canShow = player::canShow,
                 resumeAhead = BUFFER_RESUME, restMs = LOOP_PAUSE_MS.toFloat(), loopFrom = from,
                 // the live loop stands on "now" a while each time: the current picture is seen
-                holdAt = if (archived) -1 else tl.nowIndex, holdMs = NOW_HOLD_MS,
+                holdAt = if (archived) -1 else tl.nowIndex, holdMs = NOW_HOLD_MS, holdAgainMs = NOW_HOLD_AGAIN_MS,
             )
+            if (state.looped) onceThrough = true
             buffering = state.buffering
             if (!state.playing) { playing = false; break }
             player.position = state.position

@@ -1,0 +1,3 @@
+• Widget as bookmarks: the weather leads to the hourly forecast, precipitation to today opened, pollen to the pollen card, anything else to the page's head
+• Radar: no extra pause on "now" when loading already took long; from the second round only half a second
+• Tomorrow's outlook tells the day by its hours

@@ -68,6 +68,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -146,6 +147,9 @@ fun WeatherPage(
     modelLabel: String? = null,
     /** The radar with its lightning switched on. */
     onOpenLightning: () -> Unit = onOpenRadar,
+    /** A widget part was tapped: the page goes there once, then tells [onJumped]. */
+    jump: PageJump? = null,
+    onJumped: (PageJump) -> Unit = {},
 ) {
     val context = LocalContext.current
     val now = rememberNow()
@@ -174,7 +178,7 @@ fun WeatherPage(
             dev.nimbus.weather.ui.components.LocalCardFill provides scene.cardFill,
             dev.nimbus.weather.ui.components.LocalHeaderStyle provides dev.nimbus.weather.ui.components.HeaderStyle(scene.headerHalo, scene.headerPill),
         ) {
-            WeatherContent(data, state ?: PlaceState(data), now, onRefresh, onOpenRadar, onOpenLightning, onRequestModels, location, modelLabel)
+            WeatherContent(data, state ?: PlaceState(data), now, onRefresh, onOpenRadar, onOpenLightning, onRequestModels, location, modelLabel, jump, onJumped)
         }
     }
 }
@@ -191,6 +195,8 @@ private fun WeatherContent(
     onRequestModels: () -> Unit,
     location: LocationMark?,
     modelLabel: String?,
+    jump: PageJump?,
+    onJumped: (PageJump) -> Unit,
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -262,6 +268,9 @@ private fun WeatherContent(
         dev.nimbus.weather.ui.components.CardMenu(hide = { cardsChange { it.withCard(card, false) } }, arrange = { arranging = card })
     }
     val tileArranging = arranging in WeatherCard.DEFAULT_TILES
+    // a widget part led here: its card open for now, today opened among the days
+    val forNow = remember(data.place.id) { OpenForNow() }
+    var openToday by remember(data.place.id) { androidx.compose.runtime.mutableLongStateOf(0L) }
     // the cards on the page as it stands, in their order (the small tiles one block)
     val present = mutableListOf<WeatherCard>()
     val presentTiles = detailTiles(data, now).map { it.first }
@@ -280,7 +289,7 @@ private fun WeatherContent(
             val from = size
             when (card) {
                 WeatherCard.HOURLY -> add(PageItem("hourly", columns == 1) { HourlyCard(data, now) })
-                WeatherCard.DAILY -> add(PageItem("daily") { Foldable(card) { DailyCard(data, now, todayMeasured) } })
+                WeatherCard.DAILY -> add(PageItem("daily") { Foldable(card) { DailyCard(data, now, todayMeasured, openToday) } })
                 // on a dry day hidden (setting) – decided here, an empty card would leave a gap
                 WeatherCard.PRECIPITATION -> if (cards.showDryPrecipitation || !dryToday)
                     add(PageItem("precip") { PrecipitationCard(data, now, raining, todayMeasured) })
@@ -329,6 +338,25 @@ private fun WeatherContent(
             }, onCancel = { arranging = null })
         },
     )
+    // A widget part tapped: its card right below the header, opened for now (the days fold to
+    // today, which opens); the head where the card is not on the page (switched off, no data)
+    LaunchedEffect(jump?.at, data.place.id) {
+        val j = jump?.takeIf { it.placeId == data.place.id } ?: return@LaunchedEffect
+        forNow.cards = setOfNotNull(j.section.card?.takeIf { it != WeatherCard.DAILY })
+        if (j.section == PageSection.TODAY) openToday = j.at
+        val index = j.section.key?.let { k -> items.indexOfFirst { it.key == k } }?.takeIf { it > 0 } ?: 0
+        // the card opened before it is scrolled to
+        androidx.compose.runtime.withFrameNanos { }
+        val below = collapsedPx + with(density) { 8.dp.toPx() }
+        if (columns == 1) {
+            listState.scrollToItem(index)
+            if (index > 0) listState.scrollBy(-below)
+        } else {
+            gridState.scrollToItem(index)
+            if (index > 0) gridState.scrollBy(-below)
+        }
+        onJumped(j)
+    }
     // Arranging starts at the page's top: the sky, then the list
     LaunchedEffect(arranging) {
         if (arranging == null) return@LaunchedEffect
@@ -390,6 +418,7 @@ private fun WeatherContent(
         val end = side + cutEnd
         CompositionLocalProvider(
             LocalPageMenus provides menuFor,
+            LocalOpenForNow provides forNow,
             dev.nimbus.weather.ui.components.LocalPinLine provides pinLine,
             dev.nimbus.weather.ui.components.LocalCoveredTop provides { (expandedPx - scrolled).coerceAtLeast(collapsedPx) },
         ) {

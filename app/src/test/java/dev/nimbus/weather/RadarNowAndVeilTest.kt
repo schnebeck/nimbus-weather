@@ -30,11 +30,11 @@ class RadarNowAndVeilTest {
     private val last = 48
 
     /** Plays [ms] in display frames of 16 ms from [s]; the positions it showed. */
-    private fun play(s: Playback.State, ms: Int, loopFrom: Int = 0): Pair<Playback.State, List<Float>> {
+    private fun play(s: Playback.State, ms: Int, loopFrom: Int = 0, again: Float = 2000f): Pair<Playback.State, List<Float>> {
         var st = s
         val seen = mutableListOf<Float>()
         repeat(ms / 16) {
-            st = Playback.step(st, 16f, last, loop = true, stepMs = 100f, canShow = { true }, loopFrom = loopFrom, holdAt = now, holdMs = 2000f)
+            st = Playback.step(st, 16f, last, loop = true, stepMs = 100f, canShow = { true }, loopFrom = loopFrom, holdAt = now, holdMs = 2000f, holdAgainMs = again)
             seen += st.position
         }
         return st to seen
@@ -58,6 +58,31 @@ class RadarNowAndVeilTest {
         val stands = round.zipWithNext().count { (a, b) -> a != now.toFloat() && b == now.toFloat() }
         assertTrue("came to now and stood $stands times", stands >= 2)
         assertTrue(round.count { it == now.toFloat() } * 16 >= 2 * 1900)
+    }
+
+    /**
+     * The time the forecast took to load counts as the wait on now: after 2.5 s of loading it plays
+     * at once, after 1.2 s it stands the remaining 0.8 s.
+     */
+    @Test fun aLongLoadIsTheWaitOnNow() {
+        val (late, _) = play(Playback.State(now.toFloat(), heldMs = 2500f), 64)
+        assertTrue("moved on at once: ${late.position}", late.position > now)
+        val (soon, seen) = play(Playback.State(now.toFloat(), heldMs = 1200f), 1200)
+        val stood = seen.count { it == now.toFloat() } * 16
+        assertTrue("stood $stood ms", stood in 750..850)
+        assertTrue(soon.position > now)
+    }
+
+    /** Once the loop has run through, it stands on now half a second each time round. */
+    @Test fun afterOneRoundHalfASecondOnNow() {
+        val (_, seen) = play(Playback.State(now.toFloat()), 30_000, again = 500f)
+        // the stands on now, in ms, in their order
+        val stands = mutableListOf<Int>()
+        var run = 0
+        for (p in seen) if (p == now.toFloat()) run += 16 else if (run > 0) { stands += run; run = 0 }
+        assertTrue("$stands", stands.size >= 3)
+        assertTrue("first ${stands[0]}", stands[0] in 1950..2050)
+        assertTrue("then $stands", stands.drop(1).all { it in 450..550 })
     }
 
     /** Beyond the nowcast a step of the forecast is grey, inside it dry is clear; rain stays rain. */

@@ -21,7 +21,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.platform.testTag
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -136,15 +138,27 @@ private fun PopIn(fresh: Boolean, content: @Composable () -> Unit) {
 }
 
 /**
+ * Cards shown open for the moment, their fold in the settings kept: a widget part led to them.
+ * Folding one of them folds it back.
+ */
+internal class OpenForNow {
+    var cards by androidx.compose.runtime.mutableStateOf(emptySet<dev.nimbus.weather.data.model.WeatherCard>())
+}
+internal val LocalOpenForNow = androidx.compose.runtime.staticCompositionLocalOf { OpenForNow() }
+
+/**
  * [content]'s card folds on the weather page to its title and one line – kept per card in the
  * settings, so it opens again as it was left.
  */
 @androidx.compose.runtime.Composable
 internal fun Foldable(card: dev.nimbus.weather.data.model.WeatherCard, content: @androidx.compose.runtime.Composable () -> Unit) {
-    val folded = card in LocalSettings.current.foldedCards
+    val settingsFolded = card in LocalSettings.current.foldedCards
+    val forNow = LocalOpenForNow.current
+    val folded = settingsFolded && card !in forNow.cards
     val update = LocalSettingsUpdater.current
     val fold = dev.nimbus.weather.ui.components.CardFold(folded) {
-        update { s -> s.copy(foldedCards = if (card in s.foldedCards) s.foldedCards - card else s.foldedCards + card) }
+        if (settingsFolded && card in forNow.cards) forNow.cards -= card
+        else update { s -> s.copy(foldedCards = if (card in s.foldedCards) s.foldedCards - card else s.foldedCards + card) }
     }
     androidx.compose.runtime.CompositionLocalProvider(dev.nimbus.weather.ui.components.LocalCardFold provides fold) { content() }
 }

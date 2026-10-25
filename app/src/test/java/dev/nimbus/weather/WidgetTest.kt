@@ -483,6 +483,32 @@ class WidgetTest {
     }
 
     /**
+     * The parts as bookmarks of the page: the weather to the hours, the precipitation (chart or
+     * line) to today opened, the pollen to theirs; anywhere else the page's head.
+     */
+    @Test fun thePartsAreBookmarksOfThePage() {
+        fun section(v: View, id: Int): String? {
+            v.findViewById<View>(id).performClick()
+            val i = shadowOf(app).nextStartedActivity ?: throw AssertionError("nothing started")
+            assertEquals("p", i.getStringExtra(WidgetViews.EXTRA_PLACE))
+            return i.getStringExtra(WidgetViews.EXTRA_SECTION)
+        }
+        val all = listOf(PollenType.BIRCH, PollenType.GRASS)
+        val big = render(WidgetConfig(pollen = all), WidgetSize(320, 260), data(rainFrom = 40))
+        assertEquals("HOURLY", section(big, R.id.widget_weather))
+        assertEquals("TODAY", section(big, R.id.widget_rain))
+        val pollen = if (big.findViewById<View>(R.id.widget_side).visibility == View.VISIBLE) R.id.widget_side else R.id.widget_pollen
+        assertEquals(View.VISIBLE, big.findViewById<View>(pollen).visibility)
+        assertEquals("POLLEN", section(big, pollen))
+        assertEquals("HEAD", section(big, android.R.id.background))
+        // two rows of cells: the precipitation's line beside the alarm leads to today as well
+        alarmAt(day + 30 * h)
+        val small = render(WidgetConfig(pollen = all), WidgetSize(320, 180), data(rainFrom = 40))
+        assertEquals("Leichter Regen ab etwa 11:00", small.text(R.id.widget_pollen_dots))
+        assertEquals("TODAY", section(small, R.id.widget_pollen_dots))
+    }
+
+    /**
      * "My location" is where the app found the phone last – never located, the first place of the
      * list; a chosen place is that place. The widget asks for no position of its own.
      */

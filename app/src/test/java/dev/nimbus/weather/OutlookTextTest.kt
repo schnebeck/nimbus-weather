@@ -21,10 +21,13 @@ package dev.nimbus.weather
 import androidx.compose.ui.test.junit4.createComposeRule
 import dev.nimbus.weather.data.model.Condition
 import dev.nimbus.weather.data.model.CurrentWeather
+import dev.nimbus.weather.data.model.DailyPoint
+import dev.nimbus.weather.data.model.DayWeather
 import dev.nimbus.weather.data.model.HourlyPoint
 import dev.nimbus.weather.data.model.Place
 import dev.nimbus.weather.data.model.WeatherData
 import dev.nimbus.weather.ui.main.Outlook
+import dev.nimbus.weather.ui.main.dayWeatherText
 import dev.nimbus.weather.ui.main.outlookText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -94,5 +97,34 @@ class OutlookTextTest {
         compose.waitForIdle()
         assertTrue(night, "klar." in night && "sonnig" !in night)
         assertTrue(day, "sonnig." in day)
+    }
+    /**
+     * Tomorrow cloudy with two hours of showers in the afternoon: the model's daily code says
+     * "showers" for the whole day, the sentence tells the day by its hours as the days' list does –
+     * not "Morgen ein Schauer".
+     */
+    @Test fun tomorrowIsToldByItsHours() {
+        val zone = java.time.ZoneId.of("Europe/Berlin")
+        val today = java.time.Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
+        val start = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        val hourly = ((now / h + 1) * h until start + 25 * h step h).map { t ->
+            val hour = java.time.Instant.ofEpochMilli(t - h).atZone(zone).hour
+            val shower = t > start && hour in 14..15
+            HourlyPoint(t, 12.0, condition = if (shower) Condition.SHOWERS else Condition.CLOUDY, isDay = hour in 7..17,
+                precipitationProbability = if (shower) 50.0 else 10.0, precipitation = if (shower) 0.6 else 0.0, cloudCover = 75.0)
+        }
+        val daily = listOf(
+            DailyPoint(today.atStartOfDay(zone).toInstant().toEpochMilli(), Condition.CLOUDY, 14.0, 8.0),
+            DailyPoint(start, Condition.SHOWERS, 13.0, 7.0),
+        )
+        val d = norden().copy(hourly = hourly, daily = daily)
+        val end = dev.nimbus.weather.util.Days.end(start, zone)
+        val weather = DayWeather.of(hourly.filter { it.time > start && it.time <= end }, zone)!!
+        var text = ""; var told = ""
+        compose.setContent { text = outlookText(d, now); told = dayWeatherText(weather, sentence = false) }
+        compose.waitForIdle()
+        assertFalse(text, "ein Schauer" in text)
+        assertTrue("$told | $text", "Morgen $told, 7" in text)
+        assertTrue(told, "Schauer" in told)
     }
 }

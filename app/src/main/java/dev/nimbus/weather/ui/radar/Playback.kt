@@ -133,6 +133,8 @@ object Playback {
         val position: Float, val buffering: Boolean = false, val restedMs: Float = 0f, val playing: Boolean = true,
         /** How long it has stood on the step it holds at (holdAt). */
         val heldMs: Float = 0f,
+        /** The loop has run through once: from then on it holds shorter (holdAgainMs). */
+        val looped: Boolean = false,
     )
 
     /**
@@ -179,8 +181,11 @@ object Playback {
         resumeAhead: Int = 12, restMs: Float = 1400f,
         /** Where the loop starts over. */
         loopFrom: Int = 0,
-        /** A step it stands on [holdMs] each time it comes to it ("now": the current picture is seen); −1: none. */
-        holdAt: Int = -1, holdMs: Float = 0f,
+        /**
+         * A step it stands on [holdMs] each time it comes to it ("now": the current picture is seen),
+         * [holdAgainMs] once the loop has run through – the picture is known by then; −1: none.
+         */
+        holdAt: Int = -1, holdMs: Float = 0f, holdAgainMs: Float = holdMs,
     ): State {
         if (!s.playing) return s
         val p = s.position
@@ -188,12 +193,12 @@ object Playback {
             if (!loop) return s.copy(playing = false, buffering = false)
             val rested = s.restedMs + dtMs
             return if (rested < restMs) s.copy(restedMs = rested, buffering = false)
-            else State(loopFrom.toFloat(), buffering = !canShow(minOf(loopFrom + resumeAhead, last).toFloat()))
+            else State(loopFrom.toFloat(), buffering = !canShow(minOf(loopFrom + resumeAhead, last).toFloat()), looped = true)
         }
         // buffering ends with a stretch ahead – and playback moves on in the same frame
         if (s.buffering && !canShow(minOf(p + resumeAhead, last.toFloat()))) return s
         // on the step it holds at: it stands there a while
-        if (holdAt in 0 until last && p == holdAt.toFloat() && s.heldMs < holdMs) return s.copy(heldMs = s.heldMs + dtMs, buffering = false, restedMs = 0f)
+        if (holdAt in 0 until last && p == holdAt.toFloat() && s.heldMs < (if (s.looped) holdAgainMs else holdMs)) return s.copy(heldMs = s.heldMs + dtMs, buffering = false, restedMs = 0f)
         // on to where the time has gone – over several steps when a display frame took long,
         // but never past a step that cannot be shown, and coming to the step it holds at right on it
         val reached = minOf(p + dtMs / stepMs, last.toFloat())

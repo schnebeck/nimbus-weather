@@ -20,6 +20,7 @@ package dev.nimbus.weather.widget
 
 import android.app.AlarmManager
 import android.app.PendingIntent
+import dev.nimbus.weather.ui.main.PageSection
 import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
@@ -236,6 +237,8 @@ data class WidgetLayout(
 
 object WidgetViews {
     const val EXTRA_PLACE = "dev.nimbus.weather.widget.PLACE"
+    /** The part of the page a tap leads to ([dev.nimbus.weather.ui.main.PageSection]'s name). */
+    const val EXTRA_SECTION = "dev.nimbus.weather.widget.SECTION"
 
     /** The rows of the pollen beside the chart: row, name, gauge. */
     private val SIDE_ROWS = listOf(
@@ -353,13 +356,18 @@ object WidgetViews {
         val calendar = CalendarContract.CONTENT_URI.buildUpon().appendPath("time").also { ContentUris.appendId(it, now) }.build()
         v.setOnClickPendingIntent(R.id.widget_date_row, activity(context, id, 2, Intent(Intent.ACTION_VIEW, calendar)))
 
-        // right: the place and its weather, as the head of its page
-        val open = activity(context, id, 3, Intent(context, MainActivity::class.java).putExtra(EXTRA_PLACE, placeId).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP))
-        v.setOnClickPendingIntent(android.R.id.background, open)
-        v.setOnClickPendingIntent(R.id.widget_weather, open)
+        // the parts lead to theirs on the place's page: the weather to the hours, the precipitation to
+        // today opened, the pollen to theirs; anywhere else to the page's head
+        fun open(section: PageSection) = activity(
+            context, id, 3 + section.ordinal,
+            Intent(context, MainActivity::class.java).putExtra(EXTRA_PLACE, placeId).putExtra(EXTRA_SECTION, section.name).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+        )
+        v.setOnClickPendingIntent(android.R.id.background, open(PageSection.HEAD))
+        v.setOnClickPendingIntent(R.id.widget_weather, open(PageSection.HOURLY))
         v.visible(R.id.widget_weather, l.right)
-        v.setOnClickPendingIntent(R.id.widget_rain, open)
-        v.setOnClickPendingIntent(R.id.widget_pollen, open)
+        v.setOnClickPendingIntent(R.id.widget_rain, open(PageSection.TODAY))
+        v.setOnClickPendingIntent(R.id.widget_side, open(PageSection.POLLEN))
+        v.setOnClickPendingIntent(R.id.widget_pollen, open(PageSection.POLLEN))
         v.visible(R.id.widget_place_row, l.right && (l.secondLine || weather == null))
         v.visible(R.id.widget_head, l.date || (l.right && (l.secondLine || weather == null)))
         val side = if (l.clock || l.date) android.view.Gravity.END else android.view.Gravity.START
@@ -425,6 +433,7 @@ object WidgetViews {
         v.visible(R.id.widget_pollen_dots, l.pollenDots || l.midRain)
         if (l.midRain && rainText != null) v.setTextViewText(R.id.widget_pollen_dots, rainText)
         else if (dots != null) v.setTextViewText(R.id.widget_pollen_dots, dots)
+        v.setOnClickPendingIntent(R.id.widget_pollen_dots, open(if (l.midRain) PageSection.TODAY else PageSection.POLLEN))
         v.setInt(R.id.widget_pollen_dots, "setGravity", (if (l.midRain && !l.alarm) android.view.Gravity.START else android.view.Gravity.END) or android.view.Gravity.CENTER_VERTICAL)
         v.visible(R.id.widget_pollen, l.pollenRows > 0)
         POLLEN_ROWS.forEachIndexed { r, row -> v.visible(row, r < l.pollenRows) }

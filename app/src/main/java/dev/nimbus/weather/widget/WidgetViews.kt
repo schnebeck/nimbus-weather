@@ -80,6 +80,10 @@ data class WidgetLayout(
     val clock: Boolean, val date: Boolean, val alarm: Boolean, val alarmBeside: Boolean, val weather: Boolean, val right: Boolean,
     val secondLine: Boolean, val rain: Boolean, val rainLine: Boolean, val midRain: Boolean, val chart: Boolean, val chartDp: Float,
     val pollenRows: Int, val pollenPerRow: Int, val pollenDots: Boolean, val pollenSide: Boolean, val pollenSideRows: Int, val status: Boolean, val bigDp: Float, val longDate: Boolean, val widthDp: Float,
+    /** No room for "As of": its line empty, the refresh alone in it. */
+    val refreshLine: Boolean = false,
+    /** Not even for that line: the parts keep [REFRESH_ROOM] free at the right for the refresh in the corner. */
+    val refreshRoom: Boolean = false,
 ) {
     companion object {
         private const val PADDING_V = 16
@@ -119,6 +123,10 @@ data class WidgetLayout(
         /** The least width of the third beside the chart: a name and its gauge. */
         private const val SIDE_MIN = 92f
         private const val STATUS = 24f
+        /** The line of "As of" without the room around it: the refresh alone in it. */
+        private const val STATUS_LINE = 17f
+        /** Kept free at the right for the refresh in the corner where "As of" has no line. */
+        const val REFRESH_ROOM = 14
 
         /**
          * [alarm]: the next alarm as the widget writes it, null: none; [rainText]: the two hours'
@@ -129,6 +137,21 @@ data class WidgetLayout(
             config: WidgetConfig, size: WidgetSize, alarm: String?, weather: WidgetWeather?,
             fontScale: Float = 1f, rainText: String? = null, pollenText: String? = null,
             placeText: String? = null, longDateText: String? = null,
+        ): WidgetLayout {
+            val l = plan(config, size, alarm, weather, fontScale, rainText, pollenText, placeText, longDateText)
+            if (l.status || l.refreshLine) return l
+            // the refresh alone in the corner: the parts make way at the right (a widget is seldom short of width)
+            // – the pollen beside the chart as at the full width: their third is only a little narrower
+            return plan(config, size.copy(widthDp = size.widthDp - REFRESH_ROOM), alarm, weather, fontScale, rainText, pollenText, placeText, longDateText, sideFrom = REFRESH_ROOM)
+                .copy(status = false, refreshLine = false, refreshRoom = true)
+        }
+
+        private fun plan(
+            config: WidgetConfig, size: WidgetSize, alarm: String?, weather: WidgetWeather?,
+            fontScale: Float, rainText: String?, pollenText: String?,
+            placeText: String?, longDateText: String?,
+            /** Width taken from the parts for the refresh, still counted for the pollen beside the chart. */
+            sideFrom: Int = 0,
         ): WidgetLayout {
             val line = LINE * fontScale
             val height = (size.heightDp - PADDING_V).toFloat()
@@ -159,6 +182,7 @@ data class WidgetLayout(
             class Plan(
                 val big: Float, val below: Boolean, val beside: Boolean, val chart: Boolean, val rows: Int,
                 val dots: Boolean, val side: Boolean, val rainLine: Boolean, val midRain: Boolean, val status: Boolean, val chartDp: Float,
+                val refreshLine: Boolean = false,
             ) {
                 val rainShown get() = rainLine || midRain
             }
@@ -192,7 +216,7 @@ data class WidgetLayout(
                 var rows = 0
                 var dots = false
                 // beside the chart only where its third holds a name and a gauge
-                val side = chart && pollenWanted && (width - 12f) / 3f >= SIDE_MIN * fontScale
+                val side = chart && pollenWanted && (width + sideFrom - 12f) / 3f >= SIDE_MIN * fontScale
                 if (pollenWanted && !side) {
                     when {
                         pollenRowsWanted > 0 && fits((if (chart || rainLine) POLLEN_TOP else BELOW_GAP) + pollenRowsWanted * POLLEN_ROW * fontScale) -> rows = pollenRowsWanted
@@ -201,7 +225,9 @@ data class WidgetLayout(
                 }
                 if (rainWanted && !rainFirst) rainLine = rainLineFits()
                 val status = fits(STATUS * fontScale)
-                return Plan(big, below, beside, chart, rows, dots, side, rainLine, midRain, status, if (chart) CHART_MIN + left.coerceAtLeast(0f) else 0f)
+                // no room for "As of": its line for the refresh alone, where that fits
+                val refreshLine = !status && fits(STATUS_LINE * fontScale)
+                return Plan(big, below, beside, chart, rows, dots, side, rainLine, midRain, status, if (chart) CHART_MIN + left.coerceAtLeast(0f) else 0f, refreshLine)
             }
             val none = plan(below = false, beside = false)
             val p = when {
@@ -230,6 +256,7 @@ data class WidgetLayout(
                 secondLine = secondLine, rain = p.chart || p.rainLine, rainLine = p.rainLine, midRain = p.midRain, chart = p.chart, chartDp = p.chartDp,
                 pollenRows = p.rows, pollenPerRow = perRow, pollenDots = p.dots, pollenSide = p.side,
                 pollenSideRows = if (p.side) ((CHART_TOP + p.chartDp + AXIS) / (POLLEN_ROW * fontScale)).toInt().coerceIn(1, 6) else 0, status = p.status, bigDp = p.big, longDate = longDate, widthDp = width,
+                refreshLine = p.refreshLine,
             )
         }
     }
@@ -350,7 +377,7 @@ object WidgetViews {
                 (big.fontMetrics.descent - small.fontMetrics.descent).toInt().coerceAtLeast(0),
             )
         }
-        val alarms = activity(context, id, 1, Intent(AlarmClock.ACTION_SHOW_ALARMS))
+        val alarms = alarms(context, id)
         v.setOnClickPendingIntent(R.id.widget_clock, alarms)
         v.setOnClickPendingIntent(R.id.widget_alarm_line, alarms)
         v.setOnClickPendingIntent(R.id.widget_alarm_beside, alarms)
@@ -452,8 +479,12 @@ object WidgetViews {
             }
         }
 
-        // when the data were fetched; a tap fetches them anew
-        v.visible(R.id.widget_status, l.status)
+        // when the data were fetched; a tap on the refresh in the corner – there at any size – fetches them anew
+        v.visible(R.id.widget_status, l.status || l.refreshLine)
+        // its line kept for the refresh, the words left out
+        v.setViewVisibility(R.id.widget_as_of, if (l.status) View.VISIBLE else View.INVISIBLE)
+        val pad = (14 * density).toInt()
+        v.setViewPadding(R.id.widget_content, pad, (8 * density).toInt(), pad + if (l.refreshRoom) (WidgetLayout.REFRESH_ROOM * density).toInt() else 0, (8 * density).toInt())
         v.setTextViewText(
             R.id.widget_as_of,
             when {
@@ -473,7 +504,7 @@ object WidgetViews {
             R.id.widget_gap_mid to (!l.alarm && (l.pollenDots || l.midRain)),
             R.id.widget_gap_rain to (l.rain && rain != null),
             R.id.widget_gap_pollen to (l.pollenRows > 0),
-            R.id.widget_gap_status to l.status,
+            R.id.widget_gap_status to (l.status || l.refreshLine),
         )
         var before = true
         for ((gap, shown) in parts) {
@@ -552,6 +583,37 @@ object WidgetViews {
     fun weekOf(now: Long, locale: Locale): Int =
         java.time.Instant.ofEpochMilli(now).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
             .get(java.time.temporal.WeekFields.of(locale).weekOfWeekBasedYear())
+
+    /**
+     * What a tap on the time opens: the alarms. Not every clock app answers the standard request
+     * (ColorOS's does not), and some phones keep an app from opening another one: the next alarm's
+     * own entry first – the clock app set it and opens it itself –, then the standard request where
+     * an app answers it, then a clock app known by its name, then any app whose name says clock.
+     */
+    fun alarms(context: Context, id: Int): PendingIntent {
+        runCatching { (context.getSystemService(Context.ALARM_SERVICE) as AlarmManager).nextAlarmClock?.showIntent }.getOrNull()?.let { return it }
+        return activity(context, id, 1, alarmsIntent(context.packageManager))
+    }
+
+    /** The clock apps of the makers, by their package names. */
+    internal val CLOCK_APPS = listOf(
+        "com.google.android.deskclock", "com.coloros.alarmclock", "com.oplus.alarmclock", "com.oneplus.deskclock",
+        "com.sec.android.app.clockpackage", "com.android.deskclock", "com.huawei.deskclock", "com.hihonor.deskclock",
+        "com.asus.deskclock", "com.lge.clock",
+    )
+
+    /** The alarms by the standard request where an app answers it, else a clock app (see [alarms]). */
+    internal fun alarmsIntent(pm: android.content.pm.PackageManager): Intent {
+        val show = Intent(AlarmClock.ACTION_SHOW_ALARMS)
+        if (pm.queryIntentActivities(show, 0).isNotEmpty()) return show
+        CLOCK_APPS.firstNotNullOfOrNull { pm.getLaunchIntentForPackage(it) }?.let { return it }
+        val launcher = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        pm.queryIntentActivities(launcher, 0).firstOrNull { r ->
+            val name = r.activityInfo.packageName.lowercase()
+            "clock" in name || "alarm" in name
+        }?.let { r -> return Intent(launcher).setClassName(r.activityInfo.packageName, r.activityInfo.name) }
+        return show
+    }
 
     /** When the next alarm rings (the system's clock app sets it), or null. */
     fun nextAlarm(context: Context): Long? =

@@ -1,0 +1,2 @@
+• Widget: a tap on the time opens the alarms also on phones whose clock app does not answer the standard request (e.g. Oppo/ColorOS)
+• Widget: ↻ to refresh at any size in the corner, "As of" before it where there is room

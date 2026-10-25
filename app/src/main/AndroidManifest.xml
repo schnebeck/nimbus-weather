@@ -24,6 +24,18 @@
     <!-- the notices (warnings, gauges, rain ahead), asked for when they are switched on -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- the widget's time opens the alarms: which app answers the standard request, else a clock
+         app by its name -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.SHOW_ALARMS" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <application
         android:name=".NimbusApp"
         android:allowBackup="true"

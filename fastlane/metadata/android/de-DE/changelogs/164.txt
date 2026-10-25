@@ -1,0 +1,2 @@
+• Widget: Tippen auf die Uhrzeit öffnet den Wecker auch auf Handys, deren Uhr-App die Standardanfrage nicht beantwortet (z. B. Oppo/ColorOS)
+• Widget: ↻ zum Aktualisieren bei jeder Größe in der Ecke, „Stand“ davor, wo Platz ist

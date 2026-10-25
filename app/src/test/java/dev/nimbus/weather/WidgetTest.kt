@@ -531,6 +531,73 @@ class WidgetTest {
     }
 
     /**
+     * A tap on the time opens the alarms on phones whose clock does not answer the standard request
+     * (ColorOS): the next alarm's own entry where one is set, else the clock app by its name, else
+     * an app whose name says clock; where an app answers the standard request, that one.
+     */
+    @Test fun theTimeOpensTheAlarmsOnEveryPhone() {
+        fun tapClock(): Intent {
+            val v = render(WidgetConfig(), WidgetSize(320, 200), data())
+            v.findViewById<View>(R.id.widget_clock).performClick()
+            return shadowOf(app).nextStartedActivity ?: throw AssertionError("nothing started")
+        }
+        val pm = shadowOf(app.packageManager)
+        fun installApp(pkg: String, cls: String, filter: android.content.IntentFilter) {
+            val cn = android.content.ComponentName(pkg, cls)
+            pm.addActivityIfNotPresent(cn)
+            pm.addIntentFilterForActivity(cn, filter)
+        }
+        val launcher = android.content.IntentFilter(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_LAUNCHER) }
+        // a clock unknown by its name: found by "clock" in it
+        installApp("org.example.smartclock", "org.example.smartclock.Main", launcher)
+        assertEquals("org.example.smartclock", tapClock().component?.packageName)
+        // ColorOS: its clock without the standard request, known by its name
+        installApp("com.coloros.alarmclock", "com.coloros.alarmclock.AlarmClock", launcher)
+        assertEquals("com.coloros.alarmclock", tapClock().component?.packageName)
+        // the next alarm's own entry, set by the clock app, before all
+        val own = Intent("com.coloros.alarmclock.SHOW_ALARM").setPackage("com.coloros.alarmclock")
+        val am = app.getSystemService(android.app.AlarmManager::class.java)
+        val ring = android.app.PendingIntent.getBroadcast(app, 0, Intent("alarm"), android.app.PendingIntent.FLAG_IMMUTABLE)
+        am.setAlarmClock(android.app.AlarmManager.AlarmClockInfo(day + 30 * h, android.app.PendingIntent.getActivity(app, 7, own, android.app.PendingIntent.FLAG_IMMUTABLE)), ring)
+        assertEquals("com.coloros.alarmclock.SHOW_ALARM", tapClock().action)
+        am.cancel(ring)
+        // a clock answering the standard request: that one
+        installApp("com.google.android.deskclock", "com.android.deskclock.DeskClock", android.content.IntentFilter(AlarmClock.ACTION_SHOW_ALARMS).apply { addCategory(Intent.CATEGORY_DEFAULT) })
+        assertEquals(AlarmClock.ACTION_SHOW_ALARMS, tapClock().action)
+    }
+
+    /**
+     * The refresh at any size, in the corner, clear of the other parts: beside "As of" where it has
+     * its line, else alone – the parts above making way at the right.
+     */
+    @Test fun theRefreshAtAnySize() {
+        alarmAt(day + 30 * h)
+        val all = listOf(PollenType.BIRCH, PollenType.GRASS)
+        for (size in listOf(WidgetSize(320, 70), WidgetSize(250, 110), WidgetSize(250, 150), WidgetSize(180, 110), WidgetSize(320, 200), WidgetSize(400, 400))) {
+            val v = render(WidgetConfig(pollen = all), size, data(rainFrom = 40))
+            val refresh = v.findViewById<View>(R.id.widget_refresh)
+            assertEquals("$size", View.VISIBLE, refresh.visibility)
+            fun rect(x: View): android.graphics.Rect {
+                val r = android.graphics.Rect(0, 0, x.width, x.height)
+                (v as ViewGroup).offsetDescendantRectToMyCoords(x, r)
+                return r
+            }
+            val r = rect(refresh)
+            // the glyph (within the padding) in the corner, inside the widget
+            val glyph = android.graphics.Rect(r.left + refresh.paddingLeft, r.top + refresh.paddingTop, r.right - refresh.paddingRight, r.bottom - refresh.paddingBottom)
+            assertTrue("$size $glyph in ${v.width}x${v.height}", glyph.right <= v.width && glyph.bottom <= v.height && glyph.left > v.width * 0.7)
+            // no part shown under it
+            fun leaves(g: View): List<View> = if (g is ViewGroup && g !is android.widget.TextClock) (0 until g.childCount).map { g.getChildAt(it) }.filter { it.visibility == View.VISIBLE }.flatMap(::leaves) else listOf(g)
+            val parts = leaves(v).filter { it.id != R.id.widget_refresh && it.id != R.id.widget_bg && it.width > 0 && it.height > 0 }
+            for (part in parts) {
+                val p = rect(part)
+                // a text's own box may be wider than its letters: where it is right-aligned or narrow, its box counts
+                assertFalse("$size: ${app.resources.getResourceEntryName(part.id.takeIf { it != View.NO_ID } ?: R.id.widget_bg)} $p under the refresh $glyph", android.graphics.Rect.intersects(p, glyph))
+            }
+        }
+    }
+
+    /**
      * "My location" is where the app found the phone last – never located, the first place of the
      * list; a chosen place is that place. The widget asks for no position of its own.
      */

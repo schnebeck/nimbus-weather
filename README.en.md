@@ -237,7 +237,9 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   coloured points. The date with the month written out (the weekday where
   there is room) or in figures with the calendar week. Each part can be switched off; what does
   not fit its size it leaves out (from Android 12 on for each size the launcher shows it in), the height left goes to the chart or spreads between the groups;
-  "As of" with ↻ at the bottom. A tap on the time opens the alarms, on the date the calendar; the
+  ↻ at any size in the bottom right corner, "As of" before it where there is room. A tap on the time
+  opens the alarms (also where the clock app does not answer the standard request, as on ColorOS),
+  on the date the calendar; the
   other parts lead to their place in Nimbus at the widget's place: the weather to the hourly
   forecast, the precipitation to the daily forecast with today opened, the pollen to the pollen card
   (opened for the moment if folded), anything else – or a card switched off – to the page's head. The system's colours (light/dark, from Android 12 on

@@ -248,7 +248,8 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   Monat (Wochentag, wo Platz ist) oder in Ziffern mit Kalenderwoche. Jedes Teil abschaltbar; was
   nicht in die Größe passt, blendet es aus (ab Android 12 für jede Größe, in der der Launcher es
   zeigt), die übrige Höhe nimmt das Diagramm oder verteilt sich
-  zwischen den Gruppen; „Stand“ mit ↻ unten. Tippen auf die Uhrzeit öffnet den Wecker, auf das
+  zwischen den Gruppen; ↻ bei jeder Größe in der Ecke rechts unten, „Stand“ davor, wo Platz ist. Tippen auf die Uhrzeit öffnet den Wecker
+  (auch wo die Uhr-App die Standardanfrage nicht beantwortet, etwa unter ColorOS), auf das
   Datum den Kalender; die übrigen Teile führen zu ihrer Stelle in Nimbus beim Ort des Widgets: das
   Wetter zur stündlichen Vorhersage, der Niederschlag zur Tagesvorhersage mit aufgeklapptem Heute,
   die Pollen zum Pollenflug (eingeklappt für den Moment geöffnet), alles andere – oder eine

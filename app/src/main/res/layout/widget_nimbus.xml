@@ -32,6 +32,7 @@
         android:src="@drawable/widget_bg" />
 
     <LinearLayout
+        android:id="@+id/widget_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
@@ -1338,22 +1339,29 @@
             android:gravity="center_vertical|end"
             android:orientation="horizontal">
 
+            <!-- ending before the refresh in the corner -->
             <TextView
                 android:id="@+id/widget_as_of"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
                 android:maxLines="1"
                 android:textColor="@color/widget_text_dim"
                 android:textSize="11sp" />
-
-            <ImageView
-                android:id="@+id/widget_refresh"
-                android:layout_width="28dp"
-                android:layout_height="22dp"
-                android:paddingHorizontal="6dp"
-                android:paddingVertical="3dp"
-                android:src="@drawable/ic_widget_refresh"
-                android:tint="@color/widget_text_dim" />
         </LinearLayout>
     </LinearLayout>
+
+    <!-- the refresh at any size, in the corner within the rounded edge: beside "As of" where it
+         has the room, else alone, the parts above making way at the right -->
+    <ImageView
+        android:id="@+id/widget_refresh"
+        android:layout_width="32dp"
+        android:layout_height="30dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="2dp"
+        android:layout_marginBottom="1dp"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="7dp"
+        android:src="@drawable/ic_widget_refresh"
+        android:tint="@color/widget_text_dim" />
 </FrameLayout>

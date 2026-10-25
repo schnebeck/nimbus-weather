@@ -42,6 +42,7 @@ import dev.nimbus.weather.data.model.PollenDay
 import dev.nimbus.weather.data.model.PollenForecast
 import dev.nimbus.weather.data.model.PollenSourceKind
 import dev.nimbus.weather.data.model.PollenType
+import dev.nimbus.weather.data.model.PrecipitationUnit
 import dev.nimbus.weather.data.model.TemperatureUnit
 import dev.nimbus.weather.data.model.WeatherData
 import dev.nimbus.weather.data.repo.LocationProvider
@@ -57,6 +58,7 @@ import dev.nimbus.weather.widget.WidgetSize
 import dev.nimbus.weather.widget.WidgetViews
 import dev.nimbus.weather.widget.WidgetWeather
 import dev.nimbus.weather.widget.Widgets
+import androidx.compose.ui.graphics.toArgb
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -316,6 +318,35 @@ class WidgetTest {
      * by day saying the sun stays away too. Precipitation coming in two rows of cells: its line
      * beside the alarm, the pollen give way.
      */
+    /**
+     * The precipitation's scale is linear from 0: 2.5 mm/h stands a quarter as high as 10 mm/h.
+     * Its top is the strongest bar rounded up to a whole mm/h, at least 1 mm/h, half of it in the
+     * middle – as in the meteogram.
+     */
+    @Test fun theRainScaleIsLinearFromZero() {
+        val from = day + 10 * h
+        fun rain(vararg mm: Double) = WidgetWeather.Rain(from, from + 8 * q, mm.mapIndexed { k, v -> WidgetWeather.Quarter(from + k * q, v, null) }, null)
+        val r = rain(0.0, 2.5, 0.0, 10.0, 0.0, 0.0, 0.0, 0.0)
+        assertEquals(10.0, WidgetViews.rainTop(r, PrecipitationUnit.MM), 0.0)
+        assertEquals(1.0, WidgetViews.rainTop(rain(0.3, 0.4), PrecipitationUnit.MM), 0.0)
+        assertEquals(3.0, WidgetViews.rainTop(rain(2.5), PrecipitationUnit.MM), 0.0)
+        assertEquals(0.1 * 25.4, WidgetViews.rainTop(rain(2.5), PrecipitationUnit.INCH), 1e-9)
+        val s = WidgetViews.scales(app, PrecipitationUnit.MM, java.util.Locale.GERMANY, 3.0)
+        assertEquals("3" to "1,5", s.rainTop to s.rainMid)
+        // the bars' tops over the ground line: the quarter at 2.5 mm/h and the one at 10
+        val bmp = WidgetViews.chart(r, 400, 200, 1f, WidgetViews.scales(app, PrecipitationUnit.MM, java.util.Locale.GERMANY, 10.0), tf)
+        val blue = dev.nimbus.weather.ui.main.HourBars.Rain.frame.toArgb() and 0xFFFFFF
+        fun topOf(k: Int): Int {
+            val plot = WidgetViews.plot(WidgetViews.scales(app, PrecipitationUnit.MM, java.util.Locale.GERMANY, 10.0), 1f, 1f)
+            val x = (plot.left + (400 - plot.left - plot.right) * (k + 0.5f) / 8).toInt()
+            return (0 until 200).first { y -> val c = bmp.getPixel(x, y); (c ushr 24) > 128 && (c and 0xFFFFFF) == blue }
+        }
+        val base = 200 - 14 - 1
+        val high = base - topOf(3)
+        val low = base - topOf(1)
+        assertEquals("$low of $high px", 0.25, low.toDouble() / high, 0.03)
+    }
+
     @Test fun theChartOnlyWithSomethingToDraw() {
         val dull = data(rainFrom = 130).let { d -> d.copy(minutely = d.minutely.map { it.copy(sunshine = 0.0) }) }
         val v = render(WidgetConfig(), WidgetSize(320, 200), dull)

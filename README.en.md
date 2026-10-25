@@ -115,6 +115,7 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   KNMI, MET Norway).
 - **Sun and moon**: sun arc on a fixed scale per place (the height of the arc shows the season),
   light phases day, golden hour, blue hour and night, day length; moon phase, rise and set.
+  The moon shows only its lit side, greyer towards the shadow line; 100 % only around full moon.
 - **Environment**: air quality, pollen (DWD index and composition, species to choose – e.g. trees
   only), citizen sensors, a comparison of eight weather models.
 - **Tides and water levels**: the gauges within 10 km, one per water body (e.g. Weser, Fulda and
@@ -221,7 +222,8 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   on top the date and the place, below them the time and the weather (symbol, temperature, high
   and low, with a precipitation symbol its chance), under the clock the next alarm; below over the
   whole width the next two hours on the clock's quarter hours – a chart of sunshine (share of the
-  quarter hour in %, behind) and precipitation (mm/h, in front), only when there is something to
+  quarter hour in %, behind) and precipitation (mm/h, in front; linear from 0, the strongest bar rounded
+  up to a whole mm/h at the top, at least 1), only when there is something to
   draw, else a line ("No precipitation, no sunshine until 12:30") – with the precipitation card's
   line and the chance of its hour ("… from about 11:00 · 40%"), and the chosen pollen types flying
   today, the strongest first: as gauges with their half steps beside the chart (a third of the

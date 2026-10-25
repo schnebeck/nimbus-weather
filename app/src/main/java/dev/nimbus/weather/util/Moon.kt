@@ -29,6 +29,7 @@ import kotlin.math.acos
 import kotlin.math.asin
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.math.tan
@@ -150,6 +151,19 @@ object Moon {
             p < 0.5 -> Phase.WAXING_GIBBOUS
             p < 0.75 -> Phase.WANING_GIBBOUS
             else -> Phase.WANING_CRESCENT
+        }
+    }
+
+    /**
+     * The lit share in whole percent as shown: 100 only in the full moon's window and 0 only in the
+     * new moon's, so a moon hours before full does not round up to "full".
+     */
+    fun percent(i: Illumination): Int {
+        val v = (i.fraction * 100).roundToInt()
+        return when (phaseOf(i.phase)) {
+            Phase.FULL -> 100
+            Phase.NEW -> 0
+            else -> v.coerceIn(1, 99)
         }
     }
 

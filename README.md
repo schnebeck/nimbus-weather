@@ -116,6 +116,7 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   (wo ein Wetterdienst-Radar misst: DWD, KNMI, MET Norway).
 - **Sonne und Mond**: Sonnenbogen mit fester Skala je Ort (die Bogenhöhe zeigt die Jahreszeit),
   Lichtphasen Tag, Morgen-/Abendrot, Blaue Stunde und Nacht, Tageslänge; Mondphase, Auf- und Untergang.
+  Der Mond zeigt nur seine beleuchtete Seite, zur Schattengrenze hin grauer; 100 % nur um den Vollmond.
 - **Umwelt**: Luftqualität, Pollenflug (DWD-Index und Zusammensetzung, Arten wählbar – z. B. nur
   Bäume), Bürger-Messnetz, Vergleich von acht Wettermodellen.
 - **Gezeiten und Pegel**: Die Pegel im Umkreis von 10 km, je Gewässer einer (z. B. Weser, Fulda
@@ -232,7 +233,8 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   es anbietet): oben Datum und Ort, darunter Uhrzeit und Wetter (Symbol, Temperatur, Höchst- und
   Tiefstwert, bei Niederschlagssymbol die Wahrscheinlichkeit), unter der Uhr der nächste Wecker;
   darunter über die ganze Breite die nächsten zwei Stunden auf den Viertelstunden der Uhr – ein
-  Diagramm mit Sonne (Anteil der Viertelstunde in %, hinten) und Niederschlag (mm/h, davor), nur
+  Diagramm mit Sonne (Anteil der Viertelstunde in %, hinten) und Niederschlag (mm/h, davor; linear ab 0, oben
+  der stärkste Balken aufgerundet auf volle mm/h, mindestens 1), nur
   wenn es etwas zu zeichnen gibt, sonst eine Zeile („Kein Niederschlag, keine Sonne bis 12:30“) –
   mit dem Satz der Niederschlagskarte und der Wahrscheinlichkeit seiner Stunde („… ab etwa 11:00
   · 40%“), und die gewählten Pollenarten, die heute fliegen, die stärkste zuerst: als Balken mit

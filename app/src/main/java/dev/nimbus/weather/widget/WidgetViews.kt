@@ -398,7 +398,7 @@ object WidgetViews {
                 val fontScale = res.configuration.fontScale
                 val chartPx = ((l.chartDp + AXIS_DP * fontScale) * density).toInt()
                 val chartW = if (l.pollenSide) (l.widthDp - 12f) * 2f / 3f else l.widthDp
-                v.setImageViewBitmap(R.id.widget_chart, chart(rain, (chartW.coerceAtLeast(60f) * density).toInt(), chartPx, density, scales(context, precip, locale), tf, fontScale))
+                v.setImageViewBitmap(R.id.widget_chart, chart(rain, (chartW.coerceAtLeast(60f) * density).toInt(), chartPx, density, scales(context, precip, locale, rainTop(rain, precip)), tf, fontScale))
             }
         }
 
@@ -538,20 +538,34 @@ object WidgetViews {
     /** Grey of the times: read on the light and the dark background alike. */
     private const val TIME_GREY = 0xFF8C8C94.toInt()
 
-    /** The chart's scales: the sunshine's share of the quarter hour (all of it at the top), the precipitation's top and middle (mm/h; square root). */
+    /** The sunshine's scale: its share of the quarter hour, all of it at the top. */
     private const val SUN_TOP = 15.0
-    private const val RAIN_TOP = 10.0
-    private const val RAIN_MID = 2.5
 
-    /** The labels of the chart's two scales: their units over the axes, the values at their ticks. */
-    data class Scales(val sunUnit: String, val sunTop: String, val sunMid: String, val rainUnit: String, val rainTop: String, val rainMid: String)
+    /**
+     * The labels of the chart's two scales: their units over the axes, the values at their ticks;
+     * [rainTopMm]: the precipitation (mm/h) at the top, its half in the middle.
+     */
+    data class Scales(val sunUnit: String, val sunTop: String, val sunMid: String, val rainUnit: String, val rainTop: String, val rainMid: String, val rainTopMm: Double)
 
-    /** The scales in [unit] (precipitation) and the language of [locale]. */
-    fun scales(context: Context, unit: PrecipitationUnit, locale: Locale): Scales {
-        val f = java.text.DecimalFormat("0.##", java.text.DecimalFormatSymbols.getInstance(locale))
+    /**
+     * The precipitation at the chart's top in mm/h, as the meteogram finds its own: the strongest
+     * bar of [rain] rounded up to a whole mm/h (0.05 in/h), at least 1 mm/h (0.04 in/h) – a linear
+     * scale from 0 whose top the rain fills.
+     */
+    fun rainTop(rain: WidgetWeather.Rain, unit: PrecipitationUnit): Double {
+        val inch = unit == PrecipitationUnit.INCH
+        val most = Units.precipitationValue(rain.quarters.filter { it.wet || it.possible }.maxOfOrNull { it.rate } ?: 0.0, unit)
+        val top = maxOf(if (inch) 0.04 else 1.0, most).let { if (inch) kotlin.math.ceil(it * 20) / 20 else kotlin.math.ceil(it) }
+        return if (inch) top * 25.4 else top
+    }
+
+    /** The scales in [unit] (precipitation, [rainTopMm] mm/h at the top) and the language of [locale]. */
+    fun scales(context: Context, unit: PrecipitationUnit, locale: Locale, rainTopMm: Double): Scales {
+        val f = java.text.DecimalFormat(if (unit == PrecipitationUnit.INCH) "0.###" else "0.#", java.text.DecimalFormatSymbols.getInstance(locale))
+        val top = Units.precipitationValue(rainTopMm, unit)
         return Scales(
             "%", "100", "50",
-            context.getString(Texts.precipUnit(unit)) + "/h", f.format(Units.precipitationValue(RAIN_TOP, unit)), f.format(Units.precipitationValue(RAIN_MID, unit)),
+            context.getString(Texts.precipUnit(unit)) + "/h", f.format(top), f.format(top / 2), rainTopMm,
         )
     }
 
@@ -582,8 +596,7 @@ object WidgetViews {
      * each and the clock's quarter hours under them – as many as there is room for, evenly from
      * the start to the end (every half hour, 45 minutes, hour, or the two ends); a fine line at now. Two scales in the colours of their bars: on the left how
      * much of the quarter hour is sunny (all of it fills the height), on the right the precipitation
-     * per hour (10 mm/h fills it, 2.5 mm/h – moderate rain – half of it: square root, so light
-     * rain still shows); their units over them.
+     * per hour, linear from 0 to [Scales.rainTopMm] ([rainTop]); their units over them.
      */
     fun chart(rain: WidgetWeather.Rain, w: Int, h: Int, density: Float, s: Scales, tf: TimeFormat, fontScale: Float = 1f): Bitmap {
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
@@ -599,7 +612,7 @@ object WidgetViews {
         val top = plot.top + density * 2
         val base = h - AXIS_DP * fontScale * density - density
         fun sunY(m: Double) = base - (m / SUN_TOP).toFloat().coerceIn(0f, 1f) * (base - top)
-        fun rainY(mmH: Double) = base - kotlin.math.sqrt((mmH / RAIN_TOP).coerceIn(0.0, 1.0)).toFloat() * (base - top)
+        fun rainY(mmH: Double) = base - (mmH / s.rainTopMm).coerceIn(0.0, 1.0).toFloat() * (base - top)
         val sunFrame = HourBars.Sun.frame.toArgb()
         val rainFrame = HourBars.Rain.frame.toArgb()
         for (q in rain.quarters) {
@@ -649,10 +662,10 @@ object WidgetViews {
         // the unit over its values, ending where they end
         c.drawText(s.sunUnit, x0 - 4 * density - sunText.measureText(s.sunUnit), -sunText.ascent(), sunText)
         // right: the precipitation per hour
-        for ((v, label) in listOf(RAIN_TOP to s.rainTop, RAIN_MID to s.rainMid)) {
+        for ((v, label) in listOf(s.rainTopMm to s.rainTop, s.rainTopMm / 2 to s.rainMid)) {
             val y = rainY(v)
             tick(x1, y, false)
-            if (v == RAIN_TOP || roomy) c.drawText(label, x1 + 4 * density, (y + half).coerceAtLeast(top + half), values)
+            if (v == s.rainTopMm || roomy) c.drawText(label, x1 + 4 * density, (y + half).coerceAtLeast(top + half), values)
         }
         c.drawText(s.rainUnit, x1 + 4 * density, -rainText.ascent(), rainText)
         return bmp

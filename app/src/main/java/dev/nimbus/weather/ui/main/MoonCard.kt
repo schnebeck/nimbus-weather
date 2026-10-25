@@ -46,7 +46,6 @@ import dev.nimbus.weather.ui.components.GlassCard
 import dev.nimbus.weather.ui.components.LocalExplain
 import dev.nimbus.weather.ui.components.Term
 import dev.nimbus.weather.ui.theme.NimbusColors
-import kotlin.math.roundToInt
 
 @Composable
 fun MoonCard(data: WeatherData, now: Long) {
@@ -73,7 +72,7 @@ fun MoonCard(data: WeatherData, now: Long) {
     )
     GlassCard(
         title = stringResource(R.string.moon), icon = Icons.Outlined.DarkMode, info = Term.MOON, onClick = { explain(Term.MOON) },
-        summary = stringResource(R.string.moon_summary, phaseName, (info.fraction * 100).roundToInt()),
+        summary = stringResource(R.string.moon_summary, phaseName, Moon.percent(info)),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Canvas(Modifier.size(84.dp)) {
@@ -82,7 +81,7 @@ fun MoonCard(data: WeatherData, now: Long) {
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
                 Text(phaseName, fontSize = 20.sp, fontWeight = FontWeight.Medium, color = Color.White, lineHeight = 24.sp)
-                Text(stringResource(R.string.moon_illumination, (info.fraction * 100).roundToInt()), fontSize = 14.sp, color = NimbusColors.Secondary)
+                Text(stringResource(R.string.moon_illumination, Moon.percent(info)), fontSize = 14.sp, color = NimbusColors.Secondary)
                 Spacer(Modifier.height(8.dp))
                 when {
                     times.alwaysUp -> Caption(stringResource(R.string.moon_always_up))

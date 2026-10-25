@@ -1,0 +1,3 @@
+• The moon as in the sky: only its lit side, greyer towards the shadow line – a moon at 90 % no longer looks full
+• 100 % lit only around full moon, 99 % hours before
+• Widget: the precipitation scale is linear from 0, the strongest bar rounded up at the top, at least 1 mm/h

@@ -3,24 +3,25 @@
 <p><b>Wetter</b></p>
 <ul>
 <li>Aktuelle Werte gemessen an der nächsten Wetterstation (DWD, GeoSphere Austria, MeteoSwiss, DMI, sonst ein Flughafen) – nur in der Höhe des Ortes; der Himmel folgt dem gemessenen Sonnenschein</li>
-<li>DWD-Unwetterwarnungen</li>
+<li>Amtliche DWD-Wetterwarnungen</li>
 <li>Kurzvorhersage als Text für die nächsten Stunden und Niederschlag in 15-Minuten-Schritten</li>
 <li>Stunden- und 10-Tage-Vorhersage mit Niederschlagswahrscheinlichkeit</li>
-<li>Meteogramm für jeden Tag: Temperatur, Niederschlag, Sonnenschein und Wind pro Stunde, mit Schieber für die genauen Werte</li>
-<li>Rückblick: nach rechts wischen und für heute, gestern und vorgestern vergleichen, was gemessen und was vorhergesagt wurde – mit dem Regenradar des ganzen Tages</li>
+<li>Meteogramm für jeden Tag: Temperatur, Niederschlag, Sonnenschein und Wind je Stunde, mit Schieber für die Werte</li>
+<li>Rückblick: nach rechts wischen – heute, gestern und vorgestern gemessen gegen vorhergesagt, mit dem Regenradar des ganzen Tages</li>
 <li>Badegewässer im Umkreis und Favoriten: EU-Einstufung, Meerestemperatur, in Berlin und Schleswig-Holstein Wassertemperatur und Blaualgen-Hinweise</li>
 <li>Gefühlte Temperatur, UV, Wind, Luftfeuchte und Taupunkt, Sichtweite, Luftdruck</li>
-<li>Sonnenlauf mit Morgen-/Abendrot und Blauer Stunde, Mondphase und Mondzeiten</li>
+<li>Sonnenlauf mit Morgen-/Abendrot und Blauer Stunde, Mond wie am Himmel, Mondzeiten</li>
 <li>Luftqualität, Pollenflug (DWD-Index und Zusammensetzung, Arten wählbar), Bürger-Messnetz, Vergleich von acht Wettermodellen</li>
 <li>Gezeiten an der Küste und an Tideflüssen: nächste Hoch- und Niedrigwasser mit Tidekurve, berechnet aus Pegelmessungen</li>
-<li>Pegel der Flüsse in der Nähe, je Gewässer einer – Messwerte von den Bundeswasserstraßen und aus Niedersachsen, NRW, Sachsen und Hessen, sonst die Hochwasser-Einstufung der Länder; dazu deren Hochwasserwarnungen</li>
+<li>Pegel der Flüsse in der Nähe – Bundeswasserstraßen, Niedersachsen, NRW, Sachsen, Hessen, sonst die Hochwasser-Einstufung der Länder – und deren Hochwasserwarnungen</li>
 </ul>
 
 <p><b>Regenradar</b></p>
 <ul>
 <li>DWD-Radar mit 2-Stunden-Vorhersage für Deutschland, KNMI-Radar für die Niederlande, MET-Norway-Radar für Norwegen, Schweden, Finnland und Dänemark, RainViewer für das übrige Europa</li>
 <li>Eine Farbskala für Regen und eine für Schnee – pro Bildpunkt nach der Temperatur entschieden</li>
-<li>Temperatur- und Windebene, Satellit und Warnkarte, Rückblick bis 24 Stunden</li>
+<li>Öffnet nah am Ort (etwa 13 km), der Regen zieht flüssig</li>
+<li>Temperatur- und Windebene, Blitze, Satellit und Warnkarte, Rückblick bis 24 Stunden</li>
 </ul>
 
 <p><b>Widget für den Startbildschirm</b></p>
@@ -28,6 +29,7 @@
 <li>Uhrzeit (antippen: Wecker), Datum (antippen: Kalender), nächster Wecker, Ort und Wetter mit Höchst- und Tiefstwert</li>
 <li>Die nächsten zwei Stunden: Regen und Sonne je Viertelstunde – „Leichter Regen ab etwa 17:15 · 40%“</li>
 <li>Gewählte Pollenarten, die heute fliegen</li>
+<li>Wetter, Regen und Pollen führen direkt an ihre Stelle in der App</li>
 <li>Jedes Teil abschaltbar, passt sich der Größe an, Systemfarben, auch für den Sperrbildschirm</li>
 </ul>
 
@@ -37,7 +39,7 @@
 <li>Ein ⓘ an jeder Karte erklärt die Begriffe</li>
 <li>Deutsch und Englisch, Einheiten passend zum Land (°C/°F, km/h, mph, m/s, Knoten, Beaufort, mm/Zoll)</li>
 <li>Vorhersagemodell: automatisch das feinste je Ort und Zeitraum, oder DWD ICON, ECMWF, Météo-France und regionale Modelle wie MET Nordic (1 km) oder KNMI Harmonie (2 km) – auch für jeden Ort ein eigenes</li>
-<li>Akkuschonend: Nimbus aktualisiert das Wetter nur, solange es zu sehen ist; im Hintergrund lädt es höchstens das Radar vor – im WLAN und abschaltbar – und für ein Widget etwa alle 30 Minuten das Wetter; die Animation ruht im Energiesparmodus</li>
+<li>Akkuschonend: Wetter nur, solange es zu sehen ist; im Hintergrund höchstens das Radar (im WLAN, abschaltbar) und für ein Widget alle 30 Minuten das Wetter; die Animation ruht im Energiesparmodus</li>
 </ul>
 
 <p>Daten: Deutscher Wetterdienst (über Bright Sky und Open-Meteo), Open-Meteo, MET Norway, GeoSphere Austria, MeteoSwiss, DMI, KNMI, Flughafenmeldungen (METAR), Copernicus CAMS, RainViewer, Sensor.Community, PEGELONLINE (WSV), NLWKN, LANUK NRW, LfULG Sachsen, HLNUG, Länderübergreifendes Hochwasserportal, OpenStreetMap/Nominatim. Karten © OpenFreeMap, OpenMapTiles, OpenStreetMap-Mitwirkende.</p>

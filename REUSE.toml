@@ -49,9 +49,10 @@ path = "CLAUDE.md"
 SPDX-FileCopyrightText = "(C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>"
 SPDX-License-Identifier = "GPL-3.0-or-later"
 
-# Reference images of the screenshot tests: the charts rendered from made-up test data
+# Reference images of the screenshot tests: the charts rendered from made-up test data; the
+# widget's picture in the launcher's list is one of them
 [[annotations]]
-path = "app/src/test/screenshots/*.png"
+path = ["app/src/test/screenshots/*.png", "app/src/main/res/drawable-nodpi/widget_preview.png", "app/src/main/res/drawable-de-nodpi/widget_preview.png"]
 SPDX-FileCopyrightText = "(C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>"
 SPDX-License-Identifier = "GPL-3.0-or-later"
 
@@ -71,7 +72,8 @@ path = ["docs/screenshots/radar.png", "docs/screenshots/en/radar.png"]
 precedence = "override"
 SPDX-FileCopyrightText = [
     "(C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>",
-    "Radar and weather data: Deutscher Wetterdienst (DWD), KNMI, RainViewer, Open-Meteo.com",
+    "Radar and weather data: Deutscher Wetterdienst (DWD), KNMI, MET Norway, RainViewer, Open-Meteo.com",
+    "Lightning: Deutscher Wetterdienst (DWD), from EUMETSAT data",
     "Map: OpenFreeMap, OpenMapTiles, OpenStreetMap contributors",
 ]
 SPDX-License-Identifier = "CC-BY-4.0 AND ODbL-1.0"
@@ -102,8 +104,9 @@ SPDX-License-Identifier = "GPL-3.0-or-later"
 path = ["fastlane/metadata/android/*/images/featureGraphic.png", "fastlane/metadata/android/*/images/phoneScreenshots/*.png"]
 SPDX-FileCopyrightText = [
     "(C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>",
-    "Radar and weather data: Deutscher Wetterdienst (DWD), KNMI, RainViewer, Open-Meteo.com",
+    "Radar and weather data: Deutscher Wetterdienst (DWD), KNMI, MET Norway, RainViewer, Open-Meteo.com",
     "Sunshine from the satellite: Deutscher Wetterdienst (DWD), from EUMETSAT data, via Open-Meteo.com",
+    "Lightning: Deutscher Wetterdienst (DWD), from EUMETSAT data",
     "Map: OpenFreeMap, OpenMapTiles, OpenStreetMap contributors",
 ]
 SPDX-License-Identifier = "CC-BY-4.0 AND ODbL-1.0"

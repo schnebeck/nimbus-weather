@@ -32,17 +32,19 @@ und KNMI. Keine Werbung, kein Konto, keine Google-Dienste.
 
 <table>
   <tr>
-    <td align="center" width="33%"><img src="docs/screenshots/main.png" width="240" alt="Wetterseite"><br><sub><b>Wetterseite</b><br>Messwerte der nächsten Wetterstation, Kurzvorhersage, Stunden und 10 Tage</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/main.png" width="240" alt="Wetterseite"><br><sub><b>Wetterseite</b><br>Messwerte der nächsten Wetterstation, amtliche Warnungen, Niederschlag heute, Kurzvorhersage</sub></td>
     <td align="center" width="33%"><img src="docs/screenshots/meteogram.png" width="240" alt="Meteogramm"><br><sub><b>Meteogramm</b><br>Temperatur, Regen, Sonnenschein und Wind je Stunde – Erwartetes als Rahmen</sub></td>
     <td align="center" width="33%"><img src="docs/screenshots/history.png" width="240" alt="Rückblick"><br><sub><b>Rückblick</b><br>Gemessen gegen erwartet – Regen vom Radar, Sonne vom Satelliten über dem Ort</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/radar.png" width="240" alt="Regenradar"><br><sub><b>Regenradar</b><br>DWD-Radar mit Vorhersage, Temperatur- und Windebene</sub></td>
-    <td align="center"><img src="docs/screenshots/sun.png" width="240" alt="Sonne und Mond"><br><sub><b>Sonne und Mond</b><br>Sonnenbogen mit Morgenrot und Blauer Stunde, Mondphase</sub></td>
-    <td align="center" valign="middle">
-      <b>Herunterladen</b><br><br>
-      <a href="https://github.com/schnebeck/nimbus-weather/releases/latest">Neueste Version (APK)</a><br><br>
-      <sub>Android 8.0 oder neuer<br>ohne Google Play Services</sub>
+    <td align="center"><img src="docs/screenshots/radar.png" width="240" alt="Regenradar"><br><sub><b>Regenradar</b><br>Live mit 2 Stunden Vorhersage, hier der Tag im Rückblick mit Blitzen</sub></td>
+    <td align="center"><img src="docs/screenshots/sun.png" width="240" alt="Sonne und Mond"><br><sub><b>Sonne und Mond</b><br>Sonnenbogen mit Morgenrot und Blauer Stunde, der Mond wie am Himmel</sub></td>
+    <td align="center"><img src="docs/screenshots/widget.png" width="240" alt="Widget"><br><sub><b>Widget</b><br>Uhr und Wetter, Regen der nächsten zwei Stunden, Pollen – jedes Teil führt in die App</sub></td>
+  </tr>
+  <tr>
+    <td align="center" colspan="3">
+      <b>Herunterladen:</b> <a href="https://github.com/schnebeck/nimbus-weather/releases/latest">Neueste Version (APK)</a>
+      <sub>– Android 8.0 oder neuer, ohne Google Play Services</sub>
     </td>
   </tr>
 </table>

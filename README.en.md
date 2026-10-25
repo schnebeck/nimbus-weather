@@ -32,17 +32,19 @@ the DWD and the KNMI. No ads, no account, no Google services. The app speaks Eng
 
 <table>
   <tr>
-    <td align="center" width="33%"><img src="docs/screenshots/en/main.png" width="240" alt="Weather page"><br><sub><b>Weather page</b><br>readings of the nearest weather station, outlook, hourly and 10 days</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/en/main.png" width="240" alt="Weather page"><br><sub><b>Weather page</b><br>readings of the nearest weather station, official warnings, precipitation today, outlook</sub></td>
     <td align="center" width="33%"><img src="docs/screenshots/en/meteogram.png" width="240" alt="Meteogram"><br><sub><b>Meteogram</b><br>temperature, rain, sunshine and wind per hour – expected values as frames</sub></td>
     <td align="center" width="33%"><img src="docs/screenshots/en/history.png" width="240" alt="Look back"><br><sub><b>Look back</b><br>measured versus expected – rain by the radar, sunshine by the satellite over the place</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/en/radar.png" width="240" alt="Rain radar"><br><sub><b>Rain radar</b><br>DWD radar with nowcast, temperature and wind layers</sub></td>
-    <td align="center"><img src="docs/screenshots/en/sun.png" width="240" alt="Sun and moon"><br><sub><b>Sun and moon</b><br>sun arc with golden and blue hour, moon phase</sub></td>
-    <td align="center" valign="middle">
-      <b>Download</b><br><br>
-      <a href="https://github.com/schnebeck/nimbus-weather/releases/latest">Latest release (APK)</a><br><br>
-      <sub>Android 8.0 or newer<br>no Google Play Services</sub>
+    <td align="center"><img src="docs/screenshots/en/radar.png" width="240" alt="Rain radar"><br><sub><b>Rain radar</b><br>live with a two-hour nowcast, here the day in the look-back with lightning</sub></td>
+    <td align="center"><img src="docs/screenshots/en/sun.png" width="240" alt="Sun and moon"><br><sub><b>Sun and moon</b><br>sun arc with golden and blue hour, the moon as in the sky</sub></td>
+    <td align="center"><img src="docs/screenshots/en/widget.png" width="240" alt="Widget"><br><sub><b>Widget</b><br>clock and weather, rain of the next two hours, pollen – each part leads into the app</sub></td>
+  </tr>
+  <tr>
+    <td align="center" colspan="3">
+      <b>Download:</b> <a href="https://github.com/schnebeck/nimbus-weather/releases/latest">latest release (APK)</a>
+      <sub>– Android 8.0 or newer, no Google Play Services</sub>
     </td>
   </tr>
 </table>

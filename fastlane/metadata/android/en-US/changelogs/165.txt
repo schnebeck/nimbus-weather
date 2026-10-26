@@ -1,0 +1,1 @@
+• Widget: a tap on the time now really opens the clock app on ColorOS (Oppo, OnePlus, Realme) – also with an alarm set

@@ -24,11 +24,13 @@ import dev.nimbus.weather.ui.main.PageSection
 import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BlurMaskFilter
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
+import android.os.Build
 import android.provider.AlarmClock
 import android.provider.CalendarContract
 import android.util.TypedValue
@@ -585,14 +587,16 @@ object WidgetViews {
             .get(java.time.temporal.WeekFields.of(locale).weekOfWeekBasedYear())
 
     /**
-     * What a tap on the time opens: the alarms. Not every clock app answers the standard request
-     * (ColorOS's does not), and some phones keep an app from opening another one: the next alarm's
-     * own entry first – the clock app set it and opens it itself –, then the standard request where
-     * an app answers it, then a clock app known by its name, then any app whose name says clock.
+     * What a tap on the time opens: the alarms. The next alarm's own entry where it opens a page –
+     * ColorOS's only tells its clock to update the status bar –, then the standard request where
+     * Nimbus may send it: some clocks answer it only to apps allowed to set alarms (ColorOS's), and
+     * Nimbus asks for no such right. Else the clock app that answers the request, a clock app
+     * known by its name, any app whose name says clock.
      */
     fun alarms(context: Context, id: Int): PendingIntent {
-        runCatching { (context.getSystemService(Context.ALARM_SERVICE) as AlarmManager).nextAlarmClock?.showIntent }.getOrNull()?.let { return it }
-        return activity(context, id, 1, alarmsIntent(context.packageManager))
+        runCatching { (context.getSystemService(Context.ALARM_SERVICE) as AlarmManager).nextAlarmClock?.showIntent }.getOrNull()
+            ?.takeIf { Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && it.isActivity }?.let { return it }
+        return activity(context, id, 1, alarmsIntent(context))
     }
 
     /** The clock apps of the makers, by their package names. */
@@ -602,11 +606,13 @@ object WidgetViews {
         "com.asus.deskclock", "com.lge.clock",
     )
 
-    /** The alarms by the standard request where an app answers it, else a clock app (see [alarms]). */
-    internal fun alarmsIntent(pm: android.content.pm.PackageManager): Intent {
+    /** The alarms by the standard request where Nimbus may send it, else a clock app (see [alarms]). */
+    internal fun alarmsIntent(context: Context): Intent {
+        val pm = context.packageManager
         val show = Intent(AlarmClock.ACTION_SHOW_ALARMS)
-        if (pm.queryIntentActivities(show, 0).isNotEmpty()) return show
-        CLOCK_APPS.firstNotNullOfOrNull { pm.getLaunchIntentForPackage(it) }?.let { return it }
+        val answers = pm.queryIntentActivities(show, 0).map { it.activityInfo }
+        if (answers.any { a -> a.permission.let { it == null || context.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED } }) return show
+        (answers.map { it.packageName } + CLOCK_APPS).firstNotNullOfOrNull { pm.getLaunchIntentForPackage(it) }?.let { return it }
         val launcher = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
         pm.queryIntentActivities(launcher, 0).firstOrNull { r ->
             val name = r.activityInfo.packageName.lowercase()

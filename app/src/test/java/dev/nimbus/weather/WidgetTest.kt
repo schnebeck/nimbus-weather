@@ -531,9 +531,10 @@ class WidgetTest {
     }
 
     /**
-     * A tap on the time opens the alarms on phones whose clock does not answer the standard request
-     * (ColorOS): the next alarm's own entry where one is set, else the clock app by its name, else
-     * an app whose name says clock; where an app answers the standard request, that one.
+     * A tap on the time opens the alarms on phones whose clock does not answer the standard request,
+     * or answers it only to apps allowed to set alarms (ColorOS): the next alarm's own entry where it
+     * opens a page, else the clock app, by the request it answers or by its name, else an app whose
+     * name says clock; where an app answers the standard request to Nimbus, that one.
      */
     @Test fun theTimeOpensTheAlarmsOnEveryPhone() {
         fun tapClock(): Intent {
@@ -542,27 +543,34 @@ class WidgetTest {
             return shadowOf(app).nextStartedActivity ?: throw AssertionError("nothing started")
         }
         val pm = shadowOf(app.packageManager)
-        fun installApp(pkg: String, cls: String, filter: android.content.IntentFilter) {
+        fun installApp(pkg: String, cls: String, filter: android.content.IntentFilter, permission: String? = null) {
             val cn = android.content.ComponentName(pkg, cls)
             pm.addActivityIfNotPresent(cn)
+            if (permission != null) pm.addOrUpdateActivity(app.packageManager.getActivityInfo(cn, 0).apply { this.permission = permission })
             pm.addIntentFilterForActivity(cn, filter)
         }
         val launcher = android.content.IntentFilter(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_LAUNCHER) }
+        val showAlarms = android.content.IntentFilter(AlarmClock.ACTION_SHOW_ALARMS).apply { addCategory(Intent.CATEGORY_DEFAULT) }
         // a clock unknown by its name: found by "clock" in it
         installApp("org.example.smartclock", "org.example.smartclock.Main", launcher)
         assertEquals("org.example.smartclock", tapClock().component?.packageName)
-        // ColorOS: its clock without the standard request, known by its name
-        installApp("com.coloros.alarmclock", "com.coloros.alarmclock.AlarmClock", launcher)
-        assertEquals("com.coloros.alarmclock", tapClock().component?.packageName)
-        // the next alarm's own entry, set by the clock app, before all
-        val own = Intent("com.coloros.alarmclock.SHOW_ALARM").setPackage("com.coloros.alarmclock")
+        // ColorOS: its clock answers the standard request only to apps allowed to set alarms – opened as an app
+        installApp("org.example.timer", "org.example.timer.Main", launcher)
+        installApp("org.example.timer", "org.example.timer.HandleApi", showAlarms, permission = "com.android.alarm.permission.SET_ALARM")
+        assertEquals("org.example.timer.Main", tapClock().component?.className)
+        // the next alarm's entry where it only tells the clock (ColorOS's): not that one
         val am = app.getSystemService(android.app.AlarmManager::class.java)
         val ring = android.app.PendingIntent.getBroadcast(app, 0, Intent("alarm"), android.app.PendingIntent.FLAG_IMMUTABLE)
+        val indicator = android.app.PendingIntent.getBroadcast(app, 8, Intent("indicator"), android.app.PendingIntent.FLAG_IMMUTABLE)
+        am.setAlarmClock(android.app.AlarmManager.AlarmClockInfo(day + 30 * h, indicator), ring)
+        assertEquals("org.example.timer.Main", tapClock().component?.className)
+        // the next alarm's own page, set by the clock app, before all
+        val own = Intent("com.coloros.alarmclock.SHOW_ALARM").setPackage("com.coloros.alarmclock")
         am.setAlarmClock(android.app.AlarmManager.AlarmClockInfo(day + 30 * h, android.app.PendingIntent.getActivity(app, 7, own, android.app.PendingIntent.FLAG_IMMUTABLE)), ring)
         assertEquals("com.coloros.alarmclock.SHOW_ALARM", tapClock().action)
         am.cancel(ring)
-        // a clock answering the standard request: that one
-        installApp("com.google.android.deskclock", "com.android.deskclock.DeskClock", android.content.IntentFilter(AlarmClock.ACTION_SHOW_ALARMS).apply { addCategory(Intent.CATEGORY_DEFAULT) })
+        // a clock answering the standard request to anyone: that one
+        installApp("com.google.android.deskclock", "com.android.deskclock.DeskClock", showAlarms)
         assertEquals(AlarmClock.ACTION_SHOW_ALARMS, tapClock().action)
     }
 

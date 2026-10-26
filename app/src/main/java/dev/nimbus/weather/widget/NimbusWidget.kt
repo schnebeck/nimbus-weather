@@ -313,7 +313,6 @@ class WidgetWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         val store = container.store
         val configs = WidgetConfigs(ctx)
         val settings = store.settings.first()
-        val german = ctx.resources.configuration.locales[0].language == "de"
         val now = System.currentTimeMillis()
         // each place once, however many widgets show it
         val wanted = ids.mapNotNull { id -> val c = configs.of(id); Widgets.placeOf(store, c)?.let { it to c.pollen.isNotEmpty() } }
@@ -324,7 +323,7 @@ class WidgetWorker(context: Context, params: WorkerParameters) : CoroutineWorker
             if (due.isEmpty()) continue
             val t0 = android.os.SystemClock.elapsedRealtime()
             runCatching {
-                val d = container.repository.load(place, settings, german, previous = cached, refresh = due)
+                val d = container.repository.load(place, settings, previous = cached, refresh = due)
                 store.cacheWeather(d)
             }.onSuccess {
                 ActivityLog.note("widget: ${place.name} fetched in ${(android.os.SystemClock.elapsedRealtime() - t0) / 1000} s")

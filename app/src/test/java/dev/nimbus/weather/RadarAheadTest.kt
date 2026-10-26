@@ -230,7 +230,7 @@ class RadarAheadTest {
             OpenMeteoSource(http, base, base, base), BrightSkySource(http, base), CommunitySource(http, base),
             PollenSource(http, "$base/pollen.json", "$base/wms", base),
             clock = { fixtureNow }, spot = SpotSource(http, wms = "$base/radar"),
-        ).load(berlin, Settings(), german = true, refresh = setOf(DataPart.FORECAST))
+        ).load(berlin, Settings(), refresh = setOf(DataPart.FORECAST))
     }
 
     /** Heavy rain in the nowcast: the next hour by it, the source named. */

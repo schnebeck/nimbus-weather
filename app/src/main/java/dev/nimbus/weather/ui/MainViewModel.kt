@@ -425,7 +425,7 @@ class MainViewModel(
             val me = coroutineContext.job
             if (showYellowMs > 0) kotlinx.coroutines.delay(showYellowMs)
             val result = runCatching {
-                repo.load(place, settings, german, previous = data, refresh = due, fresh = force) { step ->
+                repo.load(place, settings, previous = data, refresh = due, fresh = force) { step ->
                     // each step to its records on the main thread: each card as its part arrives –
                     // the page's spinner ends with the first (the forecast); the extras still on
                     // the way show it by their cards' dots, however long their sources take

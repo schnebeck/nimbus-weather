@@ -1,0 +1,2 @@
+• DWD warnings appear in the new language right after the app language is changed – no reload needed
+• Places: in edit mode the model line is no longer cut off

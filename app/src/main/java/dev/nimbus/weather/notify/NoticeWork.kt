@@ -167,7 +167,7 @@ object NoticePoster {
         }
         for (s in steps) when (s) {
             is NoticeStep.Warning -> {
-                val a = s.alert
+                val a = s.alert.inLanguage(context.resources.configuration.locales[0].language == "de")
                 val period = when {
                     a.onset != null && a.expires != null -> context.getString(R.string.alert_valid, tf.weekdayShort(a.onset) + " " + tf.time(a.onset), tf.weekdayShort(a.expires) + " " + tf.time(a.expires))
                     a.expires != null -> context.getString(R.string.alert_until, tf.weekdayShort(a.expires) + " " + tf.time(a.expires))
@@ -233,12 +233,11 @@ class NoticeWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         if (!settings.notices || !NoticePoster.allowed(ctx)) return Result.success()
         val state = NoticeState(ctx)
         val place = state.place(store) ?: return Result.success()
-        val german = ctx.resources.configuration.locales[0].language == "de"
         val now = System.currentTimeMillis()
         val cached = store.cachedWeather(place.id)
         val due = NoticeWork.due(settings, { cached?.fetchedAt(it)?.takeIf { t -> t > 0 } }, now)
         val data = if (due.isEmpty()) cached else runCatching {
-            container.repository.load(place, settings, german, previous = cached, refresh = due).also { store.cacheWeather(it) }
+            container.repository.load(place, settings, previous = cached, refresh = due).also { store.cacheWeather(it) }
         }.onFailure { ActivityLog.note("notices: ${place.name} not fetched – ${it.javaClass.simpleName}") }.getOrNull() ?: cached
         data ?: return Result.success()
         val zone = runCatching { ZoneId.of(data.timezone) }.getOrDefault(ZoneId.systemDefault())

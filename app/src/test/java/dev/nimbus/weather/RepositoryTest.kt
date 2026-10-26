@@ -104,7 +104,7 @@ class RepositoryTest {
 
     @Test
     fun `combines all sources for a German location`() = runTest {
-        val data = repo(fixtureNow).load(berlin, Settings(model = ForecastModel.DWD_ICON), german = true)
+        val data = repo(fixtureNow).load(berlin, Settings(model = ForecastModel.DWD_ICON))
         assertEquals("Berlin-Tempelhof", data.current.stationName)
         assertEquals(10, data.daily.size)                      // ICON (8 days) + best match fill
         assertNotNull(data.airQuality)
@@ -119,33 +119,33 @@ class RepositoryTest {
 
     @Test
     fun `no DWD station or warnings outside Germany`() = runTest {
-        val data = repo(fixtureNow).load(paris, Settings(), german = false)
+        val data = repo(fixtureNow).load(paris, Settings())
         assertNull(data.current.stationName)
         assertTrue(requested.none { it.startsWith("/current_weather") || it.startsWith("/alerts") })
     }
 
     @Test
     fun `old observations are ignored`() = runTest {
-        val data = repo(fixtureNow + 5 * 3600_000L).load(berlin, Settings(), german = false)
+        val data = repo(fixtureNow + 5 * 3600_000L).load(berlin, Settings())
         assertNull(data.current.stationName)
     }
 
     @Test
     fun `station usage can be disabled`() = runTest {
-        val data = repo(fixtureNow).load(berlin, Settings(useStationObservations = false), german = false)
+        val data = repo(fixtureNow).load(berlin, Settings(useStationObservations = false))
         assertNull(data.current.stationName)
     }
 
     @Test
     fun `the forecast shows before a slow extra source answers`() = runTest {
         // warm up (class loading, first connections) – then the slow source
-        repo(fixtureNow).load(berlin, Settings(model = ForecastModel.DWD_ICON), german = true)
+        repo(fixtureNow).load(berlin, Settings(model = ForecastModel.DWD_ICON))
         communityDelayMs = 2_500
         val t0 = System.nanoTime()
         var coreAfterMs = -1L
         var core: dev.nimbus.weather.data.model.WeatherData? = null
         // the first step is the core; the extras' steps follow
-        val data = repo(fixtureNow).load(berlin, Settings(model = ForecastModel.DWD_ICON), german = true) {
+        val data = repo(fixtureNow).load(berlin, Settings(model = ForecastModel.DWD_ICON)) {
             if (core == null) { coreAfterMs = (System.nanoTime() - t0) / 1_000_000; core = it }
         }
         val totalMs = (System.nanoTime() - t0) / 1_000_000
@@ -158,9 +158,9 @@ class RepositoryTest {
 
     @Test
     fun `a refresh keeps the extras until the new ones arrive`() = runTest {
-        val first = repo(fixtureNow).load(berlin, Settings(), german = true)
+        val first = repo(fixtureNow).load(berlin, Settings())
         var core: dev.nimbus.weather.data.model.WeatherData? = null
-        repo(fixtureNow).load(berlin, Settings(), german = true, previous = first) { core = it }
+        repo(fixtureNow).load(berlin, Settings(), previous = first) { core = it }
         assertEquals(first.community, core!!.community)
         assertEquals(first.airQuality, core!!.airQuality)
     }
@@ -171,11 +171,11 @@ class RepositoryTest {
      */
     @Test
     fun `each extra is current as soon as it has arrived`() = runTest {
-        val first = repo(fixtureNow).load(berlin, Settings(), german = true)
+        val first = repo(fixtureNow).load(berlin, Settings())
         communityDelayMs = 2_000
         val updates = java.util.Collections.synchronizedList(mutableListOf<Pair<Long, Set<dev.nimbus.weather.data.model.DataPart>>>())
         val t0 = System.nanoTime()
-        val data = repo(fixtureNow).load(berlin, Settings(), german = true, previous = first) {
+        val data = repo(fixtureNow).load(berlin, Settings(), previous = first) {
             updates += (System.nanoTime() - t0) / 1_000_000 to it.stale
         }
         assertTrue(data.stale.isEmpty())
@@ -190,12 +190,12 @@ class RepositoryTest {
 
     @Test
     fun `an extra too late keeps its last value and is marked older`() = runTest {
-        val first = repo(fixtureNow).load(berlin, Settings(), german = true)
+        val first = repo(fixtureNow).load(berlin, Settings())
         assertTrue(first.stale.isEmpty())
         communityDelayMs = 3_000
         var core: dev.nimbus.weather.data.model.WeatherData? = null
         val t0 = System.nanoTime()
-        val data = repo(fixtureNow, extrasDeadlineMs = 1_000).load(berlin, Settings(), german = true, previous = first) { if (core == null) core = it }
+        val data = repo(fixtureNow, extrasDeadlineMs = 1_000).load(berlin, Settings(), previous = first) { if (core == null) core = it }
         // the time for the extras is up after 1 s – not waiting for the 3 s
         assertTrue((System.nanoTime() - t0) / 1_000_000 < 2_500)
         assertEquals(first.community, data.community)
@@ -208,10 +208,10 @@ class RepositoryTest {
     /** Only the forecast due: the extras are not asked for and keep their values with their own times. */
     @Test
     fun `only the forecast due asks the forecast only and keeps the extras`() = runTest {
-        val first = repo(fixtureNow).load(berlin, Settings(), german = true)
+        val first = repo(fixtureNow).load(berlin, Settings())
         synchronized(requested) { requested.clear() }
         val later = fixtureNow + 3_600_000L
-        val bg = repo(later).load(berlin, Settings(), german = true, previous = first, refresh = setOf(dev.nimbus.weather.data.model.DataPart.FORECAST))
+        val bg = repo(later).load(berlin, Settings(), previous = first, refresh = setOf(dev.nimbus.weather.data.model.DataPart.FORECAST))
         // forecast, station and warnings – nothing else
         assertTrue(requested.toString(), requested.none { it.startsWith("/airrohr") || it.startsWith("/v1/air-quality") || it.startsWith("/pollen") || it.startsWith("/wms") })
         assertTrue(requested.any { it.startsWith("/v1/forecast") })
@@ -231,13 +231,13 @@ class RepositoryTest {
      */
     @Test
     fun `only the parts past their shelf life are asked again`() = runTest {
-        val first = repo(fixtureNow).load(berlin, Settings(), german = true)
+        val first = repo(fixtureNow).load(berlin, Settings())
         synchronized(requested) { requested.clear() }
         val later = fixtureNow + 20 * 60_000L
         val due = expired(first, later)
         assertEquals(setOf(dev.nimbus.weather.data.model.DataPart.FORECAST, dev.nimbus.weather.data.model.DataPart.COMMUNITY,
             dev.nimbus.weather.data.model.DataPart.GAUGES, dev.nimbus.weather.data.model.DataPart.FLOOD), due)
-        val data = repo(later).load(berlin, Settings(), german = true, previous = first, refresh = due)
+        val data = repo(later).load(berlin, Settings(), previous = first, refresh = due)
         assertTrue(requested.toString(), requested.none { it.startsWith("/v1/air-quality") || it.startsWith("/pollen") || it.startsWith("/wms") })
         assertTrue(requested.toString(), requested.any { it.startsWith("/airrohr") } && requested.any { it.startsWith("/v1/forecast") })
         // the ones not asked for: their values and times kept, current – nothing yellow
@@ -251,7 +251,7 @@ class RepositoryTest {
     /** Data stored without a time per part: the extras count as expired, the forecast has its time. */
     @Test
     fun `stored data without times per part`() = runTest {
-        val old = repo(fixtureNow).load(berlin, Settings(), german = true).copy(partsAt = emptyMap())
+        val old = repo(fixtureNow).load(berlin, Settings()).copy(partsAt = emptyMap())
         val due = expired(old, fixtureNow + 60_000L)
         assertEquals((dev.nimbus.weather.data.model.DataPart.entries - dev.nimbus.weather.data.model.DataPart.FORECAST).toSet(), due)
     }
@@ -259,7 +259,7 @@ class RepositoryTest {
     @Test
     fun `cards switched off load nothing`() = runTest {
         val off = Settings(hiddenCards = setOf(dev.nimbus.weather.data.model.WeatherCard.COMMUNITY))
-        val data = repo(fixtureNow).load(berlin, off, german = true)
+        val data = repo(fixtureNow).load(berlin, off)
         assertNull(data.community)
         assertTrue(requested.none { it.startsWith("/airrohr") })
     }
@@ -267,6 +267,6 @@ class RepositoryTest {
     @Test(expected = Exception::class)
     fun `fails when no forecast is available`() = runTest {
         failForecast = true
-        repo(fixtureNow).load(berlin, Settings(), german = false)
+        repo(fixtureNow).load(berlin, Settings())
     }
 }

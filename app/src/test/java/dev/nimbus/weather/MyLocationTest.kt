@@ -143,7 +143,7 @@ class MyLocationTest {
             // no saved places: the store outlives a test, an earlier one's Berlin would load along
             store.updatePlaces { emptyList() }
             // "my location" was Hannover, its data current
-            store.cacheWeather(repo.load(cached, Settings(), german = true))
+            store.cacheWeather(repo.load(cached, Settings()))
         }
         asked.clear()
         return MainViewModel(app, ViewModelDeps(store, repo, phone, HistorySource(offline), offline, offline))

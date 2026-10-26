@@ -168,7 +168,7 @@ class RadarNowTest {
     /** Loads with only the forecast asked for; every page shown, in order. */
     private fun load(previous: WeatherData? = null): List<WeatherData> = runBlocking {
         val pages = mutableListOf<WeatherData>()
-        repo().load(berlin, Settings(), german = true, previous = previous, refresh = setOf(dev.nimbus.weather.data.model.DataPart.FORECAST)) {
+        repo().load(berlin, Settings(), previous = previous, refresh = setOf(dev.nimbus.weather.data.model.DataPart.FORECAST)) {
             synchronized(pages) { pages += it }
         }
         pages

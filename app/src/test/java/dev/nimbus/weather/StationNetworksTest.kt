@@ -164,7 +164,7 @@ class StationNetworksTest {
                 OpenMeteoSource(http, b, b, b), BrightSkySource(http, b), CommunitySource(http, b), PollenSource(http, "$b/pollen.json", "$b/wms", b),
                 clock = { now }, stations = StationNetworks(GeoSphereSource(http, b, clock = { now }), MeteoSwissSource(http, b), DmiSource(http, b), MetarSource(http, b)),
             )
-            val data = repo.load(Place("w", "Wien", latitude = 48.2082, longitude = 16.3738), Settings(), german = true)
+            val data = repo.load(Place("w", "Wien", latitude = 48.2082, longitude = 16.3738), Settings())
             assertEquals("Wien-Innere Stadt", data.current.stationName)
             assertEquals(StationNetwork.GEOSPHERE, data.current.stationNetwork)
             assertEquals(19.8, data.current.temperature, 0.01)

@@ -130,7 +130,7 @@ class StationHeightTest {
                 PollenSource(http, "$base/pollen.json", "$base/wms", base),
                 clock = { java.time.Instant.parse("2026-10-04T17:45:00Z").toEpochMilli() },
             )
-            val data = repo.load(Place("z", "Zugspitze", latitude = 47.4211, longitude = 10.9853), Settings(model = ForecastModel.DWD_ICON), german = true)
+            val data = repo.load(Place("z", "Zugspitze", latitude = 47.4211, longitude = 10.9853), Settings(model = ForecastModel.DWD_ICON))
             assertEquals(2.4, data.current.temperature, 0.01)
             assertEquals("Zugspitze", data.current.stationName)
             assertNotEquals(16.1, data.current.temperature, 0.5)

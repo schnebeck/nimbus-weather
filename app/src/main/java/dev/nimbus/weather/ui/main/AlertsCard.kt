@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -70,8 +71,10 @@ fun AlertsCard(all: List<WeatherAlert>) {
     val tf = LocalTimeFormat.current
     var expanded by rememberSaveable { mutableStateOf(false) }
     val level = LocalSettings.current.warningLevel
+    // in the language Nimbus speaks now: the warnings carry both
+    val german = LocalConfiguration.current.locales[0].language == "de"
     // the states' flood warnings and the DWD's in one order: by their periods
-    val (main, weaker) = all.sortedWith(WeatherAlert.chronological).partition { dev.nimbus.weather.notify.Notices.isFlood(it) || dev.nimbus.weather.notify.Notices.level(it) >= level }
+    val (main, weaker) = all.map { it.inLanguage(german) }.sortedWith(WeatherAlert.chronological).partition { dev.nimbus.weather.notify.Notices.isFlood(it) || dev.nimbus.weather.notify.Notices.level(it) >= level }
     val alerts = if (expanded) main + weaker else main
     GlassCard(
         title = stringResource(R.string.alerts) + " · DWD",

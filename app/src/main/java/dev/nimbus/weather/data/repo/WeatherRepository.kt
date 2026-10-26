@@ -69,7 +69,7 @@ class WeatherRepository(
     // Off the main thread: besides the requests, the parsing and selection (e.g. ~1,600 LHP gauges)
     // take noticeable CPU time – on the main thread they froze the UI.
     suspend fun load(
-        place: Place, settings: Settings, german: Boolean,
+        place: Place, settings: Settings,
         previous: WeatherData? = null,
         /**
          * The extras to load anew – the ones past their shelf life ([Shelf.due]); the
@@ -120,7 +120,7 @@ class WeatherRepository(
             if (spot == null || !inDwdArea) null else fetch(RADAR_NOW_WAIT_MS, "radar now") { spot.radarNow(lat, lon, clock()) }
         }
         val alertsJob = async {
-            if (inDwdArea) runCatching { brightSky.alerts(lat, lon, german) }.getOrDefault(emptyList()) else emptyList()
+            if (inDwdArea) runCatching { brightSky.alerts(lat, lon) }.getOrDefault(emptyList()) else emptyList()
         }
         // The extras: each an answer (its value may be "nothing here") – or null when it failed or
         // took too long; then the place's last value stays (a refresh does not empty a card).

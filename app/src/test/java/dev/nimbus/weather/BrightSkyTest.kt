@@ -56,13 +56,50 @@ class BrightSkyTest {
               {"id":3,"alert_id":"c","status":"test","severity":"extreme","headline_en":"test"}
             ]}""",
         )
-        val de = BrightSkySource.parseAlerts(json, german = true)
-        assertEquals(2, de.size)
-        assertEquals(AlertSeverity.SEVERE, de[0].severity)
-        assertEquals("Amtliche UNWETTERWARNUNG vor STURMBÖEN", de[0].headline)
-        val en = BrightSkySource.parseAlerts(json, german = false)
-        assertEquals("Official WARNING of FROST", en[1].headline)
-        assertNotNull(en[1].onset)
+        val alerts = BrightSkySource.parseAlerts(json)
+        assertEquals(2, alerts.size)
+        assertEquals(AlertSeverity.SEVERE, alerts[0].severity)
+        assertEquals("Amtliche UNWETTERWARNUNG vor STURMBÖEN", alerts[0].inLanguage(german = true).headline)
+        assertEquals("Official WARNING of FROST", alerts[1].inLanguage(german = false).headline)
+        assertNotNull(alerts[1].onset)
+    }
+
+    /**
+     * After a change of Nimbus's language the warnings speak the new one at once: both wordings are
+     * kept, chosen when shown – also from the stored data, without a new fetch; a warning worded
+     * only in German stays German.
+     */
+    @Test
+    fun `the warnings follow a change of language without a new fetch`() {
+        val json = JsonCodec.parseToJsonElement(
+            """{"alerts":[
+              {"id":1,"alert_id":"a","status":"actual","severity":"moderate","event_en":"strong wind gusts","event_de":"WINDBÖEN",
+               "headline_en":"Official WARNING of WIND GUSTS","headline_de":"Amtliche WARNUNG vor WINDBÖEN",
+               "description_en":"There is a risk of wind gusts.","description_de":"Es treten Windböen auf.",
+               "instruction_de":"Achten Sie auf herabstürzende Äste.","onset":null,"expires":null},
+              {"id":2,"alert_id":"b","status":"actual","severity":"minor","event_de":"FROST",
+               "headline_de":"Amtliche WARNUNG vor FROST","description_de":"Es tritt Frost auf.","onset":null,"expires":null}
+            ]}""",
+        )
+        val list = kotlinx.serialization.builtins.ListSerializer(WeatherAlert.serializer())
+        val stored = JsonCodec.decodeFromString(list, JsonCodec.encodeToString(list, BrightSkySource.parseAlerts(json)))
+        val gusts = stored.first { it.id == "a" }
+        assertEquals("Amtliche WARNUNG vor WINDBÖEN", gusts.inLanguage(german = true).headline)
+        assertEquals("Es treten Windböen auf.", gusts.inLanguage(german = true).description)
+        val english = gusts.inLanguage(german = false)
+        assertEquals("Official WARNING of WIND GUSTS", english.headline)
+        assertEquals("There is a risk of wind gusts.", english.description)
+        // no English instruction given: the German one rather than none
+        assertEquals("Achten Sie auf herabstürzende Äste.", english.instruction)
+        // only in German: German in both
+        val frost = stored.first { it.id == "b" }
+        assertEquals("Amtliche WARNUNG vor FROST", frost.inLanguage(german = false).headline)
+        // stored before both were kept: as it was fetched
+        val old = JsonCodec.decodeFromString(
+            WeatherAlert.serializer(),
+            """{"id":"x","headline":"Official WARNING of FROST","event":"frost","description":"cold","severity":"MINOR","onset":null,"expires":null,"source":"DWD"}""",
+        )
+        assertEquals("Official WARNING of FROST", old.inLanguage(german = true).headline)
     }
 
     /**

@@ -130,12 +130,12 @@ class ForcedReloadTest {
         )
         val station = NlwknSource.parseStations(Fixtures.json("nlwkn_stations.json")).first()
         val place = Place("p", station.name, latitude = station.lat, longitude = station.lon)
-        val first = repo.load(place, Settings(), german = true)
+        val first = repo.load(place, Settings())
         assertTrue("no gauges to stand in for", first.gauges.isNotEmpty())
         assertFalse(DataPart.GAUGES in first.stale)
 
         stationsFail = true
-        val again = repo.load(place, Settings(), german = true, previous = first, fresh = true)
+        val again = repo.load(place, Settings(), previous = first, fresh = true)
         assertTrue(again.gauges.isNotEmpty())
         assertTrue("stored station list shown as current: ${again.stale}", DataPart.GAUGES in again.stale)
     }

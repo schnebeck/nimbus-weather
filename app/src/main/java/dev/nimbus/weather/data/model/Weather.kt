@@ -136,6 +136,15 @@ data class MinutelyPoint(
     val peak: Double? = null,
 )
 
+/** A warning's words in one language (see [WeatherAlert.english]). */
+@Serializable
+data class AlertText(
+    val headline: String,
+    val event: String,
+    val description: String,
+    val instruction: String? = null,
+)
+
 @Serializable
 enum class AlertSeverity { MINOR, MODERATE, SEVERE, EXTREME }
 
@@ -150,7 +159,17 @@ data class WeatherAlert(
     val onset: Long?,
     val expires: Long?,
     val source: String,
+    /** The same warning in English where the source words it so too (the DWD's); the fields above are German. */
+    val english: AlertText? = null,
 ) {
+    /**
+     * The warning in Nimbus's language: worded in English where it has that wording, else as it is –
+     * chosen when shown, so a change of language needs no new fetch.
+     */
+    fun inLanguage(german: Boolean): WeatherAlert =
+        if (german || english == null) this
+        else copy(headline = english.headline, event = english.event, description = english.description, instruction = english.instruction, english = null)
+
     companion object {
         /**
          * In the order of their periods: the earliest start first (one without a start is in force

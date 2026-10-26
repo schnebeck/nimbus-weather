@@ -114,4 +114,20 @@ class NoticeLooksTest {
         compose.onNodeWithText("1 Warnung geringerer Stufe").assertExists().performClick()
         compose.onNodeWithText("Amtliche WARNUNG vor WINDBÖEN").assertExists()
     }
+
+    /** Nimbus in English: the card and the notice word the DWD's warning in English, from the same data. */
+    @Test @Config(qualifiers = "en-rGB") fun aWarningInNimbussLanguage() {
+        val english = dev.nimbus.weather.data.model.AlertText("Official WARNING of GALE", "gale", "There is a risk of gale-force gusts.")
+        val a = WeatherAlert("a", "Amtliche WARNUNG vor STURMBÖEN", "STURMBÖEN", "Es treten Sturmböen auf.", null, AlertSeverity.MODERATE, now, now + h, "DWD", english)
+        compose.setContent {
+            CompositionLocalProvider(LocalSettings provides Settings(warningLevel = 2), LocalTimeFormat provides TimeFormat("UTC", true)) {
+                AlertsCard(listOf(a))
+            }
+        }
+        compose.onNodeWithText("Official WARNING of GALE").assertExists().performClick()
+        compose.onNodeWithText("There is a risk of gale-force gusts.").assertExists()
+        compose.onNodeWithText("Amtliche WARNUNG vor STURMBÖEN").assertDoesNotExist()
+        NoticePoster.post(app, place, listOf(NoticeStep.Warning(a, loud = true)), now, ZoneId.of("UTC"))
+        assertEquals("Official WARNING of GALE", shown().single().title())
+    }
 }

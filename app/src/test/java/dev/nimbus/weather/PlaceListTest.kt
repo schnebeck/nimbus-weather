@@ -35,6 +35,7 @@ import dev.nimbus.weather.data.model.Settings
 import dev.nimbus.weather.ui.main.LocationMark
 import dev.nimbus.weather.ui.places.PlaceCard
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onAllNodesWithText
@@ -118,6 +119,26 @@ class PlaceListTest {
         compose.onNodeWithText("Eigenes Modell für diesen Ort").performClick()
         compose.onNodeWithText("MET Nordic (1 km)").performScrollTo().performClick()
         assertEquals("berlin" to ForecastModel.MET_NORWAY, chosen)
+    }
+
+    /**
+     * The model line whole in the edit mode, where it wraps ("Modell: Automatisch (App-Einstellung)"
+     * on a narrow phone, with the system's larger font): the row grows with it, nothing of its
+     * second line cut off.
+     */
+    @Test @Config(qualifiers = "de-w360dp-h800dp-xxhdpi", fontScale = 1.3f) @org.robolectric.annotation.GraphicsMode(org.robolectric.annotation.GraphicsMode.Mode.NATIVE)
+    fun theModelLineWholeWhereItWraps() {
+        places(listOf(berlin))
+        compose.onNodeWithText("Berlin").performTouchInput { longClick() }
+        val line = compose.onNodeWithTag("model-berlin")
+        val layout = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        line.fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult].action?.invoke(layout)
+        assertEquals("wraps at this width", 2, layout.single().lineCount)
+        assertFalse("its second line cut off", layout.single().didOverflowHeight)
+        // and the row holds it: the line's bottom within the row's
+        val row = compose.onNodeWithTag("edit-row-berlin").fetchSemanticsNode().boundsInRoot
+        val text = line.fetchSemanticsNode().boundsInRoot
+        assertTrue("$text in $row", text.bottom <= row.bottom && text.height >= layout.single().size.height - 1)
     }
 
     /** A place with its own model says which; back to the settings' one by "Wie in den App-Einstellungen". */

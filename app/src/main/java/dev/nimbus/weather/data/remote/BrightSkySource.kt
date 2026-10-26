@@ -18,6 +18,7 @@
 package dev.nimbus.weather.data.remote
 
 import dev.nimbus.weather.data.model.AlertSeverity
+import dev.nimbus.weather.data.model.AlertText
 import dev.nimbus.weather.data.model.Condition
 import dev.nimbus.weather.data.model.Representative
 import dev.nimbus.weather.data.model.WeatherAlert
@@ -169,13 +170,13 @@ class BrightSkySource(private val http: OkHttpClient, private val baseUrl: Strin
         return obs.filledFrom(hours)
     }
 
-    suspend fun alerts(lat: Double, lon: Double, german: Boolean): List<WeatherAlert> {
+    suspend fun alerts(lat: Double, lon: Double): List<WeatherAlert> {
         val url = "$baseUrl/alerts".toHttpUrl().newBuilder()
             .addQueryParameter("lat", OpenMeteoSource.fmt(lat))
             .addQueryParameter("lon", OpenMeteoSource.fmt(lon))
             .build()
         return try {
-            parseAlerts(http.getJson(url.toString()), german)
+            parseAlerts(http.getJson(url.toString()))
         } catch (e: HttpException) {
             if (e.code == 404 || e.code == 400) emptyList() else throw e
         }
@@ -264,18 +265,21 @@ class BrightSkySource(private val http: OkHttpClient, private val baseUrl: Strin
             }.orEmpty()
         }
 
-        fun parseAlerts(root: JsonElement, german: Boolean): List<WeatherAlert> {
+        /** The warnings in German and, where the DWD gives it, in English: the language is chosen when shown. */
+        fun parseAlerts(root: JsonElement): List<WeatherAlert> {
             val list = root.obj()?.a("alerts") ?: return emptyList()
             return list.mapNotNull { e ->
                 val a = e as? JsonObject ?: return@mapNotNull null
                 if (a.s("status") == "test") return@mapNotNull null
-                fun loc(key: String) = if (german) a.s("${key}_de") ?: a.s("${key}_en") else a.s("${key}_en") ?: a.s("${key}_de")
+                fun de(key: String) = a.s("${key}_de") ?: a.s("${key}_en")
+                fun en(key: String) = a.s("${key}_en") ?: a.s("${key}_de")
+                val english = listOf("headline", "event", "description").any { a.s("${it}_en") != null }
                 WeatherAlert(
                     id = a.s("alert_id") ?: a.l("id")?.toString() ?: return@mapNotNull null,
-                    headline = loc("headline") ?: loc("event") ?: "",
-                    event = loc("event") ?: "",
-                    description = loc("description") ?: "",
-                    instruction = loc("instruction"),
+                    headline = de("headline") ?: de("event") ?: "",
+                    event = de("event") ?: "",
+                    description = de("description") ?: "",
+                    instruction = de("instruction"),
                     severity = when (a.s("severity")) {
                         "extreme" -> AlertSeverity.EXTREME
                         "severe" -> AlertSeverity.SEVERE
@@ -285,6 +289,7 @@ class BrightSkySource(private val http: OkHttpClient, private val baseUrl: Strin
                     onset = parseTime(a.s("onset")),
                     expires = parseTime(a.s("expires")),
                     source = "DWD",
+                    english = if (!english) null else AlertText(en("headline") ?: en("event") ?: "", en("event") ?: "", en("description") ?: "", en("instruction")),
                 )
             }.sortedWith(WeatherAlert.chronological)
         }

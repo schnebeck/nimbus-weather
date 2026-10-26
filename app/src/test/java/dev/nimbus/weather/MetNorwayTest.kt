@@ -91,7 +91,7 @@ class MetNorwayTest {
 
     /** In its area: MET Nordic's values for its 2½ days, the best match after them and for what it lacks. */
     @Test fun inItsAreaMetNordicForItsDays() = runTest {
-        val data = repo().load(cuxhaven, Settings(model = ForecastModel.MET_NORWAY), german = true)
+        val data = repo().load(cuxhaven, Settings(model = ForecastModel.MET_NORWAY))
         assertEquals(SourceKind.MODEL_REGIONAL, data.sources.first().kind)
         assertEquals("MET Nordic" to 1.0, data.sources.first().part?.let { it.name to it.km })
         assertTrue("no gap fill named: ${data.sources}", data.sources.any { it.kind == SourceKind.GAP_FILL })
@@ -115,7 +115,7 @@ class MetNorwayTest {
     /** Outside its area (Hannover): the forecast all the same – the best match, named as such. */
     @Test fun outsideItsAreaTheBestMatch() = runTest {
         outside = true
-        val data = repo().load(Place("h", "Hannover", latitude = 52.3759, longitude = 9.732), Settings(model = ForecastModel.MET_NORWAY), german = true)
+        val data = repo().load(Place("h", "Hannover", latitude = 52.3759, longitude = 9.732), Settings(model = ForecastModel.MET_NORWAY))
         assertEquals(SourceKind.MODEL_BEST_MATCH, data.sources.first().kind)
         assertEquals(15.4, data.current.temperature, 0.01)
         assertEquals(10, data.daily.size)
@@ -147,7 +147,7 @@ class MetNorwayTest {
 
     /** Cuxhaven on MET Nordic while the settings say DWD ICON: its forecast is MET Nordic's. */
     @Test fun aPlaceIsLoadedWithItsOwnModel() = runTest {
-        val data = repo().load(cuxhaven.copy(model = ForecastModel.MET_NORWAY), Settings(model = ForecastModel.DWD_ICON), german = true)
+        val data = repo().load(cuxhaven.copy(model = ForecastModel.MET_NORWAY), Settings(model = ForecastModel.DWD_ICON))
         assertEquals(SourceKind.MODEL_REGIONAL, data.sources.first().kind)
         assertEquals("MET Nordic" to 1.0, data.sources.first().part?.let { it.name to it.km })
         assertEquals(16.2, data.current.temperature, 0.01)
@@ -156,7 +156,7 @@ class MetNorwayTest {
     /** Norden on KNMI Harmonie, named with its grid. */
     @Test fun nordenOnKnmiHarmonie() = runTest {
         val norden = Place("n", "Norden", latitude = 53.596, longitude = 7.206, model = ForecastModel.KNMI)
-        val data = repo().load(norden, Settings(), german = true)
+        val data = repo().load(norden, Settings())
         assertEquals(SourceKind.MODEL_REGIONAL, data.sources.first().kind)
         assertEquals("KNMI Harmonie" to 2.0, data.sources.first().part?.let { it.name to it.km })
         val knmi = OpenMeteoSource.parseForecast(Fixtures.json("openmeteo_norden_knmi_harmonie_arome_netherlands.json"))

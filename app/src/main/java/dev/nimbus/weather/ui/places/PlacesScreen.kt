@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.asPaddingValues
@@ -287,13 +288,16 @@ private fun EditList(
             val id = place.id
             val st = state.states[id]?.data
             val colors = st?.let { SkyScene.from(it).skyColors } ?: listOf(Color(0xFF2A3B57), Color(0xFF34486A), Color(0xFF3E5579))
+            // at least the row's height, taller where the model line wraps (the model's name with
+            // "(app setting)" beside it is wider than a narrow phone)
             Row(
-                Modifier.fillMaxWidth().height(EditRowHeight)
+                Modifier.fillMaxWidth().heightIn(min = EditRowHeight)
                     .graphicsLayer {
                         scaleX = if (dragging) 1.03f else 1f; scaleY = scaleX
                         shape = RoundedCornerShape(14.dp); clip = true
                     }
-                    .background(Brush.linearGradient(colors)),
+                    .background(Brush.linearGradient(colors))
+                    .testTag("edit-row-$id"),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (confirmId == id) {
@@ -306,7 +310,7 @@ private fun EditList(
                         Icon(Icons.Rounded.RemoveCircle, stringResource(R.string.delete), tint = Color(0xFFFF6B6E))
                     }
                 }
-                Column(Modifier.weight(1f).padding(start = 4.dp).clickable(enabled = confirmId == id) { confirmId = null }) {
+                Column(Modifier.weight(1f).padding(start = 4.dp, top = 6.dp, bottom = 6.dp).clickable(enabled = confirmId == id) { confirmId = null }) {
                     Text(place.name, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     // the place's forecast model: tapped, the choice
                     val model = place.model?.let { choiceName(it) }

@@ -1,0 +1,2 @@
+• DWD-Warnungen erscheinen nach einem Wechsel der App-Sprache sofort in der neuen Sprache – auch ohne Neuladen
+• Ortsliste: im Bearbeiten-Modus ist die Modellzeile nicht mehr abgeschnitten

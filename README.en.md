@@ -38,7 +38,7 @@ the DWD and the KNMI. No ads, no account, no Google services. The app speaks Eng
   </tr>
   <tr>
     <td align="center"><img src="docs/screenshots/en/radar.png" width="240" alt="Rain radar"><br><sub><b>Rain radar</b><br>live with a two-hour nowcast, here the day in the look-back with lightning</sub></td>
-    <td align="center"><img src="docs/screenshots/en/sun.png" width="240" alt="Sun and moon"><br><sub><b>Sun and moon</b><br>sun arc with golden and blue hour, the moon as in the sky</sub></td>
+    <td align="center"><img src="docs/screenshots/en/sun.png" width="240" alt="Sun and moon"><br><sub><b>Sun and moon</b><br>the sun's and the moon's arc with the directions, golden and blue hour</sub></td>
     <td align="center"><img src="docs/screenshots/en/widget.png" width="240" alt="Widget"><br><sub><b>Widget</b><br>clock and weather, rain of the next two hours, pollen – each part leads into the app</sub></td>
   </tr>
   <tr>

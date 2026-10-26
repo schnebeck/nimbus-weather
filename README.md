@@ -38,7 +38,7 @@ und KNMI. Keine Werbung, kein Konto, keine Google-Dienste.
   </tr>
   <tr>
     <td align="center"><img src="docs/screenshots/radar.png" width="240" alt="Regenradar"><br><sub><b>Regenradar</b><br>Live mit 2 Stunden Vorhersage, hier der Tag im Rückblick mit Blitzen</sub></td>
-    <td align="center"><img src="docs/screenshots/sun.png" width="240" alt="Sonne und Mond"><br><sub><b>Sonne und Mond</b><br>Sonnenbogen mit Morgenrot und Blauer Stunde, der Mond wie am Himmel</sub></td>
+    <td align="center"><img src="docs/screenshots/sun.png" width="240" alt="Sonne und Mond"><br><sub><b>Sonne und Mond</b><br>Sonnen- und Mondbogen mit Himmelsrichtungen, Morgenrot und Blaue Stunde</sub></td>
     <td align="center"><img src="docs/screenshots/widget.png" width="240" alt="Widget"><br><sub><b>Widget</b><br>Uhr und Wetter, Regen der nächsten zwei Stunden, Pollen – jedes Teil führt in die App</sub></td>
   </tr>
   <tr>

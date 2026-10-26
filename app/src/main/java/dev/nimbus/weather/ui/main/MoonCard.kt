@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DarkMode
@@ -38,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.geometry.Offset
@@ -125,7 +125,7 @@ fun MoonCard(data: WeatherData, now: Long) {
             course, SkyCourse.moonMaxAltitude(lat), dayStart, dayEnd, times, now, altNow, info.phase.toFloat(), lat < 0, dark, crossings, highest,
             Modifier.fillMaxWidth().bleed(CARD_BLEED),
         )
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(5.dp))
         val deg = { v: Double -> "${kotlin.math.abs(v).roundToInt()}°" }
         Caption(
             buildString {
@@ -141,9 +141,10 @@ fun MoonCard(data: WeatherData, now: Long) {
 
 @Composable
 private fun MoonRow(label: String, value: String) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
-        Text(label, Modifier.weight(1f), fontSize = 13.sp, color = NimbusColors.Secondary, maxLines = 1)
-        Text(value, fontSize = 13.sp, color = Color.White, maxLines = 1)
+    // close lines (1.15): three short facts beside the moon, not a paragraph
+    Row(Modifier.fillMaxWidth()) {
+        Text(label, Modifier.weight(1f), fontSize = 13.sp, color = NimbusColors.Secondary, maxLines = 1, lineHeight = 15.sp)
+        Text(value, fontSize = 13.sp, color = Color.White, maxLines = 1, lineHeight = 15.sp)
     }
 }
 
@@ -165,7 +166,7 @@ private fun MoonChart(
     val names = directionNames()
     val hi = maxAlt + 5
     val lo = -maxAlt - 1
-    Canvas(modifier.height(166.dp)) {
+    Canvas(modifier.height(SkyChartHeight).testTag("moon-chart")) {
         val top = 2.dp.toPx()
         val bottom = size.height - skyAxisHeight(measurer)
         val halfLabel = measurer.measure("24", SkyAxisStyle).size.width / 2f

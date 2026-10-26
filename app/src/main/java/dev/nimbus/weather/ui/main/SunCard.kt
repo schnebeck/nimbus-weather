@@ -224,7 +224,7 @@ private fun SunChart(
     // Fixed scale for the place: midsummer noon at the top, midwinter midnight at the bottom.
     val hi = maxAlt + 5
     val lo = -maxAlt - 1
-    Canvas(modifier.height(166.dp)) {
+    Canvas(modifier.height(SkyChartHeight)) {
         val top = 2.dp.toPx()
         val bottom = size.height - skyAxisHeight(measurer)
         val halfLabel = measurer.measure("24", labelStyle).size.width / 2f

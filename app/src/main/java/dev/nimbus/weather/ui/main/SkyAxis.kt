@@ -41,6 +41,9 @@ internal fun directionNames(): List<String> = Texts.compass.map { stringResource
 @Composable
 internal fun directionName(degrees: Double): String = stringResource(Texts.compass16[SkyCourse.index16(degrees)])
 
+/** The sun's and the moon's chart alike: one above the other, their axes line up. */
+internal val SkyChartHeight = 141.dp
+
 internal val SkyAxisStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Tertiary)
 
 /** The axis' height under the plot: the directions' row, the line, the hours. */

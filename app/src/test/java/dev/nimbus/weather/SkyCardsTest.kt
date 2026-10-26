@@ -29,6 +29,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -42,6 +44,7 @@ import dev.nimbus.weather.ui.main.LocalTimeFormat
 import dev.nimbus.weather.ui.main.MoonCard
 import dev.nimbus.weather.ui.main.SunCard
 import dev.nimbus.weather.util.TimeFormat
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -106,6 +109,21 @@ class SkyCardsTest {
         // midwinter: the moon culminates in the evening, at its highest in the south
         assertTrue(texts().toString(), texts().any { it.startsWith("Mond jetzt") && "Höchststand 63°" in it })
         compose.onRoot().captureRoboImage("src/test/screenshots/sky_cards_seasons.png")
+    }
+
+    /**
+     * The moon card spends little height: its rise, set and next full moon at a line spacing of
+     * 1.15, its chart 15 % lower than 166 dp (as the sun's), half the room under it before the text.
+     */
+    @Test fun theMoonCardIsCompact() {
+        cards(hannover to "2026-10-26T20:00+01:00")
+        // mdpi at font scale 1: a dp and an sp are a pixel each
+        fun top(text: String) = compose.onNodeWithText(text, substring = true, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot.top
+        assertEquals(15f, top("Monduntergang") - top("Mondaufgang"), 0.5f)
+        assertEquals(15f, top("Nächster Vollmond") - top("Monduntergang"), 0.5f)
+        val chart = compose.onNodeWithTag("moon-chart", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertEquals(141f, chart.height, 0.5f)
+        assertEquals(5f, top("Mond jetzt") - chart.bottom, 0.5f)
     }
 
     @Test fun hannoverToday() {

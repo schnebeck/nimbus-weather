@@ -30,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.WbTwilight
 import androidx.compose.foundation.layout.size
 import dev.nimbus.weather.util.Moon
+import dev.nimbus.weather.util.SkyCourse
 import dev.nimbus.weather.util.SunPhases
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -92,6 +93,8 @@ fun SunCard(data: WeatherData, now: Long) {
     }
     val noon = curve.maxBy { it.second }
     val altNow = Moon.sunAltitude(now, lat, lon)
+    // when the sun stands in each direction, for the axis
+    val crossings = remember(lat, lon, dayStart) { SkyCourse.crossings(SkyCourse.sun(dayStart, dayEnd, lat, lon)) }
 
     // Twilight times worth mentioning: this morning, this evening or tomorrow morning.
     val twilight = remember(spans, now / 60_000) {
@@ -111,8 +114,9 @@ fun SunCard(data: WeatherData, now: Long) {
         stringResource(R.string.sunset_short) + " " + (set?.let { tf.time(it) } ?: "–")
     GlassCard(title = stringResource(R.string.sun), icon = Icons.Outlined.WbTwilight, info = Term.SUN, onClick = { explain(Term.SUN) }, summary = summary) {
         Row(Modifier.fillMaxWidth()) {
-            SunFact(stringResource(R.string.sunrise), rise?.let { tf.time(it) } ?: "–", null, Modifier.weight(1f), stringResource(R.string.sunrise_short))
-            SunFact(stringResource(R.string.sunset), set?.let { tf.time(it) } ?: "–", null, Modifier.weight(1f), stringResource(R.string.sunset_short))
+            // where on the horizon: it moves from north-east to south-east and back over the year
+            SunFact(stringResource(R.string.sunrise), rise?.let { tf.time(it) } ?: "–", rise?.let { directionName(Moon.sunAzimuth(it, lat, lon)) }, Modifier.weight(1f), stringResource(R.string.sunrise_short))
+            SunFact(stringResource(R.string.sunset), set?.let { tf.time(it) } ?: "–", set?.let { directionName(Moon.sunAzimuth(it, lat, lon)) }, Modifier.weight(1f), stringResource(R.string.sunset_short))
             val len = if (rise != null && set != null) (set - rise) / 60_000L else null
             SunFact(
                 stringResource(R.string.day_length),
@@ -128,7 +132,7 @@ fun SunCard(data: WeatherData, now: Long) {
         }
         Spacer(Modifier.height(12.dp))
         SunChart(
-            curve, spans, SunPhases.maxAltitude(lat), dayStart, dayEnd, rise, set, noon, now, altNow,
+            curve, spans, SunPhases.maxAltitude(lat), dayStart, dayEnd, rise, set, noon, now, altNow, crossings,
             Modifier.fillMaxWidth().bleed(CARD_BLEED),
         )
         Spacer(Modifier.height(8.dp))
@@ -209,19 +213,20 @@ private fun SunLegend() {
 @Composable
 private fun SunChart(
     curve: List<Pair<Long, Double>>, spans: List<SunPhases.Span>, maxAlt: Double, start: Long, end: Long,
-    rise: Long?, set: Long?, noon: Pair<Long, Double>, now: Long, altNow: Double, modifier: Modifier,
+    rise: Long?, set: Long?, noon: Pair<Long, Double>, now: Long, altNow: Double,
+    crossings: List<SkyCourse.Crossing>, modifier: Modifier,
 ) {
     val tf = LocalTimeFormat.current
     val measurer = rememberTextMeasurer()
-    val labelStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Tertiary)
+    val labelStyle = SkyAxisStyle
     val horizonLabel = stringResource(R.string.horizon)
+    val names = directionNames()
     // Fixed scale for the place: midsummer noon at the top, midwinter midnight at the bottom.
     val hi = maxAlt + 5
     val lo = -maxAlt - 1
-    Canvas(modifier.height(150.dp)) {
-        val labelH = measurer.measure("00", labelStyle).size.height
+    Canvas(modifier.height(166.dp)) {
         val top = 2.dp.toPx()
-        val bottom = size.height - labelH - 4.dp.toPx()
+        val bottom = size.height - skyAxisHeight(measurer)
         val halfLabel = measurer.measure("24", labelStyle).size.width / 2f
         val l = halfLabel; val r = size.width - halfLabel
         val span = (end - start).toFloat()
@@ -230,16 +235,14 @@ private fun SunChart(
         val horizon = y(0.0)
         // Light phases as background columns
         spans.forEach { sp -> drawRect(phaseTint(sp.phase), Offset(x(sp.start), top), Size(x(sp.end) - x(sp.start), bottom - top)) }
-        // Time grid
+        // Time grid; the hours and the directions on the axis below
         var mark = start
         while (mark <= end) {
             val xm = x(mark)
             drawLine(Color(0x1FFFFFFF), Offset(xm, top), Offset(xm, bottom), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 6f)))
-            val lt = measurer.measure(if (mark == end) tf.hourEnd(mark) else tf.hour(mark), labelStyle)
-            // inside the chart: "12 AM" is wider than the "24" the margins are made for (it would be cut off)
-            drawText(lt, topLeft = Offset(axisLabelLeft(xm, lt.size.width, size.width), bottom + 4.dp.toPx()))
             mark += 6 * 3_600_000L
         }
+        drawSkyAxis(start, end, ::x, tf, measurer, crossings, names, SunYellow)
         // Daylight under the arc
         val area = Path().apply {
             moveTo(x(curve.first().first), horizon)

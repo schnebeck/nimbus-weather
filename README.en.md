@@ -116,7 +116,10 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   whole day in 5-minute steps to play, pan and zoom (where a weather service radar measures: DWD,
   KNMI, MET Norway).
 - **Sun and moon**: sun arc on a fixed scale per place (the height of the arc shows the season),
-  light phases day, golden hour, blue hour and night, day length; moon phase, rise and set.
+  light phases day, golden hour, blue hour and night, day length; moon phase, rise and set, and the
+  moon's arc of the day as the sun's, the moon on it where it is now. The time axis of both arcs shows
+  when the sun and the moon stand in which direction; rise and set with their direction on the
+  horizon – all for the place shown.
   The moon shows only its lit side, greyer towards the shadow line; 100 % only around full moon.
 - **Environment**: air quality, pollen (DWD index and composition, species to choose – e.g. trees
   only), citizen sensors, a comparison of eight weather models.

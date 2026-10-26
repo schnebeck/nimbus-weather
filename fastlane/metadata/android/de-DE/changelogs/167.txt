@@ -1,0 +1,4 @@
+• Mond-Kachel mit Tagesbogen wie bei der Sonne: Höhe über/unter dem Horizont, der Mond in seiner Phase an der Position von jetzt
+• Sonne und Mond: Himmelsrichtungen auf der Zeitachse, Auf- und Untergang mit Richtung – für den angezeigten Ort
+• Tagesverlauf: ohne Cursor zeigt die Tabelle wieder „jetzt“
+• Kein Wolkenfehler mehr beim Wischen zwischen den Ansichten

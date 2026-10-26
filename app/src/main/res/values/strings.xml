@@ -250,6 +250,14 @@
     <string name="dir_sw">SW</string>
     <string name="dir_w">W</string>
     <string name="dir_nw">NW</string>
+    <string name="dir_nne">NNE</string>
+    <string name="dir_ene">ENE</string>
+    <string name="dir_ese">ESE</string>
+    <string name="dir_sse">SSE</string>
+    <string name="dir_ssw">SSW</string>
+    <string name="dir_wsw">WSW</string>
+    <string name="dir_wnw">WNW</string>
+    <string name="dir_nnw">NNW</string>
     <string name="from_direction">from %1$s</string>
 
     <string name="unit_bft">Bft</string>
@@ -278,7 +286,7 @@
     <string name="moon_always_up">Moon stays up all day</string>
     <string name="moon_always_down">Moon stays down all day</string>
     <string name="term_moon_title">Moon Phases</string>
-    <string name="term_moon_body">The moon orbits the Earth in about 29.5 days. Depending on its position relative to the sun we see a different part of its sunlit half:\n• New moon: the moon is between Earth and sun and invisible\n• Waxing: the lit part grows, in the evening sky\n• Full moon: opposite the sun, rises at sunset\n• Waning: the lit part shrinks, visible in the second half of the night and in the morning\n\nMoonrise and moonset shift by roughly 50 minutes each day, so on some days the moon does not rise or set at all.\n\nThe app calculates phase, illumination and rise/set times astronomically on the device (after J. Meeus and SunCalc) – no data source is needed. At night the animated sky shows the moon in its real phase when it is above the horizon.</string>
+    <string name="term_moon_body">The moon orbits the Earth in about 29.5 days. Depending on its position relative to the sun we see a different part of its sunlit half:\n• New moon: the moon is between Earth and sun and invisible\n• Waxing: the lit part grows, in the evening sky\n• Full moon: opposite the sun, rises at sunset\n• Waning: the lit part shrinks, visible in the second half of the night and in the morning\n\nMoonrise and moonset shift by roughly 50 minutes each day, so on some days the moon does not rise or set at all.\n\nThe curve shows how high the moon stands above or below the horizon over the course of today, for the place shown; the moon on it stands where it is now. The scale is fixed for the place: the moon climbs at most about 5° higher than the sun at midsummer. The hours after sunset are shaded dark. The time axis shows when the moon stands in which direction – it is highest in the south. Where it rises and sets moves over a month between north-east and south-east, and north-west and south-west.\n\nThe app calculates phase, illumination and rise/set times astronomically on the device (after J. Meeus and SunCalc) – no data source is needed. At night the animated sky shows the moon in its real phase when it is above the horizon.</string>
 
     <string name="src_dwd_icon">Forecast: DWD ICON-D2/EU (Open-Meteo)</string>
     <string name="src_ecmwf">Forecast: ECMWF IFS (Open-Meteo)</string>
@@ -451,6 +459,8 @@
     <string name="sun_now_up">Sun now %1$s above the horizon</string>
     <string name="sun_now_down">Sun now %1$s below the horizon</string>
     <string name="sun_highest">highest %1$s at\u00A0%2$s</string>
+    <string name="moon_now_up">Moon now %1$s above the horizon, towards %2$s</string>
+    <string name="moon_now_down">Moon now %1$s below the horizon</string>
     <string name="sunrise_tomorrow">sunrise tomorrow\u00A0%1$s</string>
     <string name="phase_day">Day</string>
     <string name="phase_golden">Golden hour</string>
@@ -462,7 +472,7 @@
     <string name="sun_phases_evening">This evening: %1$s</string>
     <string name="sun_phases_tomorrow">Tomorrow morning: %1$s</string>
     <string name="term_sun_title">Sun and Light Phases</string>
-    <string name="term_sun_body">The curve shows how high the sun stands above the horizon over the course of today, calculated on the device. The scale is fixed for the place – from the highest sun at midsummer noon to its lowest point at midwinter midnight – so the arc shows the season at a glance: high and wide in summer, low and short in winter, with the night as a deep trough.\n\nThe background shows the light phases:\n• Day: sun more than 6° above the horizon\n• Golden hour (morning and evening glow): from 6° above to 4° below the horizon – warm, soft light and long shadows, red sky around sunrise and sunset\n• Blue hour: 4° to 8° below the horizon – the sun is down, the sky turns deep blue\n• Night: sun more than 8° below the horizon\n\nAstronomers divide the twilight differently: civil twilight lasts until the sun is 6° below the horizon (still bright enough outdoors without lights), nautical twilight until 12° and astronomical twilight until 18° – only then is the sky completely dark.\n\nSunrise and sunset refer to the upper edge of the sun including atmospheric refraction.</string>
+    <string name="term_sun_body">The curve shows how high the sun stands above the horizon over the course of today, calculated on the device. The scale is fixed for the place – from the highest sun at midsummer noon to its lowest point at midwinter midnight – so the arc shows the season at a glance: high and wide in summer, low and short in winter, with the night as a deep trough.\n\nThe background shows the light phases:\n• Day: sun more than 6° above the horizon\n• Golden hour (morning and evening glow): from 6° above to 4° below the horizon – warm, soft light and long shadows, red sky around sunrise and sunset\n• Blue hour: 4° to 8° below the horizon – the sun is down, the sky turns deep blue\n• Night: sun more than 8° below the horizon\n\nAstronomers divide the twilight differently: civil twilight lasts until the sun is 6° below the horizon (still bright enough outdoors without lights), nautical twilight until 12° and astronomical twilight until 18° – only then is the sky completely dark.\n\nBelow the curve the axis shows when the sun stands in which direction (N, NE, E … NW) – bright while it is above the horizon, faint below it. The marks are not evenly spaced: around midday, when the sun is highest in the south, it moves through the directions faster. Under sunrise and sunset stands where on the horizon it rises and sets – in summer in the north-east and north-west, in winter in the south-east and south-west.\n\nSunrise and sunset refer to the upper edge of the sun including atmospheric refraction.</string>
     <string name="max_label">Max</string>
     <string name="min_label">Min</string>
     <string name="history_source_pending">No readings from DWD station %1$s for this day yet – forecast values (%2$s)</string>

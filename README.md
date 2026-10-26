@@ -117,7 +117,10 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   Regenradar des ganzen Tages in 5-Minuten-Schritten zum Abspielen, Verschieben und Zoomen
   (wo ein Wetterdienst-Radar misst: DWD, KNMI, MET Norway).
 - **Sonne und Mond**: Sonnenbogen mit fester Skala je Ort (die Bogenhöhe zeigt die Jahreszeit),
-  Lichtphasen Tag, Morgen-/Abendrot, Blaue Stunde und Nacht, Tageslänge; Mondphase, Auf- und Untergang.
+  Lichtphasen Tag, Morgen-/Abendrot, Blaue Stunde und Nacht, Tageslänge; Mondphase, Auf- und Untergang
+  und der Mondbogen des Tages wie bei der Sonne, der Mond darin an seiner Position von jetzt. Auf der
+  Zeitachse beider Bögen steht, wann Sonne und Mond in welcher Himmelsrichtung stehen; Auf- und
+  Untergang mit ihrer Richtung am Horizont – alles für den angezeigten Ort.
   Der Mond zeigt nur seine beleuchtete Seite, zur Schattengrenze hin grauer; 100 % nur um den Vollmond.
 - **Umwelt**: Luftqualität, Pollenflug (DWD-Index und Zusammensetzung, Arten wählbar – z. B. nur
   Bäume), Bürger-Messnetz, Vergleich von acht Wettermodellen.

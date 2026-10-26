@@ -150,6 +150,12 @@ object Texts {
         R.string.dir_s, R.string.dir_sw, R.string.dir_w, R.string.dir_nw,
     )
 
+    /** 16 points: where the sun and the moon rise and set ([SkyCourse.index16]). */
+    val compass16 = intArrayOf(
+        R.string.dir_n, R.string.dir_nne, R.string.dir_ne, R.string.dir_ene, R.string.dir_e, R.string.dir_ese, R.string.dir_se, R.string.dir_sse,
+        R.string.dir_s, R.string.dir_ssw, R.string.dir_sw, R.string.dir_wsw, R.string.dir_w, R.string.dir_wnw, R.string.dir_nw, R.string.dir_nnw,
+    )
+
     fun windUnit(u: WindUnit): Int = when (u) {
         WindUnit.KMH -> R.string.unit_kmh
         WindUnit.MS -> R.string.unit_ms

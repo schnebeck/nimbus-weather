@@ -1,0 +1,4 @@
+• Moon card with the day's arc as for the sun: height above/below the horizon, the moon in its phase where it is now
+• Sun and moon: directions on the time axis, rise and set with their direction – for the place shown
+• Day chart: without the cursor the table shows "now" again
+• No more stray clouds when swiping between the views

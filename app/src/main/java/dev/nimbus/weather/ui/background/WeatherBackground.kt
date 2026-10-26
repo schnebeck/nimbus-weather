@@ -174,8 +174,9 @@ fun WeatherBackground(scene: SkyScene, animate: Boolean, modifier: Modifier = Mo
 
     Spacer(
         // Own graphics layer: the per-frame invalidation re-records only the sky,
-        // not the cards and texts that are drawn on top of it.
-        modifier.fillMaxSize().graphicsLayer().drawWithCache {
+        // not the cards and texts that are drawn on top of it. Clipped: clouds and fog drift in
+        // from beyond the edges and would else lie over the page beside it while paging.
+        modifier.fillMaxSize().graphicsLayer { clip = true }.drawWithCache {
             val w = size.width
             val h = size.height
             val dp = density

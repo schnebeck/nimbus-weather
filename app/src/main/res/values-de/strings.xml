@@ -239,6 +239,14 @@
     <string name="dir_sw">SW</string>
     <string name="dir_w">W</string>
     <string name="dir_nw">NW</string>
+    <string name="dir_nne">NNO</string>
+    <string name="dir_ene">ONO</string>
+    <string name="dir_ese">OSO</string>
+    <string name="dir_sse">SSO</string>
+    <string name="dir_ssw">SSW</string>
+    <string name="dir_wsw">WSW</string>
+    <string name="dir_wnw">WNW</string>
+    <string name="dir_nnw">NNW</string>
     <string name="from_direction">aus %1$s</string>
 
     <string name="unit_bft">Bft</string>
@@ -267,7 +275,7 @@
     <string name="moon_always_up">Der Mond geht heute nicht unter</string>
     <string name="moon_always_down">Der Mond geht heute nicht auf</string>
     <string name="term_moon_title">Mondphasen</string>
-    <string name="term_moon_body">Der Mond umkreist die Erde in etwa 29,5 Tagen. Je nach seiner Stellung zur Sonne sehen wir einen anderen Teil seiner beleuchteten Hälfte:\n• Neumond: Der Mond steht zwischen Erde und Sonne und ist unsichtbar\n• Zunehmend: Der helle Teil wächst, Mond am Abendhimmel\n• Vollmond: gegenüber der Sonne, geht bei Sonnenuntergang auf\n• Abnehmend: Der helle Teil schrumpft, sichtbar in der zweiten Nachthälfte und am Morgen\n\nMondaufgang und -untergang verschieben sich täglich um etwa 50 Minuten, an manchen Tagen geht der Mond daher gar nicht auf oder unter.\n\nDie App berechnet Phase, Beleuchtung sowie Auf- und Untergang astronomisch direkt auf dem Gerät (nach J. Meeus und SunCalc) – dafür ist keine Datenquelle nötig. Nachts zeigt der animierte Himmel den Mond in seiner echten Phase, wenn er über dem Horizont steht.</string>
+    <string name="term_moon_body">Der Mond umkreist die Erde in etwa 29,5 Tagen. Je nach seiner Stellung zur Sonne sehen wir einen anderen Teil seiner beleuchteten Hälfte:\n• Neumond: Der Mond steht zwischen Erde und Sonne und ist unsichtbar\n• Zunehmend: Der helle Teil wächst, Mond am Abendhimmel\n• Vollmond: gegenüber der Sonne, geht bei Sonnenuntergang auf\n• Abnehmend: Der helle Teil schrumpft, sichtbar in der zweiten Nachthälfte und am Morgen\n\nMondaufgang und -untergang verschieben sich täglich um etwa 50 Minuten, an manchen Tagen geht der Mond daher gar nicht auf oder unter.\n\nDie Kurve zeigt, wie hoch der Mond im Verlauf des heutigen Tages über oder unter dem Horizont steht, für den angezeigten Ort; der Mond darauf steht an seiner Position von jetzt. Die Skala ist für den Ort fest: Der Mond steigt höchstens etwa 5° höher als die Sonne im Hochsommer. Dunkel hinterlegt sind die Stunden, in denen die Sonne untergegangen ist. Auf der Zeitachse steht, wann der Mond in welcher Himmelsrichtung steht – am höchsten steht er im Süden. Wo er auf- und untergeht, wandert im Lauf eines Monats zwischen Nordost und Südost bzw. Nordwest und Südwest.\n\nDie App berechnet Phase, Beleuchtung sowie Auf- und Untergang astronomisch direkt auf dem Gerät (nach J. Meeus und SunCalc) – dafür ist keine Datenquelle nötig. Nachts zeigt der animierte Himmel den Mond in seiner echten Phase, wenn er über dem Horizont steht.</string>
 
     <string name="src_dwd_icon">Vorhersage: DWD ICON-D2/EU (Open-Meteo)</string>
     <string name="src_ecmwf">Vorhersage: ECMWF IFS (Open-Meteo)</string>
@@ -440,6 +448,8 @@
     <string name="sun_now_up">Sonne jetzt %1$s über dem Horizont</string>
     <string name="sun_now_down">Sonne jetzt %1$s unter dem Horizont</string>
     <string name="sun_highest">Höchststand %1$s um\u00A0%2$s</string>
+    <string name="moon_now_up">Mond jetzt %1$s über dem Horizont, Richtung %2$s</string>
+    <string name="moon_now_down">Mond jetzt %1$s unter dem Horizont</string>
     <string name="sunrise_tomorrow">morgen Aufgang\u00A0%1$s</string>
     <string name="phase_day">Tag</string>
     <string name="phase_golden">Morgen-/Abendrot</string>
@@ -451,7 +461,7 @@
     <string name="sun_phases_evening">Heute Abend: %1$s</string>
     <string name="sun_phases_tomorrow">Morgen früh: %1$s</string>
     <string name="term_sun_title">Sonne und Lichtphasen</string>
-    <string name="term_sun_body">Die Kurve zeigt, wie hoch die Sonne im Verlauf des heutigen Tages über dem Horizont steht – auf dem Gerät berechnet. Die Skala ist für den Ort fest, vom höchsten Sonnenstand mittags im Hochsommer bis zum tiefsten Stand um Mitternacht im Winter. So zeigt der Bogen auf einen Blick die Jahreszeit: im Sommer hoch und breit, im Winter flach und kurz, mit der Nacht als tiefer Mulde.\n\nDer Hintergrund zeigt die Lichtphasen:\n• Tag: Sonne mehr als 6° über dem Horizont\n• Morgen-/Abendrot (Fotografen sagen „Goldene Stunde“): von 6° über bis 4° unter dem Horizont – warmes, weiches Licht und lange Schatten, roter Himmel rund um Auf- und Untergang\n• Blaue Stunde: 4° bis 8° unter dem Horizont – die Sonne ist weg, der Himmel färbt sich tiefblau\n• Nacht: Sonne mehr als 8° unter dem Horizont\n\nAstronomen teilen die Dämmerung anders ein: Die bürgerliche Dämmerung dauert, bis die Sonne 6° unter dem Horizont steht (draußen noch hell genug ohne Licht), die nautische bis 12° und die astronomische bis 18° – erst dann ist der Himmel ganz dunkel.\n\nSonnenauf- und -untergang beziehen sich auf den oberen Sonnenrand einschließlich der Lichtbrechung in der Atmosphäre.</string>
+    <string name="term_sun_body">Die Kurve zeigt, wie hoch die Sonne im Verlauf des heutigen Tages über dem Horizont steht – auf dem Gerät berechnet. Die Skala ist für den Ort fest, vom höchsten Sonnenstand mittags im Hochsommer bis zum tiefsten Stand um Mitternacht im Winter. So zeigt der Bogen auf einen Blick die Jahreszeit: im Sommer hoch und breit, im Winter flach und kurz, mit der Nacht als tiefer Mulde.\n\nDer Hintergrund zeigt die Lichtphasen:\n• Tag: Sonne mehr als 6° über dem Horizont\n• Morgen-/Abendrot (Fotografen sagen „Goldene Stunde“): von 6° über bis 4° unter dem Horizont – warmes, weiches Licht und lange Schatten, roter Himmel rund um Auf- und Untergang\n• Blaue Stunde: 4° bis 8° unter dem Horizont – die Sonne ist weg, der Himmel färbt sich tiefblau\n• Nacht: Sonne mehr als 8° unter dem Horizont\n\nAstronomen teilen die Dämmerung anders ein: Die bürgerliche Dämmerung dauert, bis die Sonne 6° unter dem Horizont steht (draußen noch hell genug ohne Licht), die nautische bis 12° und die astronomische bis 18° – erst dann ist der Himmel ganz dunkel.\n\nUnter der Kurve steht, wann die Sonne in welcher Himmelsrichtung steht (N, NO, O … NW) – kräftig, solange sie über dem Horizont ist, blass darunter. Die Marken stehen nicht gleichmäßig: Mittags, wenn die Sonne im Süden am höchsten steht, wandert sie schneller durch die Richtungen. Unter Auf- und Untergang steht, wo am Horizont sie auf- und untergeht – im Sommer im Nordosten und Nordwesten, im Winter im Südosten und Südwesten.\n\nSonnenauf- und -untergang beziehen sich auf den oberen Sonnenrand einschließlich der Lichtbrechung in der Atmosphäre.</string>
     <string name="max_label">Max</string>
     <string name="min_label">Min</string>
     <string name="history_source_pending">Noch keine Messwerte der DWD-Station %1$s für diesen Tag – Vorhersagewerte (%2$s)</string>

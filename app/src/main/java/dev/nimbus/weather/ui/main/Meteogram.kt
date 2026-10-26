@@ -172,11 +172,12 @@ fun Meteogram(
     val span = (axisEnd - start).toFloat()
     /** The curves end at 24:00 (under the 24), as they begin at 00:00 (under the 00). */
     val curveEnd = end
-    // The cursor stands on an hour (the value of the hour before its time stamp): today the hour
-    // running now, else midday
-    var selected by remember(start) {
-        mutableStateOf(pts.indexOfFirst { it.time > now }.takeIf { now in start..end && it > 0 } ?: pts.indexOfFirst { it.time >= dev.nimbus.weather.util.Days.at(start, 12, tf.zone) }.coerceAtLeast(1))
-    }
+    // The hour the table stands on without a cursor (the value of the hour before its time stamp):
+    // today the hour running now, going on with the clock, else midday
+    val rest = pts.indexOfFirst { it.time > now }.takeIf { now in start..end && it > 0 }
+        ?: pts.indexOfFirst { it.time >= dev.nimbus.weather.util.Days.at(start, 12, tf.zone) }.coerceAtLeast(1)
+    // The cursor's hour: the table shows it only while the cursor is on
+    var selected by remember(start) { mutableStateOf(rest) }
     var cursorOn by remember { mutableStateOf(false) }
     var touched by remember { mutableIntStateOf(0) }
     LaunchedEffect(touched, cursorOn) {
@@ -467,8 +468,9 @@ fun Meteogram(
         // The plot reaches into the card's padding (callers use bleed); the text keeps it, so it
         // does not run up to the card's edge
         Column(Modifier.padding(horizontal = CARD_BLEED)) {
-            // The temperatures where the cursor meets the curves (the hour's full hour)
-            val sel = pts[selected.coerceIn(1, pts.lastIndex)]
+            // The temperatures where the cursor meets the curves (the hour's full hour); the cursor
+            // fading out, the table is back on its own hour – the cursor's would read as now's
+            val sel = pts[(if (cursorOn) selected else rest).coerceIn(1, pts.lastIndex)]
             val tc = sel.time - HourAxis.HOUR
             val tm = Curve.at(mainCurve, tc)
             val tfc = Curve.at(expectCurve, tc)

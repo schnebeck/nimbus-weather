@@ -99,6 +99,24 @@ object Moon {
         return alt + astroRefraction(alt)
     }
 
+    /** Direction from north, clockwise, in degrees, of a body at hour angle [h] and declination [dec] (SunCalc's is from south). */
+    private fun azimuth(h: Double, phi: Double, dec: Double) =
+        ((atan2(sin(h), cos(h) * sin(phi) - tan(dec) * cos(phi)) / RAD + 180.0) % 360.0 + 360.0) % 360.0
+
+    /** The moon's direction in degrees from north, clockwise (90 = east). */
+    fun azimuth(timeMs: Long, lat: Double, lon: Double): Double {
+        val d = toDays(timeMs)
+        val c = moonCoords(d)
+        return azimuth(siderealTime(d, RAD * -lon) - c.ra, RAD * lat, c.dec)
+    }
+
+    /** The sun's direction in degrees from north, clockwise (90 = east). */
+    fun sunAzimuth(timeMs: Long, lat: Double, lon: Double): Double {
+        val d = toDays(timeMs)
+        val c = sunCoords(d)
+        return azimuth(siderealTime(d, RAD * -lon) - c.ra, RAD * lat, c.dec)
+    }
+
     /** Altitude of the sun's centre above the horizon in degrees (geometric, without refraction). */
     fun sunAltitude(timeMs: Long, lat: Double, lon: Double): Double {
         val d = toDays(timeMs)

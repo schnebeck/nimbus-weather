@@ -313,6 +313,8 @@ class PageTidyTest {
         val before = settings
         page()
         scrollTo(str(R.string.view_hint_title))
+        // the answer below the note in view as well (a tall card above it leaves it below the screen)
+        scrollTo(str(R.string.view_hint_keep))
         compose.onNodeWithText(str(R.string.view_hint_keep)).performClick()
         compose.waitForIdle()
         assertTrue(settings.viewHintDone)

@@ -89,6 +89,11 @@ data class History(
      * carries tomorrow's date (its time stamp is 00:00).
      */
     val allHours: List<HistoryHour> = days.flatMap { it.hours },
+    /**
+     * The DWD's readings did not come (no network for a moment, the service down): not that there
+     * is no station near – the look-back asks again.
+     */
+    val stationMissed: Boolean = false,
 ) {
     /** The hours of the day chart starting at [dayStart]: its 00:00 value through the 24 column. */
     fun chartHours(dayStart: Long): List<HistoryHour> =
@@ -136,6 +141,7 @@ class HistorySource(
         val lightningJob = async { lightning?.let { withTimeoutOrNull(spotWaitMs) { it.hourly(lat, lon, now - SPOT_BACK_MS) } } }
         // the radar map's steps over the place: whether a shower fell where the sums see none
         val echoJob = async { if (spot == null || !inGermany) emptyMap() else spot.radarEchoes(lat, lon, now - SPOT_BACK_MS, now, spotWaitMs) }
+        // null outside Germany; a failure: the readings did not come, which is not "no station near"
         val obsJob = async {
             if (!inGermany) null else runCatching {
                 // Zone is not known before the model answer; Germany is always Europe/Berlin.
@@ -149,14 +155,16 @@ class HistorySource(
                     .addQueryParameter("tz", "Europe/Berlin")
                     .build()
                 http.getJson(url.toString())
-            }.getOrNull()
+            }
         }
         // a regional model (MET Nordic) has nothing outside its area: there Open-Meteo's best match
         val (modelRoot, used) = modelJob.await().map { it to model }.getOrElse { e ->
             if (model == BEST_MATCH || e is kotlinx.coroutines.CancellationException) throw e
             http.getJson(modelUrl(lat, lon, BEST_MATCH)) to BEST_MATCH
         }
-        val obsRoot = obsJob.await()
+        val obs = obsJob.await()
+        obs?.exceptionOrNull()?.let { if (it is kotlinx.coroutines.CancellationException) throw it }
+        val obsRoot = obs?.getOrNull()
         // 10-minute reports of the station that reports now (the hourly values lag 1–2 hours behind)
         val elevation = modelRoot.obj()?.d("elevation")
         val synop = obsRoot?.let { root -> synopStation(root, elevation) }?.let { station ->
@@ -175,7 +183,7 @@ class HistorySource(
         combine(
             modelRoot, obsRoot, used, now, synop, radarJob.await(), SatelliteSunshine.minutes(sunJob.await(), lat, lon, lowCloud(modelRoot)),
             lightningJob.await(), echoJob.await(),
-        )
+        ).copy(stationMissed = obs?.isFailure == true)
     } }
 
     private fun modelUrl(lat: Double, lon: Double, model: String) = "$openMeteoUrl/v1/forecast".toHttpUrl().newBuilder()
@@ -192,6 +200,14 @@ class HistorySource(
         .build().toString()
 
     companion object {
+        /**
+         * The look-back to show after a load: the new one – but where its station's readings did
+         * not come and the one shown [before] has them, that one, rather than its measurements
+         * going for a moment without a network.
+         */
+        fun shown(loaded: History?, before: History?): History? =
+            if (loaded?.stationMissed == true && before?.stationName != null) before else loaded ?: before
+
         /** Open-Meteo's best match: the model where the chosen one has no answer. */
         const val BEST_MATCH = "best_match"
         /** How far back the radar is asked (it keeps about 3½ days; the look-back reaches into the day before yesterday). */

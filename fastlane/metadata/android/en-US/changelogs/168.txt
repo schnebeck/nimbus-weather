@@ -1,0 +1,2 @@
+• Look-back: if the DWD's readings cannot be reached for a moment, it says so – instead of "No DWD station nearby". Readings already shown stay, and Nimbus asks again after a short while
+• My location: the look-back no longer stays yellow after the position is confirmed

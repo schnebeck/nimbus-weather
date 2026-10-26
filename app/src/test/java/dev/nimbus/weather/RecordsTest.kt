@@ -143,6 +143,51 @@ class RecordsTest {
         assertEquals(CURRENT, s.part(here, DataPart.FORECAST).state)
     }
 
+    /**
+     * The same spot confirmed: the look-back of "my location", out of date with the position, is
+     * current again within its time; past it, the controller is told at once.
+     */
+    @Test fun theLookBackBackOnTheSameSpot() = runTest {
+        val s = shelf()
+        s.position.arrived(start)
+        val r = s.lookBack(here)
+        r.arrived(start)
+        advanceTimeBy(5 * min); runCurrent()
+        assertEquals(STALE, r.state)
+        due.clear()
+        s.position.arrived(start + currentTime)
+        r.confirmed(complete = true)
+        assertEquals(CURRENT, r.state)
+        advanceTimeBy(4 * min); runCurrent()
+        assertEquals(CURRENT, r.state)
+        assertEquals(emptyList<RecordKey>(), due)
+        // the position looked for again, the look-back's 15 minutes over meanwhile
+        s.position.stale()
+        advanceTimeBy(7 * min); runCurrent()
+        s.position.arrived(start + currentTime)
+        r.confirmed(complete = true)
+        assertEquals(STALE, r.state)
+        assertEquals(listOf<RecordKey>(RecordKey.LookBack(here)), due)
+    }
+
+    /**
+     * The look-back without the station's readings, to be asked again: the position going out of
+     * date took that retry with it – the same spot confirmed, it is asked at once.
+     */
+    @Test fun theLookBacksRetryOutlivesThePosition() = runTest {
+        val s = shelf()
+        s.position.arrived(start)
+        val r = s.lookBack(here)
+        r.stale(retryMs = Freshness.STALE_RETRY_MS)
+        s.position.stale()
+        advanceTimeBy(Freshness.STALE_RETRY_MS + 1); runCurrent()
+        assertEquals("the retry went with the position", emptyList<RecordKey>(), due)
+        s.position.arrived(start + currentTime)
+        r.confirmed(complete = false)
+        assertEquals(STALE, r.state)
+        assertEquals(listOf<RecordKey>(RecordKey.LookBack(here)), due)
+    }
+
     /** Data taken while the position is not confirmed are not current, whatever their time. */
     @Test fun noCurrentDataWithoutAPosition() = runTest {
         val s = shelf()

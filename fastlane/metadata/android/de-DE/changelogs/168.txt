@@ -1,0 +1,2 @@
+• Rückblick: Sind die DWD-Messwerte kurz nicht erreichbar, steht das so da – statt „Keine DWD-Station in der Nähe“. Gezeigte Messwerte bleiben, Nimbus fragt nach kurzer Zeit erneut
+• Mein Standort: Der Rückblick bleibt nach einer Standortbestätigung nicht mehr gelb stehen

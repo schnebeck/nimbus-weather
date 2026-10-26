@@ -384,8 +384,12 @@ class MainViewModel(
             if (BuildConfig.DEBUG) android.util.Log.d("NimbusLocation", "place ${place.name} (was ${old?.name}, moved=$moved)")
             load(place, force = moved || forced)
             // the look-back: the one asked for meanwhile, or the place's anew where it moved
-            val hadHistory = _state.value.states[place.id]?.history != null
+            val ps = _state.value.states[place.id]
+            val hadHistory = ps?.history != null
             if (historyWaiting.remove(place.id) || moved && hadHistory) loadHistory(place.id, force = moved)
+            // the same spot confirmed: the look-back went out of date with the position, and its
+            // time (or the retry of the readings that did not come) with it – back on it
+            else if (current && ps?.historyLoading == false) ps.history?.let { h -> shelf.lookBack(place.id).confirmed(complete = !h.stationMissed) }
         }
     }
 
@@ -508,10 +512,12 @@ class MainViewModel(
             val inGermany = dev.nimbus.weather.data.repo.WeatherRepository.isInDwdArea(place.latitude, place.longitude)
             val result = runCatching { container.history.load(place.latitude, place.longitude, model, inGermany) }
             updatePlace(placeId) {
-                it.copy(history = result.getOrNull() ?: it.history, historyLoading = false, historyError = result.isFailure)
+                it.copy(history = dev.nimbus.weather.data.remote.HistorySource.shown(result.getOrNull(), it.history), historyLoading = false, historyError = result.isFailure)
             }
-            // the look-back's record: current – or, failed, out of date and asked again after a while
-            result.getOrNull()?.let { record.arrived(it.fetchedAt) } ?: record.stale(retryMs = dev.nimbus.weather.data.repo.Freshness.STALE_RETRY_MS)
+            // the look-back's record: current – or, failed or without the station's readings that
+            // did not come, out of date and asked again after a while
+            result.getOrNull()?.takeIf { !it.stationMissed }?.let { record.arrived(it.fetchedAt) }
+                ?: record.stale(retryMs = dev.nimbus.weather.data.repo.Freshness.STALE_RETRY_MS)
         }
     }
 

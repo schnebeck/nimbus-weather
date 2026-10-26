@@ -90,6 +90,17 @@ class DataRecord internal constructor(val key: RecordKey, private val lifeMs: Lo
     }
 
     /**
+     * The position it depends on confirmed, the place not moved: its data hold for the spot as
+     * before – current again within their time where they are [complete]; past it, or not
+     * complete (a part did not come and was to be asked again), due at once. Going out of date
+     * with the position took its own timer with it.
+     */
+    fun confirmed(complete: Boolean) {
+        if (state == RecordState.CURRENT) return
+        if (complete && fetchedAt > 0) arrived(fetchedAt) else expire()
+    }
+
+    /**
      * Compared with the clock: back from the background, where the device slept and no timer ran,
      * what is past its time goes out of date now.
      */

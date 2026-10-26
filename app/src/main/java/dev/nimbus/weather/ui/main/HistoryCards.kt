@@ -106,6 +106,7 @@ internal fun SummaryCard(
                 R.string.history_source_station, history.stationName,
                 Units.oneDecimal(history.stationDistanceKm ?: 0.0), model,
             ) else if (history.stationName != null) stringResource(R.string.history_source_pending, history.stationName, model)
+            else if (history.stationMissed) stringResource(R.string.history_source_missed, model)
             else stringResource(R.string.history_source_model, model),
             fontSize = 11.sp, color = NimbusColors.Tertiary, lineHeight = 14.sp,
         )

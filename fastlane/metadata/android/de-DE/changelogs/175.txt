@@ -1,0 +1,3 @@
+• Himmel jetzt: Was über dem Ort selbst gemessen wird, geht jeder Station vor – der Sonnenschein, den der Satellit in der letzten Stunde über dem Ort gesehen hat, entscheidet vor einer Station, die 10 km entfernt noch bedeckt meldet
+• Der Satellitenwert gilt, bis der nächste da ist (er kommt 20 bis 25 Minuten nach seiner Stunde) – kein Rückfall auf die Station in der Zwischenzeit
+• Einstellungen und Orte werden nie auf dem Hauptthread gespeichert

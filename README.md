@@ -85,8 +85,9 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   MeteoSwiss und DMI alle 10 Minuten, sonst ein Flughafen (METAR). Jeder Wert zählt nur von einer
   Station in der Höhe des Ortes (höchstens 300 m Unterschied) und nahe am Modell. Der Himmel „jetzt“
   folgt dem gemessenen Sonnenschein, wie die Stunden ihrem Sonnenschein – dünne Schleierwolken
-  machen keinen bewölkten Himmel, wenn die Sonne durchscheint; misst die Station den Himmel bedeckt
-  (7/8), scheint jetzt keine Sonne, was immer das Modell rechnet. Die laufende Stunde im Tagesdiagramm
+  machen keinen bewölkten Himmel, wenn die Sonne durchscheint. Was über dem Ort selbst gemessen wird,
+  geht jeder Station vor: zuerst der Sonnenschein, den der Satellit in der letzten Stunde über dem
+  Ort gesehen hat, dann die Station; misst sie den Himmel bedeckt (7/8), scheint jetzt keine Sonne. Die laufende Stunde im Tagesdiagramm
   zeigt dasselbe Wetter wie die Kopfzeile. **Sonne, Wolken und Nebel der kommenden Stunden** wägt die
   App aus Modell und DWD MOSMIX ab: MOSMIX liest die Modelle an jeder Station gegen deren Messungen
   und trifft so, was ein Modell immer wieder falsch rechnet – Hochnebel, der sich länger hält. Es

@@ -59,15 +59,24 @@ Stationen um den Ort ab.
 
 ## Der Himmel „jetzt“
 
-Die Bewölkung der Modelle zählt auch dünne, hohe Schleierwolken mit, durch die die Sonne scheint.
-Deshalb gilt für den Himmel dieselbe Regel wie für die Stunden der Vorhersage:
+Was über dem Ort selbst gemessen wird, geht jeder Station vor – die Station kann 5 bis 30 km entfernt
+stehen. Die Bewölkung der Modelle zählt auch dünne, hohe Schleierwolken mit, durch die die Sonne
+scheint; deshalb entscheidet der Sonnenschein. Der Reihe nach:
 
-- Beobachtet die Station Regen, Schnee, Nebel oder Gewitter, gilt das.
-- Sonst hellt der **gemessene Sonnenschein** der letzten halben Stunde (sonst der letzten Stunde)
+- **Satellit über dem Ort:** Der Sonnenschein seiner letzten Stunde (höchstens 90 Minuten nach ihrem
+  Ende – die nächste kommt erst 20 bis 25 Minuten nach ihrem eigenen) entscheidet: ab 45 Minuten
+  sonnig, ab 15 Minuten teils bewölkt, (fast) keiner bei hoher Sonne (ab 10°) bewölkt. Nur eine
+  Station innerhalb seines Pixels (2,5 km) misst den Ort selbst und behält ihren Himmel.
+  Niederschlag misst über dem Ort das Radar (unten).
+- Sonst: Beobachtet die Station Regen, Schnee, Nebel oder Gewitter, gilt das.
+- Sonst hellt der **gemessene Sonnenschein** der Station (letzte halbe Stunde, sonst letzte Stunde)
   den Himmel auf: ab 45 Minuten je Stunde sonnig, ab 15 Minuten teils bewölkt. Wenig gemessene Sonne
   lässt den Himmel, wie er ist.
-- Misst die Station keinen Sonnenschein, zählt der Sonnenschein des Modells in der laufenden Stunde.
-- Nachts gibt es keinen Sonnenschein zu messen; der Himmel bleibt der des Modells.
+- Misst die Station den Himmel **bedeckt** (7/8), scheint jetzt keine Sonne. Einen klaren Messwert
+  nimmt die App nicht: Das Wolkenmessgerät sieht dünne hohe Wolken nicht.
+- Ohne Messung gilt die laufende Stunde der Vorhersage – Sonne und Wolken des Modells mit DWD MOSMIX
+  abgeglichen ([MODELS.md](MODELS.md)).
+- Nachts gibt es keinen Sonnenschein zu messen; der Himmel bleibt der der Vorhersage.
 
 Die laufende Stunde im Tagesdiagramm zeigt dasselbe Wetter wie die Kopfzeile.
 

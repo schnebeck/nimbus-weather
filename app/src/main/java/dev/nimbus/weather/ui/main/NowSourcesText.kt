@@ -55,6 +55,7 @@ fun nowSourcesText(c: CurrentWeather): String {
         c.sky == SkyBasis.OBSERVED && sky != null -> stringResource(R.string.now_sky_observed, sky.station, Units.oneDecimal(sky.distanceKm))
         c.sky == SkyBasis.MEASURED_CLOUD && sky != null -> stringResource(R.string.now_sky_measured_cloud, sky.station, Units.oneDecimal(sky.distanceKm))
         c.sky == SkyBasis.MOSMIX -> stringResource(R.string.now_sky_mosmix)
+        c.sky == SkyBasis.SATELLITE -> stringResource(R.string.now_sky_satellite)
         c.sky == SkyBasis.RADAR -> stringResource(R.string.now_sky_radar)
         c.sky == SkyBasis.MODEL_SUNSHINE -> stringResource(R.string.now_sky_model_sunshine)
         else -> stringResource(R.string.now_sky_model)

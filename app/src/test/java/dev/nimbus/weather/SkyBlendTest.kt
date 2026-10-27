@@ -138,6 +138,53 @@ class SkyBlendTest {
         assertEquals(SkyBasis.MEASURED_SUNSHINE, NowWeather.mergeObservation(model, obs(100.0, sunshine = 50.0)).sky)
     }
 
+    /**
+     * What is measured over the place goes before a station's: the satellite saw a full hour of sun
+     * over Hannover while the airport, 10.5 km off, reported 8/8 – sunny. A station within the
+     * satellite's pixel measures the place itself and stays.
+     */
+    @Test fun theSatelliteOverThePlaceBeforeAStationFartherOff() {
+        val sunny = NowWeather.SatelliteNow(60.0, day + 10 * h, sunHigh = true)
+        val far = NowWeather.withSatellite(NowWeather.mergeObservation(model, obs(100.0)), sunny)
+        assertEquals(Condition.CLEAR, far.condition)
+        assertEquals(SkyBasis.SATELLITE, far.sky)
+        assertTrue(far.measured.none { it.value == dev.nimbus.weather.data.model.NowValue.SKY })
+        // a station's sunshine farther off gives way too
+        assertEquals(SkyBasis.SATELLITE, NowWeather.withSatellite(NowWeather.mergeObservation(model, obs(100.0, sunshine = 0.0)), sunny).sky)
+        // within the pixel: the station's
+        val here = NowWeather.mergeObservation(model, obs(100.0).copy(distanceKm = 1.0))
+        assertEquals(SkyBasis.MEASURED_CLOUD, NowWeather.withSatellite(here, sunny).sky)
+        // partly: from 15 minutes
+        assertEquals(Condition.PARTLY_CLOUDY, NowWeather.withSatellite(model, sunny.copy(minutes = 20.0)).condition)
+    }
+
+    /** No sun seen under a high sun: clouded, whatever the model reckons; under a low sun, or at night, it tells nothing. */
+    @Test fun noSunSeenUnderAHighSunIsCloud() {
+        val dark = NowWeather.SatelliteNow(0.0, day + 10 * h, sunHigh = true)
+        assertEquals(Condition.CLOUDY, NowWeather.withSatellite(model, dark).condition)
+        assertEquals(model, NowWeather.withSatellite(model, dark.copy(sunHigh = false)))
+        assertEquals(Condition.FOG, NowWeather.withSatellite(model.copy(condition = Condition.FOG), dark).condition)
+        assertEquals(model.copy(isDay = false), NowWeather.withSatellite(model.copy(isDay = false), dark))
+        assertEquals(Condition.RAIN, NowWeather.withSatellite(model.copy(condition = Condition.RAIN), dark).condition)
+    }
+
+    /**
+     * The satellite's newest hour stands for now up to 90 minutes after its end – until the next
+     * one has come, 20 to 25 minutes after its own end; the sun high at noon, low at dawn.
+     */
+    @Test fun theSatellitesNewestHourWhileFresh() {
+        val lat = 52.3759; val lon = 9.7320
+        val minutes = mapOf(day + 9 * h to 18.0, day + 10 * h to 60.0, day + 11 * h to 0.0)
+        val n = NowWeather.satelliteNow(minutes, lat, lon, day + 10 * h + 32 * 60_000L)!!
+        assertEquals(60.0, n.minutes, 0.0)
+        assertTrue(n.sunHigh)
+        // the next hour not come yet, 77 minutes after the end of the one before: that one still;
+        // 100 minutes after: no more
+        assertEquals(18.0, NowWeather.satelliteNow(mapOf(day + 9 * h to 18.0), lat, lon, day + 10 * h + 17 * 60_000L)!!.minutes, 0.0)
+        assertEquals(null, NowWeather.satelliteNow(mapOf(day + 9 * h to 18.0), lat, lon, day + 10 * h + 40 * 60_000L))
+        assertFalse(NowWeather.satelliteNow(mapOf(day + 7 * h to 0.0), lat, lon, day + 7 * h + 20 * 60_000L)!!.sunHigh)
+    }
+
     /** Nothing measured of the sky: now as the hour running now, MOSMIX weighed in. */
     @Test fun nowAsTheHourRunningNow() {
         val hours = listOf(hour(10, 17.6, 86.0, Condition.PARTLY_CLOUDY))

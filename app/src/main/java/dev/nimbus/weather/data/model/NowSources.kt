@@ -42,6 +42,8 @@ enum class SkyBasis {
     OBSERVED,
     /** Held against the sunshine the station measured: brightened where it shone. */
     MEASURED_SUNSHINE,
+    /** The sunshine the satellite saw over the place itself in its newest hour (before a station's farther off). */
+    SATELLITE,
     /** The station measured the sky overcast: no sun now, whatever the model reckons. */
     MEASURED_CLOUD,
     /** The hour running now as the model and the DWD's MOSMIX give it together ([dev.nimbus.weather.data.repo.SkyBlend]). */

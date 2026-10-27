@@ -89,8 +89,8 @@ background and the sky "now" as long as the station does not measure it. The qua
 chart, widget) keep the model's course within the hour, their sum the hour's sunshine. The data
 sources name the MOSMIX station with its distance.
 
-Where the station measures the sky overcast now (7/8), no sun shines now. A clear reading does not
-count the other way: the ceilometer does not see thin high cloud.
+For the sky "now" measurements go first: the satellite over the place, then the station
+([STATIONS.en.md](STATIONS.en.md)).
 
 ## Look-back and model comparison
 

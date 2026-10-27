@@ -15,6 +15,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import java.time.Duration
 import java.util.Properties
 
 plugins {
@@ -38,8 +39,8 @@ android {
         applicationId = "dev.nimbus.weather"
         minSdk = 26
         targetSdk = 36
-        versionCode = 173
-        versionName = "2.4.3"
+        versionCode = 176
+        versionName = "2.4.6"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -95,7 +96,11 @@ android {
         unitTests.isIncludeAndroidResources = true
         // RequirementsTest reads docs/REQUIREMENTS.md (kept locally, may be missing): a change
         // there runs the tests again
-        unitTests.all { it.inputs.files(rootProject.fileTree("docs") { include("REQUIREMENTS.md") }) }
+        unitTests.all {
+            it.inputs.files(rootProject.fileTree("docs") { include("REQUIREMENTS.md") })
+            // a test that hangs fails the run instead of holding it up for ever (all take ~10 min)
+            it.timeout.set(Duration.ofMinutes(30))
+        }
     }
 
     // No Google-encrypted dependency report in the APK signing block (F-Droid inclusion policy).

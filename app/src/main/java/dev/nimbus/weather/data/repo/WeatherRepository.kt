@@ -122,6 +122,10 @@ class WeatherRepository(
                 .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it; android.util.Log.w("Nimbus", "MOSMIX unavailable: $it") }
                 .getOrNull()
         }
+        // the sunshine the satellite saw over the place (Europe): the sky now before a station's farther off
+        val satelliteJob = async {
+            if (spot == null) emptyMap() else kotlinx.coroutines.withTimeoutOrNull(SATELLITE_WAIT_MS) { spot.satelliteHours(lat, lon, pastDays = 0) }.orEmpty()
+        }
         // what the radar sees falling over the place now (Germany): the page does not wait for it
         val radarJob = async {
             if (spot == null || !inDwdArea) null else fetch(RADAR_NOW_WAIT_MS, "radar now") { spot.radarNow(lat, lon, clock()) }
@@ -210,6 +214,8 @@ class WeatherRepository(
             current = NowWeather.mergeObservation(current, measured)
             sources += Source(SourceKind.STATION, measured.stationName, network = measured.network)
         }
+        val satellite = NowWeather.satelliteNow(dev.nimbus.weather.data.remote.SatelliteSunshine.minutes(satelliteJob.await(), lat, lon), lat, lon, clock())
+        current = NowWeather.withSatellite(current, satellite)
         if (share > 0.0) current = NowWeather.withSkyOfHour(current, forecast.hourly, clock())
         current = NowWeather.withModelSunshine(current, forecast.hourly, clock())
         val alerts = alertsJob.await()
@@ -245,6 +251,7 @@ class WeatherRepository(
             bathing = bathing,
             sources = sources + listOfNotNull(
                 Source(SourceKind.RADAR_NOW).takeIf { now.sky == dev.nimbus.weather.data.model.SkyBasis.RADAR },
+                Source(SourceKind.SATELLITE_NOW).takeIf { now.sky == dev.nimbus.weather.data.model.SkyBasis.SATELLITE },
                 Source(SourceKind.RADAR_NOWCAST).takeIf { hourly.any { it.radar } },
             ) + extraSources,
             fetchedAt = coreAt,
@@ -363,6 +370,11 @@ class WeatherRepository(
         private const val RADAR_NOW_WAIT_MS = 30_000L
         /** How long the forecast waits for the best match's single models (they only name a source). */
         private const val PARTS_WAIT_MS = 3_000L
+        /**
+         * How long the sky now waits for the satellite: without it, the station's and the forecast's.
+         * It answers in 3 to 4 s at a cold start – as long as the forecast, so the page hardly waits longer.
+         */
+        private const val SATELLITE_WAIT_MS = 8_000L
         /** How long the forecast waits for MOSMIX: without it, the model's sky alone. */
         private const val MOSMIX_WAIT_MS = 5_000L
         /** MOSMIX's days ahead (it reaches 10). */

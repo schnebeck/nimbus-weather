@@ -1,0 +1,3 @@
+• Sky now: what is measured over the place itself goes before any station – the sunshine the satellite saw over the place in the last hour decides before a station 10 km away still reporting overcast
+• The satellite's hour holds until the next one has come (20 to 25 minutes after its hour) – no falling back to the station meanwhile
+• Settings and places are never saved on the main thread

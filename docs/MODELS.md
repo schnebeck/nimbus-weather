@@ -91,8 +91,8 @@ Stunde, der Tag, der Hintergrund und der Himmel „jetzt“, solange die Station
 Viertelstunden (Tagesdiagramm, Widget) behalten den Verlauf des Modells innerhalb der Stunde, ihre
 Summe ist der Sonnenschein der Stunde. Die Datenquellen nennen die MOSMIX-Station mit ihrer Entfernung.
 
-Misst die Station den Himmel jetzt bedeckt (7/8), scheint jetzt keine Sonne. Ein klarer Messwert
-zählt dagegen nicht: Das Wolkenmessgerät sieht dünne hohe Wolken nicht.
+Für den Himmel „jetzt“ gehen Messungen vor: zuerst der Satellit über dem Ort, dann die Station
+([STATIONS.md](STATIONS.md)).
 
 ## Rückblick und Modellvergleich
 

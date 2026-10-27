@@ -48,6 +48,19 @@ object NowWeather {
             .mapNotNull { it.forPlace(elevationM, modelTemperature) }
             .minWithOrNull(compareBy({ it.network == StationNetwork.METAR }, { it.distanceKm }))
 
+    /**
+     * The satellite's sunshine over the place itself in its newest hour ([minutes]), while that
+     * hour stands for now: ended at most [SATELLITE_VALID_MS] before [now]. [sunHigh]: the sun stood
+     * high enough in it that no sunshine means cloud, not a sun too low to count.
+     */
+    data class SatelliteNow(val minutes: Double, val hourEnd: Long, val sunHigh: Boolean)
+
+    /** [SatelliteNow] from the satellite's hours at [lat]/[lon] ([dev.nimbus.weather.data.remote.SatelliteSunshine]); null: none fresh enough. */
+    fun satelliteNow(minutes: Map<Long, Double>, lat: Double, lon: Double, now: Long): SatelliteNow? {
+        val (end, m) = minutes.entries.filter { it.key <= now && now - it.key <= SATELLITE_VALID_MS }.maxByOrNull { it.key } ?: return null
+        return SatelliteNow(m, end, dev.nimbus.weather.data.remote.SunHour(end, lat, lon).elevation >= SATELLITE_DARK_ELEVATION)
+    }
+
     /** Measured values from a nearby station beat modelled ones ([obs] already [StationObservation.forPlace]). */
     fun mergeObservation(model: CurrentWeather, obs: StationObservation): CurrentWeather {
         val t = obs.temperature ?: model.temperature
@@ -115,6 +128,19 @@ object NowWeather {
      */
     const val RADAR_VALID_MS = 30 * 60_000L
 
+    /**
+     * How long the satellite's newest hour stands for now after its end: the next one comes 20 to
+     * 25 minutes after its own end – till then the hour before stands, or the sky would fall back
+     * to the station for those minutes of every hour.
+     */
+    const val SATELLITE_VALID_MS = 90 * 60_000L
+
+    /** The satellite's pixel (km): a station nearer than this measures the place itself. */
+    const val SATELLITE_PIXEL_KM = 2.5
+
+    /** The sun's mean height (degrees) from which no sunshine seen means cloud: below it a clear sky may count none. */
+    const val SATELLITE_DARK_ELEVATION = 10.0
+
     /** Cloud cover (%) from which a station's sky is overcast: 7 eighths. */
     const val OVERCAST_PERCENT = 87.5
 
@@ -159,6 +185,30 @@ object NowWeather {
     /** The hour running at [now]: its values cover the hour before their time stamp. */
     fun runningHour(hourly: List<HourlyPoint>, now: Long): HourlyPoint? =
         hourly.firstOrNull { it.time > now }?.takeIf { it.time - now <= 3_600_000L }
+
+    /**
+     * What is measured over the place itself goes before a station's: the sunshine the satellite
+     * saw over the place ([satellite]) decides the sky – by the hours' bounds: from 45 minutes
+     * sunny, from 15 partly cloudy, (almost) none under a high sun clouded – before the station's
+     * sunshine, cloud cover or fog and before the model. A station within the satellite's pixel
+     * measures the place itself and stays. Precipitation and thunder stay as they are (the radar's
+     * over the place, [withRadar]).
+     */
+    fun withSatellite(current: CurrentWeather, satellite: SatelliteNow?): CurrentWeather {
+        val sat = satellite ?: return current
+        if (!current.isDay || !WeatherCodes.isSky(current.condition)) return current
+        // the station that measured the sky (its value may come from another than the main one)
+        val skyKm = current.measured.firstOrNull { it.value == NowValue.SKY }?.distanceKm ?: Double.MAX_VALUE
+        if (skyKm < SATELLITE_PIXEL_KM && current.sky in setOf(SkyBasis.OBSERVED, SkyBasis.MEASURED_SUNSHINE, SkyBasis.MEASURED_CLOUD)) return current
+        val c = when {
+            sat.minutes >= WeatherCodes.SUNNY_MINUTES -> Condition.CLEAR
+            sat.minutes >= WeatherCodes.PARTLY_SUNNY_MINUTES -> Condition.PARTLY_CLOUDY
+            // no sun seen: clouded where the sun stood high – fog stays fog; a low sun tells nothing
+            sat.sunHigh && current.condition != Condition.FOG -> Condition.CLOUDY
+            else -> return current
+        }
+        return current.copy(condition = c, sky = SkyBasis.SATELLITE, measured = current.measured.filter { it.value != NowValue.SKY })
+    }
 
     /**
      * Nothing measured of the sky: now as the hour running now ([hourly]) where MOSMIX was weighed

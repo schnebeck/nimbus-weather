@@ -59,15 +59,24 @@ place.
 
 ## The sky "now"
 
-The models' cloud cover counts thin high veil clouds too, through which the sun shines. So the sky
-follows the same rule as the forecast hours:
+What is measured over the place itself goes before any station – the station may stand 5 to 30 km
+away. The models' cloud cover counts thin high veil clouds too, through which the sun shines; so
+the sunshine decides. In order:
 
-- If the station observes rain, snow, fog or thunder, that holds.
-- Otherwise the **measured sunshine** of the last half hour (else the last hour) brightens the sky:
+- **The satellite over the place:** the sunshine of its newest hour (at most 90 minutes after its
+  end – the next one comes only 20 to 25 minutes after its own) decides: from 45 minutes sunny, from
+  15 minutes partly cloudy, (almost) none under a high sun (from 10°) cloudy. Only a station within
+  its pixel (2.5 km) measures the place itself and keeps its sky. Precipitation over the place is
+  the radar's (below).
+- Otherwise: if the station observes rain, snow, fog or thunder, that holds.
+- Otherwise the station's **measured sunshine** (last half hour, else last hour) brightens the sky:
   from 45 minutes per hour sunny, from 15 minutes partly cloudy. Little sun measured leaves the sky
   as it is.
-- Where the station measures no sunshine, the model's sunshine in the running hour counts.
-- At night there is no sunshine to measure; the sky stays the model's.
+- Where the station measures the sky **overcast** (7/8), no sun shines now. A clear reading is not
+  taken: the ceilometer does not see thin high cloud.
+- Without a measurement the forecast's running hour counts – the model's sun and cloud weighed with
+  DWD MOSMIX ([MODELS.en.md](MODELS.en.md)).
+- At night there is no sunshine to measure; the sky stays the forecast's.
 
 The running hour in the day chart shows the same weather as the header.
 

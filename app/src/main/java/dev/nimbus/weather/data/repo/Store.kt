@@ -18,6 +18,7 @@
 package dev.nimbus.weather.data.repo
 
 import android.content.Context
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -36,6 +37,7 @@ private val Context.dataStore by preferencesDataStore(name = "nimbus")
 
 /** Persists settings, saved places, the place last looked at and the last successful forecast per place. */
 class Store(private val context: Context) {
+    private val writes = Dispatchers.IO.limitedParallelism(1)
     private val settingsKey = stringPreferencesKey("settings")
     private val placesKey = stringPreferencesKey("places")
     private val lastPlaceKey = stringPreferencesKey("last_place")
@@ -54,21 +56,36 @@ class Store(private val context: Context) {
 
     /** [placeId] null: none kept. */
     suspend fun setLastPlace(placeId: String?) {
-        context.dataStore.edit { p -> if (placeId == null) p.remove(lastPlaceKey) else if (p[lastPlaceKey] != placeId) p[lastPlaceKey] = placeId }
+        edit { p -> if (placeId == null) p.remove(lastPlaceKey) else if (p[lastPlaceKey] != placeId) p[lastPlaceKey] = placeId }
     }
 
     suspend fun updateSettings(transform: (Settings) -> Settings) {
-        context.dataStore.edit { p ->
+        edit { p ->
             val cur = p[settingsKey]?.let { runCatching { JsonCodec.decodeFromString(Settings.serializer(), it) }.getOrNull() } ?: Settings.forLocale(java.util.Locale.getDefault())
             p[settingsKey] = JsonCodec.encodeToString(Settings.serializer(), transform(cur))
         }
     }
 
-    suspend fun updatePlaces(transform: (List<Place>) -> List<Place>) {
-        context.dataStore.edit { p ->
+    /** The places as [transform] makes them; they are returned as written. */
+    suspend fun updatePlaces(transform: (List<Place>) -> List<Place>): List<Place> {
+        var written = emptyList<Place>()
+        edit { p ->
             val cur = p[placesKey]?.let { runCatching { JsonCodec.decodeFromString(placeList, it) }.getOrNull() } ?: emptyList()
-            p[placesKey] = JsonCodec.encodeToString(placeList, transform(cur))
+            written = transform(cur)
+            p[placesKey] = JsonCodec.encodeToString(placeList, written)
         }
+        return written
+    }
+
+    /**
+     * DataStore runs a change in its caller's context, its changes one after the other: a change
+     * from the main thread waits until the main thread is free, and every change behind it waits
+     * with it – for ever, if the main thread waits for one of those. So none runs there, but on
+     * [writes]: one at a time, in the order they were asked for (a place copied, then its model
+     * set – the other way round the model would be lost).
+     */
+    private suspend fun edit(change: (MutablePreferences) -> Unit) {
+        withContext(writes) { context.dataStore.edit(change) }
     }
 
     private fun cacheFile(placeId: String) =

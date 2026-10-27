@@ -84,8 +84,9 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   MeteoSwiss and DMI every 10 minutes, else an airport (METAR). Each value counts only from a station
   at the place's height (at most 300 m apart) and near the model. The sky "now" follows the measured
   sunshine as the hours follow theirs – thin veil clouds do not make a cloudy sky while the sun
-  shines through; where the station measures the sky overcast (7/8), no sun shines now, whatever the
-  model reckons. The running hour in the day chart shows the same weather as the header. **The sun,
+  shines through. What is measured over the place itself goes before any station: first the
+  sunshine the satellite saw over the place in the last hour, then the station; where it measures
+  the sky overcast (7/8), no sun shines now. The running hour in the day chart shows the same weather as the header. **The sun,
   cloud and fog of the hours to come** the app weighs from the model and DWD MOSMIX: MOSMIX reads
   the models at each station against its measurements and so gets right what a model gets wrong
   again and again – low stratus that lasts longer. It counts 80 %, less the farther its station

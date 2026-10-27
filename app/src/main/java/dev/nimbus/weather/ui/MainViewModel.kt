@@ -594,9 +594,11 @@ class MainViewModel(
      */
     fun setPlaceModel(placeId: String, model: ForecastModel?) {
         viewModelScope.launch {
-            store.updatePlaces { list -> list.map { if (it.id == placeId) it.copy(model = model) else it } }
+            val saved = store.updatePlaces { list -> list.map { if (it.id == placeId) it.copy(model = model) else it } }
             _state.update { st -> st.copy(savedPlaces = st.savedPlaces.map { if (it.id == placeId) it.copy(model = model) else it }) }
-            val place = _state.value.pages.firstOrNull { it.id == placeId } ?: return@launch
+            // the shown list may lack the place for a moment: the store's list of before it was
+            // added (a copy just made) can come in after it – the store's own has it
+            val place = _state.value.pages.firstOrNull { it.id == placeId } ?: saved.firstOrNull { it.id == placeId } ?: return@launch
             load(place, force = true)
             if (_state.value.states[placeId]?.history != null) loadHistory(placeId, force = true)
         }

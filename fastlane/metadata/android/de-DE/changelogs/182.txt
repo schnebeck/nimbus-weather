@@ -1,0 +1,1 @@
+• Ortsliste: Jeder Ort zeigt das Wettersymbol von jetzt links neben der Temperatur – Tag oder Nacht nach dem Sonnenstand am Ort, ebenso der Wettertext darunter

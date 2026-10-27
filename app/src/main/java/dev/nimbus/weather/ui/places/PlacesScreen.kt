@@ -19,6 +19,7 @@ package dev.nimbus.weather.ui.places
 
 import dev.nimbus.weather.ui.main.LocationDot
 import dev.nimbus.weather.ui.components.statusBarsStable
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import android.text.format.DateFormat
@@ -344,6 +345,7 @@ fun PlaceCard(
     location: dev.nimbus.weather.ui.main.LocationMark? = null,
     /** The model, for a place in the list more than once ([PlaceTwins.label]). */
     modelLabel: String? = null,
+    now: Long = System.currentTimeMillis(),
     onClick: () -> Unit,
 ) {
     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
@@ -351,6 +353,9 @@ fun PlaceCard(
     val s = st?.data
     val colors = s?.let { SkyScene.from(it).skyColors } ?: listOf(Color(0xFF2A3B57), Color(0xFF34486A), Color(0xFF3E5579))
     val tf = remember(s?.timezone) { s?.let { TimeFormat(it.timezone, DateFormat.is24HourFormat(context)) } }
+    // day or night by the sun at the place now – the data's flag stands for their fetch
+    val isDay = s?.let { dev.nimbus.weather.util.Moon.isDay(now, it.place.latitude, it.place.longitude) } ?: true
+    val condition = s?.let { stringResource(Texts.condition(it.current.condition, isDay)) }
     Row(
         Modifier.fillMaxWidth().height(112.dp).clip(RoundedCornerShape(16.dp))
             .background(Brush.linearGradient(colors))
@@ -372,16 +377,26 @@ fun PlaceCard(
                     if (location != null) LocationDot(location, 22.sp)
                 }
                 Text(
-                    listOfNotNull(modelLabel, if (place.isCurrentLocation) place.name else (tf?.time(System.currentTimeMillis()) ?: place.subtitle))
+                    listOfNotNull(modelLabel, if (place.isCurrentLocation) place.name else (tf?.time(now) ?: place.subtitle))
                         .joinToString(" · "),
                     fontSize = 14.sp, color = Color.White, maxLines = 1,
                 )
             }
-            s?.let { Text(stringResource(Texts.condition(it.current.condition, it.current.isDay)), fontSize = 14.sp, color = Color.White, maxLines = 1) }
+            condition?.let { Text(it, fontSize = 14.sp, color = Color.White, maxLines = 1) }
         }
-        Column(Modifier.fillMaxSize().weight(0.6f), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.SpaceBetween) {
-            dev.nimbus.weather.ui.components.BigTemperature(s?.current?.temperature, settings.temperatureUnit, 44.sp, weight = FontWeight.Light)
-            val today = s?.daily?.lastOrNull { it.date <= System.currentTimeMillis() }
+        Column(Modifier.fillMaxSize().weight(0.8f), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.SpaceBetween) {
+            // the symbol of now beside the temperature, as on the place's page
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (s != null) {
+                    dev.nimbus.weather.ui.components.WeatherIcon(
+                        s.current.condition, isDay, size = 40.dp, wind = dev.nimbus.weather.ui.components.windiness(s.current.windSpeed, s.current.windGust),
+                        modifier = Modifier.testTag("place-symbol-${place.id}"), description = condition,
+                    )
+                    Spacer(Modifier.width(6.dp))
+                }
+                dev.nimbus.weather.ui.components.BigTemperature(s?.current?.temperature, settings.temperatureUnit, 44.sp, weight = FontWeight.Light)
+            }
+            val today = s?.daily?.lastOrNull { it.date <= now }
             if (today != null) {
                 dev.nimbus.weather.ui.components.MaxMinStack(today.tempMax, today.tempMin, settings.temperatureUnit, fontSize = 13.sp)
             }

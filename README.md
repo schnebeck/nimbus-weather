@@ -209,8 +209,9 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   geantwortet hat. Ist der Standort veraltet, sind es alle Daten von „Mein Standort“ mit ihm. Gespeichertes ohne Nutzen wird gelöscht: Momentdaten nach 4 Tagen (so weit reicht
   der Rückblick), Listen (Pegel, Badestellen, Gezeiten) nach 30 Tagen ohne Nutzung, das Wetter
   entfernter Orte sofort.
-- **Orte, Einstellungen**: Standort und gespeicherte Orte (lange drücken zum Sortieren und Löschen;
-  Nimbus öffnet mit dem Ort, der zuletzt zu sehen war);
+- **Orte, Einstellungen**: Standort und gespeicherte Orte, jeder mit dem Wettersymbol von jetzt
+  neben der Temperatur, Tag oder Nacht nach dem Sonnenstand am Ort (lange drücken zum Sortieren
+  und Löschen; Nimbus öffnet mit dem Ort, der zuletzt zu sehen war);
   Einheiten (beim ersten Start passend zum Land), Kacheln, Radar, Anzeige (Stationswerte, Vollbild,
   Animationen), Pollen, Badestellen, Vorhersagemodell (eine Zeile, die Liste auf Antippen;
   voreingestellt: Automatisch – das feinste Modell je Ort und Zeitraum, die Datenquellen nennen es

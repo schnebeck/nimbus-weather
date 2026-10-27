@@ -85,6 +85,32 @@ class PlaceListTest {
         compose.assertDotBesidePin(org.robolectric.RuntimeEnvironment.getApplication().getString(R.string.my_location), 22f)
     }
 
+    /**
+     * The symbol of now left of the temperature – by day or night as the sun stands at the place
+     * now, not as the data's flag says (it stands for their fetch): the sun at noon, the moon at
+     * night, the words under the name alike.
+     */
+    @Test fun theSymbolBesideTheTemperature() {
+        val noon = java.time.Instant.parse("2026-10-27T11:00:00Z").toEpochMilli()
+        val night = java.time.Instant.parse("2026-10-27T21:00:00Z").toEpochMilli()
+        val cur = dev.nimbus.weather.data.model.CurrentWeather(noon, 12.4, 11.0, dev.nimbus.weather.data.model.Condition.CLEAR, true, 70.0, 7.0, 1015.0, 12.0, 25.0, 240.0, 0.0, 20000.0, 2.0, 0.0)
+        val data = dev.nimbus.weather.data.model.WeatherData(berlin, "Europe/Berlin", 0, cur, emptyList(), emptyList(), emptyList(), sources = emptyList(), fetchedAt = noon)
+        val at = androidx.compose.runtime.mutableLongStateOf(noon)
+        compose.setContent { PlaceCard(berlin, dev.nimbus.weather.ui.PlaceState(data = data), Settings(), now = at.longValue) {} }
+        compose.waitForIdle()
+        val symbol = compose.onNodeWithTag("place-symbol-berlin", useUnmergedTree = true).fetchSemanticsNode()
+        val temperature = compose.onNodeWithText("12", useUnmergedTree = true).fetchSemanticsNode()
+        assertTrue("${symbol.boundsInRoot} left of ${temperature.boundsInRoot}", symbol.boundsInRoot.right <= temperature.boundsInRoot.left)
+        assertEquals(temperature.boundsInRoot.center.y, symbol.boundsInRoot.center.y, temperature.boundsInRoot.height / 4)
+        assertEquals("Sonnig", symbol.config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].single())
+        compose.onAllNodesWithText("Sonnig", useUnmergedTree = true).assertCountEquals(1)
+        // the same data at night: the moon, "Klar"
+        at.longValue = night
+        compose.waitForIdle()
+        assertEquals("Klar", compose.onNodeWithTag("place-symbol-berlin", useUnmergedTree = true).fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].single())
+        compose.onAllNodesWithText("Klar", useUnmergedTree = true).assertCountEquals(1)
+    }
+
     private fun places(
         saved: List<Place>, onSetModel: (Place, ForecastModel?) -> Unit = { _, _ -> },
         onDuplicate: (Place) -> Place = { dev.nimbus.weather.ui.places.PlaceTwins.copyOf(it, saved) },

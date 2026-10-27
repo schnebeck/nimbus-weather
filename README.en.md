@@ -205,7 +205,8 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   position out of date, so are all data of "My location". Stored data nobody needs is deleted: data
   of a moment after 4 days (as far as the look-back reaches), lists (gauges, bathing waters, tides)
   after 30 days without use, the weather of removed places at once.
-- **Places, settings**: my location and saved places (long press to sort and delete; Nimbus
+- **Places, settings**: my location and saved places, each with the weather symbol of now beside
+  its temperature, day or night by the sun at the place (long press to sort and delete; Nimbus
   opens with the place shown last); units (on
   first start to suit the country), cards, radar, display (station values, full screen,
   animations), pollen, bathing waters, the forecast model (one line, the list on a tap; preset:

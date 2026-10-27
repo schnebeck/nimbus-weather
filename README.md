@@ -266,7 +266,7 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   Diagramm auf der Zeile seiner Uhrzeiten – ohne Pollen daneben „Stand“ und Uhrzeit rechts über ↻,
   ↻ auf der Zeile der Uhrzeiten des Diagramms, das bis unten reicht. Das Symbol zeigt Tag oder
   Nacht nach dem Sonnenstand am Ort, beim Zeichnen; zu Sonnenauf- und -untergang zeichnet sich das
-  Widget neu (nicht minutengenau, meist binnen weniger Minuten). Tippen auf die Uhrzeit öffnet den Wecker
+  Widget neu (binnen 10 Minuten danach). Tippen auf die Uhrzeit öffnet den Wecker
   (auch wo die Uhr-App die Standardanfrage nicht oder nur Apps mit Weckerrecht beantwortet, etwa unter ColorOS), auf das
   Datum den Kalender; die übrigen Teile führen zu ihrer Stelle in Nimbus beim Ort des Widgets: das
   Wetter zur stündlichen Vorhersage, der Niederschlag zur Tagesvorhersage mit aufgeklapptem Heute,

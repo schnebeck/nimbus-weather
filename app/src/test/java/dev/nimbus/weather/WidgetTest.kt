@@ -624,7 +624,8 @@ class WidgetTest {
     /**
      * The symbol by day or night from the sun at the place when the widget is drawn: it turns at
      * sunset and at sunrise, not with the next fetch. A minute after the next sunrise or sunset of
-     * the widgets' places the widget is shown anew; none where the sun neither rises nor sets.
+     * the widgets' places the widget is shown anew – within 10 minutes, not the hour an inexact
+     * alarm may take; none where the sun neither rises nor sets.
      */
     @Test fun theSymbolTurnsWithTheSun() {
         val d = data()
@@ -643,6 +644,7 @@ class WidgetTest {
         // at 10:20: the sunset, a minute after it
         Widgets.scheduleSunTurn(app, listOf(d.place), now)
         assertEquals((set + m).toDouble(), sunAlarm().single().triggerAtMs.toDouble(), m.toDouble())
+        assertEquals(10 * m, sunAlarm().single().windowLengthMs)
         // after it: the next sunrise
         Widgets.scheduleSunTurn(app, listOf(d.place), set + 2 * m)
         assertEquals((nextRise + m).toDouble(), sunAlarm().single().triggerAtMs.toDouble(), m.toDouble())

@@ -1,0 +1,1 @@
+• Widget: after sunrise and sunset it is drawn anew within 10 minutes – until now Android could put off its alarm for up to an hour

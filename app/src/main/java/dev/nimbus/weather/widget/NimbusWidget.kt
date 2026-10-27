@@ -111,6 +111,7 @@ object Widgets {
     private const val WORK = "widget"
     private const val WORK_NOW = "widget-now"
     const val INTERVAL_MINUTES = 30L
+    const val SUN_TURN_WINDOW_MS = 10 * 60_000L
     /** Data younger than this are not fetched again (the app has just loaded them). */
     const val FRESH_MS = 20 * 60_000L
 
@@ -191,14 +192,15 @@ object Widgets {
 
     /**
      * Shown anew a minute after the next sunrise or sunset at any of [places] after [now] – the
-     * symbol turns to night or day then, not with the next fetch. Not to the minute (no exact
-     * alarm): the system sends it within a few.
+     * symbol turns to night or day then, not with the next fetch. Within [SUN_TURN_WINDOW_MS]
+     * after that: a plain inexact alarm may come up to an hour late, a window of 10 minutes is the
+     * least that needs no exact alarm (and no permission for one).
      */
     fun scheduleSunTurn(context: Context, places: List<Place>, now: Long) {
         val am = context.getSystemService(android.app.AlarmManager::class.java) ?: return
         val next = places.mapNotNull { dev.nimbus.weather.util.Moon.nextSunTurn(now, it.latitude, it.longitude) }.minOrNull()
         if (next == null) { am.cancel(sunTurn(context)); return }
-        runCatching { am.set(android.app.AlarmManager.RTC, next + 60_000L, sunTurn(context)) }
+        runCatching { am.setWindow(android.app.AlarmManager.RTC, next + 60_000L, SUN_TURN_WINDOW_MS, sunTurn(context)) }
     }
 
     fun cancelSunTurn(context: Context) {

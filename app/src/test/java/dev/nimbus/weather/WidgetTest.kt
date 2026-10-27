@@ -497,12 +497,13 @@ class WidgetTest {
     }
 
     /**
-     * The two hours' line midway: its letters as far from the alarm's above as from the chart below
-     * (to the chart's first drawn row, its units) – within a dp.
+     * The two hours' line midway where it has a line of its own (the pollen as points beside the
+     * alarm): its letters as far from the alarm's above as from the chart below (to the chart's first
+     * drawn row, its units) – within a dp.
      */
     @Test fun theTwoHoursLineMidwayBetweenTheAlarmAndTheChart() {
         alarmAt(day + 4 * 24 * h + 8 * h)
-        for (size in listOf(WidgetSize(426, 276), WidgetSize(426, 300), WidgetSize(360, 344))) {
+        for (size in listOf(WidgetSize(280, 200), WidgetSize(300, 210), WidgetSize(310, 220))) {
             val config = WidgetConfig(dateWithWeek = true, pollen = listOf(PollenType.BIRCH))
             val v = render(config, size, data(rainFrom = 40))
             val density = app.resources.displayMetrics.density
@@ -510,6 +511,7 @@ class WidgetTest {
             val line = v.findViewById<TextView>(R.id.widget_rain_text)
             val chart = v.findViewById<android.widget.ImageView>(R.id.widget_chart)
             assertTrue("$size", listOf(alarm, line, chart).all { it.visibility == View.VISIBLE })
+            assertTrue("$size", v.text(R.id.widget_pollen_dots).isNotEmpty())
             val ink = android.graphics.Rect()
             line.paint.getTextBounds(line.text.toString(), 0, line.text.length, ink)
             val above = v.topOf(line) + line.totalPaddingTop + line.layout.getLineBaseline(0) + ink.top - (v.topOf(alarm) + alarm.baseline)
@@ -517,6 +519,41 @@ class WidgetTest {
             val firstRow = (0 until bmp.height).first { y -> (0 until bmp.width).any { x -> bmp.getPixel(x, y) ushr 24 != 0 } }
             val below = v.topOf(chart) + firstRow - (v.topOf(line) + line.totalPaddingTop + line.layout.getLineBaseline(line.lineCount - 1))
             assertEquals("$size: above ${above / density} dp, below ${below / density} dp", above.toFloat(), below.toFloat(), 1.0f * density)
+        }
+    }
+
+    /**
+     * An alarm and no pollen beside it: the two hours' line in the alarm's line, at its right – it
+     * does not vanish, and the chart gains the line it leaves: as tall as without the alarm but for
+     * the room above that line.
+     */
+    @Test fun theTwoHoursLineBesideTheAlarm() {
+        val config = WidgetConfig(dateWithWeek = true)
+        val w = WidgetWeather.of(data(), now, config.pollen)
+        for (height in 150..320 step 5) {
+            val size = WidgetSize(400, height)
+            val with = WidgetLayout.of(config, size, alarm = "09:23", weather = w)
+            val without = WidgetLayout.of(config, size, alarm = null, weather = w)
+            if (!with.alarm || !with.chart) continue
+            assertTrue("$size: $with", with.midRain && !with.rainLine)
+            assertTrue("$size: ${with.chartDp} dp, without the alarm ${without.chartDp} dp", with.chartDp >= without.chartDp - 2f)
+        }
+        alarmAt(day + 4 * 24 * h + 8 * h)
+        for (rainFrom in listOf(null, 40)) {
+            val v = render(config, WidgetSize(400, 190), data(rainFrom = rainFrom))
+            val alarm = v.findViewById<TextView>(R.id.widget_alarm)
+            val line = v.findViewById<TextView>(R.id.widget_pollen_dots)
+            assertEquals(View.VISIBLE, alarm.visibility)
+            assertEquals(View.VISIBLE, line.visibility)
+            assertEquals(View.GONE, v.findViewById<View>(R.id.widget_rain_text).visibility)
+            assertTrue(line.text.toString(), line.text.startsWith(if (rainFrom == null) "Kein Niederschlag bis" else ""))
+            assertEquals(1, line.layout.lineCount)
+            assertEquals("$rainFrom: on the alarm's line", v.topOf(alarm) + alarm.baseline, v.topOf(line) + line.baseline)
+            // at the right, ending where the chart ends
+            val chart = v.findViewById<View>(R.id.widget_chart)
+            val right = v.leftOf(line) + line.totalPaddingLeft + line.layout.getLineRight(0)
+            assertEquals("$rainFrom", (v.leftOf(chart) + chart.width).toFloat(), right, 1f)
+            assertEquals(View.VISIBLE, chart.visibility)
         }
     }
 
@@ -918,6 +955,14 @@ class WidgetTest {
         var p = child.parent as View
         while (p !== this) { top += p.top; p = p.parent as View }
         return top
+    }
+
+    /** Where [child] stands from this view's left, in px. */
+    private fun ViewGroup.leftOf(child: View): Int {
+        var left = child.left
+        var p = child.parent as View
+        while (p !== this) { left += p.left; p = p.parent as View }
+        return left
     }
 
     /** The system's clock at a fixed time and date (a quoted pattern shows as it is): the pictures stay the same. */

@@ -248,7 +248,8 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   coloured points. The date with the month written out (the weekday where
   there is room) or in figures with the calendar week. Each part can be switched off; what does
   not fit its size it leaves out (from Android 12 on for each size the launcher shows it in – the widget finds its real size itself, also where the launcher reports other figures), the height left goes to the chart or spreads between the groups;
-  the line of the next two hours midway between the clock or alarm and the chart; ↻ at any size in
+  the line of the next two hours midway between the clock or alarm and the chart – with an alarm
+  at the right in its line where no pollen points stand there (the chart gains the line); ↻ at any size in
   the bottom right corner, "As of" before it where there is room, beside the chart on the line of
   its times. A tap on the time
   opens the alarms (also where the clock app answers the standard request not at all or only to apps allowed to set alarms, as on ColorOS),

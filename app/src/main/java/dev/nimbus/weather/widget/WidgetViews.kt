@@ -101,6 +101,8 @@ data class WidgetLines(val head: Float, val text: Float, val mid: Float, val sma
  * pollen – where it has no room over the chart, in the line under the columns ([midRain]).
  * The alarm on a line under the clock ([alarm]) where there is the
  * height for it – or small beside it ([alarmBeside]) where that line would cost the chart its room.
+ * With the alarm on its line and no pollen as points beside it, the two hours' line stands there
+ * at the right ([midRain]) where it fits: the line it leaves the chart takes.
  * The time of the data under the pollen beside the chart, on the line of the chart's times
  * ([statusSide]): it takes no line of its own, the chart has its height.
  */
@@ -227,8 +229,11 @@ data class WidgetLayout(
             // the chart only with something to draw; else, as when precipitation comes, the line comes first
             val chartWanted = rainWanted && rain?.eventful == true
             val rainFirst = rainWanted && (rain?.notice != null || !chartWanted)
-            /** The parts with the alarm [below] the clock or [beside] it (the figures smaller where it would not fit beside). */
-            fun plan(below: Boolean, beside: Boolean): Plan {
+            /**
+             * The parts with the alarm [below] the clock or [beside] it (the figures smaller where it
+             * would not fit beside); [rainBesideAlarm]: the two hours' line beside the alarm below.
+             */
+            fun plan(below: Boolean, beside: Boolean, rainBesideAlarm: Boolean = false): Plan {
                 var big = fitBig
                 val besideW = BESIDE_GAP + BESIDE_ICON + BESIDE_CHAR * (alarm?.length ?: 0) * fontScale
                 if (beside) big = minOf(big, (width - (if (bigWeather) WEATHER_FIX else 0f) - (if (rightWanted) GAP else 0f) - besideW) / perDp)
@@ -243,9 +248,9 @@ data class WidgetLayout(
                     return fits(top + line * rainLines) || rainLines == 2 && fits(top + line)
                 }
                 // precipitation coming, or nothing to draw: the line over the chart – else in the line under the columns
-                var rainLine = rainFirst && rainLineFits()
-                var midRain = false
-                if (rainFirst && !rainLine) midRain = rainW <= width - alarmW && (below || fits(midLine))
+                var midRain = rainBesideAlarm && below && rainWanted && rainW <= width - alarmW
+                var rainLine = rainFirst && !midRain && rainLineFits()
+                if (rainFirst && !rainLine && !midRain) midRain = rainW <= width - alarmW && (below || fits(midLine))
                 // the pollen: beside the chart, one under the other; without the chart all as gauges
                 // below, else as points in the line under the columns
                 var rows = 0
@@ -258,7 +263,7 @@ data class WidgetLayout(
                         !midRain && dotsW <= width - alarmW && (below || fits(midLine)) -> dots = true
                     }
                 }
-                if (rainWanted && !rainFirst) rainLine = rainLineFits()
+                if (rainWanted && !rainFirst && !midRain) rainLine = rainLineFits()
                 // beside the chart under the pollen: the chart reaches down to its line
                 val status = side || fits(STATUS * fontScale)
                 // no room for "As of": its line for the refresh alone, where that fits
@@ -269,7 +274,12 @@ data class WidgetLayout(
             val p = when {
                 !alarmWanted -> none
                 else -> {
-                    val under = plan(below = true, beside = false)
+                    // the two hours' line beside the alarm where the pollen do not stand there as points
+                    // and nothing else gives way: the chart gains its line
+                    val under = plan(below = true, beside = false).let { u ->
+                        plan(below = true, beside = false, rainBesideAlarm = true)
+                            .takeIf { b -> u.chart && b.midRain && !u.dots && b.chart && b.rows >= u.rows && (b.status || !u.status) } ?: u
+                    }
                     val by = if (bigClock) plan(below = false, beside = true).takeIf { it.big >= BIG_MIN } else null
                     val leftFits = height - headH - (if (bigClock || bigWeather) fitBig * BIG_LINE else 0f) >= midLine
                     // under the clock where there is the height – the pollen give way; the chart and a

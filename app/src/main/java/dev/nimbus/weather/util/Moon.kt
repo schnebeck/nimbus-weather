@@ -125,6 +125,25 @@ object Moon {
         return altitude(h, RAD * lat, c.dec) / RAD
     }
 
+    /** Whether the sun is up at [timeMs]: its upper limb over the horizon with refraction, as [sunTimes] has it. */
+    fun isDay(timeMs: Long, lat: Double, lon: Double) = sunAltitude(timeMs, lat, lon) + 0.833 >= 0
+
+    /**
+     * The next sunrise or sunset after [afterMs] (as [sunTimes] finds them) within two days; null
+     * where the sun crosses the horizon in none of them (polar day or night).
+     */
+    fun nextSunTurn(afterMs: Long, lat: Double, lon: Double): Long? {
+        val step = 5 * 60_000L
+        var prev = sunAltitude(afterMs, lat, lon) + 0.833
+        for (i in 1..576) {
+            val t = afterMs + i * step
+            val cur = sunAltitude(t, lat, lon) + 0.833
+            if ((prev < 0) != (cur < 0)) return t - step + (step * (prev / (prev - cur))).toLong()
+            prev = cur
+        }
+        return null
+    }
+
     /**
      * Sunrise and sunset (upper limb with refraction, −0.833°) of the day starting at
      * [dayStartMs], found by scanning in 5-minute steps; null when the sun does not cross.

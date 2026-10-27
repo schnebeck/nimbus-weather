@@ -253,7 +253,10 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   gains the line); the alarm's line close under the clock's figures, the chart close under it
   (Android 12 on); ↻ at any size in
   the bottom right corner, "As of" before it where there is room, beside the chart on the line of
-  its times. A tap on the time
+  its times – with no pollen beside it "As of" and its time at the right over ↻, ↻ on the line of
+  the chart's times, the chart down to the bottom. The symbol shows day or night by the sun at the
+  place when drawn; at sunrise and sunset the widget is drawn anew (not to the minute, mostly within
+  a few). A tap on the time
   opens the alarms (also where the clock app answers the standard request not at all or only to apps allowed to set alarms, as on ColorOS),
   on the date the calendar; the
   other parts lead to their place in Nimbus at the widget's place: the weather to the hourly

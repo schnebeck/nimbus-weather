@@ -64,7 +64,8 @@ class WidgetSizesTest {
     /**
      * The weather of [look]: "rain" – showers now (60 %), rain for the first half hour and again
      * from 11:15, sun and clouds by turns; "sunny" – clear by day, all sunshine, dry; "dull" –
-     * overcast by day, dry, no sunshine; "night" – clear by night, dry. Birch, grass and hazel.
+     * overcast by day, dry, no sunshine; "night" – clear by night, dry (at Honolulu: night there at
+     * 10:20 UTC – the widget takes day and night from the sun). Birch, grass and hazel.
      */
     private fun data(look: String = "rain"): WeatherData {
         val night = look == "night"
@@ -86,7 +87,8 @@ class WidgetSizesTest {
             PollenSourceKind.DWD, "Niedersachsen",
             listOf(PollenDay(day, mapOf(PollenType.BIRCH to 2.0f, PollenType.GRASS to 0.5f, PollenType.HAZEL to 1.5f))),
         )
-        val place = Place("p", "Hannover", latitude = 52.3759, longitude = 9.7320, isCurrentLocation = true)
+        val place = if (night) Place("p", "Honolulu", latitude = 21.31, longitude = -157.86, isCurrentLocation = true)
+            else Place("p", "Hannover", latitude = 52.3759, longitude = 9.7320, isCurrentLocation = true)
         return WeatherData(place, "UTC", 0, cur, hourly, daily, minutely, pollen = pollen, sources = emptyList(), fetchedAt = now - 5 * 60_000L)
     }
 
@@ -142,7 +144,8 @@ class WidgetSizesTest {
             if (v.width > 0 && v.height > 0 && (x < 0 || y < 0 || x + v.width > root.width + 1 || y + v.height > root.height + 1)) found += "$id outside (${x},${y} ${v.width}×${v.height})"
             if (v is TextView && v.layout != null && v.layout.lineCount > 0 && v.layout.getEllipsisCount(v.layout.lineCount - 1) > 0) found += "$id shortened: ${v.text}"
             if (v is TextView && v.layout != null && v.layout.height > v.height + 1) found += "$id taller than its view"
-            if (v is TextView && v.layout != null && v.text.isNotEmpty() && (0 until v.layout.lineCount).any { v.layout.getLineWidth(it) > v.width - v.totalPaddingLeft - v.totalPaddingRight + 1 }) found += "$id cut at the side: ${v.text}"
+            // the letters' width, a line's break not counted
+            if (v is TextView && v.layout != null && v.text.isNotEmpty() && (0 until v.layout.lineCount).any { v.layout.getLineMax(it) > v.width - v.totalPaddingLeft - v.totalPaddingRight + 1 }) found += "$id cut at the side: ${v.text}"
             if (v is ViewGroup) for (i in 0 until v.childCount) walk(v.getChildAt(i))
         }
         walk(root)

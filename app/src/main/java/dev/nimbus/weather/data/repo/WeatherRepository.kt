@@ -208,6 +208,9 @@ class WeatherRepository(
             CurrentWeather(h.time, h.temperature, h.apparentTemperature, h.condition, h.isDay, h.humidity, null, h.pressure,
                 h.windSpeed, h.windGust, h.windDirection, h.cloudCover, h.visibility, h.uvIndex, h.precipitation)
         } ?: throw IllegalStateException("No current weather")
+        // day or night from the sun at the place now: the model's flag stands for the quarter or the
+        // hour gone by, and a full hour puts the sun's rise and set on its full hours
+        current = current.copy(isDay = dev.nimbus.weather.util.Moon.isDay(clock(), lat, lon))
         // only the measured values that stand for the place (its height, near the model)
         val measured = NowWeather.pickObservation(obs, forecast.elevation, current.temperature, clock())
         if (measured != null) {

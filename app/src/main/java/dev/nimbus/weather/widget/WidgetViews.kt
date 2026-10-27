@@ -106,7 +106,10 @@ data class WidgetLines(val head: Float, val text: Float, val mid: Float, val sma
  * reaches up into the room under the clock's figures ([tuckDp]: so much higher), the chart
  * close under it.
  * The time of the data under the pollen beside the chart, on the line of the chart's times
- * ([statusSide]): it takes no line of its own, the chart has its height.
+ * ([statusSide]): it takes no line of its own, the chart has its height. With nothing beside the
+ * chart and nothing under it, "As of" and its time one over the other at its right over the
+ * refresh in the corner ([statusStack]), the refresh on the line of the chart's times: the chart a
+ * little narrower, but as tall as the room down to the bottom.
  */
 data class WidgetLayout(
     val clock: Boolean, val date: Boolean, val alarm: Boolean, val alarmBeside: Boolean, val weather: Boolean, val right: Boolean,
@@ -117,6 +120,7 @@ data class WidgetLayout(
     /** Not even for that line: the parts keep [REFRESH_ROOM] free at the right for the refresh in the corner. */
     val refreshRoom: Boolean = false,
     val statusSide: Boolean = false,
+    val statusStack: Boolean = false,
     /** The line under the clock so much higher than its place below the columns, in dp. */
     val tuckDp: Float = 0f,
 ) {
@@ -169,6 +173,8 @@ data class WidgetLayout(
         private const val SIDE_MIN = 92f
         /** The line of "As of" with the refresh beside it: kept free under the pollen beside the chart too. */
         const val STATUS = 24f
+        /** Under "As of" and its time beside the chart (the margin under them): the refresh in the corner. */
+        const val STACK_REFRESH = 18f
         /** The line of "As of" without the room around it: the refresh alone in it. */
         private const val STATUS_LINE = 17f
         /** Kept free at the right for the refresh in the corner where "As of" has no line. */
@@ -236,7 +242,7 @@ data class WidgetLayout(
             class Plan(
                 val big: Float, val below: Boolean, val beside: Boolean, val chart: Boolean, val rows: Int,
                 val dots: Boolean, val side: Boolean, val rainLine: Boolean, val midRain: Boolean, val status: Boolean, val chartDp: Float,
-                val refreshLine: Boolean = false, val tuck: Float = 0f,
+                val refreshLine: Boolean = false, val tuck: Float = 0f, val stack: Boolean = false,
             ) {
                 val rainShown get() = rainLine || midRain
             }
@@ -286,10 +292,13 @@ data class WidgetLayout(
                 }
                 if (rainWanted && !rainFirst && !midRain) rainLine = rainLineFits()
                 // beside the chart under the pollen: the chart reaches down to its line
-                val status = side || fits(STATUS * fontScale)
+                // nothing beside the chart and nothing under it: "As of" over the refresh at its right, where
+                // the chart is tall enough for the two lines and the refresh under its units' line
+                val stack = chart && !side && rows == 0 && CHART_MIN + left + AXIS >= 3 * lines.small + STACK_REFRESH
+                val status = side || stack || fits(STATUS * fontScale)
                 // no room for "As of": its line for the refresh alone, where that fits
                 val refreshLine = !status && fits(STATUS_LINE * fontScale)
-                return Plan(big, below, beside, chart, rows, dots, side, rainLine, midRain, status, if (chart) CHART_MIN + left.coerceAtLeast(0f) else 0f, refreshLine, tucked)
+                return Plan(big, below, beside, chart, rows, dots, side, rainLine, midRain, status, if (chart) CHART_MIN + left.coerceAtLeast(0f) else 0f, refreshLine, tucked, stack)
             }
             val none = plan(below = false, beside = false)
             val p = when {
@@ -323,7 +332,7 @@ data class WidgetLayout(
                 secondLine = secondLine, rain = p.chart || p.rainLine, rainLine = p.rainLine, midRain = p.midRain, chart = p.chart, chartDp = p.chartDp,
                 pollenRows = p.rows, pollenPerRow = perRow, pollenDots = p.dots, pollenSide = p.side,
                 pollenSideRows = if (p.side) ((p.chartDp + AXIS - STATUS * fontScale) / lines.small).toInt().coerceIn(1, 6) else 0, status = p.status, bigDp = p.big, longDate = longDate, widthDp = width,
-                refreshLine = p.refreshLine, statusSide = p.side, tuckDp = p.tuck,
+                refreshLine = p.refreshLine, statusSide = p.side, statusStack = p.stack, tuckDp = p.tuck,
             )
         }
     }
@@ -496,6 +505,16 @@ object WidgetViews {
             v.setTextViewText(R.id.widget_min, "↓" + Units.temp(weather.min, unit))
         }
 
+        // "As of" over its time beside the chart: the string's words on the first line, the time on the second
+        val asOfTime = weather?.let { if (tf.isSameDay(it.asOf, now)) tf.time(it.asOf) else tf.dayMonth(it.asOf) + " " + tf.time(it.asOf) }
+        val stackText = when {
+            updating -> res.getString(R.string.widget_updating)
+            asOfTime == null -> ""
+            else -> res.getString(R.string.widget_as_of, "\u0000").split('\u0000').joinToString(" ") { it.trim() }.trim() + "\n" + asOfTime
+        }
+        val stackFont = Paint().apply { textSize = 11 * res.configuration.fontScale }
+        val stackDp = stackText.lines().maxOfOrNull { stackFont.measureText(it) } ?: 0f
+
         // the next two hours: the precipitation card's line, the chart of precipitation and sunshine
         val lineShown = l.rainLine && rain != null && rainText != null
         val chartShown = l.chart && rain != null && rainText != null
@@ -516,7 +535,12 @@ object WidgetViews {
             if (l.chart) {
                 val fontScale = res.configuration.fontScale
                 val chartPx = ((l.chartDp + AXIS_DP * fontScale) * density).toInt()
-                val chartW = if (l.pollenSide) (l.widthDp - 12f) * 2f / 3f else l.widthDp
+                val chartW = when {
+                    l.pollenSide -> (l.widthDp - 12f) * 2f / 3f
+                    // beside "As of" over the refresh, 6 dp before it
+                    l.statusStack -> l.widthDp - 6f - stackDp
+                    else -> l.widthDp
+                }
                 v.setImageViewBitmap(R.id.widget_chart, chart(rain, (chartW.coerceAtLeast(60f) * density).toInt(), chartPx, density, scales(context, precip, locale, rainTop(rain, precip)), tf, fontScale))
             }
         }
@@ -567,8 +591,10 @@ object WidgetViews {
         }
 
         // when the data were fetched; a tap on the refresh in the corner – there at any size – fetches them anew
-        v.visible(R.id.widget_status, (l.status && !l.statusSide) || l.refreshLine)
+        v.visible(R.id.widget_status, (l.status && !l.statusSide && !l.statusStack) || l.refreshLine)
         v.visible(R.id.widget_as_of_side, l.statusSide)
+        v.visible(R.id.widget_as_of_stack, l.statusStack)
+        if (l.statusStack) v.setTextViewText(R.id.widget_as_of_stack, stackText)
         // its line kept for the refresh, the words left out
         v.setViewVisibility(R.id.widget_as_of, if (l.status) View.VISIBLE else View.INVISIBLE)
         val pad = (14 * density).toInt()

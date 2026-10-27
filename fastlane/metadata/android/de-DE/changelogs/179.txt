@@ -1,0 +1,2 @@
+• Widget ohne Pollen: „Stand“ und Uhrzeit rechts über dem ↻, das ↻ auf der Zeile der Uhrzeiten – das Diagramm reicht bis unten und wird deutlich höher
+• Tag oder Nacht nach dem Sonnenstand am Ort: Das Symbol wechselt bei Sonnenauf- und -untergang, nicht erst mit dem nächsten Abruf; das Widget zeichnet sich dazu neu

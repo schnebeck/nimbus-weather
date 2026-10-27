@@ -70,6 +70,7 @@ class NimbusWidget : AppWidgetProvider() {
     override fun onDisabled(context: Context) {
         Widgets.unschedule(context)
         Widgets.cancelNewDay(context)
+        Widgets.cancelSunTurn(context)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -79,8 +80,9 @@ class NimbusWidget : AppWidgetProvider() {
                 async { Widgets.show(context, listOf(id), updating = true) }
                 Widgets.fetchNow(context, forced = true)
             }
-            // the alarm's time, the date's language, the hour of the place, a new day (its week): shown anew
-            ACTION_NEW_DAY, android.app.AlarmManager.ACTION_NEXT_ALARM_CLOCK_CHANGED, Intent.ACTION_LOCALE_CHANGED,
+            // the alarm's time, the date's language, the hour of the place, a new day (its week), the sun
+            // risen or set (the symbol by day or night): shown anew
+            ACTION_NEW_DAY, ACTION_SUN_TURN, android.app.AlarmManager.ACTION_NEXT_ALARM_CLOCK_CHANGED, Intent.ACTION_LOCALE_CHANGED,
             Intent.ACTION_TIMEZONE_CHANGED, Intent.ACTION_TIME_CHANGED -> async { Widgets.showAll(context) }
             else -> super.onReceive(context, intent)
         }
@@ -97,6 +99,7 @@ class NimbusWidget : AppWidgetProvider() {
     companion object {
         const val ACTION_REFRESH = "dev.nimbus.weather.widget.REFRESH"
         const val ACTION_NEW_DAY = "dev.nimbus.weather.widget.NEW_DAY"
+        const val ACTION_SUN_TURN = "dev.nimbus.weather.widget.SUN_TURN"
     }
 }
 
@@ -186,6 +189,27 @@ object Widgets {
         context.getSystemService(android.app.AlarmManager::class.java)?.cancel(newDay(context))
     }
 
+    /**
+     * Shown anew a minute after the next sunrise or sunset at any of [places] after [now] – the
+     * symbol turns to night or day then, not with the next fetch. Not to the minute (no exact
+     * alarm): the system sends it within a few.
+     */
+    fun scheduleSunTurn(context: Context, places: List<Place>, now: Long) {
+        val am = context.getSystemService(android.app.AlarmManager::class.java) ?: return
+        val next = places.mapNotNull { dev.nimbus.weather.util.Moon.nextSunTurn(now, it.latitude, it.longitude) }.minOrNull()
+        if (next == null) { am.cancel(sunTurn(context)); return }
+        runCatching { am.set(android.app.AlarmManager.RTC, next + 60_000L, sunTurn(context)) }
+    }
+
+    fun cancelSunTurn(context: Context) {
+        context.getSystemService(android.app.AlarmManager::class.java)?.cancel(sunTurn(context))
+    }
+
+    private fun sunTurn(context: Context) = android.app.PendingIntent.getBroadcast(
+        context, 1, Intent(context, NimbusWidget::class.java).setAction(NimbusWidget.ACTION_SUN_TURN),
+        android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE,
+    )
+
     private fun newDay(context: Context) = android.app.PendingIntent.getBroadcast(
         context, 0, Intent(context, NimbusWidget::class.java).setAction(NimbusWidget.ACTION_NEW_DAY),
         android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE,
@@ -227,6 +251,8 @@ object Widgets {
             runCatching { manager.updateAppWidget(id, views) }
         }
         scheduleNewDay(app)
+        // the places of all widgets, not only of those just shown: one alarm stands for them all
+        scheduleSunTurn(app, ids(app).mapNotNull { placeOf(store, configs.of(it)) }, now)
     }
 
     /**

@@ -99,7 +99,8 @@ data class WidgetWeather(
                 timezone = data.timezone,
                 temperature = c.temperature,
                 condition = c.condition,
-                isDay = c.isDay,
+                // day or night from the sun at the place at [now]: the data's flag stands for their fetch
+                isDay = dev.nimbus.weather.util.Moon.isDay(now, data.place.latitude, data.place.longitude),
                 wind = windiness(c.windSpeed, c.windGust),
                 max = today?.tempMax,
                 min = today?.tempMin,

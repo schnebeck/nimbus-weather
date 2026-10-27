@@ -1,0 +1,2 @@
+• Widget without pollen: "As of" and its time at the right over ↻, ↻ on the line of the chart's times – the chart reaches down to the bottom and grows much taller
+• Day or night by the sun at the place: the symbol turns at sunrise and sunset, not with the next fetch; the widget is drawn anew for it

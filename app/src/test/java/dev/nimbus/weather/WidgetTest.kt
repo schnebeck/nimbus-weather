@@ -352,7 +352,8 @@ class WidgetTest {
         val v = render(WidgetConfig(), WidgetSize(320, 200), dull)
         assertEquals(View.GONE, v.findViewById<View>(R.id.widget_chart).visibility)
         assertEquals("Kein Niederschlag, keine Sonne bis 12:30", v.text(R.id.widget_rain_text))
-        val night = dull.copy(current = dull.current.copy(isDay = false))
+        // night at the place (Honolulu at 10:20 UTC): the sunshine not missed
+        val night = data(rainFrom = 130, place = Place("h", "Honolulu", latitude = 21.31, longitude = -157.86)).let { d -> d.copy(minutely = d.minutely.map { it.copy(sunshine = 0.0) }) }
         assertEquals("Kein Niederschlag bis 12:30", render(WidgetConfig(), WidgetSize(320, 200), night).text(R.id.widget_rain_text))
         // precipitation coming, two rows of cells: the line beside the alarm, the chart below
         alarmAt(day + 30 * h)
@@ -476,9 +477,10 @@ class WidgetTest {
         val w = WidgetWeather.of(data(), now, config.pollen)
         val l = WidgetLayout.of(config, size, alarm = "Sa 08:30", weather = w)
         assertTrue("$l", l.pollenSide && l.statusSide && l.status && l.chart)
+        // without the pollen "As of" over the refresh beside the chart: the chart down to the bottom as well
         val own = WidgetLayout.of(config.copy(pollen = emptyList()), size, alarm = "Sa 08:30", weather = WidgetWeather.of(data(), now, emptyList()))
-        assertTrue("$own", !own.statusSide && own.status)
-        assertEquals(WidgetLayout.STATUS, l.chartDp - own.chartDp, 0.01f)
+        assertTrue("$own", !own.statusSide && own.statusStack && own.status)
+        assertEquals(0f, l.chartDp - own.chartDp, 0.01f)
 
         val v = render(config, size, data())
         val density = app.resources.displayMetrics.density
@@ -554,10 +556,10 @@ class WidgetTest {
             assertTrue(line.text.toString(), line.text.startsWith(if (rainFrom == null) "Kein Niederschlag bis" else ""))
             assertEquals(1, line.layout.lineCount)
             assertEquals("$rainFrom: on the alarm's line", v.topOf(alarm) + alarm.baseline, v.topOf(line) + line.baseline)
-            // at the right, ending where the chart ends
+            // at the right, ending where the content ends
             val chart = v.findViewById<View>(R.id.widget_chart)
             val right = v.leftOf(line) + line.totalPaddingLeft + line.layout.getLineRight(0)
-            assertEquals("$rainFrom", (v.leftOf(chart) + chart.width).toFloat(), right, 1f)
+            assertEquals("$rainFrom", v.width - 14 * app.resources.displayMetrics.density, right, 1f)
             assertEquals(View.VISIBLE, chart.visibility)
             // the letters of the alarm's line close under the clock's figures, clear of them and of the weather
             val density = app.resources.displayMetrics.density
@@ -579,6 +581,79 @@ class WidgetTest {
             val underAlarm = (v.topOf(chart) + firstRow - (v.topOf(alarm) + alarm.baseline)) / density
             assertTrue("$rainFrom: the chart ${underAlarm} dp under the alarm's line", underAlarm in 4f..13f)
         }
+    }
+
+    /**
+     * No pollen beside the chart and nothing under it: "As of" over its time at the right, over the
+     * refresh in the corner – the refresh on the line of the chart's times, the chart down to the
+     * bottom. With the pollen beside it: as before.
+     */
+    @Test fun asOfOverTheRefreshBesideTheChart() {
+        alarmAt(day + 4 * 24 * h + 8 * h)
+        val config = WidgetConfig(dateWithWeek = true)
+        val size = WidgetSize(400, 190)
+        val l = WidgetLayout.of(config, size, alarm = "Mo 08:00", weather = WidgetWeather.of(data(), now, config.pollen))
+        assertTrue("$l", l.statusStack && l.status && l.chart)
+        val v = render(config, size, data())
+        val density = app.resources.displayMetrics.density
+        val stack = v.findViewById<TextView>(R.id.widget_as_of_stack)
+        assertEquals(View.VISIBLE, stack.visibility)
+        assertEquals(View.GONE, v.findViewById<View>(R.id.widget_status).visibility)
+        assertEquals("Stand\n10:15", stack.text.toString())
+        assertEquals(2, stack.layout.lineCount)
+        for (k in 0 until stack.layout.lineCount) assertEquals(0, stack.layout.getEllipsisCount(k))
+        // at the right, where the content ends
+        assertEquals((v.width - 14 * density), (v.leftOf(stack) + stack.width).toFloat(), 1f)
+        // the chart down to the bottom of the content
+        val chart = v.findViewById<View>(R.id.widget_chart)
+        assertEquals(v.height - 8 * density, (v.topOf(chart) + chart.height).toFloat(), density)
+        // the refresh's middle on the line of the chart's times (their letters' middle), within 2 dp;
+        // "As of" above it, clear of it
+        val refresh = v.findViewById<View>(R.id.widget_refresh)
+        val times = android.graphics.Paint().apply { textSize = 11 * density }
+        val timesMiddle = v.topOf(chart) + chart.height - times.descent() - times.textSize * 0.36f
+        assertEquals(timesMiddle, v.topOf(refresh) + refresh.height / 2f, 2 * density)
+        val stackBottom = v.topOf(stack) + stack.height
+        assertTrue("${stackBottom / density} dp, the refresh's icon from ${(v.topOf(refresh) + refresh.paddingTop) / density} dp", stackBottom <= v.topOf(refresh) + refresh.paddingTop)
+        // the pollen beside the chart: "As of" under them as before
+        val pollen = WidgetConfig(dateWithWeek = true, pollen = listOf(PollenType.BIRCH))
+        val beside = WidgetLayout.of(pollen, WidgetSize(320, 200), alarm = "Mo 08:00", weather = WidgetWeather.of(data(), now, pollen.pollen))
+        assertTrue("$beside", beside.statusSide && !beside.statusStack)
+    }
+
+    /**
+     * The symbol by day or night from the sun at the place when the widget is drawn: it turns at
+     * sunset and at sunrise, not with the next fetch. A minute after the next sunrise or sunset of
+     * the widgets' places the widget is shown anew; none where the sun neither rises nor sets.
+     */
+    @Test fun theSymbolTurnsWithTheSun() {
+        val d = data()
+        val lat = d.place.latitude; val lon = d.place.longitude
+        val (rise, set) = dev.nimbus.weather.util.Moon.sunTimes(day, lat, lon)
+        val m = 60_000L
+        assertTrue(d.current.isDay)
+        assertTrue(WidgetWeather.of(d, set!! - 2 * m, emptyList()).isDay)
+        assertFalse(WidgetWeather.of(d, set + 2 * m, emptyList()).isDay)
+        assertFalse(WidgetWeather.of(d, rise!! + 24 * h - 2 * m, emptyList()).isDay)
+        val nextRise = dev.nimbus.weather.util.Moon.sunTimes(day + 24 * h, lat, lon).first!!
+        assertTrue(WidgetWeather.of(d, nextRise + 2 * m, emptyList()).isDay)
+
+        val am = shadowOf(app.getSystemService(android.app.AlarmManager::class.java))
+        fun sunAlarm() = am.scheduledAlarms.filter { shadowOf(it.operation).savedIntent.action == dev.nimbus.weather.widget.NimbusWidget.ACTION_SUN_TURN }
+        // at 10:20: the sunset, a minute after it
+        Widgets.scheduleSunTurn(app, listOf(d.place), now)
+        assertEquals((set + m).toDouble(), sunAlarm().single().triggerAtMs.toDouble(), m.toDouble())
+        // after it: the next sunrise
+        Widgets.scheduleSunTurn(app, listOf(d.place), set + 2 * m)
+        assertEquals((nextRise + m).toDouble(), sunAlarm().single().triggerAtMs.toDouble(), m.toDouble())
+        // two places: the earlier of their turns (Lisbon's sunset comes later than Hannover's)
+        val lisbon = Place("l", "Lisboa", latitude = 38.72, longitude = -9.14)
+        Widgets.scheduleSunTurn(app, listOf(lisbon, d.place), now)
+        assertEquals((set + m).toDouble(), sunAlarm().single().triggerAtMs.toDouble(), m.toDouble())
+        // the polar night at Longyearbyen in December: no turn, no alarm
+        val svalbard = Place("s", "Longyearbyen", latitude = 78.22, longitude = 15.65)
+        Widgets.scheduleSunTurn(app, listOf(svalbard), java.time.Instant.parse("2026-12-15T12:00:00Z").toEpochMilli())
+        assertTrue(sunAlarm().isEmpty())
     }
 
     /**

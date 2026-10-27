@@ -538,6 +538,21 @@
                         android:textColor="@color/widget_text_dim"
                         android:textSize="11sp" />
                 </FrameLayout>
+
+                <!-- no pollen beside the chart: "As of" and its time one over the other at the right, over
+                     the refresh in the corner on the line of the chart's times – the chart a little
+                     narrower, as tall as the room down to the bottom -->
+                <TextView
+                    android:id="@+id/widget_as_of_stack"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_marginStart="6dp"
+                    android:gravity="end"
+                    android:layout_marginBottom="18dp"
+                    android:maxLines="2"
+                    android:textColor="@color/widget_text_dim"
+                    android:textSize="11sp" />
             </LinearLayout>
         </LinearLayout>
 

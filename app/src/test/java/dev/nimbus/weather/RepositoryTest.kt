@@ -125,6 +125,19 @@ class RepositoryTest {
      * MOSMIX at Berlin-Tempelhof (4 km, 48 m) says overcast all along: the hours' sky weighed with
      * it – no sunny hour left, the sun's minutes MOSMIX's –, the source named.
      */
+    /**
+     * Day or night "now" from the sun at the place at the clock: a few minutes before sunset day,
+     * a few after it night – not the model's flag of the quarter or the hour gone by.
+     */
+    @Test
+    fun `day or night now from the sun at the place`() = runTest {
+        val day = java.time.Instant.parse("2026-09-28T00:00:00Z").toEpochMilli()
+        val set = dev.nimbus.weather.util.Moon.sunTimes(day, berlin.latitude, berlin.longitude).second!!
+        val settings = Settings(useStationObservations = false)
+        assertTrue(repo(set - 3 * 60_000L).load(berlin, settings).current.isDay)
+        assertTrue(!repo(set + 3 * 60_000L).load(berlin, settings).current.isDay)
+    }
+
     @Test
     fun `the sky of the hours weighed with MOSMIX`() = runTest {
         val start = 1_790_625_600L                      // the forecast fixture's first hour

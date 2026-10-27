@@ -280,7 +280,7 @@ data class BathingSite(
 
 /** A data source that contributed to a forecast; rendered localized in the UI. */
 @Serializable
-enum class SourceKind { MODEL_DWD_ICON, MODEL_ECMWF, MODEL_METEO_FRANCE, MODEL_REGIONAL, MODEL_BEST_MATCH, GAP_FILL, DWD_STATION, STATION, DWD_WARNINGS, CAMS, COMMUNITY, DWD_POLLEN, PEGELONLINE, NLWKN, GAUGES, LHP_ALERTS, BATHING, RADAR_NOW, RADAR_NOWCAST }
+enum class SourceKind { MODEL_DWD_ICON, MODEL_ECMWF, MODEL_METEO_FRANCE, MODEL_REGIONAL, MODEL_BEST_MATCH, GAP_FILL, DWD_STATION, STATION, DWD_WARNINGS, CAMS, COMMUNITY, DWD_POLLEN, PEGELONLINE, NLWKN, GAUGES, LHP_ALERTS, BATHING, RADAR_NOW, RADAR_NOWCAST, MOSMIX }
 
 @Serializable
 data class Source(
@@ -292,6 +292,8 @@ data class Source(
     val part: ModelPart? = null,
     /** The measuring network of a [SourceKind.STATION]. */
     val network: StationNetwork? = null,
+    /** How far from the place the station of a [SourceKind.MOSMIX] stands. */
+    val distanceKm: Double? = null,
 )
 
 /** A network of weather stations whose measurements replace model values: its name and who delivers them. */

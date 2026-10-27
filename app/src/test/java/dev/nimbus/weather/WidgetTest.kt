@@ -463,6 +463,63 @@ class WidgetTest {
         assertTrue("${bottom / density} dp", bottom <= v.height - 8 * density + 0.5f)
     }
 
+    /**
+     * The pollen beside the chart: the time of the data under them, its letters on the line of the
+     * chart's times – the chart reaching down to the bottom, its height gained by the chart; the
+     * pollen above it, clear of it and of the refresh.
+     */
+    @Test fun theTimeOfTheDataOnTheLineOfTheChartsTimes() {
+        alarmAt(day + 4 * 24 * h + 8 * h)
+        val config = WidgetConfig(dateWithWeek = true, pollen = listOf(PollenType.BIRCH, PollenType.GRASS, PollenType.HAZEL))
+        val size = WidgetSize(426, 276)
+        val w = WidgetWeather.of(data(), now, config.pollen)
+        val l = WidgetLayout.of(config, size, alarm = "Sa 08:30", weather = w)
+        assertTrue("$l", l.pollenSide && l.statusSide && l.status && l.chart)
+        val own = WidgetLayout.of(config.copy(pollen = emptyList()), size, alarm = "Sa 08:30", weather = WidgetWeather.of(data(), now, emptyList()))
+        assertTrue("$own", !own.statusSide && own.status)
+        assertEquals(WidgetLayout.STATUS, l.chartDp - own.chartDp, 0.01f)
+
+        val v = render(config, size, data())
+        val density = app.resources.displayMetrics.density
+        val asOf = v.findViewById<TextView>(R.id.widget_as_of_side)
+        assertEquals(View.VISIBLE, asOf.visibility)
+        assertEquals(View.GONE, v.findViewById<View>(R.id.widget_status).visibility)
+        val chart = v.findViewById<View>(R.id.widget_chart)
+        // the chart's times written at its bottom, standing on their descent (10 sp × 1.1)
+        val times = android.graphics.Paint().apply { textSize = 11 * density }
+        val timesLine = v.topOf(chart) + chart.height - times.descent()
+        val asOfLine = v.topOf(asOf) + asOf.baseline
+        assertEquals("the lines of the chart's times and of the time of the data", timesLine, asOfLine.toFloat(), 1.0f * density)
+        // the pollen clear of the time of the data
+        val rows = listOf(R.id.widget_side_0, R.id.widget_side_1, R.id.widget_side_2).map { v.findViewById<View>(it) }.filter { it.visibility == View.VISIBLE }
+        assertTrue(rows.isNotEmpty())
+        assertTrue(rows.all { v.topOf(it) + it.height <= v.topOf(asOf) })
+    }
+
+    /**
+     * The two hours' line midway: its letters as far from the alarm's above as from the chart below
+     * (to the chart's first drawn row, its units) – within a dp.
+     */
+    @Test fun theTwoHoursLineMidwayBetweenTheAlarmAndTheChart() {
+        alarmAt(day + 4 * 24 * h + 8 * h)
+        for (size in listOf(WidgetSize(426, 276), WidgetSize(426, 300), WidgetSize(360, 344))) {
+            val config = WidgetConfig(dateWithWeek = true, pollen = listOf(PollenType.BIRCH))
+            val v = render(config, size, data(rainFrom = 40))
+            val density = app.resources.displayMetrics.density
+            val alarm = v.findViewById<TextView>(R.id.widget_alarm)
+            val line = v.findViewById<TextView>(R.id.widget_rain_text)
+            val chart = v.findViewById<android.widget.ImageView>(R.id.widget_chart)
+            assertTrue("$size", listOf(alarm, line, chart).all { it.visibility == View.VISIBLE })
+            val ink = android.graphics.Rect()
+            line.paint.getTextBounds(line.text.toString(), 0, line.text.length, ink)
+            val above = v.topOf(line) + line.totalPaddingTop + line.layout.getLineBaseline(0) + ink.top - (v.topOf(alarm) + alarm.baseline)
+            val bmp = (chart.drawable as android.graphics.drawable.BitmapDrawable).bitmap
+            val firstRow = (0 until bmp.height).first { y -> (0 until bmp.width).any { x -> bmp.getPixel(x, y) ushr 24 != 0 } }
+            val below = v.topOf(chart) + firstRow - (v.topOf(line) + line.totalPaddingTop + line.layout.getLineBaseline(line.lineCount - 1))
+            assertEquals("$size: above ${above / density} dp, below ${below / density} dp", above.toFloat(), below.toFloat(), 1.0f * density)
+        }
+    }
+
     /** The widget may stand on the lock screen too, where the system offers it. */
     @Test fun onTheLockScreenToo() {
         val info = java.io.File("src/main/res/xml/widget_info.xml").readText()
@@ -510,7 +567,9 @@ class WidgetTest {
         assertEquals(View.VISIBLE, v.findViewById<View>(R.id.widget_date).visibility)
         assertEquals("12°", v.text(R.id.widget_temp))
         assertEquals("↑14°", v.text(R.id.widget_max))
-        assertEquals("Stand 10:15", v.text(R.id.widget_as_of))
+        // the pollen beside the chart: the time of the data under them
+        assertEquals("Stand 10:15", v.text(R.id.widget_as_of_side))
+        assertEquals(View.GONE, v.findViewById<View>(R.id.widget_status).visibility)
     }
 
     /** A tap on the time opens the alarms, on the date the calendar at today, on the weather the place's page. */
@@ -852,6 +911,14 @@ class WidgetTest {
     }
 
     private fun ViewGroup.text(id: Int) = findViewById<TextView>(id).text.toString()
+
+    /** Where [child] stands from this view's top, in px. */
+    private fun ViewGroup.topOf(child: View): Int {
+        var top = child.top
+        var p = child.parent as View
+        while (p !== this) { top += p.top; p = p.parent as View }
+        return top
+    }
 
     /** The system's clock at a fixed time and date (a quoted pattern shows as it is): the pictures stay the same. */
     private fun ViewGroup.fixClocks() {

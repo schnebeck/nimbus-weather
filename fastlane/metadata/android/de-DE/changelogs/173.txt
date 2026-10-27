@@ -1,0 +1,3 @@
+• Sonne, Wolken und Nebel: die Vorhersage wird mit DWD MOSMIX abgeglichen – Hochnebel bleibt nicht mehr „sonnig“, in App und Widget
+• Meldet die Station den Himmel bedeckt, zeigt Nimbus jetzt keine Sonne
+• Widget: „Stand“ neben dem Diagramm auf der Zeile seiner Uhrzeiten, das Diagramm dadurch höher; der Ausblick mittig zwischen Wecker und Diagramm; Tiefsttemperatur in derselben Farbe wie die anderen

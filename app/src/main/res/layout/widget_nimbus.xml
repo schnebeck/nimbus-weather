@@ -245,7 +245,7 @@
                             android:layout_height="wrap_content"
                             android:maxLines="1"
                             android:includeFontPadding="false"
-                            android:textColor="@color/widget_text_dim"
+                            android:textColor="@color/widget_text"
                             android:textSize="13sp" />
                     </LinearLayout>
                 </LinearLayout>
@@ -313,28 +313,36 @@
             android:layout_weight="1"
             android:orientation="vertical" />
 
-        <!-- below, over the whole width: the next two hours, the pollen, the time of the data -->
+        <!-- below, over the whole width: the next two hours, the pollen, the time of the data; the
+             two hours' line midway between what stands above it and the chart (their room above
+             set by the widget) -->
+        <TextView
+            android:id="@+id/widget_rain_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="@color/widget_text"
+            android:textSize="13sp" />
+
+        <LinearLayout
+            android:id="@+id/widget_gap_chart"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical" />
+
         <LinearLayout
             android:id="@+id/widget_rain"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
             android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/widget_rain_text"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="2"
-                android:textColor="@color/widget_text"
-                android:textSize="13sp" />
-
-            <!-- the chart on two thirds, beside it the pollen flying, one under the other -->
+            <!-- the chart on two thirds, beside it the pollen flying, one under the other – and
+                 under them the time of the data, on the line of the chart's times -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
                 android:orientation="horizontal">
 
                 <ImageView
@@ -345,173 +353,191 @@
                     android:importantForAccessibility="no"
                     android:scaleType="fitXY" />
 
-                <LinearLayout
+                <FrameLayout
                     android:id="@+id/widget_side"
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
+                    android:layout_height="match_parent"
                     android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:layout_weight="1">
 
+                    <!-- the pollen in the middle of the height the time of the data leaves them -->
+                    <LinearLayout
+                        android:id="@+id/widget_side_rows"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center_vertical"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/widget_side_quiet"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:maxLines="3"
+                            android:textColor="@color/widget_text_dim"
+                            android:textSize="12sp" />
+
+                        <LinearLayout
+                            android:id="@+id/widget_side_0"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/widget_side_0_name"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:textColor="@color/widget_text"
+                                android:textSize="12sp" />
+
+                            <ImageView
+                                android:id="@+id/widget_side_0_gauge"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:importantForAccessibility="no" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/widget_side_1"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/widget_side_1_name"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:textColor="@color/widget_text"
+                                android:textSize="12sp" />
+
+                            <ImageView
+                                android:id="@+id/widget_side_1_gauge"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:importantForAccessibility="no" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/widget_side_2"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/widget_side_2_name"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:textColor="@color/widget_text"
+                                android:textSize="12sp" />
+
+                            <ImageView
+                                android:id="@+id/widget_side_2_gauge"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:importantForAccessibility="no" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/widget_side_3"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/widget_side_3_name"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:textColor="@color/widget_text"
+                                android:textSize="12sp" />
+
+                            <ImageView
+                                android:id="@+id/widget_side_3_gauge"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:importantForAccessibility="no" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/widget_side_4"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/widget_side_4_name"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:textColor="@color/widget_text"
+                                android:textSize="12sp" />
+
+                            <ImageView
+                                android:id="@+id/widget_side_4_gauge"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:importantForAccessibility="no" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/widget_side_5"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/widget_side_5_name"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:textColor="@color/widget_text"
+                                android:textSize="12sp" />
+
+                            <ImageView
+                                android:id="@+id/widget_side_5_gauge"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:importantForAccessibility="no" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- the time of the data at the bottom, its line that of the chart's times -->
                     <TextView
-                        android:id="@+id/widget_side_quiet"
-                        android:layout_width="match_parent"
+                        android:id="@+id/widget_as_of_side"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:maxLines="3"
+                        android:layout_gravity="bottom|end"
+                        android:layout_marginEnd="16dp"
+                        android:maxLines="1"
                         android:textColor="@color/widget_text_dim"
-                        android:textSize="12sp" />
-
-                    <LinearLayout
-                        android:id="@+id/widget_side_0"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/widget_side_0_name"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:ellipsize="end"
-                            android:maxLines="1"
-                            android:textColor="@color/widget_text"
-                            android:textSize="12sp" />
-
-                        <ImageView
-                            android:id="@+id/widget_side_0_gauge"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="4dp"
-                            android:importantForAccessibility="no" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/widget_side_1"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/widget_side_1_name"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:ellipsize="end"
-                            android:maxLines="1"
-                            android:textColor="@color/widget_text"
-                            android:textSize="12sp" />
-
-                        <ImageView
-                            android:id="@+id/widget_side_1_gauge"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="4dp"
-                            android:importantForAccessibility="no" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/widget_side_2"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/widget_side_2_name"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:ellipsize="end"
-                            android:maxLines="1"
-                            android:textColor="@color/widget_text"
-                            android:textSize="12sp" />
-
-                        <ImageView
-                            android:id="@+id/widget_side_2_gauge"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="4dp"
-                            android:importantForAccessibility="no" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/widget_side_3"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/widget_side_3_name"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:ellipsize="end"
-                            android:maxLines="1"
-                            android:textColor="@color/widget_text"
-                            android:textSize="12sp" />
-
-                        <ImageView
-                            android:id="@+id/widget_side_3_gauge"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="4dp"
-                            android:importantForAccessibility="no" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/widget_side_4"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/widget_side_4_name"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:ellipsize="end"
-                            android:maxLines="1"
-                            android:textColor="@color/widget_text"
-                            android:textSize="12sp" />
-
-                        <ImageView
-                            android:id="@+id/widget_side_4_gauge"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="4dp"
-                            android:importantForAccessibility="no" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/widget_side_5"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/widget_side_5_name"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:ellipsize="end"
-                            android:maxLines="1"
-                            android:textColor="@color/widget_text"
-                            android:textSize="12sp" />
-
-                        <ImageView
-                            android:id="@+id/widget_side_5_gauge"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="4dp"
-                            android:importantForAccessibility="no" />
-                    </LinearLayout>
-                </LinearLayout>
+                        android:textSize="11sp" />
+                </FrameLayout>
             </LinearLayout>
         </LinearLayout>
 

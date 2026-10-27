@@ -115,6 +115,13 @@ class WeatherRepository(
                 listOfNotNull(dwd.await()) + others.await()
             }
         }
+        // the DWD's MOSMIX at its station near the place: its sun and cloud weighed with the model's (SkyBlend)
+        val mosmixJob = async {
+            val hour = clock() / HOUR_MS * HOUR_MS
+            runCatching { brightSky.mosmix(lat, lon, hour - HOUR_MS, hour + MOSMIX_DAYS * DAY_MS) }
+                .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it; android.util.Log.w("Nimbus", "MOSMIX unavailable: $it") }
+                .getOrNull()
+        }
         // what the radar sees falling over the place now (Germany): the page does not wait for it
         val radarJob = async {
             if (spot == null || !inDwdArea) null else fetch(RADAR_NOW_WAIT_MS, "radar now") { spot.radarNow(lat, lon, clock()) }
@@ -164,7 +171,7 @@ class WeatherRepository(
         // the single model at [t] – in the hours where the best match blends two, the next one
         fun partAt(t: Long) = parts.entries.firstOrNull { it.key >= t && it.key < t + DAY_MS }?.value
         val sources = mutableListOf<Source>()
-        val forecast: ModelForecast = when {
+        val modelForecast: ModelForecast = when {
             primary != null -> {
                 val kind = when {
                     model.part != null -> SourceKind.MODEL_REGIONAL
@@ -185,6 +192,12 @@ class WeatherRepository(
             fill != null -> { sources += Source(SourceKind.MODEL_BEST_MATCH, part = partAt(nowHour)); fill }
             else -> throw primaryResult.exceptionOrNull() ?: IllegalStateException("No forecast available")
         }
+        // the sky of the hours with MOSMIX's weighed in; the quarter hours' sunshine summing to their hour's
+        val mosmix = kotlinx.coroutines.withTimeoutOrNull(MOSMIX_WAIT_MS) { mosmixJob.await() } ?: null.also { mosmixJob.cancel() }
+        val share = mosmix?.let { SkyBlend.share(it, modelForecast.elevation) } ?: 0.0
+        val skyHours = SkyBlend.hours(modelForecast.hourly, mosmix, share)
+        val forecast = modelForecast.copy(hourly = skyHours, minutely = SkyBlend.minutely(modelForecast.minutely, skyHours))
+        if (mosmix != null && share > 0.0) sources += Source(SourceKind.MOSMIX, mosmix.site.name, distanceKm = mosmix.site.distanceKm)
 
         val obs = obsJob.await()
         var current = forecast.current ?: forecast.hourly.minByOrNull { kotlin.math.abs(it.time - clock()) }?.let { h ->
@@ -197,6 +210,7 @@ class WeatherRepository(
             current = NowWeather.mergeObservation(current, measured)
             sources += Source(SourceKind.STATION, measured.stationName, network = measured.network)
         }
+        if (share > 0.0) current = NowWeather.withSkyOfHour(current, forecast.hourly, clock())
         current = NowWeather.withModelSunshine(current, forecast.hourly, clock())
         val alerts = alertsJob.await()
         if (inDwdArea) sources += Source(SourceKind.DWD_WARNINGS)
@@ -349,6 +363,10 @@ class WeatherRepository(
         private const val RADAR_NOW_WAIT_MS = 30_000L
         /** How long the forecast waits for the best match's single models (they only name a source). */
         private const val PARTS_WAIT_MS = 3_000L
+        /** How long the forecast waits for MOSMIX: without it, the model's sky alone. */
+        private const val MOSMIX_WAIT_MS = 5_000L
+        /** MOSMIX's days ahead (it reaches 10). */
+        private const val MOSMIX_DAYS = 11
 
         /** Rough bounding box of the DWD station network / warning area. */
         fun isInDwdArea(lat: Double, lon: Double) = lat in 47.2..55.1 && lon in 5.8..15.1

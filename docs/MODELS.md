@@ -19,7 +19,8 @@
 
 # Vorhersagemodelle
 
-Stand: **5. Oktober 2026** (Nimbus 1.34.1). Alle Modelle kommen über [Open-Meteo](https://open-meteo.com).
+Stand: **27. Oktober 2026** (Nimbus 2.4.3). Alle Modelle kommen über [Open-Meteo](https://open-meteo.com);
+Sonne, Wolken und Nebel gleicht die App mit DWD MOSMIX ab (unten).
 
 ## Automatisch (voreingestellt)
 
@@ -68,6 +69,30 @@ In der Ortsliste (lange drücken, dann auf „Modell: …“ tippen) wählt man 
 gleich dessen Modellwahl – etwa um MET Nordic und KNMI Harmonie für denselben Ort nebeneinander zu
 sehen. Die Seiten tragen dann das Modell unter dem Namen. Wird für die Kopie kein Modell gewählt,
 verwirft die App sie wieder.
+
+## Sonne, Wolken und Nebel: mit DWD MOSMIX abgeglichen
+
+Welches Modell auch gewählt ist: Sonnenscheindauer, Bewölkung und Nebel der kommenden Stunden wägt
+Nimbus aus dem Modell und **DWD MOSMIX** ab – nach dem, was jede Quelle am besten kann.
+
+- **MOSMIX** ist die Stationsvorhersage des DWD: Sie liest die Modelle (ICON, ECMWF IFS) an jeder
+  Station gegen die Messungen vieler Jahre, in den ersten Stunden auch gegen die von jetzt. So
+  korrigiert sie, was ein Modell immer wieder gleich falsch rechnet: Hochnebel und Nebel, die es zu
+  früh auflöst, Sonnenschein, den es allein aus der direkten Strahlung ableitet. Sie gilt aber für
+  ihre Station und stundenweise. Bright Sky liefert sie für Stationen in ganz Europa.
+- **Das Modell** rechnet den Ort selbst, in Viertelstunden; der Niederschlag bleibt seiner (und der
+  des Radars).
+
+Je Stunde zählen Sonnenschein und Bewölkung von MOSMIX zu **80 %**, die des Modells zum Rest. Liegt
+die Station weiter weg, zählt sie weniger: bis 10 km voll, dann abnehmend, ab 30 km nicht mehr.
+Steht sie auf anderer Höhe als der Ort (mehr als 300 m Unterschied), zählt sie nicht. Nebel gilt, wo
+beide zusammen ihn sagen; scheint die Sonne genug, hebt sie ihn auf. Daraus folgen das Symbol der
+Stunde, der Tag, der Hintergrund und der Himmel „jetzt“, solange die Station ihn nicht misst. Die
+Viertelstunden (Tagesdiagramm, Widget) behalten den Verlauf des Modells innerhalb der Stunde, ihre
+Summe ist der Sonnenschein der Stunde. Die Datenquellen nennen die MOSMIX-Station mit ihrer Entfernung.
+
+Misst die Station den Himmel jetzt bedeckt (7/8), scheint jetzt keine Sonne. Ein klarer Messwert
+zählt dagegen nicht: Das Wolkenmessgerät sieht dünne hohe Wolken nicht.
 
 ## Rückblick und Modellvergleich
 

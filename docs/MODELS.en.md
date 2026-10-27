@@ -19,7 +19,8 @@
 
 # Forecast models
 
-As of **5 October 2026** (Nimbus 1.34.1). All models come via [Open-Meteo](https://open-meteo.com).
+As of **27 October 2026** (Nimbus 2.4.3). All models come via [Open-Meteo](https://open-meteo.com);
+the sun, cloud and fog the app weighs with DWD MOSMIX (below).
 
 ## Automatic (the preset)
 
@@ -66,6 +67,30 @@ In the list of places (long press, then tap "Model: …") each place first gets 
 **The same place more than once:** ⧉ in the edit mode adds a place once more and opens its model
 choice right away – e.g. to see MET Nordic and KNMI Harmonie for the same place side by side. Its
 pages then carry the model under the name. A copy left without a model choice is discarded again.
+
+## Sun, cloud and fog: weighed with DWD MOSMIX
+
+Whichever model is chosen: the sunshine, cloud cover and fog of the hours to come Nimbus weighs from
+the model and **DWD MOSMIX** – by what each source does best.
+
+- **MOSMIX** is the DWD's station forecast: it reads the models (ICON, ECMWF IFS) at each station
+  against many years of its measurements, in the first hours against those of now as well. So it
+  corrects what a model gets wrong the same way again and again: low stratus and fog it clears too
+  early, sunshine it derives from the direct beam alone. But it holds for its station, by the
+  hour. Bright Sky delivers it for stations across Europe.
+- **The model** computes the place itself, in quarter hours; the precipitation stays its own (and
+  the radar's).
+
+For each hour MOSMIX's sunshine and cloud cover count **80 %**, the model's the rest. A station
+farther off counts less: in full up to 10 km, then less and less, from 30 km no more. One at another
+height than the place (more than 300 m apart) does not count. Fog holds where the two together say
+so; where the sun shines enough, it lifts it. From this follow the hour's symbol, the day, the
+background and the sky "now" as long as the station does not measure it. The quarter hours (day
+chart, widget) keep the model's course within the hour, their sum the hour's sunshine. The data
+sources name the MOSMIX station with its distance.
+
+Where the station measures the sky overcast now (7/8), no sun shines now. A clear reading does not
+count the other way: the ceilometer does not see thin high cloud.
 
 ## Look-back and model comparison
 

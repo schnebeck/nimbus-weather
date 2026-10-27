@@ -143,8 +143,18 @@ data class StationObservation(
 data class StationHour(val time: Long, val values: Map<Reading, Double>)
 
 /**
+ * An hour of the DWD's MOSMIX at its station, the hour before [time]: minutes of [sunshine], the
+ * [cloudCover] (%), [fog] in the weather it gives the hour.
+ */
+data class MosmixHour(val time: Long, val sunshine: Double?, val cloudCover: Double?, val fog: Boolean)
+
+/** The DWD's MOSMIX forecast at the station [site] nearest a place (via Bright Sky). */
+data class Mosmix(val site: StationSite, val hours: List<MosmixHour>)
+
+/**
  * Bright Sky (https://brightsky.dev) — a free JSON API for DWD open data:
- * SYNOP station observations and official DWD weather warnings (Germany only).
+ * SYNOP station observations and official DWD weather warnings (Germany only), the DWD's MOSMIX
+ * station forecasts (across Europe and beyond).
  */
 class BrightSkySource(private val http: OkHttpClient, private val baseUrl: String = "https://api.brightsky.dev") {
 
@@ -170,6 +180,25 @@ class BrightSkySource(private val http: OkHttpClient, private val baseUrl: Strin
         return obs.filledFrom(hours)
     }
 
+    /**
+     * The DWD's MOSMIX forecast from [from] to [to] at its station nearest the place, within
+     * [MOSMIX_MAX_DIST_M] (stations across Europe and beyond); null where there is none.
+     */
+    suspend fun mosmix(lat: Double, lon: Double, from: Long, to: Long): Mosmix? {
+        val url = "$baseUrl/weather".toHttpUrl().newBuilder()
+            .addQueryParameter("lat", OpenMeteoSource.fmt(lat))
+            .addQueryParameter("lon", OpenMeteoSource.fmt(lon))
+            .addQueryParameter("date", java.time.Instant.ofEpochMilli(from).toString())
+            .addQueryParameter("last_date", java.time.Instant.ofEpochMilli(to).toString())
+            .addQueryParameter("max_dist", MOSMIX_MAX_DIST_M.toString())
+            .build()
+        return try {
+            parseMosmix(http.getJson(url.toString()))
+        } catch (e: HttpException) {
+            if (e.code == 404) null else throw e
+        }
+    }
+
     suspend fun alerts(lat: Double, lon: Double): List<WeatherAlert> {
         val url = "$baseUrl/alerts".toHttpUrl().newBuilder()
             .addQueryParameter("lat", OpenMeteoSource.fmt(lat))
@@ -183,7 +212,31 @@ class BrightSkySource(private val http: OkHttpClient, private val baseUrl: Strin
     }
 
     companion object {
+        /** How far a MOSMIX station may lie from the place: farther, its sky is not the place's (see SkyBlend). */
+        const val MOSMIX_MAX_DIST_M = 30_000
+
         fun parseTime(s: String?): Long? = s?.let { runCatching { OffsetDateTime.parse(it).toInstant().toEpochMilli() }.getOrNull() }
+
+        /**
+         * MOSMIX hours (`/weather` with a place): those of the forecast station Bright Sky takes
+         * for most hours – its measurements (past hours) left out, and each value Bright Sky
+         * filled in from another station.
+         */
+        fun parseMosmix(root: JsonElement): Mosmix? {
+            val o = root.obj() ?: return null
+            val forecasts = o.a("sources")?.mapNotNull { it as? JsonObject }.orEmpty()
+                .filter { it.s("observation_type") == "forecast" }.associateBy { it.l("id") }
+            val hours = o.a("weather")?.mapNotNull { it as? JsonObject }.orEmpty().filter { it.l("source_id") in forecasts }
+            val id = hours.groupingBy { it.l("source_id") }.eachCount().maxByOrNull { it.value }?.key ?: return null
+            val src = forecasts.getValue(id)
+            val site = StationSite(src.s("station_name") ?: "DWD", (src.d("distance") ?: 0.0) / 1000.0, src.d("height"))
+            return Mosmix(site, hours.filter { it.l("source_id") == id }.mapNotNull { w ->
+                val time = parseTime(w.s("timestamp")) ?: return@mapNotNull null
+                val filled = w.o("fallback_source_ids")?.keys.orEmpty()
+                fun v(key: String) = if (key in filled) null else w.d(key)
+                MosmixHour(time, v("sunshine"), v("cloud_cover"), "condition" !in filled && w.s("condition") == "fog")
+            })
+        }
 
         fun parseCurrent(root: JsonElement): StationObservation? {
             val o = root.obj() ?: return null

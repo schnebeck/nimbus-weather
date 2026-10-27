@@ -64,6 +64,9 @@ object WeatherCodes {
     /** From the sunniest to the darkest sky: fog is the darkest (the sun does not get through). */
     private val bySky = listOf(Condition.CLEAR, Condition.MOSTLY_CLEAR, Condition.PARTLY_CLOUDY, Condition.CLOUDY, Condition.FOG)
 
+    /** A sky without precipitation or thunder: clear to fog. */
+    fun isSky(c: Condition) = c in bySky
+
     /**
      * [c] (from the cloud cover) with the hour's [sunshineMinutes]: the cloud cover counts every
      * cloud, thin high cirrus too – an hour of full sun under a veil read "cloudy". The sunshine
@@ -167,7 +170,7 @@ object WeatherCodes {
     }
 
     /** The sky by the cloud cover (%). */
-    private fun sky(cloudCover: Double) = when {
+    fun sky(cloudCover: Double) = when {
         cloudCover < 12.5 -> Condition.CLEAR
         cloudCover < 37.5 -> Condition.MOSTLY_CLEAR
         cloudCover < 75.0 -> Condition.PARTLY_CLOUDY

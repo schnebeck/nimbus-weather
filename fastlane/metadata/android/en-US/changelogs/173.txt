@@ -1,0 +1,3 @@
+• Sun, cloud and fog: the forecast is weighed with DWD MOSMIX – low stratus no longer shows as "sunny", in the app and the widget
+• Where the station reports the sky overcast, Nimbus shows no sun now
+• Widget: "As of" beside the chart on the line of its times, so the chart is taller; the outlook midway between alarm and chart; the low temperature in the same colour as the others

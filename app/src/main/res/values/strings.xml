@@ -75,6 +75,8 @@
     <string name="now_source_model">%1$s: forecast model</string>
     <string name="now_sky_observed">Sky: observed by the station, %1$s\u00A0(%2$s km)</string>
     <string name="now_sky_measured_sunshine">Sky: from the measured sunshine, %1$s\u00A0(%2$s km)</string>
+    <string name="now_sky_measured_cloud">Sky: from the measured cloud cover, %1$s\u00A0(%2$s km)</string>
+    <string name="now_sky_mosmix">Sky: forecast of the current hour, the model weighed with DWD MOSMIX</string>
     <string name="now_sky_model_sunshine">Sky: forecast model, from its sunshine in the current hour</string>
     <string name="now_sky_model">Sky: forecast model</string>
     <string name="now_sky_radar">Sky: precipitation by the DWD radar over the place</string>
@@ -449,7 +451,7 @@
     <string name="term_community_title">Community Sensors</string>
     <string name="term_community_body">Sensor.Community is an open network of thousands of self-built sensors run by citizens – similar to OpenStreetMap, but for measurements. The data is freely available.\n\nPrivate sensors are not calibrated and are often mounted on balconies or house walls, sometimes in the sun. The app therefore shows the median of all outdoor sensors nearby and removes outliers. The spread shows how much the sensors disagree.\n\nUse these values as an additional local impression; the official DWD station is more reliable.</string>
     <string name="term_station_title">Measured or Forecast?</string>
-    <string name="term_station_body">Near a weather station the current values (temperature, humidity, wind, pressure, visibility) are real measurements of the nearest station within 30 km: the DWD\'s in Germany (via Bright Sky), GeoSphere Austria, MeteoSwiss and DMI (Denmark) every 10 minutes – where none of them measures, an airport (METAR, every half hour, temperature in whole degrees). Only a station at the height of the place counts (at most 300 m apart), and only if its temperature is near the model\'s. Otherwise the values come from the forecast model for the exact location.\n\nThe sky (sunny, cloudy …) follows the sunshine the station measured in the last half hour – as the forecast hours follow the model\'s sunshine: thin high veil clouds count as cloud cover, yet the sun shines through. Rain, snow or fog the station observes go before the forecast.\n\nMeasurements are more accurate for the station itself, but local conditions can differ – for example between a city centre and an airport. You can switch this off in the settings.</string>
+    <string name="term_station_body">Near a weather station the current values (temperature, humidity, wind, pressure, visibility) are real measurements of the nearest station within 30 km: the DWD\'s in Germany (via Bright Sky), GeoSphere Austria, MeteoSwiss and DMI (Denmark) every 10 minutes – where none of them measures, an airport (METAR, every half hour, temperature in whole degrees). Only a station at the height of the place counts (at most 300 m apart), and only if its temperature is near the model\'s. Otherwise the values come from the forecast model for the exact location.\n\nThe sky (sunny, cloudy …) follows the sunshine the station measured in the last half hour – as the forecast hours follow theirs: thin high veil clouds count as cloud cover, yet the sun shines through. Where the station measures the sky overcast (7/8), no sun shines now. Rain, snow or fog the station observes go before the forecast. Where it does not measure the sky, the running hour counts – the model\'s sun and cloud weighed with DWD MOSMIX, the DWD\'s station forecast.\n\nMeasurements are more accurate for the station itself, but local conditions can differ – for example between a city centre and an airport. You can switch this off in the settings.</string>
     <string name="term_alerts_title">DWD Weather Warnings</string>
     <string name="term_alerts_body">Official warnings of the Deutscher Wetterdienst for your municipality, colour-coded by severity:\n\n• Yellow – weather warning: possible hazard, e.g. frost, strong gusts\n• Orange – warning of significant weather: dangerous weather, e.g. storm gusts, heavy rain\n• Red – severe weather warning: very dangerous, e.g. hurricane-force gusts, heavy thunderstorms\n• Purple – extreme severe weather warning: extremely dangerous, take protective measures\n\nWarnings are only available for Germany.</string>
     <string name="sun">Sun</string>
@@ -558,6 +560,7 @@
     <string name="src_gauges">Water levels: %1$s</string>
     <string name="src_lhp_alerts">Flood alerts: LHP</string>
     <string name="src_radar_now">Precipitation now: DWD radar over the place</string>
+    <string name="src_mosmix">Sun and cloud: weighed with DWD MOSMIX, station %1$s\u00A0(%2$s km)</string>
     <string name="src_radar_nowcast">Precipitation of the next 2 hours: DWD radar nowcast</string>
     <string name="outlook_precip_chance">Chance of precipitation %1$d %%.</string>
     <string name="settings_cards">Cards</string>

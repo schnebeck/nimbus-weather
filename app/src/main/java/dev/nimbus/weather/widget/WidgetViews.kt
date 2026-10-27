@@ -61,6 +61,30 @@ import java.util.Locale
 data class WidgetSize(val widthDp: Int, val heightDp: Int)
 
 /**
+ * The heights of the widget's lines of text in dp, their font's padding with them: the head line
+ * (14 sp), a line of the two hours (13 sp), the line under the columns (the alarm, 13 sp), a pollen
+ * row (12 sp); [spare]: room kept below the parts for what is not known to the dp.
+ */
+data class WidgetLines(val head: Float, val text: Float, val mid: Float, val small: Float, val spare: Float) {
+    companion object {
+        /** Estimated, a little generous: where the font is not known. */
+        fun estimated(fontScale: Float) = WidgetLines(19f * fontScale + 2f, 19f * fontScale, 18f * fontScale, 18f * fontScale, 6f)
+
+        /**
+         * As the system's font draws them at [fontScale] – the launcher draws the widget with the
+         * same font, so the parts have the height there is and no more is kept free.
+         */
+        fun measured(fontScale: Float): WidgetLines {
+            val p = Paint().apply { textSize = 100f }
+            val perSp = p.fontMetrics.let { it.bottom - it.top } / 100f
+            // a pixel or so of rounding each
+            val text = 13 * fontScale * perSp + 0.5f
+            return WidgetLines(14 * fontScale * perSp + 0.5f, text, text, 12 * fontScale * perSp + 0.5f, 2f)
+        }
+    }
+}
+
+/**
  * Which parts the widget shows. On top two columns while there is room for both: on the left
  * the date, the time and the next alarm; on the right the place and the weather. Below them,
  * with some space, over the whole width: the next two hours (the chart of precipitation and
@@ -77,6 +101,8 @@ data class WidgetSize(val widthDp: Int, val heightDp: Int)
  * pollen – where it has no room over the chart, in the line under the columns ([midRain]).
  * The alarm on a line under the clock ([alarm]) where there is the
  * height for it – or small beside it ([alarmBeside]) where that line would cost the chart its room.
+ * The time of the data under the pollen beside the chart, on the line of the chart's times
+ * ([statusSide]): it takes no line of its own, the chart has its height.
  */
 data class WidgetLayout(
     val clock: Boolean, val date: Boolean, val alarm: Boolean, val alarmBeside: Boolean, val weather: Boolean, val right: Boolean,
@@ -86,11 +112,10 @@ data class WidgetLayout(
     val refreshLine: Boolean = false,
     /** Not even for that line: the parts keep [REFRESH_ROOM] free at the right for the refresh in the corner. */
     val refreshRoom: Boolean = false,
+    val statusSide: Boolean = false,
 ) {
     companion object {
         private const val PADDING_V = 16
-        /** Room to spare below the head: estimated lines may come out taller on the phone. */
-        private const val SPARE = 6f
         private const val PADDING_H = 28
         private const val BIG_MAX = 46f
         private const val BIG_MIN = 16f
@@ -102,11 +127,8 @@ data class WidgetLayout(
         private const val WEATHER_FIX = 40f
         /** Room between the columns. */
         private const val GAP = 10f
-        /** The small texts at font scale 1: a line, the dates, a character of the alarm and of the two hours' line. */
-        private const val LINE = 19f
-        /** The line under the columns (the alarm, the pollen as points, 13 sp): its space above, its line at font scale 1. */
+        /** Above the line under the columns (the alarm, the pollen as points, 13 sp). */
         private const val MID_TOP = 2f
-        private const val MID_LINE = 18f
         /** A character of the head line (14 sp); the place's pin. */
         private const val HEAD_CHAR = 7.6f
         private const val PIN = 15f
@@ -117,17 +139,23 @@ data class WidgetLayout(
         private const val BESIDE_ICON = 14f
         private const val BESIDE_CHAR = 6.8f
         /** Below the columns: the space above the two hours, the chart's least height and the times under it. */
-        private const val BELOW_GAP = 10f
-        private const val CHART_TOP = 3f
+        const val BELOW_GAP = 10f
+        const val CHART_TOP = 3f
+        /**
+         * Of the room above the chart, what goes over the two hours' line standing on it: the text's
+         * own room above its letters is larger than the chart's above its units, so the letters stand
+         * as far from the line above as from the chart.
+         */
+        const val LINE_OVER_CHART = 5f
         private const val CHART_MIN = 34f
         private const val AXIS = 14f
         /** The pollen: the space above, a row, the least width of a type with its gauge. */
         private const val POLLEN_TOP = 6f
-        private const val POLLEN_ROW = 18f
         private const val POLLEN_CELL = 92f
         /** The least width of the third beside the chart: a name and its gauge. */
         private const val SIDE_MIN = 92f
-        private const val STATUS = 24f
+        /** The line of "As of" with the refresh beside it: kept free under the pollen beside the chart too. */
+        const val STATUS = 24f
         /** The line of "As of" without the room around it: the refresh alone in it. */
         private const val STATUS_LINE = 17f
         /** Kept free at the right for the refresh in the corner where "As of" has no line. */
@@ -142,24 +170,25 @@ data class WidgetLayout(
             config: WidgetConfig, size: WidgetSize, alarm: String?, weather: WidgetWeather?,
             fontScale: Float = 1f, rainText: String? = null, pollenText: String? = null,
             placeText: String? = null, longDateText: String? = null,
+            lines: WidgetLines = WidgetLines.estimated(fontScale),
         ): WidgetLayout {
-            val l = plan(config, size, alarm, weather, fontScale, rainText, pollenText, placeText, longDateText)
+            val l = plan(config, size, alarm, weather, fontScale, rainText, pollenText, placeText, longDateText, lines)
             if (l.status || l.refreshLine) return l
             // the refresh alone in the corner: the parts make way at the right (a widget is seldom short of width)
             // – the pollen beside the chart as at the full width: their third is only a little narrower
-            return plan(config, size.copy(widthDp = size.widthDp - REFRESH_ROOM), alarm, weather, fontScale, rainText, pollenText, placeText, longDateText, sideFrom = REFRESH_ROOM)
+            return plan(config, size.copy(widthDp = size.widthDp - REFRESH_ROOM), alarm, weather, fontScale, rainText, pollenText, placeText, longDateText, lines, sideFrom = REFRESH_ROOM)
                 .copy(status = false, refreshLine = false, refreshRoom = true)
         }
 
         private fun plan(
             config: WidgetConfig, size: WidgetSize, alarm: String?, weather: WidgetWeather?,
             fontScale: Float, rainText: String?, pollenText: String?,
-            placeText: String?, longDateText: String?,
+            placeText: String?, longDateText: String?, lines: WidgetLines,
             /** Width taken from the parts for the refresh, still counted for the pollen beside the chart. */
             sideFrom: Int = 0,
         ): WidgetLayout {
-            val line = LINE * fontScale
-            val midLine = MID_TOP + MID_LINE * fontScale
+            val line = lines.text
+            val midLine = MID_TOP + lines.mid
             val height = (size.heightDp - PADDING_V).toFloat()
             val width = (size.widthDp - PADDING_H).toFloat()
             // the pollen: those flying; chosen but none flying, a line saying so
@@ -175,11 +204,11 @@ data class WidgetLayout(
             val perDp = (if (bigClock) CLOCK_W else 0f) + (if (bigWeather) WEATHER_W else 0f)
             val byWidth = if (perDp > 0f) (width - (if (bigWeather) WEATHER_FIX else 0f) - (if (showClock && rightWanted) GAP else 0f)) / perDp else BIG_MAX
             val secondLine = height >= 50
-            val byHeight = (height - if (secondLine) line + 2 else 0f) / BIG_LINE
+            val byHeight = (height - if (secondLine) lines.head else 0f) / BIG_LINE
             val date = showClock && config.date && (secondLine || !bigClock)
             val fitBig = minOf(BIG_MAX, byWidth, byHeight).coerceAtLeast(BIG_MIN)
             // the head line over both columns: the date and the place
-            val headH = if (date || (rightWanted && secondLine)) line + 2 else 0f
+            val headH = if (date || (rightWanted && secondLine)) lines.head else 0f
             val alarmWanted = showClock && config.alarm && alarm != null
             val perRow = (width / (POLLEN_CELL * fontScale)).toInt().coerceIn(1, 3)
             val pollenRowsWanted = (pollenCount + perRow - 1) / perRow
@@ -205,7 +234,7 @@ data class WidgetLayout(
                 if (beside) big = minOf(big, (width - (if (bigWeather) WEATHER_FIX else 0f) - (if (rightWanted) GAP else 0f) - besideW) / perDp)
                 val bigH = if (bigClock || bigWeather) big * BIG_LINE else 0f
                 // the line under both columns: the alarm (under the clock), beside it the two hours' line or the pollen as points
-                var left = height - SPARE - headH - bigH - (if (below) midLine else 0f)
+                var left = height - lines.spare - headH - bigH - (if (below) midLine else 0f)
                 fun fits(h: Float) = (left >= h).also { if (it) left -= h }
                 val alarmW = if (below) ALARM_ICON + CHAR * (alarm?.length ?: 0) * fontScale + GAP else 0f
                 val chart = chartWanted && fits(BELOW_GAP + CHART_TOP + CHART_MIN + AXIS)
@@ -225,12 +254,13 @@ data class WidgetLayout(
                 val side = chart && pollenWanted && (width + sideFrom - 12f) / 3f >= SIDE_MIN * fontScale
                 if (pollenWanted && !side) {
                     when {
-                        pollenRowsWanted > 0 && fits((if (chart || rainLine) POLLEN_TOP else BELOW_GAP) + pollenRowsWanted * POLLEN_ROW * fontScale) -> rows = pollenRowsWanted
+                        pollenRowsWanted > 0 && fits((if (chart || rainLine) POLLEN_TOP else BELOW_GAP) + pollenRowsWanted * lines.small) -> rows = pollenRowsWanted
                         !midRain && dotsW <= width - alarmW && (below || fits(midLine)) -> dots = true
                     }
                 }
                 if (rainWanted && !rainFirst) rainLine = rainLineFits()
-                val status = fits(STATUS * fontScale)
+                // beside the chart under the pollen: the chart reaches down to its line
+                val status = side || fits(STATUS * fontScale)
                 // no room for "As of": its line for the refresh alone, where that fits
                 val refreshLine = !status && fits(STATUS_LINE * fontScale)
                 return Plan(big, below, beside, chart, rows, dots, side, rainLine, midRain, status, if (chart) CHART_MIN + left.coerceAtLeast(0f) else 0f, refreshLine)
@@ -261,8 +291,8 @@ data class WidgetLayout(
                 clock = bigClock, date = date, alarm = p.below, alarmBeside = p.beside && besideW > 0, weather = bigWeather, right = rightWanted,
                 secondLine = secondLine, rain = p.chart || p.rainLine, rainLine = p.rainLine, midRain = p.midRain, chart = p.chart, chartDp = p.chartDp,
                 pollenRows = p.rows, pollenPerRow = perRow, pollenDots = p.dots, pollenSide = p.side,
-                pollenSideRows = if (p.side) ((CHART_TOP + p.chartDp + AXIS) / (POLLEN_ROW * fontScale)).toInt().coerceIn(1, 6) else 0, status = p.status, bigDp = p.big, longDate = longDate, widthDp = width,
-                refreshLine = p.refreshLine,
+                pollenSideRows = if (p.side) ((CHART_TOP + p.chartDp + AXIS - STATUS * fontScale) / lines.small).toInt().coerceIn(1, 6) else 0, status = p.status, bigDp = p.big, longDate = longDate, widthDp = width,
+                refreshLine = p.refreshLine, statusSide = p.side,
             )
         }
     }
@@ -345,7 +375,7 @@ object WidgetViews {
         val dots = weather?.pollen?.takeIf { it.isNotEmpty() && config.pollen.isNotEmpty() }?.let { pollenDots(context, it) }
         val placeText = weather?.place ?: res.getString(R.string.widget_no_data)
         val longDateText = android.text.format.DateFormat.format(android.text.format.DateFormat.getBestDateTimePattern(locale, "EEEEdMMMM"), now).toString()
-        val l = WidgetLayout.of(config, size, alarm, weather, res.configuration.fontScale, rainText, dots?.toString(), placeText, longDateText)
+        val l = WidgetLayout.of(config, size, alarm, weather, res.configuration.fontScale, rainText, dots?.toString(), placeText, longDateText, WidgetLines.measured(res.configuration.fontScale))
         val density = res.displayMetrics.density
 
         v.setInt(R.id.widget_bg, "setImageAlpha", (config.opacity.coerceIn(0f, 1f) * 255).toInt())
@@ -431,10 +461,16 @@ object WidgetViews {
         }
 
         // the next two hours: the precipitation card's line, the chart of precipitation and sunshine
-        v.visible(R.id.widget_rain, l.rain && rain != null)
+        val lineShown = l.rainLine && rain != null && rainText != null
+        val chartShown = l.chart && rain != null && rainText != null
+        v.visible(R.id.widget_rain_text, lineShown)
+        v.visible(R.id.widget_rain, chartShown)
+        v.setOnClickPendingIntent(R.id.widget_rain_text, open(PageSection.TODAY))
+        val chartTop = WidgetLayout.BELOW_GAP + WidgetLayout.CHART_TOP
+        v.setViewPadding(R.id.widget_rain_text, 0, ((if (chartShown) WidgetLayout.LINE_OVER_CHART else WidgetLayout.BELOW_GAP) * density).toInt(), 0, 0)
+        v.setViewPadding(R.id.widget_rain, 0, ((if (lineShown) chartTop - WidgetLayout.LINE_OVER_CHART else chartTop) * density).toInt(), 0, 0)
         if (rain != null && rainText != null) {
             v.setTextViewText(R.id.widget_rain_text, rainText)
-            v.visible(R.id.widget_rain_text, l.rainLine)
             v.visible(R.id.widget_chart, l.chart)
             if (l.chart) {
                 val fontScale = res.configuration.fontScale
@@ -446,6 +482,7 @@ object WidgetViews {
 
         // beside the chart: the pollen flying, the strongest first, each with the pollen card's gauge; none: a line saying so
         v.visible(R.id.widget_side, l.pollenSide)
+        v.setViewPadding(R.id.widget_side_rows, 0, 0, 0, if (l.statusSide) (WidgetLayout.STATUS * res.configuration.fontScale * density).toInt() else 0)
         val flying = weather?.pollenFlying.orEmpty()
         v.visible(R.id.widget_side_quiet, l.pollenSide && flying.isEmpty())
         if (l.pollenSide && flying.isEmpty() && weather != null) {
@@ -486,13 +523,14 @@ object WidgetViews {
         }
 
         // when the data were fetched; a tap on the refresh in the corner – there at any size – fetches them anew
-        v.visible(R.id.widget_status, l.status || l.refreshLine)
+        v.visible(R.id.widget_status, (l.status && !l.statusSide) || l.refreshLine)
+        v.visible(R.id.widget_as_of_side, l.statusSide)
         // its line kept for the refresh, the words left out
         v.setViewVisibility(R.id.widget_as_of, if (l.status) View.VISIBLE else View.INVISIBLE)
         val pad = (14 * density).toInt()
         v.setViewPadding(R.id.widget_content, pad, (8 * density).toInt(), pad + if (l.refreshRoom) (WidgetLayout.REFRESH_ROOM * density).toInt() else 0, (8 * density).toInt())
         v.setTextViewText(
-            R.id.widget_as_of,
+            if (l.statusSide) R.id.widget_as_of_side else R.id.widget_as_of,
             when {
                 updating -> res.getString(R.string.widget_updating)
                 weather == null -> ""
@@ -503,14 +541,16 @@ object WidgetViews {
         v.setContentDescription(R.id.widget_refresh, res.getString(R.string.widget_refresh))
 
         // the height spread in equal gaps between what does not belong together: the head with the
-        // clock, the weather and the alarm; the two hours; the pollen; the time of the data at the bottom.
+        // clock, the weather and the alarm; the two hours, their line midway between the head and the
+        // chart; the pollen; the time of the data at the bottom (beside the chart: on its times' line).
         // The line under the columns without the alarm stands on its own.
         val parts = listOf(
             R.id.widget_gap_top to false,
             R.id.widget_gap_mid to (!l.alarm && (l.pollenDots || l.midRain)),
             R.id.widget_gap_rain to (l.rain && rain != null),
+            R.id.widget_gap_chart to (lineShown && chartShown),
             R.id.widget_gap_pollen to (l.pollenRows > 0),
-            R.id.widget_gap_status to (l.status || l.refreshLine),
+            R.id.widget_gap_status to ((l.status && !l.statusSide) || l.refreshLine),
         )
         var before = true
         for ((gap, shown) in parts) {

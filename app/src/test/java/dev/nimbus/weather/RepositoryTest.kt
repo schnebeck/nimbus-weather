@@ -45,6 +45,8 @@ class RepositoryTest {
     /** The citizen sensors answer this late (ms) – a slow extra source. */
     private var communityDelayMs = 0L
     private val requested = mutableListOf<String>()
+    /** Bright Sky's MOSMIX at the place (null: no station near). */
+    private var mosmixBody: String? = null
 
     @Before
     fun setUp() {
@@ -63,6 +65,8 @@ class RepositoryTest {
                     url.encodedPath == "/v1/forecast" -> forecast("openmeteo_best.json")
                     url.encodedPath == "/v1/air-quality" -> ok("openmeteo_aq.json")
                     url.encodedPath == "/current_weather" -> ok("brightsky_current.json")
+                    url.encodedPath == "/weather" && url.queryParameter("lat") != null ->
+                        mosmixBody?.let { MockResponse.Builder().code(200).body(it).build() } ?: MockResponse.Builder().code(404).build()
                     url.encodedPath == "/alerts" -> MockResponse.Builder().code(200).body("""{"alerts":[]}""").build()
                     url.encodedPath.startsWith("/airrohr") ->
                         MockResponse.Builder().code(200).body(Fixtures.text("sensor_community.json"))
@@ -115,6 +119,30 @@ class RepositoryTest {
         assertEquals("Berlin-Tempelhof", data.sources.first { it.kind == dev.nimbus.weather.data.model.SourceKind.STATION && it.network == dev.nimbus.weather.data.model.StationNetwork.DWD }.detail)
         assertTrue(requested.any { it.endsWith("icon_seamless") })
         assertTrue(requested.any { it.endsWith("best_match") })
+    }
+
+    /**
+     * MOSMIX at Berlin-Tempelhof (4 km, 48 m) says overcast all along: the hours' sky weighed with
+     * it – no sunny hour left, the sun's minutes MOSMIX's –, the source named.
+     */
+    @Test
+    fun `the sky of the hours weighed with MOSMIX`() = runTest {
+        val start = 1_790_625_600L                      // the forecast fixture's first hour
+        val plain = repo(fixtureNow).load(berlin, Settings(useStationObservations = false))
+        mosmixBody = """{"weather":[""" + (0 until 72).joinToString(",") { k ->
+            val t = java.time.Instant.ofEpochSecond(start + k * 3600L)
+            """{"timestamp":"$t","source_id":7,"sunshine":0,"cloud_cover":100,"condition":"dry"}"""
+        } + """],"sources":[{"id":7,"observation_type":"forecast","station_name":"BERLIN-TEMPELHOF","distance":4000,"height":48.0}]}"""
+        val data = repo(fixtureNow).load(berlin, Settings(useStationObservations = false))
+        val src = data.sources.single { it.kind == dev.nimbus.weather.data.model.SourceKind.MOSMIX }
+        assertEquals("BERLIN-TEMPELHOF", src.detail)
+        assertEquals(4.0, src.distanceKm!!, 1e-9)
+        val sky = setOf(dev.nimbus.weather.data.model.Condition.CLEAR, dev.nimbus.weather.data.model.Condition.MOSTLY_CLEAR, dev.nimbus.weather.data.model.Condition.PARTLY_CLOUDY)
+        val weighed = data.hourly.filter { it.time < (start + 72 * 3600L) * 1000 }
+        assertTrue(plain.hourly.any { it.condition in sky })
+        assertTrue(weighed.none { it.condition in sky })
+        assertTrue(weighed.all { (it.cloudCover ?: 100.0) >= 80.0 })
+        assertTrue(requested.any { it.startsWith("/weather") })
     }
 
     @Test

@@ -84,9 +84,15 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   Aktuelle Werte stammen, wo möglich, von der nächsten Wetterstation: DWD, GeoSphere Austria,
   MeteoSwiss und DMI alle 10 Minuten, sonst ein Flughafen (METAR). Jeder Wert zählt nur von einer
   Station in der Höhe des Ortes (höchstens 300 m Unterschied) und nahe am Modell. Der Himmel „jetzt“
-  folgt dem gemessenen Sonnenschein, wie die Stunden dem Sonnenschein des Modells – dünne Schleierwolken
-  machen keinen bewölkten Himmel, wenn die Sonne durchscheint; die laufende Stunde im Tagesdiagramm
-  zeigt dasselbe Wetter wie die Kopfzeile. Höchst- und Tiefstwert des Tages schließen die
+  folgt dem gemessenen Sonnenschein, wie die Stunden ihrem Sonnenschein – dünne Schleierwolken
+  machen keinen bewölkten Himmel, wenn die Sonne durchscheint; misst die Station den Himmel bedeckt
+  (7/8), scheint jetzt keine Sonne, was immer das Modell rechnet. Die laufende Stunde im Tagesdiagramm
+  zeigt dasselbe Wetter wie die Kopfzeile. **Sonne, Wolken und Nebel der kommenden Stunden** wägt die
+  App aus Modell und DWD MOSMIX ab: MOSMIX liest die Modelle an jeder Station gegen deren Messungen
+  und trifft so, was ein Modell immer wieder falsch rechnet – Hochnebel, der sich länger hält. Es
+  zählt mit 80 %, weniger je weiter seine Station entfernt ist (bis 10 km voll, ab 30 km nicht mehr),
+  nicht bei einer Station auf anderer Höhe; der Niederschlag bleibt beim Modell und beim Radar
+  ([docs/MODELS.md](docs/MODELS.md)). Höchst- und Tiefstwert des Tages schließen die
   Temperatur jetzt ein (das Modell kann darunter bleiben, gemessen ist sie erreicht). ⓘ am Hinweis „Gemessen an …“ nennt für jeden Wert, ob er
   gemessen ist (und wo) oder vom Modell kommt. Netze und Regeln: [docs/STATIONS.md](docs/STATIONS.md).
 - **Meteogramm** je Tag (00–24 Uhr): Temperatur (Vorhersage alle 15 Minuten, Messwerte der
@@ -252,7 +258,9 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   Monat (Wochentag, wo Platz ist) oder in Ziffern mit Kalenderwoche. Jedes Teil abschaltbar; was
   nicht in die Größe passt, blendet es aus (ab Android 12 für jede Größe, in der der Launcher es
   zeigt – die wirkliche Größe ermittelt das Widget selbst, auch wo der Launcher andere Maße meldet), die übrige Höhe nimmt das Diagramm oder verteilt sich
-  zwischen den Gruppen; ↻ bei jeder Größe in der Ecke rechts unten, „Stand“ davor, wo Platz ist. Tippen auf die Uhrzeit öffnet den Wecker
+  zwischen den Gruppen – die Zeile der nächsten zwei Stunden mittig zwischen Uhr oder Wecker und
+  Diagramm; ↻ bei jeder Größe in der Ecke rechts unten, „Stand“ davor, wo Platz ist, neben dem
+  Diagramm auf der Zeile seiner Uhrzeiten. Tippen auf die Uhrzeit öffnet den Wecker
   (auch wo die Uhr-App die Standardanfrage nicht oder nur Apps mit Weckerrecht beantwortet, etwa unter ColorOS), auf das
   Datum den Kalender; die übrigen Teile führen zu ihrer Stelle in Nimbus beim Ort des Widgets: das
   Wetter zur stündlichen Vorhersage, der Niederschlag zur Tagesvorhersage mit aufgeklapptem Heute,
@@ -281,6 +289,7 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
 |---|---|
 | Vorhersage | [Open-Meteo](https://open-meteo.com): voreingestellt „best match“, wählbar DWD ICON, ECMWF IFS, Météo-France, MET Nordic (MET Norway), KNMI Harmonie, DMI Harmonie, UK Met Office, MeteoSwiss ICON-CH1/-CH2, GeoSphere AROME, ItaliaMeteo ICON-2I; Lücken aus „best match“ |
 | Aktuelle Messwerte | DWD-Stationen via [Bright Sky](https://brightsky.dev), [GeoSphere Austria](https://data.hub.geosphere.at), [MeteoSwiss](https://opendatadocs.meteoswiss.ch), [DMI](https://www.dmi.dk/friedata), Flughäfen (METAR, [aviationweather.gov](https://aviationweather.gov)) |
+| Sonne und Wolken der Vorhersage | Modell abgeglichen mit DWD MOSMIX (Stationsvorhersage, Europa) via Bright Sky |
 | Warnungen, Rückblick | DWD-Warnungen und -Stationen via Bright Sky |
 | Gemessen über dem Ort | Niederschlag: DWD-Radar RADOLAN (RW, RY), Deutschland · Sonnenschein: DWD aus EUMETSAT-MTG-Satellitendaten via [Open-Meteo](https://open-meteo.com/en/docs/satellite-radiation-api), Europa |
 | Radar, Warnkarte | DWD GeoServer, [KNMI](https://english.knmidata.nl/open-data) (Niederlande), [MET Norway](https://www.met.no/en/free-meteorological-data) (Nordic-Komposit); übriges Europa: [RainViewer](https://www.rainviewer.com/api.html) |

@@ -83,8 +83,14 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   Current values come, where possible, from the nearest weather station: DWD, GeoSphere Austria,
   MeteoSwiss and DMI every 10 minutes, else an airport (METAR). Each value counts only from a station
   at the place's height (at most 300 m apart) and near the model. The sky "now" follows the measured
-  sunshine as the hours follow the model's – thin veil clouds do not make a cloudy sky while the sun
-  shines through; the running hour in the day chart shows the same weather as the header. The day's high and low
+  sunshine as the hours follow theirs – thin veil clouds do not make a cloudy sky while the sun
+  shines through; where the station measures the sky overcast (7/8), no sun shines now, whatever the
+  model reckons. The running hour in the day chart shows the same weather as the header. **The sun,
+  cloud and fog of the hours to come** the app weighs from the model and DWD MOSMIX: MOSMIX reads
+  the models at each station against its measurements and so gets right what a model gets wrong
+  again and again – low stratus that lasts longer. It counts 80 %, less the farther its station
+  (in full up to 10 km, from 30 km no more), not at all for a station at another height; the
+  precipitation stays the model's and the radar's ([docs/MODELS.en.md](docs/MODELS.en.md)). The day's high and low
   hold the temperature now (the model may stay below it; measured, it has been reached). The ⓘ of
   "Measured at …" names for each value whether it was measured (and where) or comes from the model.
   Networks and rules: [docs/STATIONS.en.md](docs/STATIONS.en.md).
@@ -241,7 +247,9 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   coloured points. The date with the month written out (the weekday where
   there is room) or in figures with the calendar week. Each part can be switched off; what does
   not fit its size it leaves out (from Android 12 on for each size the launcher shows it in – the widget finds its real size itself, also where the launcher reports other figures), the height left goes to the chart or spreads between the groups;
-  ↻ at any size in the bottom right corner, "As of" before it where there is room. A tap on the time
+  the line of the next two hours midway between the clock or alarm and the chart; ↻ at any size in
+  the bottom right corner, "As of" before it where there is room, beside the chart on the line of
+  its times. A tap on the time
   opens the alarms (also where the clock app answers the standard request not at all or only to apps allowed to set alarms, as on ColorOS),
   on the date the calendar; the
   other parts lead to their place in Nimbus at the widget's place: the weather to the hourly
@@ -270,6 +278,7 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
 |---|---|
 | Forecast | [Open-Meteo](https://open-meteo.com): preset "best match", to choose DWD ICON, ECMWF IFS, Météo-France, MET Nordic (MET Norway), KNMI Harmonie, DMI Harmonie, UK Met Office, MeteoSwiss ICON-CH1/-CH2, GeoSphere AROME, ItaliaMeteo ICON-2I; gaps from "best match" |
 | Current readings | DWD stations via [Bright Sky](https://brightsky.dev), [GeoSphere Austria](https://data.hub.geosphere.at), [MeteoSwiss](https://opendatadocs.meteoswiss.ch), [DMI](https://www.dmi.dk/friedata), airports (METAR, [aviationweather.gov](https://aviationweather.gov)) |
+| Sun and cloud of the forecast | the model weighed with DWD MOSMIX (station forecast, Europe) via Bright Sky |
 | Alerts, look-back | DWD alerts and stations via Bright Sky |
 | Measured over the place | Precipitation: DWD radar RADOLAN (RW, RY), Germany · sunshine: DWD from EUMETSAT MTG satellite data via [Open-Meteo](https://open-meteo.com/en/docs/satellite-radiation-api), Europe |
 | Radar, warning map | DWD GeoServer, [KNMI](https://english.knmidata.nl/open-data) (Netherlands), [MET Norway](https://www.met.no/en/free-meteorological-data) (Nordic composite); rest of Europe: [RainViewer](https://www.rainviewer.com/api.html) |

@@ -58,13 +58,20 @@ object NowWeather {
                 WeatherCodes.derive(obs.cloudCover ?: model.cloudCover, 0.0, t)
             else -> null
         }
+        // the sky measured overcast: no sun now, whatever the model reckons (its fog stays). The
+        // ceilometer misses thin high cloud – a sky it measures clear may still be veiled, so only
+        // the overcast one is taken.
+        val overcast = observed == null && WeatherCodes.isSky(model.condition) && model.condition != Condition.FOG &&
+            (obs.cloudCover ?: 0.0) >= OVERCAST_PERCENT
+        val measuredSky = if (overcast) Condition.CLOUDY else observed
         // the sunshine measured (by day: at night there is none to measure) decides the sky – the
         // model's sunshine is not asked then
         val sun = obs.sunshine?.takeIf { model.isDay }
-        val base = observed ?: model.condition
+        val base = measuredSky ?: model.condition
         val sky = when {
-            sun != null && (observed == null || WeatherCodes.withSunshine(observed, sun) != observed) -> SkyBasis.MEASURED_SUNSHINE
+            sun != null && (measuredSky == null || WeatherCodes.withSunshine(measuredSky, sun) != measuredSky) -> SkyBasis.MEASURED_SUNSHINE
             observed != null -> SkyBasis.OBSERVED
+            overcast -> SkyBasis.MEASURED_CLOUD
             else -> SkyBasis.MODEL
         }
         fun at(v: NowValue, r: Reading, value: Any?) = value?.let { obs.siteOf(r).let { s -> MeasuredValue(v, s.name, s.distanceKm) } }
@@ -94,6 +101,7 @@ object NowWeather {
                 when (sky) {
                     SkyBasis.MEASURED_SUNSHINE -> at(NowValue.SKY, Reading.SUNSHINE, sun)
                     SkyBasis.OBSERVED -> at(NowValue.SKY, Reading.CONDITION, observed)
+                    SkyBasis.MEASURED_CLOUD -> at(NowValue.SKY, Reading.CLOUD_COVER, obs.cloudCover)
                     else -> null
                 },
             ),
@@ -106,6 +114,9 @@ object NowWeather {
      * the sky does not change its source back and forth with every load.
      */
     const val RADAR_VALID_MS = 30 * 60_000L
+
+    /** Cloud cover (%) from which a station's sky is overcast: 7 eighths. */
+    const val OVERCAST_PERCENT = 87.5
 
     /** What the radar says of now: its newest quarter hour of measured steps. */
     private const val NOW_QUARTER_MS = 15 * 60_000L
@@ -123,7 +134,7 @@ object NowWeather {
     fun withRadar(current: CurrentWeather, radar: RadarNow?, now: Long): CurrentWeather {
         val r = radarValid(radar, now) ?: return current
         val near = (current.stationDistanceKm ?: Double.MAX_VALUE) < HistorySource.RADAR_PIXEL_KM
-        if (near && (current.sky == SkyBasis.OBSERVED || current.sky == SkyBasis.MEASURED_SUNSHINE)) return current
+        if (near && (current.sky == SkyBasis.OBSERVED || current.sky == SkyBasis.MEASURED_SUNSHINE || current.sky == SkyBasis.MEASURED_CLOUD)) return current
         // a shower of a few minutes in the newest quarter hour falls now, however little its average
         val falling = (RadarAhead.peak(r.steps, r.time, NOW_QUARTER_MS) ?: 0.0) >= dev.nimbus.weather.ui.main.Insights.WET_RATE_MM_H
         val c = WeatherCodes.forMeasured(current.condition, r.mmPerHour, current.cloudCover, current.temperature, byRadar = true, falling) ?: current.condition
@@ -148,6 +159,17 @@ object NowWeather {
     /** The hour running at [now]: its values cover the hour before their time stamp. */
     fun runningHour(hourly: List<HourlyPoint>, now: Long): HourlyPoint? =
         hourly.firstOrNull { it.time > now }?.takeIf { it.time - now <= 3_600_000L }
+
+    /**
+     * Nothing measured of the sky: now as the hour running now ([hourly]) where MOSMIX was weighed
+     * into it ([SkyBlend]) – the sky the model has for this very moment would undo what MOSMIX
+     * knows better. Precipitation and thunder now stay the model's, as in the hours.
+     */
+    fun withSkyOfHour(current: CurrentWeather, hourly: List<HourlyPoint>, now: Long): CurrentWeather {
+        if (current.sky != SkyBasis.MODEL || !WeatherCodes.isSky(current.condition)) return current
+        val c = runningHour(hourly, now)?.condition?.takeIf(WeatherCodes::isSky) ?: return current
+        return current.copy(condition = c, sky = SkyBasis.MOSMIX)
+    }
 
     /**
      * Without a measured sunshine: the sky now brightened by the model's sunshine in the hour

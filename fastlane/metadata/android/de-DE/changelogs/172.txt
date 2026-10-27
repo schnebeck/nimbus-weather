@@ -1,0 +1,2 @@
+• Nimbus öffnet mit dem Ort, den du zuletzt angesehen hast – auch nach einem Neustart
+• Widget: neue Ortswahl „Zuletzt in Nimbus angesehen“ – wechselst du in der App den Ort, zieht das Widget mit

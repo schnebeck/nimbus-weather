@@ -34,10 +34,11 @@ import java.io.File
 
 private val Context.dataStore by preferencesDataStore(name = "nimbus")
 
-/** Persists settings, saved places and the last successful forecast per place. */
+/** Persists settings, saved places, the place last looked at and the last successful forecast per place. */
 class Store(private val context: Context) {
     private val settingsKey = stringPreferencesKey("settings")
     private val placesKey = stringPreferencesKey("places")
+    private val lastPlaceKey = stringPreferencesKey("last_place")
     private val placeList = ListSerializer(Place.serializer())
 
     val settings: Flow<Settings> = context.dataStore.data.map { p ->
@@ -46,6 +47,14 @@ class Store(private val context: Context) {
 
     val places: Flow<List<Place>> = context.dataStore.data.map { p ->
         p[placesKey]?.let { runCatching { JsonCodec.decodeFromString(placeList, it) }.getOrNull() } ?: emptyList()
+    }
+
+    /** The place last looked at in the app – shown again at its start, and by a widget that follows the app. */
+    val lastPlace: Flow<String?> = context.dataStore.data.map { p -> p[lastPlaceKey] }
+
+    /** [placeId] null: none kept. */
+    suspend fun setLastPlace(placeId: String?) {
+        context.dataStore.edit { p -> if (placeId == null) p.remove(lastPlaceKey) else if (p[lastPlaceKey] != placeId) p[lastPlaceKey] = placeId }
     }
 
     suspend fun updateSettings(transform: (Settings) -> Settings) {

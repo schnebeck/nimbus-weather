@@ -198,7 +198,8 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   position out of date, so are all data of "My location". Stored data nobody needs is deleted: data
   of a moment after 4 days (as far as the look-back reaches), lists (gauges, bathing waters, tides)
   after 30 days without use, the weather of removed places at once.
-- **Places, settings**: my location and saved places (long press to sort and delete); units (on
+- **Places, settings**: my location and saved places (long press to sort and delete; Nimbus
+  opens with the place shown last); units (on
   first start to suit the country), cards, radar, display (station values, full screen,
   animations), pollen, bathing waters, the forecast model (one line, the list on a tap; preset:
   Automatic – the finest model for each place and time, named with its grid in the data sources).
@@ -248,7 +249,8 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   (opened for the moment if folded), anything else – or a card switched off – to the page's head. The system's colours (light/dark, from Android 12 on
   from the wallpaper), adjustable opacity. Place: "My Location" – where the app last found the
   phone; the widget does not look for it itself (no location in the background): after moving
-  elsewhere open Nimbus once or tap the weather – or a saved place. It fetches the weather about
+  elsewhere open Nimbus once or tap the weather –, a saved place, or "Last looked at in Nimbus":
+  the place the app showed last. It fetches the weather about
   every 30 minutes and on ↻; what the app has just loaded it takes over at once.
 - **A model per place**: in the list of places (long press) each place first gets "As in the app
   settings" or "A model of its own for this place", then the model – regional ones too, like MET

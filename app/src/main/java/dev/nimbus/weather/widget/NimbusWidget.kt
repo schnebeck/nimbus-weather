@@ -143,6 +143,13 @@ object Widgets {
         wm.enqueueUniqueWork(WORK_NOW, ExistingWorkPolicy.REPLACE, request)
     }
 
+    /** The widgets following the app ([WidgetConfig.followApp]) shown anew: another place was looked at. */
+    suspend fun showFollowing(context: Context) {
+        val configs = WidgetConfigs(context)
+        val ids = ids(context).filter { configs.of(it).followApp }
+        if (ids.isNotEmpty()) show(context, ids)
+    }
+
     /** Every widget shown anew from the stored weather – after the app loaded a place, say. */
     suspend fun showAll(context: Context) {
         val ids = ids(context)
@@ -151,10 +158,15 @@ object Widgets {
 
     /**
      * The place of a widget: the one chosen – "my location" ([WidgetConfig.placeId] null) is
-     * where the app found the phone last; never located: the first place of the list.
+     * where the app found the phone last; following the app, the place last looked at there;
+     * never located: the first place of the list.
      */
     suspend fun placeOf(store: Store, config: WidgetConfig): Place? {
         val places = store.places.first()
+        if (config.followApp) store.lastPlace.first()?.let { id ->
+            places.firstOrNull { it.id == id }?.let { return it }
+            if (id == LocationProvider.CURRENT_LOCATION_ID) store.cachedWeather(id)?.place?.let { return it }
+        }
         if (config.placeId != null) places.firstOrNull { it.id == config.placeId }?.let { return it }
         return store.cachedWeather(LocationProvider.CURRENT_LOCATION_ID)?.place ?: places.firstOrNull()
     }

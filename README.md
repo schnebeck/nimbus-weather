@@ -202,7 +202,8 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   geantwortet hat. Ist der Standort veraltet, sind es alle Daten von „Mein Standort“ mit ihm. Gespeichertes ohne Nutzen wird gelöscht: Momentdaten nach 4 Tagen (so weit reicht
   der Rückblick), Listen (Pegel, Badestellen, Gezeiten) nach 30 Tagen ohne Nutzung, das Wetter
   entfernter Orte sofort.
-- **Orte, Einstellungen**: Standort und gespeicherte Orte (lange drücken zum Sortieren und Löschen);
+- **Orte, Einstellungen**: Standort und gespeicherte Orte (lange drücken zum Sortieren und Löschen;
+  Nimbus öffnet mit dem Ort, der zuletzt zu sehen war);
   Einheiten (beim ersten Start passend zum Land), Kacheln, Radar, Anzeige (Stationswerte, Vollbild,
   Animationen), Pollen, Badestellen, Vorhersagemodell (eine Zeile, die Liste auf Antippen;
   voreingestellt: Automatisch – das feinste Modell je Ort und Zeitraum, die Datenquellen nennen es
@@ -259,8 +260,8 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   ausgeblendete Kachel – zum Kopf der Seite. Farben des Systems (hell/dunkel,
   ab Android 12 aus dem Hintergrundbild), Deckkraft einstellbar. Ort: „Mein Standort“ – wo die App
   das Handy zuletzt gefunden hat; das Widget sucht nicht selbst (keine Standortabfrage im
-  Hintergrund), nach einem Ortswechsel einmal Nimbus öffnen oder aufs Wetter tippen – oder ein
-  gespeicherter Ort. Es holt das Wetter etwa alle 30 Minuten und auf ↻; was die App gerade geladen
+  Hintergrund), nach einem Ortswechsel einmal Nimbus öffnen oder aufs Wetter tippen –, ein
+  gespeicherter Ort oder „Zuletzt in Nimbus angesehen“: der Ort, den die App zuletzt zeigte. Es holt das Wetter etwa alle 30 Minuten und auf ↻; was die App gerade geladen
   hat, übernimmt es sofort.
 - **Modell je Ort**: In der Ortsliste (lange drücken) wählt man für jeden Ort zuerst „Wie in den
   App-Einstellungen“ oder „Eigenes Modell für diesen Ort“, dann das Modell – auch regionale wie MET

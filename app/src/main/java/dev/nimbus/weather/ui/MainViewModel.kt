@@ -37,6 +37,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -63,6 +64,9 @@ class ViewModelDeps(
 
 /** A forced reload shows "all yellow" at least this long – a fast answer made it invisible. */
 internal const val FORCED_YELLOW_MS = 500L
+
+/** After the place looked at changed: the widgets following the app drawn anew after this rest. */
+internal const val FOLLOW_DELAY_MS = 1_500L
 
 class MainViewModel(
     app: Application,
@@ -118,6 +122,16 @@ class MainViewModel(
             val notices = dev.nimbus.weather.notify.NoticeState(getApplication())
             _state.map { st -> if (st.initialized) shownPlaceId(st) else null }.distinctUntilChanged().collect { id -> if (id != null) notices.shownPlace = id }
         }
+        // the place looked at, kept for the next start – and the widgets that follow the app show it
+        viewModelScope.launch {
+            _state.map { st -> if (st.initialized) shownPlaceId(st) else null }.distinctUntilChanged().collectLatest { id ->
+                if (id == null) return@collectLatest
+                store.setLastPlace(id)
+                // a moment's rest: paging through the places does not draw the widgets each time
+                kotlinx.coroutines.delay(FOLLOW_DELAY_MS)
+                dev.nimbus.weather.widget.Widgets.showFollowing(getApplication())
+            }
+        }
         // Once the preview card has its size: prepare the radar previews of all places, so that
         // switching places shows a picture at once (base maps only on Wi-Fi, see RadarPreview).
         launchWhileShown {
@@ -137,6 +151,8 @@ class MainViewModel(
                 }
                 shelf.take(cachedCurrent)
             }
+            // the place last looked at: shown again, where it is still among the pages
+            val last = store.lastPlace.first()
             combine(store.settings, store.places) { s, p -> s to p }.collect { (settings, places) ->
                 dev.nimbus.weather.ui.radar.RadarPalette.scheme = settings.radarColors
                 dev.nimbus.weather.ui.radar.RadarPreview.remembered = settings.radarZoom
@@ -156,7 +172,9 @@ class MainViewModel(
                         settings = settings,
                         savedPlaces = places,
                         states = st.states + cached,
-                        selectedPlaceId = st.selectedPlaceId ?: st.pages.firstOrNull()?.id ?: places.firstOrNull()?.id,
+                        selectedPlaceId = st.selectedPlaceId
+                            ?: last?.takeIf { id -> id == st.currentPlace?.id || places.any { it.id == id } }
+                            ?: st.pages.firstOrNull()?.id ?: places.firstOrNull()?.id,
                     )
                 }
                 cached.forEach { (_, ps) -> ps.data?.let(shelf::take) }

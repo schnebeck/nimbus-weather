@@ -143,7 +143,8 @@ internal fun WidgetSetup(id: Int, store: Store, configs: WidgetConfigs, onDone: 
     val places by store.places.collectAsState(initial = emptyList())
     val settings by store.settings.collectAsState(initial = null)
     val located by produceState<String?>(null) { value = store.cachedWeather(LocationProvider.CURRENT_LOCATION_ID)?.place?.name }
-    val weather by produceState<Pair<String?, WidgetWeather?>>(null to null, c.placeId, c.pollen, places) {
+    val lastName by produceState<String?>(null, places) { value = Widgets.placeOf(store, WidgetConfig(followApp = true))?.name }
+    val weather by produceState<Pair<String?, WidgetWeather?>>(null to null, c.placeId, c.followApp, c.pollen, places) {
         val place = Widgets.placeOf(store, c)
         value = place?.id to place?.let { store.cachedWeather(it.id) }?.let { WidgetWeather.of(it, System.currentTimeMillis(), c.pollen) }
     }
@@ -180,12 +181,17 @@ internal fun WidgetSetup(id: Int, store: Store, configs: WidgetConfigs, onDone: 
         item { Heading(stringResource(R.string.widget_setup_place)) }
         item {
             Column {
-                Choice(stringResource(R.string.my_location), located, c.placeId == null) { config = c.copy(placeId = null) }
+                Choice(stringResource(R.string.widget_setup_follow_app), lastName, c.followApp) { config = c.copy(followApp = true, placeId = null) }
+                Text(
+                    stringResource(R.string.widget_setup_follow_app_hint), Modifier.padding(start = 48.dp, bottom = 4.dp),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Choice(stringResource(R.string.my_location), located, !c.followApp && c.placeId == null) { config = c.copy(followApp = false, placeId = null) }
                 Text(
                     stringResource(R.string.widget_setup_my_location_hint), Modifier.padding(start = 48.dp, bottom = 4.dp),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                places.forEach { p -> Choice(p.name, p.subtitle.ifEmpty { null }, c.placeId == p.id) { config = c.copy(placeId = p.id) } }
+                places.forEach { p -> Choice(p.name, p.subtitle.ifEmpty { null }, !c.followApp && c.placeId == p.id) { config = c.copy(followApp = false, placeId = p.id) } }
             }
         }
         item { Heading(stringResource(R.string.widget_setup_parts)) }

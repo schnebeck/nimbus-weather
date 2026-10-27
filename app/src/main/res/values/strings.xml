@@ -824,6 +824,8 @@
     <string name="widget_alarm_desc">Next alarm %1$s</string>
     <string name="widget_setup_title">Set up the widget</string>
     <string name="widget_setup_place">Place</string>
+    <string name="widget_setup_follow_app">Last looked at in Nimbus</string>
+    <string name="widget_setup_follow_app_hint">Follows the place you last looked at in Nimbus – change the place there, and the widget follows.</string>
     <string name="widget_setup_my_location_hint">The place where Nimbus last found you. The widget does not look for the location itself: after moving elsewhere, open Nimbus once or tap the weather in the widget, and it follows.</string>
     <string name="widget_setup_parts">Shows</string>
     <string name="widget_part_clock">Time</string>

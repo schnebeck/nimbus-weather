@@ -1,0 +1,2 @@
+• Nimbus opens with the place you last looked at – after a restart too
+• Widget: new place choice "Last looked at in Nimbus" – change the place in the app, and the widget follows

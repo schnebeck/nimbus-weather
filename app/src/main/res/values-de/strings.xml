@@ -813,6 +813,8 @@
     <string name="widget_alarm_desc">Nächster Wecker %1$s</string>
     <string name="widget_setup_title">Widget einrichten</string>
     <string name="widget_setup_place">Ort</string>
+    <string name="widget_setup_follow_app">Zuletzt in Nimbus angesehen</string>
+    <string name="widget_setup_follow_app_hint">Folgt dem Ort, den du in Nimbus zuletzt angesehen hast – wechselst du dort den Ort, zieht das Widget mit.</string>
     <string name="widget_setup_my_location_hint">Der Ort, an dem Nimbus dich zuletzt gefunden hat. Das Widget sucht nicht selbst nach dem Standort: Nach einem Ortswechsel einmal Nimbus öffnen oder auf das Wetter im Widget tippen, dann zieht es mit.</string>
     <string name="widget_setup_parts">Anzeige</string>
     <string name="widget_part_clock">Uhrzeit</string>

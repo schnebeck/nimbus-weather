@@ -25,6 +25,7 @@ import kotlinx.serialization.Serializable
 /**
  * One widget's choice: [placeId] null is "my location" – where the app found the phone last; the
  * widget itself never asks for the position (that would take the location in the background).
+ * [followApp]: the place last looked at in the app instead, whichever that is.
  * Each part can be switched off; [pollen] empty: no pollen line. [opacity] of the background, 0..1.
  * [dateWithWeek]: the date in figures with the calendar week ("01.10.2026 KW 40") instead of
  * weekday and month written out.
@@ -32,6 +33,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class WidgetConfig(
     val placeId: String? = null,
+    val followApp: Boolean = false,
     val clock: Boolean = true,
     val date: Boolean = true,
     val dateWithWeek: Boolean = false,

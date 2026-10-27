@@ -111,6 +111,24 @@ class PlaceListTest {
         compose.onAllNodesWithText("Klar", useUnmergedTree = true).assertCountEquals(1)
     }
 
+    /**
+     * The symbols of the places one under the other, centred on each other – whatever the width of
+     * the temperature beside them ("1", "13", "-32").
+     */
+    @Test fun theSymbolsOneUnderTheOther() {
+        val noon = java.time.Instant.parse("2026-10-27T11:00:00Z").toEpochMilli()
+        fun card(p: Place, t: Double) = dev.nimbus.weather.ui.PlaceState(data = dev.nimbus.weather.data.model.WeatherData(
+            p, "Europe/Berlin", 0,
+            dev.nimbus.weather.data.model.CurrentWeather(noon, t, t, dev.nimbus.weather.data.model.Condition.FOG, true, 70.0, 7.0, 1015.0, 12.0, 25.0, 240.0, 0.0, 20000.0, 2.0, 0.0),
+            emptyList(), emptyList(), emptyList(), sources = emptyList(), fetchedAt = noon,
+        ))
+        val places = listOf(Place("a", "Zugspitze", latitude = 47.42, longitude = 10.98) to 1.0, berlin to 13.0, Place("c", "Jakutsk", latitude = 62.03, longitude = 129.73) to -32.0)
+        compose.setContent { Column { places.forEach { (p, t) -> PlaceCard(p, card(p, t), Settings(), now = noon) {} } } }
+        compose.waitForIdle()
+        val centres = places.map { (p, _) -> compose.onNodeWithTag("place-symbol-${p.id}", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot.center.x }
+        assertEquals(centres.toString(), 1, centres.map { kotlin.math.round(it) }.distinct().size)
+    }
+
     private fun places(
         saved: List<Place>, onSetModel: (Place, ForecastModel?) -> Unit = { _, _ -> },
         onDuplicate: (Place) -> Place = { dev.nimbus.weather.ui.places.PlaceTwins.copyOf(it, saved) },

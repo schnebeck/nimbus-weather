@@ -336,6 +336,10 @@ private fun EditList(
     }
 }
 
+/** The place card's column of the symbol of now; the room of the temperature beside it ("-32 °C" at most, as a rule). */
+private val SYMBOL_COLUMN = 52.dp
+private val TEMPERATURE_ROOM = 76.dp
+
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun PlaceCard(
@@ -385,16 +389,21 @@ fun PlaceCard(
             condition?.let { Text(it, fontSize = 14.sp, color = Color.White, maxLines = 1) }
         }
         Column(Modifier.fillMaxSize().weight(0.8f), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.SpaceBetween) {
-            // the symbol of now beside the temperature, as on the place's page
+            // the symbol of now beside the temperature, as on the place's page – in a column of its own,
+            // the temperature on a room of its own width at the right: the symbols of all places one
+            // under the other, centred on each other, whatever the temperature's figures
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (s != null) {
-                    dev.nimbus.weather.ui.components.WeatherIcon(
-                        s.current.condition, isDay, size = 40.dp, wind = dev.nimbus.weather.ui.components.windiness(s.current.windSpeed, s.current.windGust),
-                        modifier = Modifier.testTag("place-symbol-${place.id}"), description = condition,
-                    )
-                    Spacer(Modifier.width(6.dp))
+                    Box(Modifier.width(SYMBOL_COLUMN), contentAlignment = Alignment.Center) {
+                        dev.nimbus.weather.ui.components.WeatherIcon(
+                            s.current.condition, isDay, size = 40.dp, wind = dev.nimbus.weather.ui.components.windiness(s.current.windSpeed, s.current.windGust),
+                            modifier = Modifier.testTag("place-symbol-${place.id}"), description = condition,
+                        )
+                    }
                 }
-                dev.nimbus.weather.ui.components.BigTemperature(s?.current?.temperature, settings.temperatureUnit, 44.sp, weight = FontWeight.Light)
+                Box(Modifier.widthIn(min = TEMPERATURE_ROOM), contentAlignment = Alignment.CenterEnd) {
+                    dev.nimbus.weather.ui.components.BigTemperature(s?.current?.temperature, settings.temperatureUnit, 44.sp, weight = FontWeight.Light)
+                }
             }
             val today = s?.daily?.lastOrNull { it.date <= now }
             if (today != null) {

@@ -210,7 +210,7 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   der Rückblick), Listen (Pegel, Badestellen, Gezeiten) nach 30 Tagen ohne Nutzung, das Wetter
   entfernter Orte sofort.
 - **Orte, Einstellungen**: Standort und gespeicherte Orte, jeder mit dem Wettersymbol von jetzt
-  neben der Temperatur, Tag oder Nacht nach dem Sonnenstand am Ort (lange drücken zum Sortieren
+  neben der Temperatur (in einer eigenen Spalte, die Symbole aller Orte untereinander), Tag oder Nacht nach dem Sonnenstand am Ort (lange drücken zum Sortieren
   und Löschen; Nimbus öffnet mit dem Ort, der zuletzt zu sehen war);
   Einheiten (beim ersten Start passend zum Land), Kacheln, Radar, Anzeige (Stationswerte, Vollbild,
   Animationen), Pollen, Badestellen, Vorhersagemodell (eine Zeile, die Liste auf Antippen;

@@ -39,8 +39,8 @@ android {
         applicationId = "dev.nimbus.weather"
         minSdk = 26
         targetSdk = 36
-        versionCode = 182
-        versionName = "2.4.12"
+        versionCode = 183
+        versionName = "2.4.13"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

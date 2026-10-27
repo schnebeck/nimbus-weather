@@ -104,6 +104,9 @@ data class WidgetLayout(
         private const val GAP = 10f
         /** The small texts at font scale 1: a line, the dates, a character of the alarm and of the two hours' line. */
         private const val LINE = 19f
+        /** The line under the columns (the alarm, the pollen as points, 13 sp): its space above, its line at font scale 1. */
+        private const val MID_TOP = 2f
+        private const val MID_LINE = 18f
         /** A character of the head line (14 sp); the place's pin. */
         private const val HEAD_CHAR = 7.6f
         private const val PIN = 15f
@@ -156,6 +159,7 @@ data class WidgetLayout(
             sideFrom: Int = 0,
         ): WidgetLayout {
             val line = LINE * fontScale
+            val midLine = MID_TOP + MID_LINE * fontScale
             val height = (size.heightDp - PADDING_V).toFloat()
             val width = (size.widthDp - PADDING_H).toFloat()
             // the pollen: those flying; chosen but none flying, a line saying so
@@ -201,7 +205,7 @@ data class WidgetLayout(
                 if (beside) big = minOf(big, (width - (if (bigWeather) WEATHER_FIX else 0f) - (if (rightWanted) GAP else 0f) - besideW) / perDp)
                 val bigH = if (bigClock || bigWeather) big * BIG_LINE else 0f
                 // the line under both columns: the alarm (under the clock), beside it the two hours' line or the pollen as points
-                var left = height - SPARE - headH - bigH - (if (below) line + 2 else 0f)
+                var left = height - SPARE - headH - bigH - (if (below) midLine else 0f)
                 fun fits(h: Float) = (left >= h).also { if (it) left -= h }
                 val alarmW = if (below) ALARM_ICON + CHAR * (alarm?.length ?: 0) * fontScale + GAP else 0f
                 val chart = chartWanted && fits(BELOW_GAP + CHART_TOP + CHART_MIN + AXIS)
@@ -212,7 +216,7 @@ data class WidgetLayout(
                 // precipitation coming, or nothing to draw: the line over the chart – else in the line under the columns
                 var rainLine = rainFirst && rainLineFits()
                 var midRain = false
-                if (rainFirst && !rainLine) midRain = rainW <= width - alarmW && (below || fits(line + 2))
+                if (rainFirst && !rainLine) midRain = rainW <= width - alarmW && (below || fits(midLine))
                 // the pollen: beside the chart, one under the other; without the chart all as gauges
                 // below, else as points in the line under the columns
                 var rows = 0
@@ -222,7 +226,7 @@ data class WidgetLayout(
                 if (pollenWanted && !side) {
                     when {
                         pollenRowsWanted > 0 && fits((if (chart || rainLine) POLLEN_TOP else BELOW_GAP) + pollenRowsWanted * POLLEN_ROW * fontScale) -> rows = pollenRowsWanted
-                        !midRain && dotsW <= width - alarmW && (below || fits(line + 2)) -> dots = true
+                        !midRain && dotsW <= width - alarmW && (below || fits(midLine)) -> dots = true
                     }
                 }
                 if (rainWanted && !rainFirst) rainLine = rainLineFits()
@@ -237,7 +241,7 @@ data class WidgetLayout(
                 else -> {
                     val under = plan(below = true, beside = false)
                     val by = if (bigClock) plan(below = false, beside = true).takeIf { it.big >= BIG_MIN } else null
-                    val leftFits = height - headH - (if (bigClock || bigWeather) fitBig * BIG_LINE else 0f) >= line + 2
+                    val leftFits = height - headH - (if (bigClock || bigWeather) fitBig * BIG_LINE else 0f) >= midLine
                     // under the clock where there is the height – the pollen give way; the chart and a
                     // coming precipitation's line do not: else beside it
                     val keeps = under.chart == none.chart && (under.rainShown || !(by ?: none).rainShown || !rainFirst)

@@ -442,6 +442,27 @@ class WidgetTest {
         assertTrue(found.bigDp > before.bigDp)
     }
 
+    /**
+     * A low widget (Nova: a frame of 426 × 111 dp): the alarm on its line under the clock where
+     * that line fits as it is drawn (2 dp above, a line of 13 sp) – not small beside a smaller clock.
+     */
+    @Test fun theAlarmUnderTheClockInALowFrame() {
+        alarmAt(day + 4 * 24 * h + 8 * h)
+        val config = WidgetConfig(dateWithWeek = true)
+        val l = WidgetLayout.of(config, WidgetSize(426, 111), alarm = "Sa 08:30", weather = WidgetWeather.of(data(), now, config.pollen))
+        assertTrue("$l", l.alarm && !l.alarmBeside)
+        assertEquals(46f, l.bigDp, 0f)
+        val v = render(config, WidgetSize(426, 111), data())
+        val line = v.findViewById<View>(R.id.widget_alarm_line)
+        assertEquals(View.VISIBLE, line.visibility)
+        // within the widget's padding at the bottom: nothing cut off
+        val density = app.resources.displayMetrics.density
+        var bottom = line.bottom
+        var p = line.parent as View
+        while (p !== v) { bottom += p.top; p = p.parent as View }
+        assertTrue("${bottom / density} dp", bottom <= v.height - 8 * density + 0.5f)
+    }
+
     /** The widget may stand on the lock screen too, where the system offers it. */
     @Test fun onTheLockScreenToo() {
         val info = java.io.File("src/main/res/xml/widget_info.xml").readText()

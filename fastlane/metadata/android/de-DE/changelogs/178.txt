@@ -1,0 +1,2 @@
+• Widget: Die Zeile des Weckers rückt näher unter die Uhr, das Diagramm näher unter sie – es wird höher (ab Android 12)
+• Der Ausblick der nächsten zwei Stunden steht neben dem Wecker nur, wo er dort ganz passt (mit der Schrift gemessen), sonst in seiner eigenen Zeile – nie abgeschnitten

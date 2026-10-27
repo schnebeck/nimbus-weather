@@ -1,0 +1,2 @@
+• Widget: the alarm's line moves up closer under the clock, the chart closer under it – the chart grows taller (Android 12 on)
+• The outlook for the next two hours stands beside the alarm only where it fits there whole (measured in its font), else on its own line – never cut off

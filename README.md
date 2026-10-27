@@ -260,8 +260,9 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   nicht in die Größe passt, blendet es aus (ab Android 12 für jede Größe, in der der Launcher es
   zeigt – die wirkliche Größe ermittelt das Widget selbst, auch wo der Launcher andere Maße meldet), die übrige Höhe nimmt das Diagramm oder verteilt sich
   zwischen den Gruppen – die Zeile der nächsten zwei Stunden mittig zwischen Uhr oder Wecker und
-  Diagramm, mit Wecker rechts in seiner Zeile, wo dort keine Pollenpunkte stehen (das Diagramm
-  bekommt die Zeile); ↻ bei jeder Größe in der Ecke rechts unten, „Stand“ davor, wo Platz ist, neben dem
+  Diagramm, mit Wecker rechts in seiner Zeile, wo er dort ganz passt und keine Pollenpunkte stehen
+  (das Diagramm bekommt die Zeile); die Zeile des Weckers dicht unter den Ziffern der Uhr, das
+  Diagramm dicht darunter (ab Android 12); ↻ bei jeder Größe in der Ecke rechts unten, „Stand“ davor, wo Platz ist, neben dem
   Diagramm auf der Zeile seiner Uhrzeiten. Tippen auf die Uhrzeit öffnet den Wecker
   (auch wo die Uhr-App die Standardanfrage nicht oder nur Apps mit Weckerrecht beantwortet, etwa unter ColorOS), auf das
   Datum den Kalender; die übrigen Teile führen zu ihrer Stelle in Nimbus beim Ort des Widgets: das

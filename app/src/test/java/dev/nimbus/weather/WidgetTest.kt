@@ -295,7 +295,7 @@ class WidgetTest {
         // nothing to draw and little height: as points beside the alarm
         val dull = data(rainFrom = 130).let { d -> d.copy(minutely = d.minutely.map { it.copy(sunshine = 0.0) }) }
         val wd = WidgetWeather.of(dull, now, all)
-        val low = WidgetLayout.of(WidgetConfig(pollen = all, rain = false), WidgetSize(320, 140), alarm = "06:00", weather = wd, pollenText = WidgetViews.pollenDots(app, wd.pollen).toString())
+        val low = WidgetLayout.of(WidgetConfig(pollen = all, rain = false), WidgetSize(320, 125), alarm = "06:00", weather = wd, pollenText = WidgetViews.pollenDots(app, wd.pollen).toString())
         assertTrue(low.pollenDots && !low.chart && low.alarm)
         // birch "medium" yellow; grass "none to low" and hazel "none" left out
         val dots = WidgetViews.pollenDots(app, w.pollen) as android.text.Spanned
@@ -429,7 +429,8 @@ class WidgetTest {
         fun shown(offered: List<WidgetSize>) = offered.filter { it.widthDp <= 320f && it.heightDp <= 182.4f }
             .minBy { (320f - it.widthDp) * (320f - it.widthDp) + (182.4f - it.heightDp) * (182.4f - it.heightDp) }
         val step = shown(base)
-        val before = WidgetLayout.of(all, step, alarm = "09:00", weather = w)
+        // planned without the alarm's line reaching up under the clock: else the step below has its room too
+        val before = WidgetLayout.of(all, step, alarm = "09:00", weather = w, tuck = false)
         assertTrue("$step", before.alarmBeside && !before.alarm && before.chart)
         var search = dev.nimbus.weather.widget.FrameSearch("figures")
         repeat(6) {
@@ -437,7 +438,7 @@ class WidgetTest {
             search = search.heard(search.round, shown(search.offered)) ?: return@repeat
         }
         assertTrue("$search", search.settled)
-        val found = WidgetLayout.of(all, search.fit!!, alarm = "09:00", weather = w)
+        val found = WidgetLayout.of(all, search.fit!!, alarm = "09:00", weather = w, tuck = false)
         assertTrue("${search.fit}", found.alarm && !found.alarmBeside && found.chart)
         assertTrue(found.bigDp > before.bigDp)
     }
@@ -503,7 +504,7 @@ class WidgetTest {
      */
     @Test fun theTwoHoursLineMidwayBetweenTheAlarmAndTheChart() {
         alarmAt(day + 4 * 24 * h + 8 * h)
-        for (size in listOf(WidgetSize(280, 200), WidgetSize(300, 210), WidgetSize(310, 220))) {
+        for (size in listOf(WidgetSize(250, 190), WidgetSize(300, 200), WidgetSize(310, 200))) {
             val config = WidgetConfig(dateWithWeek = true, pollen = listOf(PollenType.BIRCH))
             val v = render(config, size, data(rainFrom = 40))
             val density = app.resources.displayMetrics.density
@@ -524,8 +525,8 @@ class WidgetTest {
 
     /**
      * An alarm and no pollen beside it: the two hours' line in the alarm's line, at its right – it
-     * does not vanish, and the chart gains the line it leaves: as tall as without the alarm but for
-     * the room above that line.
+     * does not vanish, and the chart gains the line it leaves. That line close under the clock's
+     * figures, the chart close under it: the chart taller than without the alarm.
      */
     @Test fun theTwoHoursLineBesideTheAlarm() {
         val config = WidgetConfig(dateWithWeek = true)
@@ -536,7 +537,11 @@ class WidgetTest {
             val without = WidgetLayout.of(config, size, alarm = null, weather = w)
             if (!with.alarm || !with.chart) continue
             assertTrue("$size: $with", with.midRain && !with.rainLine)
-            assertTrue("$size: ${with.chartDp} dp, without the alarm ${without.chartDp} dp", with.chartDp >= without.chartDp - 2f)
+            // where the outlook has its line without the alarm too, "As of" or the refresh's line alike in both
+            // (they come before the chart's growth)
+            if (without.rainLine && with.status == without.status && with.refreshLine == without.refreshLine) {
+                assertTrue("$size: ${with.chartDp} dp, without the alarm ${without.chartDp} dp", with.chartDp > without.chartDp)
+            }
         }
         alarmAt(day + 4 * 24 * h + 8 * h)
         for (rainFrom in listOf(null, 40)) {
@@ -554,7 +559,45 @@ class WidgetTest {
             val right = v.leftOf(line) + line.totalPaddingLeft + line.layout.getLineRight(0)
             assertEquals("$rainFrom", (v.leftOf(chart) + chart.width).toFloat(), right, 1f)
             assertEquals(View.VISIBLE, chart.visibility)
+            // the letters of the alarm's line close under the clock's figures, clear of them and of the weather
+            val density = app.resources.displayMetrics.density
+            val clock = v.findViewById<TextView>(R.id.widget_clock)
+            val ink = android.graphics.Rect()
+            alarm.paint.getTextBounds(alarm.text.toString(), 0, alarm.text.length, ink)
+            val letters = v.topOf(alarm) + alarm.baseline + ink.top
+            val underClock = (letters - (v.topOf(clock) + clock.baseline)) / density
+            assertTrue("$rainFrom: ${underClock} dp under the clock's figures", underClock in 4f..10.5f)
+            for (id in listOf(R.id.widget_temp, R.id.widget_chance, R.id.widget_icon)) {
+                val o = v.findViewById<View>(id)
+                if (o.visibility != View.VISIBLE) continue
+                val bottom = if (o is TextView) v.topOf(o) + o.baseline + o.paint.fontMetrics.descent.toInt() else v.topOf(o) + o.height
+                assertTrue("$rainFrom: ${v.resources.getResourceEntryName(id)} to $bottom, the line's letters from $letters", bottom < letters)
+            }
+            // the chart's first drawn row (its units) close under the alarm's letters
+            val bmp = ((chart as android.widget.ImageView).drawable as android.graphics.drawable.BitmapDrawable).bitmap
+            val firstRow = (0 until bmp.height).first { y -> (0 until bmp.width).any { x -> bmp.getPixel(x, y) ushr 24 != 0 } }
+            val underAlarm = (v.topOf(chart) + firstRow - (v.topOf(alarm) + alarm.baseline)) / density
+            assertTrue("$rainFrom: the chart ${underAlarm} dp under the alarm's line", underAlarm in 4f..13f)
         }
+    }
+
+    /**
+     * A longer outlook: beside the alarm only where it fits there whole – else on a line of its own
+     * (two where it needs them); never cut off, at any width.
+     */
+    @Test fun aLongerOutlookNeverCut() {
+        alarmAt(day + 4 * 24 * h + 8 * h)
+        val config = WidgetConfig(dateWithWeek = true)
+        var beside = 0; var own = 0
+        for (rainFrom in listOf(null, 40)) for (width in 250..420 step 10) {
+            val v = render(config, WidgetSize(width, 200), data(rainFrom = rainFrom))
+            val shown = listOf(R.id.widget_pollen_dots, R.id.widget_rain_text).map { v.findViewById<TextView>(it) }.filter { it.visibility == View.VISIBLE }
+            assertEquals("$width: one place for the outlook", 1, shown.size)
+            val t = shown.single()
+            if (t.id == R.id.widget_pollen_dots) beside++ else own++
+            for (k in 0 until t.layout.lineCount) assertEquals("$width: \"${t.text}\" cut", 0, t.layout.getEllipsisCount(k))
+        }
+        assertTrue("beside $beside, own line $own", beside > 0 && own > 0)
     }
 
     /** The widget may stand on the lock screen too, where the system offers it. */
@@ -573,9 +616,13 @@ class WidgetTest {
         // two rows of cells: the alarm under the clock where there is the height, the chart still there
         val two = WidgetLayout.of(all, WidgetSize(320, 180), alarm = "06:30", weather = w)
         assertTrue(two.chart && two.alarm && !two.alarmBeside)
-        // less height: beside the clock, so that the chart keeps its room
+        // less height: the alarm's line reaching up under the clock's figures, the chart close under
+        // it – it costs the chart nothing
         val low = WidgetLayout.of(all, WidgetSize(320, 160), alarm = "06:30", weather = w)
-        assertTrue(low.chart && low.alarmBeside && !low.alarm)
+        assertTrue(low.chart && low.alarm && !low.alarmBeside)
+        // where it cannot reach up (before Android 12): beside the clock, so that the chart keeps its room
+        val before12 = WidgetLayout.of(all, WidgetSize(320, 160), alarm = "06:30", weather = w, tuck = false)
+        assertTrue(before12.chart && before12.alarmBeside && !before12.alarm)
         // one row: date, clock, place and weather – smaller, nothing below
         val row = WidgetLayout.of(all, WidgetSize(320, 70), alarm = "06:30", weather = w)
         assertTrue(row.clock && row.date && row.weather && row.secondLine)

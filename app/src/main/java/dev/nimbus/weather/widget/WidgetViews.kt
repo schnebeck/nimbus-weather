@@ -102,7 +102,9 @@ data class WidgetLines(val head: Float, val text: Float, val mid: Float, val sma
  * The alarm on a line under the clock ([alarm]) where there is the
  * height for it – or small beside it ([alarmBeside]) where that line would cost the chart its room.
  * With the alarm on its line and no pollen as points beside it, the two hours' line stands there
- * at the right ([midRain]) where it fits: the line it leaves the chart takes.
+ * at the right ([midRain]) where it fits: the line it leaves the chart takes. The alarm's line
+ * reaches up into the room under the clock's figures ([tuckDp]: so much higher), the chart
+ * close under it.
  * The time of the data under the pollen beside the chart, on the line of the chart's times
  * ([statusSide]): it takes no line of its own, the chart has its height.
  */
@@ -115,6 +117,8 @@ data class WidgetLayout(
     /** Not even for that line: the parts keep [REFRESH_ROOM] free at the right for the refresh in the corner. */
     val refreshRoom: Boolean = false,
     val statusSide: Boolean = false,
+    /** The line under the clock so much higher than its place below the columns, in dp. */
+    val tuckDp: Float = 0f,
 ) {
     companion object {
         private const val PADDING_V = 16
@@ -130,7 +134,12 @@ data class WidgetLayout(
         /** Room between the columns. */
         private const val GAP = 10f
         /** Above the line under the columns (the alarm, the pollen as points, 13 sp). */
-        private const val MID_TOP = 2f
+        const val MID_TOP = 2f
+        /**
+         * Of the clock's size, how far the alarm's line under it reaches up: the clock's figures end
+         * on its baseline, under them its font keeps a quarter of its size free.
+         */
+        private const val TUCK = 0.18f
         /** A character of the head line (14 sp); the place's pin. */
         private const val HEAD_CHAR = 7.6f
         private const val PIN = 15f
@@ -143,6 +152,8 @@ data class WidgetLayout(
         /** Below the columns: the space above the two hours, the chart's least height and the times under it. */
         const val BELOW_GAP = 10f
         const val CHART_TOP = 3f
+        /** The space above the chart right under the alarm's line, all of it: the line's descent keeps them apart already. */
+        const val CHART_UNDER_ALARM = 2f
         /**
          * Of the room above the chart, what goes over the two hours' line standing on it: the text's
          * own room above its letters is larger than the chart's above its units, so the letters stand
@@ -166,19 +177,24 @@ data class WidgetLayout(
         /**
          * [alarm]: the next alarm as the widget writes it, null: none; [rainText]: the two hours'
          * line; [pollenText]: the pollen as points; [placeText] and [longDateText]: the head line's
-         * place and the date with its weekday written out.
+         * place and the date with its weekday written out; [textWidth]: a text's width in dp in the
+         * font of the line under the columns (13 sp) – measured where the font is known, else
+         * estimated; [tuck]: the alarm's line may reach up under the clock (its margin is set from
+         * Android 12 on).
          */
         fun of(
             config: WidgetConfig, size: WidgetSize, alarm: String?, weather: WidgetWeather?,
             fontScale: Float = 1f, rainText: String? = null, pollenText: String? = null,
             placeText: String? = null, longDateText: String? = null,
             lines: WidgetLines = WidgetLines.estimated(fontScale),
+            textWidth: (String) -> Float = { it.length * CHAR * fontScale },
+            tuck: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
         ): WidgetLayout {
-            val l = plan(config, size, alarm, weather, fontScale, rainText, pollenText, placeText, longDateText, lines)
+            val l = plan(config, size, alarm, weather, fontScale, rainText, pollenText, placeText, longDateText, lines, textWidth, tuck)
             if (l.status || l.refreshLine) return l
             // the refresh alone in the corner: the parts make way at the right (a widget is seldom short of width)
             // – the pollen beside the chart as at the full width: their third is only a little narrower
-            return plan(config, size.copy(widthDp = size.widthDp - REFRESH_ROOM), alarm, weather, fontScale, rainText, pollenText, placeText, longDateText, lines, sideFrom = REFRESH_ROOM)
+            return plan(config, size.copy(widthDp = size.widthDp - REFRESH_ROOM), alarm, weather, fontScale, rainText, pollenText, placeText, longDateText, lines, textWidth, tuck, sideFrom = REFRESH_ROOM)
                 .copy(status = false, refreshLine = false, refreshRoom = true)
         }
 
@@ -186,6 +202,7 @@ data class WidgetLayout(
             config: WidgetConfig, size: WidgetSize, alarm: String?, weather: WidgetWeather?,
             fontScale: Float, rainText: String?, pollenText: String?,
             placeText: String?, longDateText: String?, lines: WidgetLines,
+            textWidth: (String) -> Float, tuck: Boolean,
             /** Width taken from the parts for the refresh, still counted for the pollen beside the chart. */
             sideFrom: Int = 0,
         ): WidgetLayout {
@@ -214,17 +231,19 @@ data class WidgetLayout(
             val alarmWanted = showClock && config.alarm && alarm != null
             val perRow = (width / (POLLEN_CELL * fontScale)).toInt().coerceIn(1, 3)
             val pollenRowsWanted = (pollenCount + perRow - 1) / perRow
-            val rainLines = if (rainText != null && rainText.length * CHAR * fontScale > width) 2 else 1
+            val rainLines = if (rainText != null && textWidth(rainText) > width) 2 else 1
 
             class Plan(
                 val big: Float, val below: Boolean, val beside: Boolean, val chart: Boolean, val rows: Int,
                 val dots: Boolean, val side: Boolean, val rainLine: Boolean, val midRain: Boolean, val status: Boolean, val chartDp: Float,
-                val refreshLine: Boolean = false,
+                val refreshLine: Boolean = false, val tuck: Float = 0f,
             ) {
                 val rainShown get() = rainLine || midRain
             }
-            val dotsW = (pollenText?.length ?: 0) * CHAR * fontScale
-            val rainW = (rainText?.length ?: 0) * CHAR * fontScale
+            /** How far the alarm's line [below] the clock at [big] reaches up into the room under its figures. */
+            fun tuckOf(below: Boolean, big: Float) = if (tuck && below && bigClock) TUCK * big else 0f
+            val dotsW = pollenText?.let(textWidth) ?: 0f
+            val rainW = rainText?.let(textWidth) ?: 0f
             val rain = weather?.rain
             // the chart only with something to draw; else, as when precipitation comes, the line comes first
             val chartWanted = rainWanted && rain?.eventful == true
@@ -239,12 +258,14 @@ data class WidgetLayout(
                 if (beside) big = minOf(big, (width - (if (bigWeather) WEATHER_FIX else 0f) - (if (rightWanted) GAP else 0f) - besideW) / perDp)
                 val bigH = if (bigClock || bigWeather) big * BIG_LINE else 0f
                 // the line under both columns: the alarm (under the clock), beside it the two hours' line or the pollen as points
-                var left = height - lines.spare - headH - bigH - (if (below) midLine else 0f)
+                val tucked = tuckOf(below, big)
+                var left = height - lines.spare - headH - bigH - (if (below) midLine - tucked else 0f)
                 fun fits(h: Float) = (left >= h).also { if (it) left -= h }
-                val alarmW = if (below) ALARM_ICON + CHAR * (alarm?.length ?: 0) * fontScale + GAP else 0f
-                val chart = chartWanted && fits(BELOW_GAP + CHART_TOP + CHART_MIN + AXIS)
+                val alarmW = if (below) ALARM_ICON + (alarm?.let(textWidth) ?: 0f) + GAP else 0f
+                // right under the alarm's line the chart closer; a line between them takes the space it leaves
+                val chart = chartWanted && fits((if (below) CHART_UNDER_ALARM else BELOW_GAP + CHART_TOP) + CHART_MIN + AXIS)
                 fun rainLineFits(): Boolean {
-                    val top = if (chart) 0f else BELOW_GAP
+                    val top = if (!chart) BELOW_GAP else if (below) BELOW_GAP + CHART_TOP - CHART_UNDER_ALARM else 0f
                     return fits(top + line * rainLines) || rainLines == 2 && fits(top + line)
                 }
                 // precipitation coming, or nothing to draw: the line over the chart – else in the line under the columns
@@ -268,7 +289,7 @@ data class WidgetLayout(
                 val status = side || fits(STATUS * fontScale)
                 // no room for "As of": its line for the refresh alone, where that fits
                 val refreshLine = !status && fits(STATUS_LINE * fontScale)
-                return Plan(big, below, beside, chart, rows, dots, side, rainLine, midRain, status, if (chart) CHART_MIN + left.coerceAtLeast(0f) else 0f, refreshLine)
+                return Plan(big, below, beside, chart, rows, dots, side, rainLine, midRain, status, if (chart) CHART_MIN + left.coerceAtLeast(0f) else 0f, refreshLine, tucked)
             }
             val none = plan(below = false, beside = false)
             val p = when {
@@ -281,7 +302,7 @@ data class WidgetLayout(
                             .takeIf { b -> u.chart && b.midRain && !u.dots && b.chart && b.rows >= u.rows && (b.status || !u.status) } ?: u
                     }
                     val by = if (bigClock) plan(below = false, beside = true).takeIf { it.big >= BIG_MIN } else null
-                    val leftFits = height - headH - (if (bigClock || bigWeather) fitBig * BIG_LINE else 0f) >= midLine
+                    val leftFits = height - headH - (if (bigClock || bigWeather) fitBig * BIG_LINE else 0f) >= midLine - tuckOf(true, fitBig)
                     // under the clock where there is the height – the pollen give way; the chart and a
                     // coming precipitation's line do not: else beside it
                     val keeps = under.chart == none.chart && (under.rainShown || !(by ?: none).rainShown || !rainFirst)
@@ -301,8 +322,8 @@ data class WidgetLayout(
                 clock = bigClock, date = date, alarm = p.below, alarmBeside = p.beside && besideW > 0, weather = bigWeather, right = rightWanted,
                 secondLine = secondLine, rain = p.chart || p.rainLine, rainLine = p.rainLine, midRain = p.midRain, chart = p.chart, chartDp = p.chartDp,
                 pollenRows = p.rows, pollenPerRow = perRow, pollenDots = p.dots, pollenSide = p.side,
-                pollenSideRows = if (p.side) ((CHART_TOP + p.chartDp + AXIS - STATUS * fontScale) / lines.small).toInt().coerceIn(1, 6) else 0, status = p.status, bigDp = p.big, longDate = longDate, widthDp = width,
-                refreshLine = p.refreshLine, statusSide = p.side,
+                pollenSideRows = if (p.side) ((p.chartDp + AXIS - STATUS * fontScale) / lines.small).toInt().coerceIn(1, 6) else 0, status = p.status, bigDp = p.big, longDate = longDate, widthDp = width,
+                refreshLine = p.refreshLine, statusSide = p.side, tuckDp = p.tuck,
             )
         }
     }
@@ -385,8 +406,13 @@ object WidgetViews {
         val dots = weather?.pollen?.takeIf { it.isNotEmpty() && config.pollen.isNotEmpty() }?.let { pollenDots(context, it) }
         val placeText = weather?.place ?: res.getString(R.string.widget_no_data)
         val longDateText = android.text.format.DateFormat.format(android.text.format.DateFormat.getBestDateTimePattern(locale, "EEEEdMMMM"), now).toString()
-        val l = WidgetLayout.of(config, size, alarm, weather, res.configuration.fontScale, rainText, dots?.toString(), placeText, longDateText, WidgetLines.measured(res.configuration.fontScale))
         val density = res.displayMetrics.density
+        // the line under the columns' font (13 sp) in dp
+        val midFont = Paint().apply { textSize = 13 * res.configuration.fontScale }
+        val l = WidgetLayout.of(
+            config, size, alarm, weather, res.configuration.fontScale, rainText, dots?.toString(), placeText, longDateText,
+            WidgetLines.measured(res.configuration.fontScale), textWidth = { midFont.measureText(it) },
+        )
 
         v.setInt(R.id.widget_bg, "setImageAlpha", (config.opacity.coerceIn(0f, 1f) * 255).toInt())
 
@@ -478,7 +504,12 @@ object WidgetViews {
         v.setOnClickPendingIntent(R.id.widget_rain_text, open(PageSection.TODAY))
         val chartTop = WidgetLayout.BELOW_GAP + WidgetLayout.CHART_TOP
         v.setViewPadding(R.id.widget_rain_text, 0, ((if (chartShown) WidgetLayout.LINE_OVER_CHART else WidgetLayout.BELOW_GAP) * density).toInt(), 0, 0)
-        v.setViewPadding(R.id.widget_rain, 0, ((if (lineShown) chartTop - WidgetLayout.LINE_OVER_CHART else chartTop) * density).toInt(), 0, 0)
+        val chartPad = when {
+            lineShown -> chartTop - WidgetLayout.LINE_OVER_CHART
+            l.alarm -> WidgetLayout.CHART_UNDER_ALARM
+            else -> chartTop
+        }
+        v.setViewPadding(R.id.widget_rain, 0, (chartPad * density).toInt(), 0, 0)
         if (rain != null && rainText != null) {
             v.setTextViewText(R.id.widget_rain_text, rainText)
             v.visible(R.id.widget_chart, l.chart)
@@ -511,6 +542,9 @@ object WidgetViews {
         // today's pollen of the chosen types: as points in a line, or side by side with a gauge each, as the pollen card's
         // the line under the columns: the alarm, beside it the two hours' line or the pollen as points
         v.visible(R.id.widget_mid, l.alarm || l.pollenDots || l.midRain)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            v.setViewLayoutMargin(R.id.widget_mid, RemoteViews.MARGIN_TOP, WidgetLayout.MID_TOP - l.tuckDp, TypedValue.COMPLEX_UNIT_DIP)
+        }
         v.visible(R.id.widget_pollen_dots, l.pollenDots || l.midRain)
         if (l.midRain && rainText != null) v.setTextViewText(R.id.widget_pollen_dots, rainText)
         else if (dots != null) v.setTextViewText(R.id.widget_pollen_dots, dots)

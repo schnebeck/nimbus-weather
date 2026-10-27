@@ -406,10 +406,7 @@ object WidgetViews {
         val rain = weather?.rain
         // the precipitation card's words; dry: with "no sunshine" by day where none comes either
         val rainText = rain?.let { r ->
-            r.notice?.let { n ->
-                val words = precipNoticeText(res, n, now, tf)
-                r.chance?.let { res.getString(R.string.widget_rain_chance, words, it) } ?: words
-            }
+            r.notice?.let { n -> precipNoticeText(res, n, now, tf) }
                 ?: res.getString(if (!r.eventful && weather.isDay) R.string.widget_rain_dry_dull else R.string.widget_rain_dry, tf.time(r.to))
         }
         val dots = weather?.pollen?.takeIf { it.isNotEmpty() && config.pollen.isNotEmpty() }?.let { pollenDots(context, it) }
@@ -489,11 +486,14 @@ object WidgetViews {
         } else {
             v.visible(R.id.widget_pin, weather.myLocation)
             v.setTextViewText(R.id.widget_place, weather.place)
-            v.setImageViewBitmap(R.id.widget_icon, symbol(weather, (l.bigDp * (if (weather.chance != null) 0.8f else 1f) * density).toInt()))
+            // under the symbol the chance: of the running hour with a precipitation symbol, else of the
+            // hour the coming precipitation falls in – where its line is shown
+            val chance = weather.chance ?: rain?.chance?.takeIf { l.rainLine || l.midRain }
+            v.setImageViewBitmap(R.id.widget_icon, symbol(weather, (l.bigDp * (if (chance != null) 0.8f else 1f) * density).toInt()))
             v.setContentDescription(R.id.widget_icon, res.getString(Texts.condition(weather.condition, weather.isDay)))
-            v.visible(R.id.widget_chance, weather.chance != null)
+            v.visible(R.id.widget_chance, chance != null)
             // small under the symbol, the sign close to the figure
-            weather.chance?.let { v.setTextViewText(R.id.widget_chance, "$it%") }
+            chance?.let { v.setTextViewText(R.id.widget_chance, "$it%") }
             v.setTextViewText(R.id.widget_temp, Units.temp(weather.temperature, unit))
             v.setTextViewTextSize(R.id.widget_temp, TypedValue.COMPLEX_UNIT_DIP, l.bigDp * 0.87f)
             v.visible(R.id.widget_maxmin, weather.max != null && weather.min != null)

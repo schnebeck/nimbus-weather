@@ -242,7 +242,7 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   quarter hour in %, behind) and precipitation (mm/h, in front; linear from 0, the strongest bar rounded
   up to a whole mm/h at the top, at least 1), only when there is something to
   draw, else a line ("No precipitation, no sunshine until 12:30") – with the precipitation card's
-  line and the chance of its hour ("… from about 11:00 · 40%"), and the chosen pollen types flying
+  line ("Light rain from about 11:00"), the chance of its hour under the weather symbol, and the chosen pollen types flying
   today, the strongest first: as gauges with their half steps beside the chart (a third of the
   width), below it where that does not fit, with little room only those flying noteworthily as
   coloured points. The date with the month written out (the weekday where

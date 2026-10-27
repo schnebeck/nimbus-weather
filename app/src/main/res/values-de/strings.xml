@@ -810,7 +810,6 @@
     <string name="widget_description">Uhrzeit, Datum, Wecker, Wetter, Niederschlag und Sonne der nächsten zwei Stunden, Pollen – jedes Teil wählbar</string>
     <string name="widget_no_data">Nimbus öffnen</string>
     <string name="widget_rain_dry">Kein Niederschlag bis %1$s</string>
-    <string name="widget_rain_chance">%1$s\u00A0· %2$s%%</string>
     <string name="widget_rain_dry_dull">Kein Niederschlag, keine Sonne bis %1$s</string>
     <string name="widget_as_of">Stand %1$s</string>
     <string name="widget_updating">Wird geholt …</string>

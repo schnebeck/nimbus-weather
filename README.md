@@ -252,8 +252,8 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   Diagramm mit Sonne (Anteil der Viertelstunde in %, hinten) und Niederschlag (mm/h, davor; linear ab 0, oben
   der stärkste Balken aufgerundet auf volle mm/h, mindestens 1), nur
   wenn es etwas zu zeichnen gibt, sonst eine Zeile („Kein Niederschlag, keine Sonne bis 12:30“) –
-  mit dem Satz der Niederschlagskarte und der Wahrscheinlichkeit seiner Stunde („… ab etwa 11:00
-  · 40%“), und die gewählten Pollenarten, die heute fliegen, die stärkste zuerst: als Balken mit
+  mit dem Satz der Niederschlagskarte („Leichter Regen ab etwa 11:00“), die Wahrscheinlichkeit
+  seiner Stunde unter dem Wettersymbol, und die gewählten Pollenarten, die heute fliegen, die stärkste zuerst: als Balken mit
   Zwischenstufen rechts neben dem Diagramm (ein Drittel der Breite), wo das nicht passt darunter,
   bei wenig Platz nur die nennenswert fliegenden als farbige Punkte. Datum mit ausgeschriebenem
   Monat (Wochentag, wo Platz ist) oder in Ziffern mit Kalenderwoche. Jedes Teil abschaltbar; was

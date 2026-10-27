@@ -159,7 +159,10 @@ class WidgetTest {
         assertTrue(widget.quarters.any { it.mmPerHour >= 12.0 })
     }
 
-    /** The rain sentence ends with the chance of the hour the rain starts in, as the hour strip writes it. */
+    /**
+     * The chance of the hour the rain starts in, as the hour strip writes it, under the symbol – the
+     * rain sentence without it.
+     */
     @Test fun theChanceOfTheHourTheRainStartsIn() {
         val d = data(rainFrom = 40).let { d ->
             d.copy(hourly = d.hourly.map { it.copy(precipitationProbability = if (it.time == day + 12 * h) 40.0 else 20.0) })
@@ -168,7 +171,16 @@ class WidgetTest {
         assertEquals(day + 11 * h, rain.notice!!.at)
         assertEquals("40", rain.chance)
         val words = precipNoticeText(app.resources, rain.notice!!, now, tf)
-        assertEquals("$words\u00A0· 40%", render(WidgetConfig(), WidgetSize(320, 200), d).text(R.id.widget_rain_text))
+        val v = render(WidgetConfig(), WidgetSize(320, 200), d)
+        val line = listOf(R.id.widget_rain_text, R.id.widget_pollen_dots).map { v.findViewById<TextView>(it) }.single { it.visibility == View.VISIBLE }
+        assertEquals(words, line.text.toString())
+        assertEquals(View.VISIBLE, v.findViewById<View>(R.id.widget_chance).visibility)
+        assertEquals("40%", v.text(R.id.widget_chance))
+        // under the symbol
+        val icon = v.findViewById<View>(R.id.widget_icon)
+        val chance = v.findViewById<View>(R.id.widget_chance)
+        assertTrue(v.topOf(chance) >= v.topOf(icon) + icon.height)
+        assertEquals((v.leftOf(icon) + icon.width / 2).toFloat(), (v.leftOf(chance) + chance.width / 2).toFloat(), 2f)
         // dry: no chance to tell
         assertNull(WidgetWeather.of(data(rainFrom = 130), now, emptyList()).rain!!.chance)
     }

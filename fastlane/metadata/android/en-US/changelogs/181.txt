@@ -1,0 +1,2 @@
+• Widget: the chance of the coming precipitation stands under the weather symbol instead of at the end of the outlook
+• After sunrise and sunset it is drawn anew within 10 minutes

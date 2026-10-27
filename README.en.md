@@ -239,7 +239,7 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   width), below it where that does not fit, with little room only those flying noteworthily as
   coloured points. The date with the month written out (the weekday where
   there is room) or in figures with the calendar week. Each part can be switched off; what does
-  not fit its size it leaves out (from Android 12 on for each size the launcher shows it in), the height left goes to the chart or spreads between the groups;
+  not fit its size it leaves out (from Android 12 on for each size the launcher shows it in – the widget finds its real size itself, also where the launcher reports other figures), the height left goes to the chart or spreads between the groups;
   ↻ at any size in the bottom right corner, "As of" before it where there is room. A tap on the time
   opens the alarms (also where the clock app answers the standard request not at all or only to apps allowed to set alarms, as on ColorOS),
   on the date the calendar; the

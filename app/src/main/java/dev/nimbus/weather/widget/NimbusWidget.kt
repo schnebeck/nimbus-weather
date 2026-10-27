@@ -61,7 +61,8 @@ class NimbusWidget : AppWidgetProvider() {
 
     override fun onDeleted(context: Context, ids: IntArray) {
         val configs = WidgetConfigs(context)
-        ids.forEach(configs::remove)
+        val frames = WidgetFrames(context)
+        ids.forEach { configs.remove(it); frames.remove(it) }
     }
 
     override fun onEnabled(context: Context) = Widgets.schedule(context)
@@ -182,6 +183,7 @@ object Widgets {
         val app = context.applicationContext
         val store = (app as? NimbusApp)?.container?.store ?: Store(app)
         val configs = WidgetConfigs(app)
+        val frames = WidgetFrames(app)
         val settings = store.settings.first()
         val manager = AppWidgetManager.getInstance(app)
         val now = System.currentTimeMillis()
@@ -193,15 +195,23 @@ object Widgets {
             val weather = data?.let { WidgetWeather.of(it, now, config.pollen) }
             val build = { size: WidgetSize -> WidgetViews.build(app, id, config, size, weather, place?.id, settings.temperatureUnit, now, updating, settings.precipitationUnit) }
             val sizes = sizesOf(manager, id)
-            noteSizes(id, sizes, manager)
             val options = runCatching { manager.getAppWidgetOptions(id) }.getOrNull()
+            val figures = figures(sizes, options)
+            noteSizes(id, figures)
             val offers = offers(sizes, options?.let { o ->
                 Bounds(o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH), o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT),
                     o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH), o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT))
             })
-            val views = if (android.os.Build.VERSION.SDK_INT >= 31 && offers.isNotEmpty())
-                RemoteViews(offers.associate { o -> android.util.SizeF(o.widthDp.toFloat(), o.heightDp.toFloat()) to build(o) })
-            else build(sizeOf(manager, id))
+            val views = if (android.os.Build.VERSION.SDK_INT >= 31 && offers.isNotEmpty()) {
+                // each picture with its pixel: the one the launcher fetches tells the frame (WidgetFrames)
+                val search = frames.next(id, figures, offers)
+                RemoteViews(
+                    search.offered.associate { o ->
+                        android.util.SizeF(o.widthDp.toFloat(), o.heightDp.toFloat()) to
+                            build(o).apply { setImageViewUri(dev.nimbus.weather.R.id.widget_probe, WidgetProbe.uri(app, id, search.round, o)) }
+                    },
+                )
+            } else build(sizeOf(manager, id))
             runCatching { manager.updateAppWidget(id, views) }
         }
         scheduleNewDay(app)
@@ -270,11 +280,13 @@ object Widgets {
     /** What each widget was last told of its sizes – noted when it changes, for a look at a launcher's figures. */
     private val noted = java.util.concurrent.ConcurrentHashMap<Int, String>()
 
-    private fun noteSizes(id: Int, sizes: List<android.util.SizeF>?, manager: AppWidgetManager) {
-        val o = runCatching { manager.getAppWidgetOptions(id) }.getOrNull()
-        val text = "sizes ${sizes?.joinToString { "${it.width.toInt()}×${it.height.toInt()}" } ?: "none"}; " +
+    /** The sizes the launcher reports, as text – for the log, and the frame searched anew when they change. */
+    fun figures(sizes: List<android.util.SizeF>?, o: Bundle?): String =
+        "sizes ${sizes?.joinToString { "${it.width.toInt()}×${it.height.toInt()}" } ?: "none"}; " +
             "min ${o?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)}×${o?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)}, " +
             "max ${o?.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH)}×${o?.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT)} dp"
+
+    private fun noteSizes(id: Int, text: String) {
         if (noted.put(id, text) != text) {
             // in the system's log as well: a launcher's figures can be read off the phone without the activity log on
             android.util.Log.i("NimbusWidget", "widget $id: $text")

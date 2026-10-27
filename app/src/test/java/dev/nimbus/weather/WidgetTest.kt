@@ -416,6 +416,32 @@ class WidgetTest {
         assertTrue(wrong.take(10).joinToString("\n"), wrong.isEmpty())
     }
 
+    /**
+     * A launcher reporting more height than it gives (a frame of 320 × 182 dp, the pictures from
+     * its figures in steps of 45 dp): planned for the step below the frame, the alarm stood small
+     * beside a smaller clock, the room for its line left empty above the precipitation; planned
+     * for the frame the widget finds, the alarm on its line under the clock, the clock and the chart kept.
+     */
+    @Test fun theAlarmUnderTheClockWhereTheFrameHasTheRoom() {
+        val all = WidgetConfig(pollen = listOf(PollenType.BIRCH))
+        val w = WidgetWeather.of(data(), now, all.pollen)
+        val base = Widgets.offers(listOf(android.util.SizeF(320f, 300f)), Widgets.Bounds(320, 120, 320, 300))
+        fun shown(offered: List<WidgetSize>) = offered.filter { it.widthDp <= 320f && it.heightDp <= 182.4f }
+            .minBy { (320f - it.widthDp) * (320f - it.widthDp) + (182.4f - it.heightDp) * (182.4f - it.heightDp) }
+        val step = shown(base)
+        val before = WidgetLayout.of(all, step, alarm = "09:00", weather = w)
+        assertTrue("$step", before.alarmBeside && !before.alarm && before.chart)
+        var search = dev.nimbus.weather.widget.FrameSearch("figures")
+        repeat(6) {
+            search = search.next(base, now)
+            search = search.heard(search.round, shown(search.offered)) ?: return@repeat
+        }
+        assertTrue("$search", search.settled)
+        val found = WidgetLayout.of(all, search.fit!!, alarm = "09:00", weather = w)
+        assertTrue("${search.fit}", found.alarm && !found.alarmBeside && found.chart)
+        assertTrue(found.bigDp > before.bigDp)
+    }
+
     /** The widget may stand on the lock screen too, where the system offers it. */
     @Test fun onTheLockScreenToo() {
         val info = java.io.File("src/main/res/xml/widget_info.xml").readText()

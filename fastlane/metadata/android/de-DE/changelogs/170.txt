@@ -1,0 +1,1 @@
+• Widget: findet seine wirkliche Größe selbst, auch wenn der Launcher andere Maße meldet – so steht der Wecker unter der Uhr, wo der Platz dafür da ist, statt klein daneben, und die Uhr bleibt groß

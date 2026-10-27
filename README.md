@@ -250,7 +250,7 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   bei wenig Platz nur die nennenswert fliegenden als farbige Punkte. Datum mit ausgeschriebenem
   Monat (Wochentag, wo Platz ist) oder in Ziffern mit Kalenderwoche. Jedes Teil abschaltbar; was
   nicht in die Größe passt, blendet es aus (ab Android 12 für jede Größe, in der der Launcher es
-  zeigt), die übrige Höhe nimmt das Diagramm oder verteilt sich
+  zeigt – die wirkliche Größe ermittelt das Widget selbst, auch wo der Launcher andere Maße meldet), die übrige Höhe nimmt das Diagramm oder verteilt sich
   zwischen den Gruppen; ↻ bei jeder Größe in der Ecke rechts unten, „Stand“ davor, wo Platz ist. Tippen auf die Uhrzeit öffnet den Wecker
   (auch wo die Uhr-App die Standardanfrage nicht oder nur Apps mit Weckerrecht beantwortet, etwa unter ColorOS), auf das
   Datum den Kalender; die übrigen Teile führen zu ihrer Stelle in Nimbus beim Ort des Widgets: das

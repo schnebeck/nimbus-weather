@@ -1,0 +1,1 @@
+• Widget: finds its real size itself, even where the launcher reports other figures – so the alarm stands under the clock where there is the room for it, instead of small beside it, and the clock stays large

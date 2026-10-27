@@ -82,6 +82,11 @@
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
+        <!-- the widget's pictures each fetch an empty pixel: which one the launcher shows -->
+        <provider
+            android:name=".widget.WidgetProbe"
+            android:authorities="${applicationId}.probe"
+            android:exported="true" />
         <!-- the activity log, when shared (Settings) -->
         <provider
             android:name="androidx.core.content.FileProvider"

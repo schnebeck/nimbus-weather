@@ -33,3 +33,8 @@ CLAUDE.md
 
 # Python byte code (tools/)
 __pycache__/
+
+# AI agent files (local only)
+CLAUDE.local.md
+.claude/
+AGENTS.md

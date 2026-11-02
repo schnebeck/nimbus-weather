@@ -1,0 +1,1 @@
+• When a source fails (station, satellite, MOSMIX, DWD warnings, ICON-D2 chance), its last answer stays while it still holds – yellow dot, tried again after 2 minutes; the line "Measured at …" now has a dot too

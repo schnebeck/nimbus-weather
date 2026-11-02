@@ -271,4 +271,34 @@ class PageLayoutTest {
     @Test fun phoneLargestFont() { check(411, 2f) }
     @Test fun narrowPhone() { check(320, 1f) }
     @Test fun narrowPhoneLargeFont() { check(320, 1.3f) }
+
+    /**
+     * The line "measured at …" has the status dot of what it tells: green while the station's
+     * readings and the satellite's sky are current, yellow as soon as one of them is not (its source
+     * failed, the last answer standing in).
+     */
+    @Test fun theStationLineHasItsDot() {
+        val shelf = dev.nimbus.weather.data.repo.Shelf(kotlinx.coroutines.MainScope())
+        compose.runOnUiThread { dev.nimbus.weather.data.model.DataPart.entries.forEach { shelf.part("p", it).arrived(System.currentTimeMillis()) } }
+        compose.setContent {
+            CompositionLocalProvider(dev.nimbus.weather.ui.main.LocalShelf provides shelf, LocalContentWidth provides 411.dp) {
+                Box(Modifier.requiredSize(411.dp, 891.dp)) {
+                    WeatherPage(Place("p", "Hannover", latitude = 52.3759, longitude = 9.7320), PlaceState(data()), Settings(), null, false, {}, {}, {})
+                }
+            }
+        }
+        compose.waitForIdle()
+        val ctx = org.robolectric.RuntimeEnvironment.getApplication()
+        fun dot() = compose.onNode(androidx.compose.ui.test.hasTestTag("station-dot"), useUnmergedTree = true).fetchSemanticsNode()
+            .config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].single()
+        assertEquals(ctx.getString(R.string.card_status_fresh), dot())
+        for (part in listOf(dev.nimbus.weather.data.model.DataPart.STATION, dev.nimbus.weather.data.model.DataPart.SATELLITE)) {
+            compose.runOnUiThread { shelf.part("p", part).stale() }
+            compose.waitForIdle()
+            assertEquals(part.name, ctx.getString(R.string.card_status_stale), dot())
+            compose.runOnUiThread { shelf.part("p", part).arrived(System.currentTimeMillis()) }
+            compose.waitForIdle()
+            assertEquals(part.name, ctx.getString(R.string.card_status_fresh), dot())
+        }
+    }
 }

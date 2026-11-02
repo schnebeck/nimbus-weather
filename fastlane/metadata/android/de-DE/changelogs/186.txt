@@ -1,0 +1,1 @@
+• Fällt eine Quelle aus (Station, Satellit, MOSMIX, DWD-Warnungen, ICON-D2-Wahrscheinlichkeit), bleibt ihre letzte Antwort stehen, solange sie noch gilt – gelber Punkt, neuer Versuch nach 2 Minuten; die Zeile „Gemessen an …“ hat jetzt ebenfalls einen Punkt

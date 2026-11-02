@@ -96,43 +96,46 @@ class WeatherRepository(
         }
         // DWD ICON: chance of precipitation that matches the ICON-D2 amounts (see iconD2Chance)
         val d2ChanceJob = async {
-            if (model != ForecastModel.DWD_ICON) emptyMap()
-            else runCatching { openMeteo.iconD2Chance(lat, lon) }.getOrDefault(emptyMap())
+            if (model != ForecastModel.DWD_ICON) Fetched(emptyMap<Long, Double>())
+            else fetch(Long.MAX_VALUE, "ICON-D2 chance") { openMeteo.iconD2Chance(lat, lon) }
         }
         val fillJob = async {
             if (primaryModel == ForecastModel.BEST_MATCH.openMeteoId) null
-            else runCatching { openMeteo.forecast(lat, lon, ForecastModel.BEST_MATCH.openMeteoId) }.getOrNull()
+            else fetch(Long.MAX_VALUE, "best match") { openMeteo.forecast(lat, lon, ForecastModel.BEST_MATCH.openMeteoId) }
         }
         // which single model Open-Meteo's best match takes, hour by hour (for the sources: named
         // with its grid) – it fills the chosen model's gaps, or it is the chosen one
         val partsJob = async { runCatching { openMeteo.bestMatchModels(lat, lon) }.getOrDefault(emptyMap()) }
+        // The sources of the page itself: each an answer (its value may be "nothing here") – or
+        // null when it failed or took too long; then its last answer stands in (LastAnswers).
         // measured instead of modelled: the DWD's nearest station (Bright Sky) in Germany, the other
         // networks where they measure (Austria, Switzerland, Denmark), airports everywhere
         val obsJob = async {
-            if (!settings.useStationObservations) emptyList()
-            else coroutineScope {
-                val dwd = async { if (inDwdArea) runCatching { brightSky.currentObservation(lat, lon) }.getOrNull() else null }
-                val others = async { stations?.let { runCatching { it.nearby(lat, lon) }.getOrNull() }.orEmpty() }
-                listOfNotNull(dwd.await()) + others.await()
+            if (!settings.useStationObservations) Fetched(emptyList<dev.nimbus.weather.data.remote.StationObservation>())
+            else fetch(Long.MAX_VALUE, "stations") {
+                coroutineScope {
+                    val dwd = async { if (inDwdArea) brightSky.currentObservation(lat, lon) else null }
+                    val others = async { stations?.let { runCatching { it.nearby(lat, lon) }.getOrNull() }.orEmpty() }
+                    listOfNotNull(dwd.await()) + others.await()
+                }
             }
         }
         // the DWD's MOSMIX at its station near the place: its sun and cloud weighed with the model's (SkyBlend)
         val mosmixJob = async {
             val hour = clock() / HOUR_MS * HOUR_MS
-            runCatching { brightSky.mosmix(lat, lon, hour - HOUR_MS, hour + MOSMIX_DAYS * DAY_MS) }
-                .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it; android.util.Log.w("Nimbus", "MOSMIX unavailable: $it") }
-                .getOrNull()
+            fetch(Long.MAX_VALUE, "MOSMIX") { brightSky.mosmix(lat, lon, hour - HOUR_MS, hour + MOSMIX_DAYS * DAY_MS) }
         }
         // the sunshine the satellite saw over the place (Europe): the sky now before a station's farther off
         val satelliteJob = async {
-            if (spot == null) emptyMap() else kotlinx.coroutines.withTimeoutOrNull(SATELLITE_WAIT_MS) { spot.satelliteHours(lat, lon, pastDays = 0) }.orEmpty()
+            if (spot == null) Fetched(emptyMap<Long, dev.nimbus.weather.data.remote.SatelliteHour>())
+            else fetch(SATELLITE_WAIT_MS, "satellite") { spot.satelliteAnswer(lat, lon, pastDays = 0) }
         }
         // what the radar sees falling over the place now (Germany): the page does not wait for it
         val radarJob = async {
             if (spot == null || !inDwdArea) null else fetch(RADAR_NOW_WAIT_MS, "radar now") { spot.radarNow(lat, lon, clock()) }
         }
         val alertsJob = async {
-            if (inDwdArea) runCatching { brightSky.alerts(lat, lon) }.getOrDefault(emptyList()) else emptyList()
+            if (inDwdArea) fetch(Long.MAX_VALUE, "warnings") { brightSky.alerts(lat, lon) } else Fetched(emptyList<dev.nimbus.weather.data.model.WeatherAlert>())
         }
         // The extras: each an answer (its value may be "nothing here") – or null when it failed or
         // took too long; then the place's last value stays (a refresh does not empty a card).
@@ -143,7 +146,7 @@ class WeatherRepository(
             else if (!settings.shows(dev.nimbus.weather.data.model.WeatherCard.COMMUNITY)) Fetched(null)
             else {
                 // the sensors at the place's height: the forecast knows it
-                val elevation = primaryJob.await().getOrNull()?.elevation ?: fillJob.await()?.elevation
+                val elevation = primaryJob.await().getOrNull()?.elevation ?: fillJob.await()?.value?.elevation
                 fetch(SOURCE_TIMEOUT_MS, "citizen sensors") { community.nearby(lat, lon, elevation) }
             }
         }
@@ -166,9 +169,21 @@ class WeatherRepository(
             else fetch(SOURCE_TIMEOUT_MS, "flood alerts") { gauges.lhp.alerts(lat, lon) }
         }
 
-        val d2Chance = d2ChanceJob.await()
+        // the same spot's last load (within a radar pixel: "my location" moves by a few metres):
+        // its sources' answers stand in for those failing now, while they still stand for now
+        val near = previous?.takeIf { NowWeather.sameRadarSpot(it.place, place) }
+        val lastAnswers = near?.last ?: dev.nimbus.weather.data.model.LastAnswers()
+        val startedAt = clock()
+        // the parts whose source failed this time: shown with the last answer (or without), out of
+        // date – their cards yellow, asked again soon
+        val unanswered = mutableSetOf<DataPart>()
+        val d2Answer = d2ChanceJob.await()
+        if (d2Answer == null) unanswered += DataPart.FORECAST
+        val d2Chance = d2Answer?.value ?: StandIn.within(lastAnswers.d2Chance, lastAnswers.d2ChanceAt, StandIn.D2_CHANCE_MS, startedAt).orEmpty()
         val primaryResult = primaryJob.await().map { dev.nimbus.weather.data.remote.OpenMeteoSource.withChance(it, d2Chance) }
-        val fill = fillJob.await()
+        val fillAnswer = fillJob.await()
+        if (fillAnswer == null && primaryModel != ForecastModel.BEST_MATCH.openMeteoId) unanswered += DataPart.FORECAST
+        val fill = fillAnswer?.value
         val primary = primaryResult.getOrNull()
         // the best match's single models: not worth holding the forecast back for long
         val parts = kotlinx.coroutines.withTimeoutOrNull(PARTS_WAIT_MS) { partsJob.await() } ?: emptyMap<Long, dev.nimbus.weather.data.model.ModelPart>().also { partsJob.cancel() }
@@ -198,13 +213,17 @@ class WeatherRepository(
             else -> throw primaryResult.exceptionOrNull() ?: IllegalStateException("No forecast available")
         }
         // the sky of the hours with MOSMIX's weighed in; the quarter hours' sunshine summing to their hour's
-        val mosmix = kotlinx.coroutines.withTimeoutOrNull(MOSMIX_WAIT_MS) { mosmixJob.await() } ?: null.also { mosmixJob.cancel() }
+        val mosmixAnswer = kotlinx.coroutines.withTimeoutOrNull(MOSMIX_WAIT_MS) { mosmixJob.await() } ?: null.also { mosmixJob.cancel() }
+        if (mosmixAnswer == null) unanswered += DataPart.MOSMIX
+        val mosmix = if (mosmixAnswer != null) mosmixAnswer.value else StandIn.within(lastAnswers.mosmix, lastAnswers.mosmixAt, StandIn.MOSMIX_MS, clock())
         val share = mosmix?.let { SkyBlend.share(it, modelForecast.elevation) } ?: 0.0
         val skyHours = SkyBlend.hours(modelForecast.hourly, mosmix, share)
         val forecast = modelForecast.copy(hourly = skyHours, minutely = SkyBlend.minutely(modelForecast.minutely, skyHours))
         if (mosmix != null && share > 0.0) sources += Source(SourceKind.MOSMIX, mosmix.site.name, distanceKm = mosmix.site.distanceKm)
 
-        val obs = obsJob.await()
+        val obsAnswer = obsJob.await()
+        if (obsAnswer == null) unanswered += DataPart.STATION
+        val obs = obsAnswer?.value ?: StandIn.within(lastAnswers.stations, lastAnswers.stationsAt, StandIn.STATION_MS, clock()).orEmpty()
         var current = forecast.current ?: forecast.hourly.minByOrNull { kotlin.math.abs(it.time - clock()) }?.let { h ->
             CurrentWeather(h.time, h.temperature, h.apparentTemperature, h.condition, h.isDay, h.humidity, null, h.pressure,
                 h.windSpeed, h.windGust, h.windDirection, h.cloudCover, h.visibility, h.uvIndex, h.precipitation)
@@ -218,21 +237,33 @@ class WeatherRepository(
             current = NowWeather.mergeObservation(current, measured)
             sources += Source(SourceKind.STATION, measured.stationName, network = measured.network)
         }
-        val satellite = NowWeather.satelliteNow(dev.nimbus.weather.data.remote.SatelliteSunshine.minutes(satelliteJob.await(), lat, lon), lat, lon, clock())
+        val satelliteAnswer = satelliteJob.await()
+        if (satelliteAnswer == null) unanswered += DataPart.SATELLITE
+        val satelliteHours = satelliteAnswer?.value ?: StandIn.within(lastAnswers.satellite, lastAnswers.satelliteAt, StandIn.SATELLITE_MS, clock()).orEmpty()
+        val satellite = NowWeather.satelliteNow(dev.nimbus.weather.data.remote.SatelliteSunshine.minutes(satelliteHours, lat, lon), lat, lon, clock())
         current = NowWeather.withSatellite(current, satellite)
         if (share > 0.0) current = NowWeather.withSkyOfHour(current, forecast.hourly, clock())
         current = NowWeather.withModelSunshine(current, forecast.hourly, clock())
-        val alerts = alertsJob.await()
+        val alertsAnswer = alertsJob.await()
+        if (alertsAnswer == null) unanswered += DataPart.ALERTS
+        // no answer: the warnings of the last one still in force (not the states' flood alerts – an extra of their own)
+        val alerts = alertsAnswer?.value ?: StandIn.alerts(near?.alerts.orEmpty().filter { it.source != LHP }, clock())
         if (inDwdArea) sources += Source(SourceKind.DWD_WARNINGS)
         // The core: the page can show
         val extraKinds = setOf(SourceKind.CAMS, SourceKind.DWD_POLLEN, SourceKind.BATHING, SourceKind.GAUGES, SourceKind.LHP_ALERTS, SourceKind.COMMUNITY)
         val keep = previous?.takeIf { it.place.latitude == lat && it.place.longitude == lon }
         val coreAt = clock()
+        // the answers that came now, the others' last ones as they were
+        val answers = dev.nimbus.weather.data.model.LastAnswers(
+            stations = obsAnswer?.value ?: lastAnswers.stations, stationsAt = if (obsAnswer != null) coreAt else lastAnswers.stationsAt,
+            mosmix = if (mosmixAnswer != null) mosmixAnswer.value else lastAnswers.mosmix, mosmixAt = if (mosmixAnswer != null) coreAt else lastAnswers.mosmixAt,
+            satellite = satelliteAnswer?.value ?: lastAnswers.satellite, satelliteAt = if (satelliteAnswer != null) coreAt else lastAnswers.satelliteAt,
+            d2Chance = d2Answer?.value ?: lastAnswers.d2Chance, d2ChanceAt = if (d2Answer != null) coreAt else lastAnswers.d2ChanceAt,
+        )
         // the radar's last answer while it stands for now – a late one does not hand the sky back to
         // the station, one without its nowcast not the hours ahead to the model; "my location" a few
         // metres on is still the same radar pixel
-        val radarSpot = previous?.takeIf { NowWeather.sameRadarSpot(it.place, place) }
-        val lastRadar = radarSpot?.radarNow
+        val lastRadar = near?.radarNow
         var radarNow = NowWeather.radarValid(lastRadar, coreAt)
         // when this load's own nowcast came – or the radar's answer that it has none here; until
         // then (or when it failed) the nowcast part is out of date and asked for again soon, while
@@ -252,7 +283,7 @@ class WeatherRepository(
             bathing: List<dev.nimbus.weather.data.model.BathingSite>, flood: List<dev.nimbus.weather.data.model.WeatherAlert>,
             extraSources: List<Source>, stale: Set<DataPart>, partsAt: Map<DataPart, Long>,
         ) = NowWeather.withRadar(base, radarNow, clock()).let { now ->
-            val outdated = if (nowcastAt == null) stale + DataPart.NOWCAST else stale
+            val outdated = stale + unanswered + listOfNotNull(DataPart.NOWCAST.takeIf { nowcastAt == null })
             val hourly = RadarAhead.hours(forecast.hourly, radarNow, clock())
             WeatherData(
             place = place,
@@ -277,17 +308,22 @@ class WeatherRepository(
             stale = outdated,
             partsAt = partsAt,
             radarNow = radarNow,
+            last = answers,
         ) }
         // when each part was fetched: the forecast now, an extra when its answer came – one not
         // asked for (still current) or without an answer keeps the time of its last value
         val arrivedAt = mutableMapOf<DataPart, Long>()
         fun partsAt(): Map<DataPart, Long> = buildMap {
             put(DataPart.FORECAST, coreAt)
-            (nowcastAt ?: radarSpot?.fetchedAt(DataPart.NOWCAST))?.let { put(DataPart.NOWCAST, it) }
-            for (part in DataPart.entries - DataPart.FORECAST - DataPart.NOWCAST) (arrivedAt[part] ?: keep?.fetchedAt(part))?.let { put(part, it) }
+            (nowcastAt ?: near?.fetchedAt(DataPart.NOWCAST))?.let { put(DataPart.NOWCAST, it) }
+            // the page's other sources: now when they answered, else when their last answer came
+            for (part in DataPart.CORE - DataPart.FORECAST - DataPart.NOWCAST) {
+                (if (part in unanswered) near?.fetchedAt(part)?.takeIf { it > 0 } else coreAt)?.let { put(part, it) }
+            }
+            for (part in DataPart.entries - DataPart.CORE) (arrivedAt[part] ?: keep?.fetchedAt(part))?.let { put(part, it) }
         }
-        // the nowcast comes with the forecast, not as an extra
-        val asked = refresh - DataPart.FORECAST - DataPart.NOWCAST
+        // the page's own sources come with the forecast, not as extras
+        val asked = refresh - DataPart.CORE
         onProgress(
             data(
                 keep?.airQuality, keep?.community, keep?.pollen, keep?.gauges.orEmpty(), keep?.bathing.orEmpty(),

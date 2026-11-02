@@ -45,7 +45,8 @@ object Freshness {
      * forecast a few times a day.
      */
     fun lifeMs(part: DataPart): Long = when (part) {
-        DataPart.FORECAST, DataPart.NOWCAST, DataPart.COMMUNITY, DataPart.FLOOD -> FORECAST_MS
+        DataPart.FORECAST, DataPart.NOWCAST, DataPart.STATION, DataPart.SATELLITE, DataPart.MOSMIX, DataPart.ALERTS,
+        DataPart.COMMUNITY, DataPart.FLOOD -> FORECAST_MS
         DataPart.GAUGES -> 15 * 60_000L
         DataPart.AIR_QUALITY, DataPart.BATHING -> 60 * 60_000L
         DataPart.POLLEN -> 3 * 60 * 60_000L

@@ -23,6 +23,7 @@ import dev.nimbus.weather.data.model.Condition
 import dev.nimbus.weather.data.model.Representative
 import dev.nimbus.weather.data.model.WeatherAlert
 import dev.nimbus.weather.data.model.WeatherCodes
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -30,9 +31,11 @@ import okhttp3.OkHttpClient
 import java.time.OffsetDateTime
 
 /** A DWD station: where a measured value was taken. */
+@Serializable
 data class StationSite(val name: String, val distanceKm: Double, val heightM: Double?)
 
 /** The values of a [StationObservation]; each may come from another station than the main one. */
+@Serializable
 enum class Reading { TEMPERATURE, HUMIDITY, DEW_POINT, PRESSURE, WIND_SPEED, WIND_GUST, WIND_DIRECTION, VISIBILITY, CLOUD_COVER, PRECIPITATION, CONDITION, SUNSHINE }
 
 /**
@@ -41,6 +44,7 @@ enum class Reading { TEMPERATURE, HUMIDITY, DEW_POINT, PRESSURE, WIND_SPEED, WIN
  * fills in from other stations nearby – [fallbacks] names their station, which may be hundreds of
  * metres lower or higher (see [forPlace]).
  */
+@Serializable
 data class StationObservation(
     val time: Long,
     val stationName: String,
@@ -146,9 +150,11 @@ data class StationHour(val time: Long, val values: Map<Reading, Double>)
  * An hour of the DWD's MOSMIX at its station, the hour before [time]: minutes of [sunshine], the
  * [cloudCover] (%), [fog] in the weather it gives the hour.
  */
+@Serializable
 data class MosmixHour(val time: Long, val sunshine: Double?, val cloudCover: Double?, val fog: Boolean)
 
 /** The DWD's MOSMIX forecast at the station [site] nearest a place (via Bright Sky). */
+@Serializable
 data class Mosmix(val site: StationSite, val hours: List<MosmixHour>)
 
 /**

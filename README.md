@@ -84,6 +84,11 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   15 Minuten): zurückgeholt und danach minütlich lädt die App nach, was abgelaufen ist. Bleibt die
   Radarvorhersage des DWD aus, stehen Stundenstreifen, Tagesdiagramm und „Niederschlag heute“ mit der
   letzten weiter da – gelb, nach 2 Minuten neu gefragt – statt für diesen Abruf auf das Modell zu springen.
+  Ebenso die übrigen Quellen der Seite: Fällt die Station, MOSMIX, der Satellit, die DWD-Warnungen oder
+  die Regenwahrscheinlichkeit von ICON-D2 aus, gilt ihre letzte Antwort weiter, solange sie noch für
+  jetzt steht (Station 30 Minuten, Satellit 90 Minuten, ICON-D2 3 Stunden, MOSMIX 6 Stunden, Warnungen
+  bis zu ihrem Ende); die Kacheln dazu und die Zeile „Gemessen an …“ (Station und Satellit) zeigen es
+  mit gelbem Punkt.
   Aktuelle Werte stammen, wo möglich, von der nächsten Wetterstation: DWD, GeoSphere Austria,
   MeteoSwiss und DMI alle 10 Minuten, sonst ein Flughafen (METAR). Jeder Wert zählt nur von einer
   Station in der Höhe des Ortes (höchstens 300 m Unterschied) und nahe am Modell. Der Himmel „jetzt“

@@ -221,6 +221,8 @@ data class WeatherData(
     val partsAt: Map<DataPart, Long> = emptyMap(),
     /** What the radar saw falling over the place lately (Germany); null: nothing known. */
     val radarNow: RadarNow? = null,
+    /** The sources' last answers: they stand in for one that fails. */
+    val last: LastAnswers = LastAnswers(),
 ) {
     /** When [part] was fetched (0: unknown). */
     fun fetchedAt(part: DataPart): Long = partsAt[part] ?: if (part == DataPart.FORECAST) fetchedAt else 0L
@@ -240,7 +242,39 @@ data class RadarNow(val time: Long, val mmPerHour: Double, val steps: Map<Long, 
  * load may go without it and keep the last one.
  */
 @Serializable
-enum class DataPart { FORECAST, AIR_QUALITY, POLLEN, COMMUNITY, GAUGES, BATHING, FLOOD, NOWCAST }
+enum class DataPart {
+    FORECAST, AIR_QUALITY, POLLEN, COMMUNITY, GAUGES, BATHING, FLOOD, NOWCAST,
+    /** The station's readings now. */
+    STATION,
+    /** The sunshine the satellite saw over the place. */
+    SATELLITE,
+    /** The DWD's MOSMIX at its station near the place (the sky of the hours). */
+    MOSMIX,
+    /** The DWD's warnings. */
+    ALERTS;
+
+    companion object {
+        /** The parts that come with every load of the forecast – not asked for on their own. */
+        val CORE = setOf(FORECAST, NOWCAST, STATION, SATELLITE, MOSMIX, ALERTS)
+    }
+}
+
+/**
+ * The last answers of the sources the page is made of, as they came – a load whose source fails
+ * takes its last answer while that still stands for now (see [dev.nimbus.weather.data.repo.LastAnswers]);
+ * each with the time it came (0: none).
+ */
+@Serializable
+data class LastAnswers(
+    val stations: List<dev.nimbus.weather.data.remote.StationObservation> = emptyList(),
+    val stationsAt: Long = 0L,
+    val mosmix: dev.nimbus.weather.data.remote.Mosmix? = null,
+    val mosmixAt: Long = 0L,
+    val satellite: Map<Long, dev.nimbus.weather.data.remote.SatelliteHour> = emptyMap(),
+    val satelliteAt: Long = 0L,
+    val d2Chance: Map<Long, Double> = emptyMap(),
+    val d2ChanceAt: Long = 0L,
+)
 
 @Serializable
 enum class BathingCategory { LAKE, RIVER, COAST, TRANSITIONAL }

@@ -136,6 +136,15 @@ gelbem Punkt, nach 2 Minuten wird neu gefragt. So springt die Anzeige nicht mit 
 Radar und Modell hin und her. Für „Mein Standort“ gilt die letzte Antwort auch, wenn die neue
 Position im selben Radarpixel liegt (höchstens 1 km entfernt).
 
+Dieselbe Regel gilt für die übrigen Quellen der Seite. Antwortet eine nicht, steht ihre letzte
+Antwort ein, solange sie noch für jetzt steht: die Messwerte der Station 30 Minuten, die Stunden
+des Satelliten 90 Minuten, die Regenwahrscheinlichkeit von ICON-D2 3 Stunden (ein Lauf alle
+3 Stunden), MOSMIX 6 Stunden (der lange Lauf alle 6 Stunden), die Warnungen des DWD bis zu ihrem
+Ende – eine Warnung verschwindet nicht für einen Abruf. Die Kacheln mit den Werten von jetzt, die
+Stundenkarten (MOSMIX), die Warnungen und die Zeile „Gemessen an …“ (Station und Satellit) zeigen
+das mit gelbem Punkt; nach 2 Minuten wird neu gefragt. Ist keine letzte Antwort da (der erste
+Abruf eines Ortes), gelten die Werte des Modells – ebenfalls gelb.
+
 Temperatur und Wind kommen weiter von der Station. Unter dem Diagramm steht, woher die Messungen
 stammen. Eine Stunde, für die es keine Messung gibt, zeigt keinen Balken; die Prognose steht in der
 Werte-Tabelle in der Spalte „erwartet“.

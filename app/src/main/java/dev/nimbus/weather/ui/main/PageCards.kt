@@ -81,15 +81,20 @@ internal class Arrivals(private val clock: () -> Long = System::currentTimeMilli
  */
 internal fun cardParts(key: String): Set<dev.nimbus.weather.data.model.DataPart>? = when (key) {
     "header-space", "offline", "sources", "models", "view-hint", "arrange", "arrange-tiles" -> null
-    "alerts" -> setOf(dev.nimbus.weather.data.model.DataPart.FORECAST, dev.nimbus.weather.data.model.DataPart.FLOOD)
+    "alerts" -> setOf(dev.nimbus.weather.data.model.DataPart.FORECAST, dev.nimbus.weather.data.model.DataPart.ALERTS, dev.nimbus.weather.data.model.DataPart.FLOOD)
     "aqi" -> setOf(dev.nimbus.weather.data.model.DataPart.AIR_QUALITY)
     "pollen" -> setOf(dev.nimbus.weather.data.model.DataPart.POLLEN)
     "community" -> setOf(dev.nimbus.weather.data.model.DataPart.COMMUNITY)
     "gauge" -> setOf(dev.nimbus.weather.data.model.DataPart.GAUGES)
     "bathing" -> setOf(dev.nimbus.weather.data.model.DataPart.BATHING)
     // the cards showing the hours and quarter hours ahead: by the radar's nowcast where it covers them
-    "hourly", "daily", "precip" -> setOf(dev.nimbus.weather.data.model.DataPart.FORECAST, dev.nimbus.weather.data.model.DataPart.NOWCAST)
-    else -> setOf(dev.nimbus.weather.data.model.DataPart.FORECAST)
+    // (and the sky of the hours with MOSMIX weighed in)
+    "hourly", "daily" -> setOf(dev.nimbus.weather.data.model.DataPart.FORECAST, dev.nimbus.weather.data.model.DataPart.NOWCAST, dev.nimbus.weather.data.model.DataPart.MOSMIX)
+    "precip" -> setOf(dev.nimbus.weather.data.model.DataPart.FORECAST, dev.nimbus.weather.data.model.DataPart.NOWCAST)
+    // the values now: the station's readings where it measures
+    "tiles" -> setOf(dev.nimbus.weather.data.model.DataPart.FORECAST, dev.nimbus.weather.data.model.DataPart.STATION)
+    else -> if (key.startsWith("tile-")) setOf(dev.nimbus.weather.data.model.DataPart.FORECAST, dev.nimbus.weather.data.model.DataPart.STATION)
+        else setOf(dev.nimbus.weather.data.model.DataPart.FORECAST)
 }
 
 /** Status of the card [key] when [stale] parts still show older values. */

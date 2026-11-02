@@ -19,6 +19,7 @@ package dev.nimbus.weather.data.remote
 
 
 /** An hour of the satellite at a place: Open-Meteo's sunshine (minutes) and the radiation (W/m², hour means). */
+@kotlinx.serialization.Serializable
 data class SatelliteHour(val sunshine: Double?, val direct: Double?, val global: Double?, val diffuse: Double?)
 
 /**

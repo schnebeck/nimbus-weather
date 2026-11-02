@@ -150,6 +150,14 @@ internal fun PageHeader(
                             Modifier.weight(1f, fill = false).testTag("station-line"),
                             androidx.compose.ui.text.TextStyle(fontSize = 12.sp, lineHeight = 16.sp, color = Color.White, textAlign = TextAlign.Center),
                         )
+                        // the station's readings and the satellite's sky current, or a last answer standing in
+                        val shelf = LocalShelf.current
+                        val nowParts = listOf(dev.nimbus.weather.data.model.DataPart.STATION, dev.nimbus.weather.data.model.DataPart.SATELLITE)
+                        val current = nowParts.all { shelf.stateOf(data.place.id, it) == dev.nimbus.weather.data.repo.RecordState.CURRENT }
+                        dev.nimbus.weather.ui.components.StatusDot(
+                            if (current) dev.nimbus.weather.ui.components.CardStatus.FRESH else dev.nimbus.weather.ui.components.CardStatus.STALE,
+                            Modifier.padding(start = 6.dp).testTag("station-dot"),
+                        )
                         Icon(androidx.compose.material.icons.Icons.Outlined.Info, null, tint = Color.White, modifier = Modifier.padding(start = 4.dp).size(12.dp))
                     }
                 }

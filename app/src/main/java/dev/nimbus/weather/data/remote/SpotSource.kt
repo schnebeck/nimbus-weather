@@ -88,7 +88,11 @@ class SpotSource(
     }
 
     /** The satellite's hours at the place, by the hour's end, for the last [pastDays] days and today ([SatelliteSunshine]). */
-    suspend fun satelliteHours(lat: Double, lon: Double, pastDays: Int): Map<Long, SatelliteHour> = runCatching {
+    suspend fun satelliteHours(lat: Double, lon: Double, pastDays: Int): Map<Long, SatelliteHour> =
+        runCatching { satelliteAnswer(lat, lon, pastDays) }.getOrDefault(emptyMap())
+
+    /** [satelliteHours] – failing when the service does not answer (the page's sky keeps its last answer then). */
+    suspend fun satelliteAnswer(lat: Double, lon: Double, pastDays: Int): Map<Long, SatelliteHour> {
         val url = "$satellite/v1/archive".toHttpUrl().newBuilder()
             .addQueryParameter("latitude", OpenMeteoSource.fmt(lat))
             .addQueryParameter("longitude", OpenMeteoSource.fmt(lon))
@@ -98,8 +102,8 @@ class SpotSource(
             .addQueryParameter("past_days", pastDays.toString())
             .addQueryParameter("forecast_days", "1")
             .build().toString()
-        satelliteHours(http.getJson(url))
-    }.getOrDefault(emptyMap())
+        return satelliteHours(http.getJson(url))
+    }
 
     /**
      * [ask]'s answer, asked up to [TRIES] times – each try given at most [tryMs]; null when none

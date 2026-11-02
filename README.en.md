@@ -82,7 +82,11 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   a shelf life (forecast 10, look-back 15 minutes): on returning and every minute after, the app
   loads what has expired. When the DWD's radar nowcast does not come, the hourly strip, the day chart
   and "Precipitation today" keep showing the last one – yellow, asked for again after 2 minutes –
-  instead of jumping to the model for that load.
+  instead of jumping to the model for that load. The page's other sources likewise: when the station,
+  MOSMIX, the satellite, the DWD's warnings or ICON-D2's chance of precipitation fail, their last
+  answer holds while it still stands for now (station 30 minutes, satellite 90 minutes, ICON-D2
+  3 hours, MOSMIX 6 hours, warnings until their end); their tiles and the line "Measured at …"
+  (station and satellite) show it with a yellow dot.
   Current values come, where possible, from the nearest weather station: DWD, GeoSphere Austria,
   MeteoSwiss and DMI every 10 minutes, else an airport (METAR). Each value counts only from a station
   at the place's height (at most 300 m apart) and near the model. The sky "now" follows the measured

@@ -132,6 +132,14 @@ today) show this with a yellow dot, and it is asked for again after 2 minutes. S
 not jump between radar and model with every load. For "My location" the last answer holds too when
 the new position lies in the same radar pixel (at most 1 km away).
 
+The same rule holds for the page's other sources. When one does not answer, its last answer
+stands in while it still stands for now: the station's readings 30 minutes, the satellite's hours
+90 minutes, ICON-D2's chance of precipitation 3 hours (a run every 3 hours), MOSMIX 6 hours (the
+long run every 6 hours), the DWD's warnings until their end – a warning does not vanish for one
+load. The tiles with the values of now, the cards of the hours (MOSMIX), the warnings and the line
+"Measured at …" (station and satellite) show this with a yellow dot; it is asked for again after
+2 minutes. Without a last answer (a place's first load) the model's values hold – yellow as well.
+
 Temperature and wind still come from the station. Below the chart it says where the measurements
 come from. An hour without a measurement shows no bar; the forecast stands in the value table's
 "expected" column.

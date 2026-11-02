@@ -126,6 +126,16 @@ Minuten. Zeigen die nächsten Viertelstunden nur schwächere Echos, heißt es �
 Niesel“. Danach gilt wieder das Modell. Der Rückblick zeigt die kommenden
 Stunden von heute ebenso.
 
+Der Kartendienst des DWD beantwortet die Anfragen reihum von mehreren Servern; einer davon meldet
+zeitweise bei jeder Anfrage nach der Radarvorhersage einen Fehler („InvalidDimensionValue“) statt
+der Werte. Nimbus fragt deshalb jede Radarantwort bis zu dreimal, jeden Versuch höchstens
+7 Sekunden – der nächste erreicht einen anderen Server. Bleibt die Vorhersage trotzdem aus, gelten
+ihre Schritte aus dem letzten Abruf weiter, solange sie höchstens eine halbe Stunde alt ist; die
+Karten mit den kommenden Stunden (Stundenstreifen, Tagesdiagramm, Niederschlag heute) zeigen das mit
+gelbem Punkt, nach 2 Minuten wird neu gefragt. So springt die Anzeige nicht mit jedem Abruf zwischen
+Radar und Modell hin und her. Für „Mein Standort“ gilt die letzte Antwort auch, wenn die neue
+Position im selben Radarpixel liegt (höchstens 1 km entfernt).
+
 Temperatur und Wind kommen weiter von der Station. Unter dem Diagramm steht, woher die Messungen
 stammen. Eine Stunde, für die es keine Messung gibt, zeigt keinen Balken; die Prognose steht in der
 Werte-Tabelle in der Spalte „erwartet“.

@@ -79,7 +79,9 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   appears at once, tiles with slower sources follow as soon as their data is there; a dot per tile
   shows whether its data is current (green) or still the previous one (yellow). Each kind of data has
   a shelf life (forecast 10, look-back 15 minutes): on returning and every minute after, the app
-  loads what has expired.
+  loads what has expired. When the DWD's radar nowcast does not come, the hourly strip, the day chart
+  and "Precipitation today" keep showing the last one – yellow, asked for again after 2 minutes –
+  instead of jumping to the model for that load.
   Current values come, where possible, from the nearest weather station: DWD, GeoSphere Austria,
   MeteoSwiss and DMI every 10 minutes, else an airport (METAR). Each value counts only from a station
   at the place's height (at most 300 m apart) and near the model. The sky "now" follows the measured

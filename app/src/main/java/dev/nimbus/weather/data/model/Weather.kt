@@ -234,9 +234,13 @@ data class WeatherData(
 @Serializable
 data class RadarNow(val time: Long, val mmPerHour: Double, val steps: Map<Long, Double> = emptyMap(), val issue: Long? = null)
 
-/** The parts of [WeatherData] that come from sources of their own (and can be older than the rest). */
+/**
+ * The parts of [WeatherData] that come from sources of their own (and can be older than the rest).
+ * [NOWCAST]: the radar's nowcast over the place – it comes with every load of the forecast, but a
+ * load may go without it and keep the last one.
+ */
 @Serializable
-enum class DataPart { FORECAST, AIR_QUALITY, POLLEN, COMMUNITY, GAUGES, BATHING, FLOOD }
+enum class DataPart { FORECAST, AIR_QUALITY, POLLEN, COMMUNITY, GAUGES, BATHING, FLOOD, NOWCAST }
 
 @Serializable
 enum class BathingCategory { LAKE, RIVER, COAST, TRANSITIONAL }

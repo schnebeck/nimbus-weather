@@ -48,6 +48,7 @@ class CardRedrawTest {
         compose.runOnUiThread {
             shelf.part("b", DataPart.POLLEN).arrived(now)
             shelf.part("b", DataPart.FORECAST).arrived(now)
+            shelf.part("b", DataPart.NOWCAST).arrived(now)
         }
         val drawn = mutableMapOf("pollen" to 0, "hourly" to 0, "page" to 0)
         val shown = mutableMapOf<String, CardStatus?>()

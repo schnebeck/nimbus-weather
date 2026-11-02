@@ -33,6 +33,7 @@ import dev.nimbus.weather.data.remote.JsonCodec
 import dev.nimbus.weather.data.remote.OpenMeteoSource
 import dev.nimbus.weather.data.remote.PollenSource
 import dev.nimbus.weather.data.remote.SpotSource
+import dev.nimbus.weather.data.repo.NowWeather
 import dev.nimbus.weather.data.repo.RadarAhead
 import dev.nimbus.weather.ui.main.lookBackPoints
 import dev.nimbus.weather.ui.main.toMeteo
@@ -190,6 +191,10 @@ class RadarAheadTest {
 
     private val server = MockWebServer()
     private var nowcastFails = false
+    /** How many of the nowcast's requests the service fails before it answers (as one of its servers does). */
+    private var nowcastFailsFirst = 0
+    private var nowcastAsked = 0
+    private var ryFails = false
     // the Bright Sky fixture: Berlin-Tempelhof, 5.8 km, dry at 20:30 UTC
     private val fixtureNow = Instant.parse("2026-09-28T20:45:00Z").toEpochMilli()
     private val berlin = Place("b", "Berlin", latitude = 52.52, longitude = 13.40)
@@ -205,9 +210,12 @@ class RadarAheadTest {
                 val layer = url.queryParameter("layers").orEmpty()
                 return when {
                     // RY: dry for the last hour; WN: 46 dBZ for two hours
+                    url.encodedPath == "/radar" && layer.endsWith("RY") && ryFails -> MockResponse.Builder().code(500).build()
                     url.encodedPath == "/radar" && layer.endsWith("RY") ->
                         MockResponse.Builder().code(200).body(features((0..12).map { fixtureNow - 5 * min - it * 5 * min }, "GRAY_INDEX", 0.0)).build()
                     url.encodedPath == "/radar" && nowcastFails -> MockResponse.Builder().code(500).build()
+                    url.encodedPath == "/radar" && synchronized(this) { ++nowcastAsked } <= nowcastFailsFirst ->
+                        MockResponse.Builder().code(200).body(SERVICE_EXCEPTION).build()
                     url.encodedPath == "/radar" ->
                         MockResponse.Builder().code(200).body(features((0..24).map { fixtureNow + it * 5 * min }, "WN_ANALYSIS", 46.0)).build()
                     url.encodedPath == "/v1/forecast" -> MockResponse.Builder().code(200)
@@ -223,14 +231,14 @@ class RadarAheadTest {
 
     @After fun tearDown() = server.close()
 
-    private fun load(): WeatherData = runBlocking {
+    private fun load(previous: WeatherData? = null, place: Place = berlin): WeatherData = runBlocking {
         val http = OkHttpClient()
         val base = server.url("/").toString().trimEnd('/')
         WeatherRepository(
             OpenMeteoSource(http, base, base, base), BrightSkySource(http, base), CommunitySource(http, base),
             PollenSource(http, "$base/pollen.json", "$base/wms", base),
             clock = { fixtureNow }, spot = SpotSource(http, wms = "$base/radar"),
-        ).load(berlin, Settings(), refresh = setOf(DataPart.FORECAST))
+        ).load(place, Settings(), previous = previous, refresh = setOf(DataPart.FORECAST))
     }
 
     /** Heavy rain in the nowcast: the next hour by it, the source named. */
@@ -253,5 +261,86 @@ class RadarAheadTest {
         assertTrue(data.sources.none { it.kind == SourceKind.RADAR_NOWCAST })
         assertEquals(0.0, data.radarNow!!.mmPerHour, 0.0)
         assertTrue(data.radarNow!!.steps.keys.all { it <= data.radarNow!!.time })
+    }
+
+    /**
+     * One of the service's servers answers the nowcast with an exception instead of the values:
+     * asked again, the next one answers – the hours by the nowcast.
+     */
+    @Test fun theNowcastAskedAgain() {
+        nowcastFailsFirst = 2
+        val data = load()
+        assertEquals(3, nowcastAsked)
+        val next = data.hourly.first { it.time > fixtureNow + 15 * min }
+        assertTrue(next.radar)
+        assertEquals(Condition.HEAVY_RAIN, next.condition)
+    }
+
+    /**
+     * The same place loaded again while the nowcast fails: the hours ahead stay the last nowcast's –
+     * not the model's with this load and the radar's with the next.
+     */
+    @Test fun theSamePlaceShowsTheSameHoursWhenTheNowcastFails() {
+        val before = load()
+        nowcastFails = true
+        val after = load(previous = before)
+        assertEquals(before.hourly.map { it.time to it.condition }, after.hourly.map { it.time to it.condition })
+        assertEquals(before.minutely.map { it.precipitation }, after.minutely.map { it.precipitation })
+        assertTrue(after.sources.any { it.kind == SourceKind.RADAR_NOWCAST })
+        // shown, but not current: the cards of the hours ahead yellow (the others green), asked again soon
+        assertTrue(DataPart.NOWCAST !in before.stale)
+        assertTrue(DataPart.NOWCAST in after.stale)
+        assertEquals(before.fetchedAt(DataPart.NOWCAST), after.fetchedAt(DataPart.NOWCAST))
+        for (card in listOf("hourly", "daily", "precip")) assertEquals(card, dev.nimbus.weather.ui.components.CardStatus.STALE, dev.nimbus.weather.ui.main.cardStatus(card, after.stale))
+        assertEquals(dev.nimbus.weather.ui.components.CardStatus.FRESH, dev.nimbus.weather.ui.main.cardStatus("pressure", after.stale))
+        // the next load with the nowcast back: current again
+        nowcastFails = false
+        val again = load(previous = after)
+        assertTrue(DataPart.NOWCAST !in again.stale)
+        assertEquals(dev.nimbus.weather.ui.components.CardStatus.FRESH, dev.nimbus.weather.ui.main.cardStatus("hourly", again.stale))
+    }
+
+    /** A load with its own nowcast: the part current, fetched with the forecast. */
+    @Test fun theNowcastPartIsCurrent() {
+        val data = load()
+        assertTrue(DataPart.NOWCAST !in data.stale)
+        assertEquals(fixtureNow, data.fetchedAt(DataPart.NOWCAST))
+    }
+
+    /** "My location" a few hundred metres on, the radar not answering at all: the last answer stands. */
+    @Test fun myLocationAFewMetresOnKeepsTheRadar() {
+        val here = berlin.copy(id = "current", isCurrentLocation = true)
+        val before = load(place = here)
+        ryFails = true
+        val moved = load(previous = before, place = here.copy(latitude = here.latitude + 0.003))
+        assertEquals(before.radarNow, moved.radarNow)
+        assertTrue(moved.hourly.first { it.time > fixtureNow + 15 * min }.radar)
+        // 5 km on: another place – the last answer stands for nothing there
+        val far = load(previous = before, place = here.copy(latitude = here.latitude + 0.045))
+        assertNull(far.radarNow)
+        assertTrue(far.hourly.none { it.radar })
+    }
+
+    /** A nowcast older than half an hour is not carried on; a new one is taken as it comes. */
+    @Test fun anOldNowcastIsNotCarriedOn() {
+        val t = fixtureNow
+        val last = RadarNow(t - 10 * min, 0.0, mapOf(t - 10 * min to 0.0, t + 30 * min to 1.0), issue = t - 35 * min)
+        val fresh = RadarNow(t - 5 * min, 0.0, mapOf(t - 5 * min to 0.0))
+        assertEquals(fresh, NowWeather.radarCarried(fresh, last, t))
+        val carried = NowWeather.radarCarried(fresh, last.copy(issue = t - 15 * min), t)!!
+        assertEquals(1.0, carried.steps.getValue(t + 30 * min), 0.0)
+        assertEquals(t - 5 * min, carried.time)
+        val withNowcast = fresh.copy(steps = fresh.steps + (t + 5 * min to 0.2))
+        assertEquals(withNowcast, NowWeather.radarCarried(withNowcast, last.copy(issue = t - 15 * min), t))
+        // no answer: the last while valid
+        assertEquals(last, NowWeather.radarCarried(null, last, t))
+        assertNull(NowWeather.radarCarried(null, last, t + 25 * min))
+    }
+
+    private companion object {
+        /** What one of the DWD's servers answers now and then instead of the nowcast's values. */
+        const val SERVICE_EXCEPTION = """<?xml version="1.0" encoding="UTF-8"?><ServiceExceptionReport version="1.3.0" """ +
+            """xmlns="http://www.opengis.net/ogc"><ServiceException code="InvalidDimensionValue" locator="time">""" +
+            """Could not find a match for 'time' value</ServiceException></ServiceExceptionReport>"""
     }
 }

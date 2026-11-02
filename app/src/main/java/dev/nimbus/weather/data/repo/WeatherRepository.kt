@@ -24,6 +24,7 @@ import dev.nimbus.weather.data.model.ForecastModel
 import dev.nimbus.weather.data.model.modelFor
 import dev.nimbus.weather.data.model.ModelSeries
 import dev.nimbus.weather.data.model.Place
+import dev.nimbus.weather.data.model.RadarNow
 import dev.nimbus.weather.data.model.Settings
 import dev.nimbus.weather.data.model.Source
 import dev.nimbus.weather.data.model.SourceKind
@@ -227,9 +228,23 @@ class WeatherRepository(
         val extraKinds = setOf(SourceKind.CAMS, SourceKind.DWD_POLLEN, SourceKind.BATHING, SourceKind.GAUGES, SourceKind.LHP_ALERTS, SourceKind.COMMUNITY)
         val keep = previous?.takeIf { it.place.latitude == lat && it.place.longitude == lon }
         val coreAt = clock()
-        // the radar's last answer while it stands for now – a late one does not hand the sky back to the station
-        var radarNow = NowWeather.radarValid(keep?.radarNow, coreAt)
-        if (radarJob.isCompleted) radarJob.await()?.value?.let { radarNow = it }
+        // the radar's last answer while it stands for now – a late one does not hand the sky back to
+        // the station, one without its nowcast not the hours ahead to the model; "my location" a few
+        // metres on is still the same radar pixel
+        val radarSpot = previous?.takeIf { NowWeather.sameRadarSpot(it.place, place) }
+        val lastRadar = radarSpot?.radarNow
+        var radarNow = NowWeather.radarValid(lastRadar, coreAt)
+        // when this load's own nowcast came – or the radar's answer that it has none here; until
+        // then (or when it failed) the nowcast part is out of date and asked for again soon, while
+        // the last one stands in
+        val radarAsked = spot != null && inDwdArea
+        var nowcastAt: Long? = if (radarAsked) null else coreAt
+        fun radarCame(r: Fetched<RadarNow?>, at: Long): RadarNow? {
+            val fresh = r.value
+            if (fresh == null || fresh.steps.keys.any { it > fresh.time }) nowcastAt = at
+            return NowWeather.radarCarried(fresh, lastRadar, at)
+        }
+        if (radarJob.isCompleted) radarJob.await()?.let { radarNow = radarCame(it, clock()) }
         val base = current
         fun data(
             aq: dev.nimbus.weather.data.model.AirQuality?, community: dev.nimbus.weather.data.model.CommunityObservation?,
@@ -237,6 +252,7 @@ class WeatherRepository(
             bathing: List<dev.nimbus.weather.data.model.BathingSite>, flood: List<dev.nimbus.weather.data.model.WeatherAlert>,
             extraSources: List<Source>, stale: Set<DataPart>, partsAt: Map<DataPart, Long>,
         ) = NowWeather.withRadar(base, radarNow, clock()).let { now ->
+            val outdated = if (nowcastAt == null) stale + DataPart.NOWCAST else stale
             val hourly = RadarAhead.hours(forecast.hourly, radarNow, clock())
             WeatherData(
             place = place,
@@ -258,7 +274,7 @@ class WeatherRepository(
                 Source(SourceKind.RADAR_NOWCAST).takeIf { hourly.any { it.radar } },
             ) + extraSources,
             fetchedAt = coreAt,
-            stale = stale,
+            stale = outdated,
             partsAt = partsAt,
             radarNow = radarNow,
         ) }
@@ -267,9 +283,11 @@ class WeatherRepository(
         val arrivedAt = mutableMapOf<DataPart, Long>()
         fun partsAt(): Map<DataPart, Long> = buildMap {
             put(DataPart.FORECAST, coreAt)
-            for (part in DataPart.entries - DataPart.FORECAST) (arrivedAt[part] ?: keep?.fetchedAt(part))?.let { put(part, it) }
+            (nowcastAt ?: radarSpot?.fetchedAt(DataPart.NOWCAST))?.let { put(DataPart.NOWCAST, it) }
+            for (part in DataPart.entries - DataPart.FORECAST - DataPart.NOWCAST) (arrivedAt[part] ?: keep?.fetchedAt(part))?.let { put(part, it) }
         }
-        val asked = refresh - DataPart.FORECAST
+        // the nowcast comes with the forecast, not as an extra
+        val asked = refresh - DataPart.FORECAST - DataPart.NOWCAST
         onProgress(
             data(
                 keep?.airQuality, keep?.community, keep?.pollen, keep?.gauges.orEmpty(), keep?.bathing.orEmpty(),
@@ -330,8 +348,12 @@ class WeatherRepository(
             arrive(floodJob, DataPart.FLOOD) { floodAlerts = it }
             arrive(communityJob, DataPart.COMMUNITY) { communityObs = it }
             launch {
-                val r = radarJob.await()?.value ?: return@launch
-                lock.withLock { if (r != radarNow) { radarNow = r; onProgress(snapshot()) } }
+                val answer = radarJob.await() ?: return@launch
+                lock.withLock {
+                    val wasDue = nowcastAt == null
+                    val r = radarCame(answer, clock())
+                    if (r != radarNow || (wasDue && nowcastAt != null)) { radarNow = r; onProgress(snapshot()) }
+                }
             }
         }
         snapshot()

@@ -32,11 +32,11 @@ class FreshnessTest {
     private val min = 60_000L
     private val now = 1_790_900_000_000L
 
-    /** Every part its own shelf life (the table agreed on): forecast, sensors, flood alerts 10 min, gauges 15, air quality and bathing 60, pollen 3 h. */
+    /** Every part its own shelf life (the table agreed on): forecast, the radar's nowcast, sensors, flood alerts 10 min, gauges 15, air quality and bathing 60, pollen 3 h. */
     @Test fun everyPartHasItsShelfLife() {
         val life = DataPart.entries.associateWith { Freshness.lifeMs(it) / min }
         assertEquals(mapOf(DataPart.FORECAST to 10L, DataPart.AIR_QUALITY to 60L, DataPart.POLLEN to 180L, DataPart.COMMUNITY to 10L,
-            DataPart.GAUGES to 15L, DataPart.BATHING to 60L, DataPart.FLOOD to 10L), life)
+            DataPart.GAUGES to 15L, DataPart.BATHING to 60L, DataPart.FLOOD to 10L, DataPart.NOWCAST to 10L), life)
     }
 
     /** The look-back keeps 15 minutes (its record goes out of date then, see RecordsTest), the position 5. */

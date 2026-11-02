@@ -151,6 +151,28 @@ object NowWeather {
     fun radarValid(radar: RadarNow?, now: Long): RadarNow? = radar?.takeIf { now - it.time in 0..RADAR_VALID_MS }
 
     /**
+     * This load's radar ([fresh]) with what the last answer ([last]) still stands for: no answer –
+     * the last one while valid ([radarValid]); an answer without its nowcast – the last nowcast's
+     * steps after the new newest step, while that nowcast is at most [RADAR_VALID_MS] old. The
+     * hours ahead do not fall back to the model with one load and return to the radar with the next.
+     */
+    fun radarCarried(fresh: RadarNow?, last: RadarNow?, now: Long): RadarNow? {
+        val kept = radarValid(last, now)
+        if (fresh == null) return kept
+        if (kept == null || fresh.steps.keys.any { it > fresh.time }) return fresh
+        if (now - (kept.issue ?: kept.time) > RADAR_VALID_MS) return fresh
+        val ahead = kept.steps.filterKeys { it > fresh.time }
+        return if (ahead.isEmpty()) fresh else fresh.copy(steps = fresh.steps + ahead, issue = kept.issue)
+    }
+
+    /**
+     * Whether a radar answer for [a] stands for [b] too: the same radar pixel – "my location" moves
+     * by a few metres from one position to the next.
+     */
+    fun sameRadarSpot(a: dev.nimbus.weather.data.model.Place, b: dev.nimbus.weather.data.model.Place): Boolean =
+        dev.nimbus.weather.util.Geo.distanceKm(a.latitude, a.longitude, b.latitude, b.longitude) <= HistorySource.RADAR_PIXEL_KM
+
+    /**
      * What falls now by the radar over the place ([radar], while valid): it beats a station
      * farther off than the radar's pixel, and the model – precipitation without an echo shows the
      * sky, rain is told by its rate, an echo where nothing was seen falls as

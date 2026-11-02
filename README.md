@@ -80,7 +80,9 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   Luftfeuchte, Sichtweite und Luftdruck. Die Vorhersage erscheint sofort, Kacheln mit langsameren
   Quellen kommen hinzu, sobald ihre Daten da sind; ein Punkt je Kachel zeigt, ob ihre Daten aktuell
   sind (grün) oder noch die vorigen (gelb). Jede Datenart hat eine Haltbarkeit (Vorhersage 10, Rückblick
-  15 Minuten): zurückgeholt und danach minütlich lädt die App nach, was abgelaufen ist.
+  15 Minuten): zurückgeholt und danach minütlich lädt die App nach, was abgelaufen ist. Bleibt die
+  Radarvorhersage des DWD aus, stehen Stundenstreifen, Tagesdiagramm und „Niederschlag heute“ mit der
+  letzten weiter da – gelb, nach 2 Minuten neu gefragt – statt für diesen Abruf auf das Modell zu springen.
   Aktuelle Werte stammen, wo möglich, von der nächsten Wetterstation: DWD, GeoSphere Austria,
   MeteoSwiss und DMI alle 10 Minuten, sonst ein Flughafen (METAR). Jeder Wert zählt nur von einer
   Station in der Höhe des Ortes (höchstens 300 m Unterschied) und nahe am Modell. Der Himmel „jetzt“

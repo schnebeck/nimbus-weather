@@ -87,6 +87,8 @@ internal fun cardParts(key: String): Set<dev.nimbus.weather.data.model.DataPart>
     "community" -> setOf(dev.nimbus.weather.data.model.DataPart.COMMUNITY)
     "gauge" -> setOf(dev.nimbus.weather.data.model.DataPart.GAUGES)
     "bathing" -> setOf(dev.nimbus.weather.data.model.DataPart.BATHING)
+    // the cards showing the hours and quarter hours ahead: by the radar's nowcast where it covers them
+    "hourly", "daily", "precip" -> setOf(dev.nimbus.weather.data.model.DataPart.FORECAST, dev.nimbus.weather.data.model.DataPart.NOWCAST)
     else -> setOf(dev.nimbus.weather.data.model.DataPart.FORECAST)
 }
 

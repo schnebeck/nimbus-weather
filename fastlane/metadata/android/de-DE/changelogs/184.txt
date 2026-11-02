@@ -1,0 +1,1 @@
+• Radar-Vorhersage: Fällt ein Server des DWD aus, fragt die App gleich noch einmal; bleibt sie aus, stehen die kommenden Stunden mit der letzten Vorhersage weiter da (gelber Punkt, neuer Versuch nach 2 Minuten), statt zwischen Radar und Modell zu springen

@@ -78,8 +78,10 @@ class SpotSource(
      */
     suspend fun radarNow(lat: Double, lon: Double, now: Long): RadarNow? = coroutineScope {
         // the nowcast on its own: without it, what falls now still counts
-        val wn = async { runCatching { nowcast(http.getJson(pointUrl(WN, lat, lon, now - NOW_STEPS * STEP_MS, now + AHEAD_MS))) }.getOrNull() }
-        val ry = series(http.getJson(pointUrl(RY, lat, lon, now - NOW_SPAN_MS, now)))
+        val wn = async {
+            retried { nowcast(http.getJson(pointUrl(WN, lat, lon, now - NOW_STEPS * STEP_MS, now + AHEAD_MS))) }
+        }
+        val ry = series(retried { http.getJson(pointUrl(RY, lat, lon, now - NOW_SPAN_MS, now)) } ?: throw java.io.IOException("RY: no answer"))
         val r = now(ry) ?: return@coroutineScope null.also { wn.cancel() }
         val ahead = wn.await()
         r.copy(steps = ry + ahead?.second.orEmpty().filterKeys { it > r.time }, issue = ahead?.first)
@@ -98,6 +100,22 @@ class SpotSource(
             .build().toString()
         satelliteHours(http.getJson(url))
     }.getOrDefault(emptyMap())
+
+    /**
+     * [ask]'s answer, asked up to [TRIES] times – each try given at most [tryMs]; null when none
+     * came. The DWD's map service answers from several servers in turn, and one of them may fail
+     * every request for a while (an exception instead of the values, or no answer): the next try
+     * reaches another one.
+     */
+    private suspend fun <T : Any> retried(tryMs: Long = TRY_MS, ask: suspend () -> T?): T? {
+        repeat(TRIES) {
+            val answer = kotlinx.coroutines.withTimeoutOrNull(tryMs) {
+                runCatching { ask() }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }.getOrNull()
+            }
+            if (answer != null) return answer
+        }
+        return null
+    }
 
     /** The values of [layer] at the place from [from] to [to] (GetFeatureInfo with a time range). */
     private fun pointUrl(layer: String, lat: Double, lon: Double, from: Long, to: Long): String = pointUrl(layer, lat, lon, "${iso(from)}/${iso(to)}")
@@ -158,6 +176,13 @@ class SpotSource(
         private const val NOW_SPAN_MS = 65 * 60_000L
         /** … and the nowcast as far as it reaches (two hours, and room to spare). */
         private const val AHEAD_MS = 2 * HOUR_MS + 15 * 60_000L
+        /** How often [radarNow] asks for each of its answers. */
+        const val TRIES = 3
+        /**
+         * How long each try may take: RY answers in under a second, the nowcast in 1–2 s; a server
+         * not answering at all is left for the next one – all tries within the load's wait for the radar.
+         */
+        const val TRY_MS = 7_000L
         /** Weaker echoes are no precipitation (as on the radar map). */
         const val WET_DBZ = 8.0
         /** The steps [radarNow] averages: a quarter of an hour. */

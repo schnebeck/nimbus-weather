@@ -123,6 +123,15 @@ sum reaches 0.05 mm or one of its 5-minute steps 0.2 mm/h – so the precipitati
 shower of five minutes too. When the next quarter hours show only weaker echoes, it says "Possibly
 some drizzle". After that the model holds again. The look-back shows today's hours to come the same way.
 
+The DWD's map service answers from several servers in turn; one of them at times fails every
+request for the nowcast with an error ("InvalidDimensionValue") instead of the values. So Nimbus
+asks for each radar answer up to three times, each try at most 7 seconds – the next one reaches
+another server. If the nowcast still does not come, its steps from the last load hold on while it
+is at most half an hour old; the cards of the hours ahead (hourly strip, day chart, precipitation
+today) show this with a yellow dot, and it is asked for again after 2 minutes. So the display does
+not jump between radar and model with every load. For "My location" the last answer holds too when
+the new position lies in the same radar pixel (at most 1 km away).
+
 Temperature and wind still come from the station. Below the chart it says where the measurements
 come from. An hour without a measurement shows no bar; the forecast stands in the value table's
 "expected" column.

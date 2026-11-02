@@ -277,7 +277,7 @@ class RepositoryTest {
         val later = fixtureNow + 20 * 60_000L
         val due = expired(first, later)
         assertEquals(setOf(dev.nimbus.weather.data.model.DataPart.FORECAST, dev.nimbus.weather.data.model.DataPart.COMMUNITY,
-            dev.nimbus.weather.data.model.DataPart.GAUGES, dev.nimbus.weather.data.model.DataPart.FLOOD), due)
+            dev.nimbus.weather.data.model.DataPart.GAUGES, dev.nimbus.weather.data.model.DataPart.FLOOD, dev.nimbus.weather.data.model.DataPart.NOWCAST), due)
         val data = repo(later).load(berlin, Settings(), previous = first, refresh = due)
         assertTrue(requested.toString(), requested.none { it.startsWith("/v1/air-quality") || it.startsWith("/pollen") || it.startsWith("/wms") })
         assertTrue(requested.toString(), requested.any { it.startsWith("/airrohr") } && requested.any { it.startsWith("/v1/forecast") })

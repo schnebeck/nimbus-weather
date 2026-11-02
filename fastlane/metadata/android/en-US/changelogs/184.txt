@@ -1,0 +1,1 @@
+• Radar nowcast: when a DWD server fails, the app asks again at once; if it still does not come, the hours ahead keep the last nowcast (yellow dot, tried again after 2 minutes) instead of jumping between radar and model

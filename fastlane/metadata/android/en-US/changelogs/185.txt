@@ -1,0 +1,1 @@
+• 10-day forecast: each weekday shows its date below (day and month, e.g. 11/02) without the rows getting taller

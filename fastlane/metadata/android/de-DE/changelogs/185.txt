@@ -1,0 +1,1 @@
+• 10-Tage-Vorhersage: Unter jedem Wochentag steht sein Datum (Tag und Monat, z. B. 02.11.), ohne dass die Zeilen höher werden

@@ -123,6 +123,13 @@ class TimeFormat(timezone: String, val use24h: Boolean, private val locale: Loca
     fun dayMonth(epochMillis: Long): String = DateTimeFormatter
         .ofPattern(android.text.format.DateFormat.getBestDateTimePattern(locale, "EEEdMMM"), locale)
         .format(zoned(epochMillis)).replace(' ', '\u00A0')
+    /**
+     * Day and month in figures, each with two digits, in the order and with the separator of the
+     * language: "02.11." (German), "11/02" (US English), "02/11" (British English).
+     */
+    fun dayMonthDigits(epochMillis: Long): String = DateTimeFormatter
+        .ofPattern(android.text.format.DateFormat.getBestDateTimePattern(locale, "ddMM"), locale)
+        .format(zoned(epochMillis))
     fun weekdayLong(epochMillis: Long): String = zoned(epochMillis).dayOfWeek.getDisplayName(TextStyle.FULL, locale)
     fun isSameDay(a: Long, b: Long): Boolean = zoned(a).toLocalDate() == zoned(b).toLocalDate()
 }

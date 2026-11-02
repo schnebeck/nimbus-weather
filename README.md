@@ -74,7 +74,8 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   Stunden, DWD-Warnungen, Blitze in der Nähe (nächster Blitz der letzten 15 Minuten im Umkreis von
   50 km, angetippt das Radar mit Blitzen), „Niederschlag heute“ obenauf (Menge, nächste 3 Stunden, höchste
   Wahrscheinlichkeit; an trockenen Tagen eine Zeile mit dem nächsten Niederschlag oder ausgeblendet),
-  Stunden- und 10-Tage-Vorhersage mit Niederschlagswahrscheinlichkeit (jeder Tag mit Symbol und
+  Stunden- und 10-Tage-Vorhersage mit Niederschlagswahrscheinlichkeit (jeder Tag mit seinem Datum unter
+  dem Wochentag – Tag und Monat in Ziffern nach der Sprache, z. B. „02.11.“ –, mit Symbol und
   Tageswetter aus seinen Stunden: Himmel, Regen, Schnee, Gewitter und Nebel in einem Symbol, dazu eine
   Zeile wie „Morgens Niesel, dann heiter“ oder „Meist wolkig mit Schauern“), Kacheln für Gefühlt, UV, Wind,
   Luftfeuchte, Sichtweite und Luftdruck. Die Vorhersage erscheint sofort, Kacheln mit langsameren

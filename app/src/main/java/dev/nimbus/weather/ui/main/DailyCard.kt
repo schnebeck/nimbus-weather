@@ -19,6 +19,7 @@ package dev.nimbus.weather.ui.main
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -101,16 +102,17 @@ fun DailyCard(
     // day name, chance and temperature in the font size set – fixed widths cut "Heute" to "Heu"
     // and "20°" to "20" with a large system font
     val labels = days.mapIndexed { i, d -> if (i == 0) stringResource(R.string.today) else tf.weekdayShort(d.date) }
+    val dates = remember(days, tf) { days.map { tf.dayMonthDigits(it.date) } }
     val measurer = androidx.compose.ui.text.rememberTextMeasurer()
     val density = androidx.compose.ui.platform.LocalDensity.current
-    val natural = remember(labels, days, settings.temperatureUnit, density) {
+    val natural = remember(labels, dates, days, settings.temperatureUnit, density) {
         fun widest(texts: List<String>, style: androidx.compose.ui.text.TextStyle) =
             with(density) { (texts.maxOfOrNull { measurer.measure(it, style, softWrap = false, density = density).size.width } ?: 0).toDp() }
         val big = androidx.compose.ui.text.TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Medium)
         val chances = days.mapNotNull { d -> Insights.chanceLabel(d.precipitationProbability)?.let { Insights.chanceText(d.precipitationProbability, d.precipitationSum) + NBSP + "%" } }
         val temps = days.flatMap { listOf(Units.temp(it.tempMin, settings.temperatureUnit), Units.temp(it.tempMax, settings.temperatureUnit)) }
         DayColumns(
-            label = maxOf(62.dp, widest(labels, big) + 6.dp),
+            label = maxOf(62.dp, widest(labels, big) + 6.dp, widest(dates, DateStyle) + 6.dp),
             symbol = maxOf(44.dp, widest(chances, ChanceStyle.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold)) + 4.dp),
             temp = maxOf(44.dp, widest(temps, big) + 4.dp),
         )
@@ -125,6 +127,7 @@ fun DailyCard(
             DayRow(
                 day = d,
                 label = labels[i],
+                date = dates[i],
                 columns = columns,
                 min = lo, max = hi,
                 currentTemp = if (isToday) data.current.temperature else null,
@@ -153,7 +156,7 @@ fun DailyCard(
 
 @Composable
 private fun DayRow(
-    day: DailyPoint, label: String, columns: DayColumns, min: Double, max: Double, currentTemp: Double?,
+    day: DailyPoint, label: String, date: String, columns: DayColumns, min: Double, max: Double, currentTemp: Double?,
     expanded: Boolean, onClick: () -> Unit, hours: List<HourlyPoint>, daily: List<DailyPoint>, now: Long,
     /** The place (night shading from the sun's position there). */
     place: dev.nimbus.weather.data.model.Place,
@@ -184,7 +187,7 @@ private fun DayRow(
             .clickable { if (!expanded) tapped = true; onClick() },
     ) {
         if (!columns.stacked) Row(Modifier.fillMaxWidth().heightIn(min = 50.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(label, Modifier.width(columns.label), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1, softWrap = false)
+            DayLabel(label, date, Modifier.width(columns.label))
             Column(Modifier.width(columns.symbol), horizontalAlignment = Alignment.CenterHorizontally) {
                 if (dayWeather != null) dev.nimbus.weather.ui.components.DayIcon(dayWeather.symbol, size = 26.dp) else WeatherIcon(day.condition, true, size = 26.dp)
                 ChanceText(day.precipitationProbability, day.precipitationSum)
@@ -202,7 +205,7 @@ private fun DayRow(
             // Large text: day, symbol and temperatures in full size on one line, the bar below
             // across the whole width – nothing squeezed, nothing shortened
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(label, Modifier.weight(1f), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1, softWrap = false)
+                Box(Modifier.weight(1f)) { DayLabel(label, date, Modifier.width(columns.label)) }
                 Column(Modifier.width(columns.symbol), horizontalAlignment = Alignment.CenterHorizontally) {
                     if (dayWeather != null) dev.nimbus.weather.ui.components.DayIcon(dayWeather.symbol, size = 26.dp) else WeatherIcon(day.condition, true, size = 26.dp)
                     ChanceText(day.precipitationProbability, day.precipitationSum)
@@ -259,6 +262,21 @@ private fun DayRow(
         }
     }
 }
+
+/**
+ * The day's name with its date below – day and month in figures in the language's order, as small
+ * as the chance below the symbol beside it, so the row grows no taller; both centred in the column.
+ */
+@Composable
+private fun DayLabel(label: String, date: String, modifier: Modifier) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White, maxLines = 1, softWrap = false)
+        Text(date, color = Color(0x99FFFFFF), style = DateStyle, maxLines = 1, softWrap = false, modifier = Modifier.testTag("day-date"))
+    }
+}
+
+/** The date under the day's name: the size and weight of the chance below the symbol. */
+private val DateStyle = ChanceStyle.copy(fontSize = 11.sp, fontWeight = FontWeight.Medium)
 
 /**
  * Widths of the day rows' columns: day name, symbol with chance, temperatures (the bar takes the

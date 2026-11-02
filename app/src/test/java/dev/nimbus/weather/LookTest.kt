@@ -42,6 +42,7 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
@@ -402,6 +403,47 @@ class LookTest {
         // the open chart keeps its axis labels in the card's padding (the clip does not cut them)
         compose.onRoot().captureRoboImage("src/test/screenshots/daily_open.png")
         toggleAndWatch("closing")
+    }
+
+    /** The date under a day's name: day and month in figures, two digits each, in the language's order. */
+    @Test fun theDateInFiguresByLanguage() {
+        val t = java.time.Instant.parse("2026-03-05T10:00:00Z").toEpochMilli()
+        assertEquals("05.03.", TimeFormat("UTC", true, java.util.Locale.GERMANY).dayMonthDigits(t))
+        assertEquals("03/05", TimeFormat("UTC", true, java.util.Locale.US).dayMonthDigits(t))
+        assertEquals("05/03", TimeFormat("UTC", true, java.util.Locale.UK).dayMonthDigits(t))
+    }
+
+    /**
+     * The 10-day card: under each day's name its date, centred under it, as large as the chance
+     * below the symbol – the rows no taller than without it (50 dp and the hairline between them),
+     * with a larger system font too: the name and date no taller than the symbol with its chance.
+     */
+    @Test fun theDateUnderTheDayName() {
+        var scale by mutableFloatStateOf(1f)
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, scale)) {
+                Card { dev.nimbus.weather.ui.main.DailyCard(cardData(), day + 10 * h) }
+            }
+        }
+        val f = TimeFormat("UTC", true)
+        fun bounds(text: String) = compose.onNodeWithText(text, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        for (s in listOf(1f, 1.3f)) {
+            scale = s
+            compose.waitForIdle()
+            val name = bounds(f.weekdayShort(day + 24 * h))
+            val date = bounds(f.dayMonthDigits(day + 24 * h))
+            assertEquals("font $s: the date centred under the name", name.center.x, date.center.x, 1.5f)
+            assertTrue("font $s: the date below the name", date.top >= name.bottom - 1f)
+            // the chance below the symbol beside it: the day's name and date reach no lower
+            val chance = compose.onAllNodesWithText("60", substring = true, useUnmergedTree = true).fetchSemanticsNodes()
+                .map { it.boundsInRoot }.first { it.top > name.top && it.top < name.top + with(compose.density) { 50.dp.toPx() } }
+            assertTrue("font $s: date bottom ${date.bottom} below the chance's ${chance.bottom}", date.bottom <= chance.bottom + 1f)
+            if (s == 1f) {
+                val step = bounds(f.dayMonthDigits(day + 48 * h)).top - date.top
+                assertEquals("rows 50 dp and the hairline", with(compose.density) { 50.6.dp.toPx() }, step, 1.5f)
+                compose.onRoot().captureRoboImage("src/test/screenshots/daily_dates.png")
+            }
+        }
     }
 
     /**

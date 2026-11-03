@@ -19,7 +19,7 @@
 
 # Datenschutzerklärung – Nimbus
 
-Stand: 23. Oktober 2026
+Stand: 3. November 2026
 
 ## Kurz gesagt
 

@@ -19,7 +19,7 @@
 
 # Privacy policy – Nimbus
 
-Last updated: 23 October 2026
+Last updated: 3 November 2026
 
 ## In short
 

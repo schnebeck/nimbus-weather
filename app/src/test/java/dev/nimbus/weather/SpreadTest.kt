@@ -295,7 +295,7 @@ class SpreadTest {
         compose.waitForIdle()
         assertEquals(1, requested)
         compose.onNodeWithTag("spread-chart").assertExists()
-        compose.onNodeWithText(ctx.getString(R.string.spread_hint, 5, 10)).assertExists()
+        compose.onNodeWithText(ctx.getString(R.string.spread_hint)).assertExists()
         compose.onRoot().captureRoboImage("src/test/screenshots/spread_card.png")
     }
 

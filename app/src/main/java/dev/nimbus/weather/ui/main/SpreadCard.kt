@@ -114,7 +114,7 @@ fun SpreadCard(spread: Spread?, tried: Boolean, now: Long, onRequest: () -> Unit
             } else Text(stringResource(R.string.spread_unavailable), fontSize = 14.sp, color = Color.White)
             return@GlassCard
         }
-        Text(stringResource(R.string.spread_hint, spread.members, days.size), fontSize = 13.sp, color = NimbusColors.Secondary)
+        Text(stringResource(R.string.spread_hint), fontSize = 13.sp, color = NimbusColors.Secondary)
         Spacer(Modifier.height(10.dp))
         val from = spread.from(now)
         if (spread.times.size - from < 2) return@GlassCard

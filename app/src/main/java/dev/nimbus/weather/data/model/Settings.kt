@@ -65,11 +65,11 @@ enum class PrecipitationUnit { MM, INCH }
 @Serializable
 enum class WeatherCard {
     ALERTS, HOURLY, DAILY, PRECIPITATION, RADAR, FEELS_LIKE, UV_INDEX, WIND, HUMIDITY, VISIBILITY, PRESSURE,
-    SUN, MOON, AIR_QUALITY, POLLEN, GAUGES, BATHING, COMMUNITY, MODELS, TILES, PRESSURE_CHART;
+    SUN, MOON, AIR_QUALITY, POLLEN, GAUGES, BATHING, COMMUNITY, MODELS, SPREAD, TILES, PRESSURE_CHART;
 
     companion object {
         /** Default order of the page below the alerts (which always stay on top). */
-        val DEFAULT_ORDER = listOf(PRECIPITATION, HOURLY, DAILY, RADAR, TILES, PRESSURE_CHART, SUN, MOON, AIR_QUALITY, POLLEN, GAUGES, BATHING, COMMUNITY, MODELS)
+        val DEFAULT_ORDER = listOf(PRECIPITATION, HOURLY, DAILY, RADAR, TILES, PRESSURE_CHART, SUN, MOON, AIR_QUALITY, POLLEN, GAUGES, BATHING, COMMUNITY, MODELS, SPREAD)
         /** Alternatives that are off until switched on (e.g. the pressure chart next to the small tile). */
         val OPT_IN = setOf(PRESSURE_CHART)
         val DEFAULT_TILES = listOf(FEELS_LIKE, UV_INDEX, WIND, HUMIDITY, VISIBILITY, PRESSURE)
@@ -78,7 +78,7 @@ enum class WeatherCard {
         // order: the core, then the pollen (for many a must), the small tiles, sky and air, the special.
         val CORE = setOf(PRECIPITATION, HOURLY, DAILY, RADAR)
         val SKY = setOf(SUN, MOON, AIR_QUALITY)
-        val SPECIAL = setOf(GAUGES, BATHING, COMMUNITY, MODELS, PRESSURE_CHART)
+        val SPECIAL = setOf(GAUGES, BATHING, COMMUNITY, MODELS, SPREAD, PRESSURE_CHART)
     }
 }
 

@@ -24,6 +24,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dev.nimbus.weather.data.model.Place
 import dev.nimbus.weather.data.model.Settings
+import dev.nimbus.weather.data.model.Spread
 import dev.nimbus.weather.data.model.WeatherData
 import dev.nimbus.weather.data.remote.JsonCodec
 import kotlinx.coroutines.Dispatchers
@@ -104,11 +105,32 @@ class Store(private val context: Context) {
         tmp.renameTo(f)
     }
 
-    suspend fun deleteCache(placeId: String) = withContext(Dispatchers.IO) { cacheFile(placeId).delete() }
+    suspend fun deleteCache(placeId: String) = withContext(Dispatchers.IO) {
+        cacheFile(placeId).delete()
+        spreadFile(placeId).delete()
+    }
+
+    private fun spreadFile(placeId: String) = File(context.filesDir, "$SPREAD_DIR/" + cacheFileName(placeId))
+
+    /** The last spread of the forecast of [placeId] – asked anew only four times a day, across starts of the app too. */
+    suspend fun cachedSpread(placeId: String): Spread? = withContext(Dispatchers.IO) {
+        val f = spreadFile(placeId)
+        if (!f.exists()) null else runCatching { JsonCodec.decodeFromString(Spread.serializer(), f.readText()) }.getOrNull()
+    }
+
+    suspend fun cacheSpread(placeId: String, spread: Spread) = withContext(Dispatchers.IO) {
+        val f = spreadFile(placeId)
+        f.parentFile?.mkdirs()
+        val tmp = File(f.parentFile, f.name + ".tmp")
+        tmp.writeText(JsonCodec.encodeToString(Spread.serializer(), spread))
+        tmp.renameTo(f)
+    }
 
     companion object {
         /** Folder (in the app's files) of the last weather of each place – shown at once on start, offline too. */
         const val CACHE_DIR = "weather_cache"
+        /** Folder of the last spread of the forecast of each place. */
+        const val SPREAD_DIR = "spread_cache"
 
         /** File name of the last weather of [placeId] in [CACHE_DIR]. */
         fun cacheFileName(placeId: String) = placeId.replace(Regex("[^A-Za-z0-9_.-]"), "_") + ".json"

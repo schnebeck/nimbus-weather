@@ -31,6 +31,8 @@ object Freshness {
     const val STALE_RETRY_MS = 2 * 60_000L
     /** The look-back: today so far grows with every station report. */
     const val HISTORY_MS = 15 * 60_000L
+    /** The spread of the forecast: the ensemble runs four times a day. */
+    const val SPREAD_MS = 6 * 60 * 60_000L
     /**
      * The position of "my location": on the road 5 minutes are a few kilometres. Older, the page
      * of the current location no longer counts as current (its dots turn yellow).

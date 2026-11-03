@@ -54,7 +54,7 @@ sends no device identifiers, no cookies and no device data; as its program name 
 
 | Service | Purpose |
 |---|---|
-| Open-Meteo (open-meteo.com) | forecast, model comparison, air quality, pollen (CAMS), satellite sunshine in the look-back, the radar's temperature and wind layer (only to a grid of 1° to 0.125°) |
+| Open-Meteo (open-meteo.com) | forecast, model comparison, forecast spread (ensemble), air quality, pollen (CAMS), satellite sunshine in the look-back, the radar's temperature and wind layer (only to a grid of 1° to 0.125°) |
 | Bright Sky (brightsky.dev) | readings of DWD stations, warnings, look-back – Germany only |
 | Deutscher Wetterdienst (dwd.de) | radar values at the place, pollen region, lightning nearby |
 | Sensor.Community | readings of citizen sensors around |

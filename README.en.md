@@ -137,6 +137,11 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   The moon shows only its lit side, greyer towards the shadow line; 100 % only around full moon.
 - **Environment**: air quality, pollen (DWD index and composition, species to choose – e.g. trees
   only), citizen sensors, a comparison of eight weather models.
+- **Forecast spread**: the 51 runs of the ECMWF ensemble over 10 days as a fan – the middle run, 80 %
+  of the runs and all of them; below, per day, the middle run's precipitation with the range of 80 %
+  of the runs and the share of runs with at least 1 mm. The narrower the fan, the more certain the
+  forecast. Fetched four times a day, with each new run; when the server fails, the last one stays
+  for up to a day (yellow dot).
 - **Tides and water levels**: the gauges within 10 km, one per water body (e.g. Weser, Fulda and
   Werra in Hann. Münden), free places with further water bodies up to 15 km. At the coast and on
   tidal rivers first the next high and low waters with a tide curve – computed from four weeks of
@@ -228,7 +233,7 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   10 days, radar, pollen), normal (all, sun, moon, air quality and the special cards folded),
   detailed (all open) – under Settings → Cards and once as a question at the page's end until
   answered (also "All fine as it is"). The order stays. The 10-day forecast folds to "Today", larger cards (sun, moon, air quality, pressure, pollen, gauges, bathing
-  waters, sensor network, model comparison) fold to one line with the arrow in their title; the app
+  waters, sensor network, model comparison, spread) fold to one line with the arrow in their title; the app
   keeps that per card, and whether "Today" in the 10-day forecast is open or closed. Under
   "Diagnostics" an activity log (off until switched on): network calls
   with their amounts, shown or not, screen and CPU time, and how the radar loads (its sources, when
@@ -302,6 +307,7 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
 | Pollen in Germany | [DWD pollen hazard index](https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json) |
 | Citizen sensors | [Sensor.Community](https://sensor.community) |
 | Model comparison, temperature/wind grid | Open-Meteo |
+| Forecast spread | ECMWF ensemble (IFS, 0.25°) via Open-Meteo |
 | Water levels, tides, floods | PEGELONLINE (WSV), NLWKN, LANUK NRW, LfULG Sachsen, HLNUG, Länderübergreifendes Hochwasserportal – details in [docs/GAUGES.en.md](docs/GAUGES.en.md) |
 | Bathing waters | European Environment Agency, LAGeSo Berlin, Schleswig-Holstein, sea temperature Open-Meteo – details in [docs/BATHING.en.md](docs/BATHING.en.md) |
 | Name of my location | the system geocoder, else [Nominatim](https://nominatim.org) (OpenStreetMap) |

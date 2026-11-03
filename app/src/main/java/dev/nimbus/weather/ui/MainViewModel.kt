@@ -210,6 +210,9 @@ class MainViewModel(
                 _state.value.pages.firstOrNull { it.id == key.placeId }?.let { load(it, force = false) }
             is dev.nimbus.weather.data.repo.RecordKey.LookBack ->
                 if (key.placeId == shownPlaceId(_state.value) && _state.value.states[key.placeId]?.history != null) loadHistory(key.placeId)
+            // asked for by its card only: again where it was
+            is dev.nimbus.weather.data.repo.RecordKey.Spread ->
+                if (_state.value.states[key.placeId]?.spreadTried == true) loadSpread(key.placeId)
         }
     }
 
@@ -227,6 +230,7 @@ class MainViewModel(
         // the look-back (and today's measurements) of the place shown – the others' when they are
         // shown (their page asks): each is a round of requests to the station, radar and satellite
         shownPlaceId(st)?.let { id -> if (st.states[id]?.history != null) loadHistory(id) }
+        st.states.forEach { (id, ps) -> if (ps.spreadTried) loadSpread(id) }
     }
 
     /** The place whose page is shown. */
@@ -546,6 +550,34 @@ class MainViewModel(
         viewModelScope.launch {
             val series = runCatching { repo.modelComparison(place) }.getOrDefault(emptyList())
             updatePlace(placeId) { it.copy(models = series) }
+        }
+    }
+
+    /** Places whose spread of the forecast is being fetched. */
+    private val spreadLoading = mutableSetOf<String>()
+
+    /**
+     * The spread of the forecast for its card: the one shown or stored while it is current (the
+     * ensemble runs four times a day), else asked anew; failing, the last one stays, yellow.
+     */
+    fun loadSpread(placeId: String) {
+        val st = _state.value.states[placeId] ?: return
+        val place = _state.value.pages.firstOrNull { it.id == placeId } ?: st.data?.place ?: return
+        val record = shelf.spread(placeId)
+        if (placeId in spreadLoading || (st.spread != null && record.state == dev.nimbus.weather.data.repo.RecordState.CURRENT)) return
+        spreadLoading += placeId
+        viewModelScope.launch {
+            try {
+                val kept = st.spread ?: store.cachedSpread(placeId)
+                val answer = repo.spread(place, kept)
+                if (answer.fresh) answer.spread?.let { store.cacheSpread(placeId, it) }
+                updatePlace(placeId) { it.copy(spread = answer.spread, spreadTried = true) }
+                val shown = answer.spread
+                if (answer.current && shown != null) record.arrived(shown.fetchedAt)
+                else record.stale(retryMs = dev.nimbus.weather.data.repo.Freshness.STALE_RETRY_MS)
+            } finally {
+                spreadLoading -= placeId
+            }
         }
     }
 

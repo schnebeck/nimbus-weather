@@ -35,6 +35,8 @@ object StandIn {
     const val SATELLITE_MS = NowWeather.SATELLITE_VALID_MS
     /** The ICON-D2 chance: a run every 3 hours. */
     const val D2_CHANCE_MS = 3 * 60 * MIN_MS
+    /** The spread of the forecast: a day old, its days ahead still say how sure they are. */
+    const val SPREAD_MS = 24 * 60 * MIN_MS
 
     /** [last], answered at [at] (0: never), while it is at most [lifeMs] old at [now]; else null. */
     fun <T> within(last: T, at: Long, lifeMs: Long, now: Long): T? = last.takeIf { at > 0 && now - at in 0..lifeMs }

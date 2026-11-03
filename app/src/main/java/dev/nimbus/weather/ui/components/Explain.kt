@@ -68,6 +68,7 @@ enum class Term(@StringRes val title: Int, @StringRes val body: Int) {
     BATHING(R.string.term_bathing_title, R.string.term_bathing_body),
     RADAR(R.string.term_radar_title, R.string.term_radar_body),
     MODELS(R.string.term_models_title, R.string.term_models_body),
+    SPREAD(R.string.term_spread_title, R.string.term_spread_body),
     COMMUNITY(R.string.term_community_title, R.string.term_community_body),
     STATION(R.string.term_station_title, R.string.term_station_body),
     ALERTS(R.string.term_alerts_title, R.string.term_alerts_body),

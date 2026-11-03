@@ -100,3 +100,22 @@ Der Rückblick vergleicht die Messungen mit der Vorhersage des Modells, das für
 außerhalb des Gebiets eines regionalen Modells mit „Automatisch“. Die Karte „Modellvergleich“ zeigt
 unabhängig davon die Temperatur der nächsten 72 Stunden aus acht Modellen: ICON-D2, ICON-EU,
 ECMWF IFS, ARPEGE/AROME, UK Met Office, KNMI Harmonie, MET Norway und NOAA GFS.
+
+## Streuung der Vorhersage
+
+Die Karte „Streuung der Vorhersage“ zeigt, wie sicher die nächsten 10 Tage sind: das Ensemble des
+ECMWF (IFS, 0,25°, etwa 25 km), 51 Läufe desselben Modells mit leicht veränderten Anfangswerten.
+Die regionalen Ensembles (ICON-D2-EPS, ICON-EU-EPS) reichen nur zwei bis fünf Tage weit, das des
+ECMWF 15 Tage und überall – darum eines für alle Orte, unabhängig vom gewählten Modell.
+
+- Temperatur stündlich: der mittlere Lauf (Median), das Band von 10 % bis 90 % der Läufe und das
+  von allen Läufen.
+- Niederschlag je Tag (ein Tag beginnt um Mitternacht des Ortes, die Stunde bis Mitternacht zählt
+  zum Tag davor): die Summe des mittleren Laufs als Balken, der Strich von 10 % bis 90 % der Läufe,
+  darüber der Anteil der Läufe mit mindestens 1 mm.
+- Eingeklappt: der Höchstwert von morgen und vom letzten Tag, wie ihn 80 % der Läufe haben.
+
+Das Ensemble rechnet viermal am Tag; die App fragt es höchstens alle 6 Stunden ab und speichert es je
+Ort, auch über einen Neustart. Fällt der Server aus, bleibt das letzte bis zu 24 Stunden stehen,
+gelb markiert, und wird nach 2 Minuten neu gefragt. Für „Mein Standort“ gilt es, solange der Ort
+höchstens 5 km weiter ist.

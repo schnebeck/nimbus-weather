@@ -77,10 +77,10 @@ internal class Arrivals(private val clock: () -> Long = System::currentTimeMilli
 /**
  * The data part a card of the page shows (its status dot follows it); null: no dot (the header
  * space, banners, the footer, the model comparison loaded on demand, the note on the views and
- * the lists for arranging).
+ * the lists for arranging). The spread of the forecast has a record of its own ([cardStatusOf]).
  */
 internal fun cardParts(key: String): Set<dev.nimbus.weather.data.model.DataPart>? = when (key) {
-    "header-space", "offline", "sources", "models", "view-hint", "arrange", "arrange-tiles" -> null
+    "header-space", "offline", "sources", "models", "spread", "view-hint", "arrange", "arrange-tiles" -> null
     "alerts" -> setOf(dev.nimbus.weather.data.model.DataPart.FORECAST, dev.nimbus.weather.data.model.DataPart.ALERTS, dev.nimbus.weather.data.model.DataPart.FLOOD)
     "aqi" -> setOf(dev.nimbus.weather.data.model.DataPart.AIR_QUALITY)
     "pollen" -> setOf(dev.nimbus.weather.data.model.DataPart.POLLEN)
@@ -101,6 +101,12 @@ internal fun cardParts(key: String): Set<dev.nimbus.weather.data.model.DataPart>
 internal fun cardStatus(key: String, stale: Set<dev.nimbus.weather.data.model.DataPart>): CardStatus? =
     cardParts(key)?.let { parts -> if (parts.any { it in stale }) CardStatus.STALE else CardStatus.FRESH }
 
+/** The status of card [key]: by its parts, the spread of the forecast by its own record. */
+@Composable
+private fun cardStatusOf(key: String, stale: Set<dev.nimbus.weather.data.model.DataPart>, shelf: dev.nimbus.weather.data.repo.Shelf, placeId: String): CardStatus? =
+    if (key == "spread") { if (shelf.spreadState(placeId) == dev.nimbus.weather.data.repo.RecordState.CURRENT) CardStatus.FRESH else CardStatus.STALE }
+    else cardStatus(key, stale)
+
 /**
  * One card of the page: popping in when it arrived, with its status dot – read from the records of
  * its parts: when one of them goes out of date or arrives, this card alone is drawn anew.
@@ -112,7 +118,7 @@ internal fun Card(item: PageItem, arrivals: Arrivals, placeId: String) {
     // the protocol of the view (debug builds): each card drawn, with the parts it shows out of date
     if (dev.nimbus.weather.BuildConfig.DEBUG) android.util.Log.d("NimbusCard", "$placeId ${item.key} stale=$stale")
     PopIn(arrivals.fresh(item.key)) {
-        CompositionLocalProvider(LocalCardStatus provides cardStatus(item.key, stale)) {
+        CompositionLocalProvider(LocalCardStatus provides cardStatusOf(item.key, stale, shelf, placeId)) {
             Box(Modifier.testTag("card-${item.key}")) { item.content() }
         }
     }

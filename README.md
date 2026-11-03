@@ -139,6 +139,11 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   Der Mond zeigt nur seine beleuchtete Seite, zur Schattengrenze hin grauer; 100 % nur um den Vollmond.
 - **Umwelt**: Luftqualität, Pollenflug (DWD-Index und Zusammensetzung, Arten wählbar – z. B. nur
   Bäume), Bürger-Messnetz, Vergleich von acht Wettermodellen.
+- **Streuung der Vorhersage**: Die 51 Läufe des ECMWF-Ensembles über 10 Tage als Fächer – der mittlere
+  Lauf, 80 % der Läufe und alle; darunter je Tag der Niederschlag des mittleren Laufs mit dem Bereich
+  von 80 % der Läufe und dem Anteil der Läufe mit mindestens 1 mm. Je schmaler der Fächer, desto
+  sicherer die Vorhersage. Viermal am Tag geladen, mit jedem neuen Lauf; fällt der Server aus, bleibt
+  der letzte bis zu einem Tag stehen (gelber Punkt).
 - **Gezeiten und Pegel**: Die Pegel im Umkreis von 10 km, je Gewässer einer (z. B. Weser, Fulda
   und Werra in Hann. Münden), freie Plätze mit weiteren Gewässern bis 15 km. An der Küste und an Tideflüssen zuerst die nächsten Hoch- und
   Niedrigwasser mit Tidekurve – selbst berechnet aus vier Wochen Pegelmessungen, etwa ±30 Minuten
@@ -236,7 +241,7 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   unter Einstellungen → Kacheln und einmal als Frage am Ende der Seite, bis sie beantwortet ist
   (auch „Alles prima, wie es ist“). Die Reihenfolge bleibt dabei. Die 10-Tage-Vorhersage lässt
   sich auf „Heute“ einklappen, größere Karten (Sonne, Mond,
-  Luftqualität, Luftdruck, Pollen, Pegel, Badestellen, Messnetz, Modellvergleich) lassen sich mit
+  Luftqualität, Luftdruck, Pollen, Pegel, Badestellen, Messnetz, Modellvergleich, Streuung) lassen sich mit
   dem Pfeil im Titel auf eine Zeile einklappen; die App merkt sich das je Karte, ebenso, ob „Heute“
   in der 10-Tage-Vorhersage auf- oder zugeklappt ist. Unter „Diagnose“ ein
   Aktivitätsprotokoll (aus, bis man es einschaltet): Netzabrufe mit ihren Mengen, sichtbar oder nicht,
@@ -314,6 +319,7 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
 | Pollenflug Deutschland | [DWD-Pollenflug-Gefahrenindex](https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json) |
 | Bürger-Messnetz | [Sensor.Community](https://sensor.community) |
 | Modellvergleich, Temperatur-/Windgitter | Open-Meteo |
+| Streuung der Vorhersage | ECMWF-Ensemble (IFS, 0,25°) via Open-Meteo |
 | Pegel, Gezeiten, Hochwasser | PEGELONLINE (WSV), NLWKN, LANUK NRW, LfULG Sachsen, HLNUG, Länderübergreifendes Hochwasserportal – Details in [docs/GAUGES.md](docs/GAUGES.md) |
 | Badegewässer | Europäische Umweltagentur, LAGeSo Berlin, Schleswig-Holstein, Meerestemperatur Open-Meteo – Details in [docs/BATHING.md](docs/BATHING.md) |
 | Ortsname des Standorts | System-Geocoder, sonst [Nominatim](https://nominatim.org) (OpenStreetMap) |

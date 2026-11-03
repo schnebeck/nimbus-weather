@@ -24,6 +24,8 @@ import dev.nimbus.weather.data.model.HourlyPoint
 import dev.nimbus.weather.data.model.MinutelyPoint
 import dev.nimbus.weather.data.model.ModelSeries
 import dev.nimbus.weather.data.model.Place
+import dev.nimbus.weather.data.model.Spread
+import dev.nimbus.weather.data.model.SpreadDay
 import dev.nimbus.weather.data.model.WeatherCodes
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -128,6 +130,7 @@ class OpenMeteoSource(
     private val baseUrl: String = "https://api.open-meteo.com",
     private val airQualityUrl: String = "https://air-quality-api.open-meteo.com",
     private val geocodingUrl: String = "https://geocoding-api.open-meteo.com",
+    private val ensembleUrl: String = "https://ensemble-api.open-meteo.com",
 ) {
 
     suspend fun forecast(lat: Double, lon: Double, model: String): ModelForecast {
@@ -210,6 +213,20 @@ class OpenMeteoSource(
             .addQueryParameter("hourly", "temperature_2m,precipitation")
             .build()
         return parseModelComparison(http.getJson(url.toString()), models)
+    }
+
+    /** The runs of the ECMWF ensemble for the next [SPREAD_DAYS] days, from the hour of [now] on. */
+    suspend fun spread(lat: Double, lon: Double, now: Long): Spread? {
+        val url = "$ensembleUrl/v1/ensemble".toHttpUrl().newBuilder()
+            .addQueryParameter("latitude", fmt(lat))
+            .addQueryParameter("longitude", fmt(lon))
+            .addQueryParameter("models", SPREAD_MODEL)
+            .addQueryParameter("timezone", "auto")
+            .addQueryParameter("timeformat", "unixtime")
+            .addQueryParameter("forecast_days", SPREAD_DAYS.toString())
+            .addQueryParameter("hourly", "temperature_2m,precipitation")
+            .build()
+        return parseSpread(http.getJson(url.toString()), now, lat, lon)
     }
 
     suspend fun searchPlaces(query: String, language: String): List<Place> {
@@ -445,6 +462,51 @@ class OpenMeteoSource(
                 if (temp.all { it == null }) return@mapNotNull null
                 ModelSeries(id, label, times, temp, prec)
             }
+        }
+
+        /**
+         * ECMWF's ensemble (IFS, 0.25°): 51 runs over 15 days, everywhere – the regional ones end
+         * after two to seven days.
+         */
+        const val SPREAD_MODEL = "ecmwf_ifs025"
+        const val SPREAD_DAYS = 10
+
+        /**
+         * The ensemble's answer, fetched at [now]: the control run and its members, each a series
+         * of its own ("temperature_2m", "temperature_2m_member01" …). Null: fewer than two runs.
+         */
+        fun parseSpread(root: JsonElement, now: Long, lat: Double, lon: Double): Spread? {
+            val o = root.obj() ?: return null
+            val h = o.o("hourly") ?: return null
+            val zone = runCatching { java.time.ZoneId.of(o.s("timezone")) }.getOrDefault(java.time.ZoneOffset.UTC)
+            val times = h.longs("time").map { (it ?: 0L) * 1000 }
+            fun runs(name: String) = h.keys.filter { it == name || it.startsWith("${name}_member") }.sorted().map { h.doubles(it) }
+            val temps = runs("temperature_2m").filter { r -> r.any { it != null } }
+            val precs = runs("precipitation").filter { r -> r.any { it != null } }
+            if (temps.size < 2) return null
+            val hour = now - now.mod(HOUR_MS)
+            val from = times.indexOfFirst { it >= hour }.takeIf { it >= 0 } ?: return null
+            val shown = from until times.size
+            fun band(q: Double) = shown.map { i -> Spread.quantile(temps.mapNotNull { it.getOrNull(i) }.sorted(), q) }
+            fun day(t: Long) = java.time.Instant.ofEpochMilli(t).atZone(zone).toLocalDate()
+            // the temperature at the full hour; the precipitation of the hour up to it (its day: the hour's start)
+            val tempDays = shown.groupBy { day(times[it]) }
+            val precDays = shown.filter { times[it] > hour }.groupBy { day(times[it] - HOUR_MS) }
+            val days = tempDays.keys.map { d ->
+                val hs = tempDays[d].orEmpty()
+                val ps = precDays[d].orEmpty()
+                SpreadDay(
+                    start = d.atStartOfDay(zone).toInstant().toEpochMilli(),
+                    highs = temps.mapNotNull { r -> hs.mapNotNull { r.getOrNull(it) }.maxOrNull() }.sorted(),
+                    sums = if (ps.isEmpty()) emptyList() else precs.map { r -> ps.sumOf { r.getOrNull(it) ?: 0.0 } }.sorted(),
+                )
+            }
+            return Spread(
+                fetchedAt = now, latitude = lat, longitude = lon, members = temps.size,
+                times = shown.map { times[it] },
+                lowest = band(0.0), low = band((1 - Spread.INNER) / 2), median = band(0.5),
+                high = band(1 - (1 - Spread.INNER) / 2), highest = band(1.0), days = days,
+            )
         }
 
         fun parseGeocoding(root: JsonElement): List<Place> {

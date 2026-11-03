@@ -29,6 +29,10 @@ data class PlaceState(
     val loading: Boolean = false,
     val error: Boolean = false,
     val models: List<ModelSeries>? = null,
+    /** The spread of the forecast (null: not yet, or none to be had – see [spreadTried]). */
+    val spread: dev.nimbus.weather.data.model.Spread? = null,
+    /** The spread was asked for at least once. */
+    val spreadTried: Boolean = false,
     val history: dev.nimbus.weather.data.remote.History? = null,
     val historyLoading: Boolean = false,
     val historyError: Boolean = false,

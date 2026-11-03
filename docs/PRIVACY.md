@@ -56,7 +56,7 @@ gröber) gehen an:
 
 | Dienst | Zweck |
 |---|---|
-| Open-Meteo (open-meteo.com) | Vorhersage, Modellvergleich, Luftqualität, Pollen (CAMS), Satelliten-Sonnenschein im Rückblick, Temperatur- und Windebene des Radars (nur auf ein Raster von 1° bis 0,125° genau) |
+| Open-Meteo (open-meteo.com) | Vorhersage, Modellvergleich, Streuung der Vorhersage (Ensemble), Luftqualität, Pollen (CAMS), Satelliten-Sonnenschein im Rückblick, Temperatur- und Windebene des Radars (nur auf ein Raster von 1° bis 0,125° genau) |
 | Bright Sky (brightsky.dev) | Messwerte der DWD-Stationen, Warnungen, Rückblick – nur in Deutschland |
 | Deutscher Wetterdienst (dwd.de) | Radarwerte am Ort, Pollenregion, Blitze in der Nähe |
 | Sensor.Community | Messwerte von Bürger-Sensoren im Umkreis |

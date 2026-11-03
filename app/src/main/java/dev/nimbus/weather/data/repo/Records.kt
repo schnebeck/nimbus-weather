@@ -38,6 +38,8 @@ sealed interface RecordKey {
     data class Part(val placeId: String, val part: DataPart) : RecordKey
     /** The look-back of a place. */
     data class LookBack(val placeId: String) : RecordKey
+    /** The spread of the forecast of a place. */
+    data class Spread(val placeId: String) : RecordKey
     /** The position of "my location". */
     data object Position : RecordKey
 }
@@ -143,10 +145,13 @@ class Shelf(
 
     fun lookBack(placeId: String): DataRecord = record(RecordKey.LookBack(placeId))
 
+    fun spread(placeId: String): DataRecord = record(RecordKey.Spread(placeId))
+
     private fun record(key: RecordKey): DataRecord = records.getOrPut(key) {
         val (placeId, life) = when (key) {
             is RecordKey.Part -> key.placeId to Freshness.lifeMs(key.part)
             is RecordKey.LookBack -> key.placeId to Freshness.HISTORY_MS
+            is RecordKey.Spread -> key.placeId to Freshness.SPREAD_MS
             RecordKey.Position -> error("the position is made with the shelf")
         }
         DataRecord(key, life, this).also { r ->
@@ -186,6 +191,9 @@ class Shelf(
     /** What the look-back of [placeId] shows (see [stateOf]). */
     fun lookBackState(placeId: String): RecordState = lookBack(placeId).state
 
+    /** What the spread of [placeId] shows (see [stateOf]). */
+    fun spreadState(placeId: String): RecordState = spread(placeId).state
+
     /** The parts of [placeId]'s weather out of date: to be fetched anew. */
     fun due(placeId: String): Set<DataPart> =
         DataPart.entries.filterTo(mutableSetOf()) { part(placeId, it).state == RecordState.STALE }
@@ -195,7 +203,7 @@ class Shelf(
 
     /** A place given up: its records go. */
     fun forget(placeId: String) {
-        records.keys.filter { (it is RecordKey.Part && it.placeId == placeId) || (it is RecordKey.LookBack && it.placeId == placeId) }
+        records.keys.filter { (it is RecordKey.Part && it.placeId == placeId) || (it is RecordKey.LookBack && it.placeId == placeId) || (it is RecordKey.Spread && it.placeId == placeId) }
             .forEach { k -> records.remove(k)?.let { r -> r.stale(); position.dependents -= r } }
     }
 }

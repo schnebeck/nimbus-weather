@@ -98,3 +98,22 @@ The look-back compares the measurements with the forecast of the model in force 
 outside a regional model's area with "Automatic". The "Model Comparison" card shows, independently,
 the temperature of the next 72 hours from eight models: ICON-D2, ICON-EU, ECMWF IFS, ARPEGE/AROME,
 UK Met Office, KNMI Harmonie, MET Norway and NOAA GFS.
+
+## Forecast spread
+
+The "Forecast Spread" card shows how certain the next 10 days are: ECMWF's ensemble (IFS, 0.25°,
+about 25 km), 51 runs of the same model from slightly changed starting values. The regional
+ensembles (ICON-D2-EPS, ICON-EU-EPS) reach only two to five days ahead, ECMWF's 15 days and
+everywhere – hence one for all places, whatever model is chosen.
+
+- Temperature, hourly: the middle run (median), the band from 10 % to 90 % of the runs and that of
+  all runs.
+- Precipitation per day (a day begins at the place's midnight, the hour up to midnight counts to the
+  day before): the middle run's sum as a bar, the line from 10 % to 90 % of the runs, above it the
+  share of runs with at least 1 mm.
+- Folded: tomorrow's high and the last day's, as 80 % of the runs have them.
+
+The ensemble runs four times a day; the app asks for it every 6 hours at most and stores it per
+place, across a restart too. When the server fails, the last one stays for up to 24 hours, marked
+yellow, and is asked again after 2 minutes. For "my location" it holds while the place is at most
+5 km farther on.

@@ -133,6 +133,7 @@ internal fun cardIcon(c: WeatherCard): androidx.compose.ui.graphics.vector.Image
     WeatherCard.BATHING -> Icons.Outlined.Pool
     WeatherCard.COMMUNITY -> Icons.Outlined.Groups
     WeatherCard.MODELS -> Icons.Outlined.QueryStats
+    WeatherCard.SPREAD -> Icons.Outlined.StackedLineChart
     WeatherCard.PRESSURE_CHART -> Icons.Outlined.Timeline
 }
 
@@ -250,4 +251,5 @@ internal fun cardLabel(c: WeatherCard): Int = when (c) {
     WeatherCard.PRESSURE_CHART -> R.string.pressure_chart_title
     WeatherCard.COMMUNITY -> R.string.community_sensors
     WeatherCard.MODELS -> R.string.model_comparison
+    WeatherCard.SPREAD -> R.string.spread_card
 }

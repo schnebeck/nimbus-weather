@@ -28,6 +28,7 @@ import dev.nimbus.weather.data.model.RadarNow
 import dev.nimbus.weather.data.model.Settings
 import dev.nimbus.weather.data.model.Source
 import dev.nimbus.weather.data.model.SourceKind
+import dev.nimbus.weather.data.model.Spread
 import dev.nimbus.weather.data.model.WeatherCodes
 import dev.nimbus.weather.data.model.WeatherData
 import dev.nimbus.weather.data.model.ComparisonModels
@@ -37,6 +38,7 @@ import dev.nimbus.weather.data.remote.PollenSource
 import dev.nimbus.weather.data.remote.ModelForecast
 import dev.nimbus.weather.data.remote.OpenMeteoSource
 import dev.nimbus.weather.data.remote.StationObservation
+import dev.nimbus.weather.util.Geo
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -398,6 +400,21 @@ class WeatherRepository(
     suspend fun modelComparison(place: Place): List<ModelSeries> =
         openMeteo.modelComparison(place.latitude, place.longitude, ComparisonModels)
 
+    /**
+     * The spread of the forecast for [place]: [kept] (shown, or stored) while it is current and
+     * for the spot; else asked anew – failing, [kept] stands in while it is not too old.
+     */
+    suspend fun spread(place: Place, kept: Spread?): SpreadAnswer {
+        val now = clock()
+        val near = kept?.takeIf { Geo.distanceKm(it.latitude, it.longitude, place.latitude, place.longitude) <= SPREAD_SPOT_KM }
+        if (near != null && now - near.fetchedAt in 0 until Freshness.SPREAD_MS) return SpreadAnswer(near, current = true, fresh = false)
+        val got = runCatching { openMeteo.spread(place.latitude, place.longitude, now) }
+            .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }.getOrNull()
+        if (got != null) return SpreadAnswer(got, current = true, fresh = true)
+        val old = near?.let { StandIn.within(it, it.fetchedAt, StandIn.SPREAD_MS, now) }?.takeIf { it.from(now) < it.times.size }
+        return SpreadAnswer(old, current = false, fresh = false)
+    }
+
     suspend fun search(query: String, language: String): List<Place> = openMeteo.searchPlaces(query, language)
 
     /**
@@ -416,6 +433,9 @@ class WeatherRepository(
         }.also { if (it == null) android.util.Log.w("Nimbus", "$what: no answer, the last one stays") }
 
     companion object {
+        /** The ensemble's grid is 25 km: a spread fetched this near still holds for the spot. */
+        const val SPREAD_SPOT_KM = 5.0
+
         /**
          * How long each extra source may take: two minutes, on any network. The page does not wait
          * for them (each card turns current when its answer is there); an answer cut off is lost
@@ -445,3 +465,9 @@ class WeatherRepository(
         fun isInDwdArea(lat: Double, lon: Double) = lat in 47.2..55.1 && lon in 5.8..15.1
     }
 }
+
+/**
+ * The spread for the card: [spread] (null: none), [current] or standing in for an answer that
+ * failed (the card yellow, asked again soon), [fresh]: just fetched, to be stored.
+ */
+data class SpreadAnswer(val spread: Spread?, val current: Boolean, val fresh: Boolean)

@@ -150,6 +150,7 @@ fun WeatherPage(
     /** A widget part was tapped: the page goes there once, then tells [onJumped]. */
     jump: PageJump? = null,
     onJumped: (PageJump) -> Unit = {},
+    onRequestSpread: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val now = rememberNow()
@@ -178,7 +179,7 @@ fun WeatherPage(
             dev.nimbus.weather.ui.components.LocalCardFill provides scene.cardFill,
             dev.nimbus.weather.ui.components.LocalHeaderStyle provides dev.nimbus.weather.ui.components.HeaderStyle(scene.headerHalo, scene.headerPill),
         ) {
-            WeatherContent(data, state ?: PlaceState(data), now, onRefresh, onOpenRadar, onOpenLightning, onRequestModels, location, modelLabel, jump, onJumped)
+            WeatherContent(data, state ?: PlaceState(data), now, onRefresh, onOpenRadar, onOpenLightning, onRequestModels, location, modelLabel, jump, onJumped, onRequestSpread)
         }
     }
 }
@@ -197,6 +198,7 @@ private fun WeatherContent(
     modelLabel: String?,
     jump: PageJump?,
     onJumped: (PageJump) -> Unit,
+    onRequestSpread: () -> Unit,
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -315,6 +317,7 @@ private fun WeatherContent(
                 WeatherCard.BATHING -> if (data.bathing.isNotEmpty()) add(PageItem("bathing") { Foldable(card) { BathingCard(data.bathing, now) } })
                 WeatherCard.COMMUNITY -> if (data.community != null) add(PageItem("community") { Foldable(card) { CommunityCard(data) } })
                 WeatherCard.MODELS -> add(PageItem("models") { Foldable(card) { ModelComparisonCard(state.models, now, onRequestModels) } })
+                WeatherCard.SPREAD -> add(PageItem("spread") { Foldable(card) { SpreadCard(state.spread, state.spreadTried, now, onRequestSpread) } })
                 else -> Unit
             }
             if (size > from) present += card

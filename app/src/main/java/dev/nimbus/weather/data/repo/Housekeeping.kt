@@ -61,8 +61,8 @@ object Housekeeping {
     }
 
     /**
-     * Deletes in [cacheDir] what is past its time ([keepMs]) and in [filesDir] the last weather of
-     * places no longer kept – all but [placeFiles] ([Store.cacheFileName]) – or older than four
+     * Deletes in [cacheDir] what is past its time ([keepMs]) and in [filesDir] the last weather (and
+     * spread of the forecast) of places no longer kept – all but [placeFiles] ([Store.cacheFileName]) – or older than four
      * days. Returns how many files went.
      */
     fun sweep(cacheDir: File, filesDir: File, placeFiles: Set<String>, now: Long): Int {
@@ -74,7 +74,7 @@ object Housekeeping {
                 if (now - f.lastModified() > keep) drop(f)
             }
         }
-        File(filesDir, Store.CACHE_DIR).listFiles()?.filter { it.isFile }?.forEach { f ->
+        for (dir in listOf(Store.CACHE_DIR, Store.SPREAD_DIR)) File(filesDir, dir).listFiles()?.filter { it.isFile }?.forEach { f ->
             if (f.name !in placeFiles || now - f.lastModified() > MOMENT_KEEP_MS) drop(f)
         }
         return deleted

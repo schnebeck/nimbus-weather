@@ -1,0 +1,1 @@
+• New card "Forecast Spread": the 51 runs of the ECMWF ensemble over 10 days – temperature as a fan (middle run, 80 % of runs, all), precipitation per day with the share of runs from 1 mm; fetched four times a day

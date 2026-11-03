@@ -91,6 +91,7 @@ fun NimbusRoot(viewModel: MainViewModel) {
                     onOpenLightning = { id -> viewModel.navigate(Screen.Radar(id, lightning = true)) },
                     onOpenPlaces = { viewModel.navigate(Screen.Places) },
                     onRequestModels = viewModel::loadModels,
+                    onRequestSpread = viewModel::loadSpread,
                     onRequestHistory = { viewModel.loadHistory(it) },
                     onRequestLocation = requestLocation,
                     onSidebar = viewModel::onSidebar,

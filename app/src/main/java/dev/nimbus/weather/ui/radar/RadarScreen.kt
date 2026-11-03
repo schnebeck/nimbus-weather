@@ -167,6 +167,9 @@ private fun lightningTime(tl: RadarTimeline, position: Float): Long? {
 @Composable
 fun RadarScreen(
     place: Place?, temperatureUnit: dev.nimbus.weather.data.model.TemperatureUnit,
+    windUnit: dev.nimbus.weather.data.model.WindUnit = dev.nimbus.weather.data.model.WindUnit.KMH,
+    /** The wind layer with barbs instead of arrows. */
+    windBarbs: Boolean = false,
     /** Start (local midnight) of a past day to show in full, from the look-back; null = live radar. */
     archiveDay: Long? = null,
     /** Opened for the lightning (the note of lightning nearby): its layer switched on. */
@@ -224,7 +227,7 @@ fun RadarScreen(
     var lightning by rememberSaveable { mutableStateOf(lightningFirst || dev.nimbus.weather.data.model.RadarOverlay.LIGHTNING in overlays) }
     var showTemp by rememberSaveable { mutableStateOf(dev.nimbus.weather.data.model.RadarOverlay.TEMPERATURE in overlays) }
     var showWind by rememberSaveable { mutableStateOf(dev.nimbus.weather.data.model.RadarOverlay.WIND in overlays) }
-    val overlays = remember { WeatherOverlays(temperatureUnit) }
+    val overlays = remember { WeatherOverlays(temperatureUnit, windUnit, windBarbs) }
     var gridCheck by remember { mutableIntStateOf(0) }
     var snowLegend by remember { mutableStateOf(true) }
     val tf = remember { TimeFormat(TimeZone.getDefault().id, DateFormat.is24HourFormat(context)) }

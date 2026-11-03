@@ -419,14 +419,15 @@ fun Meteogram(
                         drawLine(NimbusColors.Secondary, c + d * (rr + 1.5.dp.toPx()), c + d * (rr + 3.5.dp.toPx()), 1.2.dp.toPx(), StrokeCap.Round)
                     }
                 }
-                // Wind arrows every 3 h, pointing where the wind blows to
+                // Wind every 3 h: arrows pointing where the wind blows to, or barbs from where it comes (setting)
                 val windY = rows + sunH.toPx() + windH.toPx() / 2
                 drawWindGlyph(Offset((l - gap.toPx()) / 2f, windY), NimbusColors.Secondary)
                 blocks.forEach { (centre, h) ->
                     val dir = h.windDirection ?: return@forEach
                     val kmh = h.windSpeed ?: 0.0
-                    val len = (7 + (kmh / 50.0).coerceAtMost(1.0) * 6).dp.toPx()
                     val c = Offset(x(centre), windY)
+                    if (s.windBarbs) { drawWindBarb(c, dir, kmh, (windH - 4.dp).toPx()); return@forEach }
+                    val len = (7 + (kmh / 50.0).coerceAtMost(1.0) * 6).dp.toPx()
                     rotate((dir + 180).toFloat(), c) {
                         val tip = c + Offset(0f, -len)
                         drawLine(windColor(kmh), c + Offset(0f, len), tip, 1.8.dp.toPx(), StrokeCap.Round)
@@ -511,6 +512,34 @@ fun Meteogram(
 }
 
 /** Small "wind" symbol (three strokes, two with a curl) as the label of the wind row. */
+/**
+ * A wind barb centred on [c], [length] long, its shaft towards [fromDeg] (where the wind comes
+ * from), coloured by the speed as the arrows are ([windColor]).
+ */
+internal fun androidx.compose.ui.graphics.drawscope.DrawScope.drawWindBarb(c: Offset, fromDeg: Double, kmh: Double, length: Float) {
+    val shape = dev.nimbus.weather.util.WindBarbs.shape(kmh)
+    val color = windColor(kmh)
+    val stroke = 1.6.dp.toPx()
+    if (shape.calm) {
+        drawCircle(color, length / 5, c, style = Stroke(stroke))
+        return
+    }
+    // the station at the lower end, the shaft's middle on [c]
+    fun p(x: Float, y: Float) = Offset(c.x + x * length, c.y + (y + 0.5f) * length)
+    rotate(fromDeg.toFloat(), c) {
+        shape.shaft?.let { drawLine(color, p(it.x1, it.y1), p(it.x2, it.y2), stroke, StrokeCap.Round) }
+        shape.strokes.forEach { drawLine(color, p(it.x1, it.y1), p(it.x2, it.y2), stroke, StrokeCap.Round) }
+        shape.pennants.forEach { t ->
+            val path = Path().apply {
+                moveTo(p(t[0].first, t[0].second).x, p(t[0].first, t[0].second).y)
+                t.drop(1).forEach { (x, y) -> p(x, y).let { o -> lineTo(o.x, o.y) } }
+                close()
+            }
+            drawPath(path, color)
+        }
+    }
+}
+
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawWindGlyph(c: Offset, color: Color) {
     val u = 1.dp.toPx()
     val w = 1.2.dp.toPx()

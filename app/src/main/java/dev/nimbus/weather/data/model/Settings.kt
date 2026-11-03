@@ -104,6 +104,8 @@ data class Settings(
     val windUnit: WindUnit = WindUnit.KMH,
     val precipitationUnit: PrecipitationUnit = PrecipitationUnit.MM,
     val useStationObservations: Boolean = true,
+    /** The wind as barbs (where it comes from, its strength in strokes) instead of arrows (where it blows to). */
+    val windBarbs: Boolean = false,
     val animationsEnabled: Boolean = true,
     /** Status and navigation bar hidden; a swipe from the edge shows them for a moment. Double-tapping the sky switches it. */
     val fullscreen: Boolean = false,

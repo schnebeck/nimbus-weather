@@ -174,7 +174,7 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   computed; an own radar store – each image of a weather service (all of Germany, the Netherlands in
   one) is loaded once, turned into reflectivity and kept locally until it expires (analyses ~3½ days),
   panning and zooming need no network; opaque colours, roads, borders and names above the radar;
-  temperature (with isotherms) and wind layers, satellite (Meteosat, every 10 minutes, at the time of
+  temperature (with isotherms) and wind layers (arrows or wind barbs, the number in the chosen unit), satellite (Meteosat, every 10 minutes, at the time of
   the radar image; while playing blended between the pictures, in the look-back every 30 minutes;
   off in the radar's forecast – there is no picture of it), lightning (from the satellite, all of Europe: each flash a point
   where it struck, shrinking from its minute on and fading within 15 minutes – smoothly while playing), warning map, look-back up to 24 h. The radar of a day in
@@ -220,7 +220,8 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
 - **Places, settings**: my location and saved places, each with the weather symbol of now beside
   its temperature (in a column of its own, the symbols of all places one under the other), day or night by the sun at the place (long press to sort and delete; Nimbus
   opens with the place shown last); units (on
-  first start to suit the country), cards, radar, display (station values, full screen,
+  first start to suit the country; the wind as arrows or as barbs – half stroke 5 kn, full 10 kn,
+  pennant 50 kn), cards, radar, display (station values, full screen,
   animations), pollen, bathing waters, the forecast model (one line, the list on a tap; preset:
   Automatic – the finest model for each place and time, named with its grid in the data sources).
   The settings of a hidden card (pollen, bathing waters) shrink to one line "Card hidden" with a

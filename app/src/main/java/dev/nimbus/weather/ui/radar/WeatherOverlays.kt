@@ -50,7 +50,12 @@ import kotlin.math.tan
  * Temperature (smooth colour field + values) and wind (arrows + speed) overlays for the radar
  * map, drawn from the [WeatherGrid] for the hour of the currently shown radar frame.
  */
-internal class WeatherOverlays(private val unit: TemperatureUnit) {
+internal class WeatherOverlays(
+    private val unit: TemperatureUnit,
+    private val windUnit: dev.nimbus.weather.data.model.WindUnit = dev.nimbus.weather.data.model.WindUnit.KMH,
+    /** The wind as barbs (where it comes from) instead of arrows (where it blows to). */
+    private val barbs: Boolean = false,
+) {
     private var style: Style? = null
     private var grid: WeatherGrid? = null
     private var hour = -1
@@ -98,10 +103,11 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
             ),
         )
         style.addImage(ARROW, arrowBitmap(), true)
+        if (barbs) for (kn in 0..BARB_MAX_KN step 5) style.addImage(BARB + kn, barbBitmap(kn), true)
         style.addSource(GeoJsonSource(WIND))
         style.addLayer(
             SymbolLayer(WIND, WIND).withProperties(
-                PropertyFactory.iconImage(ARROW),
+                PropertyFactory.iconImage(Expression.get("img")),
                 PropertyFactory.iconRotate(Expression.get("r")),
                 PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP),
                 PropertyFactory.iconSize(Expression.get("s")),
@@ -225,10 +231,18 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
             val v = g.windSpeed[h][i]
             val d = g.windDir[h][i]
             if (!v.isNaN() && !d.isNaN()) winds += Feature.fromGeometry(p).apply {
-                addNumberProperty("r", (d + 180f) % 360f)          // arrow points where the wind blows to
-                addNumberProperty("s", (0.7f + v / 50f).coerceIn(0.7f, 1.6f))
+                if (barbs) {
+                    // the shaft towards where the wind comes from, its strength in the strokes
+                    addStringProperty("img", BARB + dev.nimbus.weather.util.WindBarbs.parts(v.toDouble()).knots.coerceAtMost(BARB_MAX_KN))
+                    addNumberProperty("r", d % 360f)
+                    addNumberProperty("s", 1f)
+                } else {
+                    addStringProperty("img", ARROW)
+                    addNumberProperty("r", (d + 180f) % 360f)          // arrow points where the wind blows to
+                    addNumberProperty("s", (0.7f + v / 50f).coerceIn(0.7f, 1.6f))
+                }
                 addNumberProperty("kmh", v)
-                addStringProperty("v", v.roundToInt().toString())
+                addStringProperty("v", Units.windNumber(v.toDouble(), windUnit))
                 addBooleanProperty("major", major)
             }
         }
@@ -238,6 +252,7 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
 
     companion object {
         const val FIELD = "ov-temp-field"
+        const val BARB = "ov-wind-barb-"
         const val TEMP = "ov-temp"
         const val WIND = "ov-wind"
         const val ARROW = "ov-arrow"
@@ -276,6 +291,39 @@ internal class WeatherOverlays(private val unit: TemperatureUnit) {
             Expression.stop(62, Expression.color(0xFFFFA54A.toInt())),
             Expression.stop(89, Expression.color(0xFFFF5A4A.toInt())),
         )
+
+        /** The strongest barb drawn; stronger winds show it. */
+        const val BARB_MAX_KN = 150
+
+        /**
+         * A barb for [knots]: the station in the middle of the picture (the point it turns on, where
+         * the arrows have theirs), the shaft up to its edge ([dev.nimbus.weather.util.WindBarbs.shape]).
+         */
+        internal fun barbBitmap(knots: Int): Bitmap {
+            val s = 64
+            val bmp = Bitmap.createBitmap(s, s, Bitmap.Config.ARGB_8888)
+            val c = Canvas(bmp)
+            val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = android.graphics.Color.WHITE; strokeWidth = 4f; strokeCap = Paint.Cap.ROUND }
+            val shape = dev.nimbus.weather.util.WindBarbs.shape(knots * 1.852)
+            val len = s / 2f - 3f
+            fun x(v: Float) = s / 2f + v * len
+            fun y(v: Float) = s / 2f + v * len
+            if (shape.calm) {
+                p.style = Paint.Style.STROKE
+                c.drawCircle(s / 2f, s / 2f, 7f, p)
+                return bmp
+            }
+            listOfNotNull(shape.shaft).plus(shape.strokes).forEach { l -> c.drawLine(x(l.x1), y(l.y1), x(l.x2), y(l.y2), p) }
+            shape.pennants.forEach { t ->
+                val path = Path().apply {
+                    moveTo(x(t[0].first), y(t[0].second))
+                    t.drop(1).forEach { (a, b) -> lineTo(x(a), y(b)) }
+                    close()
+                }
+                c.drawPath(path, p)
+            }
+            return bmp
+        }
 
         private fun arrowBitmap(): Bitmap {
             val s = 48

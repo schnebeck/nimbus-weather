@@ -1,1 +1,2 @@
-• Forecast spread: the card's texts in everyday words – "Middle course", "Likely (8 in 10)", "Possible", chance of precipitation
+• Wind barbs (Settings → Units): instead of arrows, barbs as on weather maps – half stroke 5 kn, full 10 kn, pennant 50 kn – in the day charts and on the radar; the radar's wind number in the chosen unit
+• Forecast spread: the card's texts in everyday words

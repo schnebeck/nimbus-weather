@@ -108,6 +108,10 @@ fun SettingsScreen(
                         listOf(R.string.unit_kmh, R.string.unit_ms, R.string.unit_mph, R.string.unit_kn, R.string.unit_bft).map { stringResource(it) },
                         WindUnit.entries.indexOf(settings.windUnit),
                     ) { i -> onChange { it.copy(windUnit = WindUnit.entries[i]) } }
+                    Spacer(Modifier.size(8.dp))
+                    ToggleRow(stringResource(R.string.settings_wind_barbs), stringResource(R.string.settings_wind_barbs_desc), settings.windBarbs) { v ->
+                        onChange { it.copy(windBarbs = v) }
+                    }
                     Spacer(Modifier.size(12.dp))
                     Label(stringResource(R.string.settings_precipitation))
                     Segmented(listOf(stringResource(R.string.unit_mm), stringResource(R.string.unit_inch)), PrecipitationUnit.entries.indexOf(settings.precipitationUnit)) { i ->

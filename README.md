@@ -176,7 +176,7 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   Bewegung der Regengebiete berechnet; eigener Radarspeicher – jedes Bild eines Wetterdienstes (ganz
   Deutschland, die Niederlande in einem) wird einmal geladen, zu Reflektivität aufbereitet und bis zum Verfall lokal gehalten
   (Analysen ~3½ Tage), Verschieben und Zoomen brauchen kein Netz; deckende Farben, Straßen, Grenzen
-  und Namen über dem Radar; Temperatur- (mit Isothermen) und Windebene, Satellit (Meteosat, alle
+  und Namen über dem Radar; Temperatur- (mit Isothermen) und Windebene (Pfeile oder Windfiedern, die Zahl in der gewählten Einheit), Satellit (Meteosat, alle
   10 Minuten, zur Zeit des Radarbilds; beim Abspielen zwischen den Bildern überblendet, im Rückblick
   alle 30 Minuten; in der Radarvorhersage aus – es gibt kein Bild davon), Blitze (vom Satelliten, ganz Europa: jeder Blitz ein Punkt
   an seinem Ort, der ab seiner Minute schrumpft und in 15 Minuten verblasst – beim Abspielen fließend), Warnkarte, Rückblick bis 24 h. Auch das
@@ -225,7 +225,8 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
 - **Orte, Einstellungen**: Standort und gespeicherte Orte, jeder mit dem Wettersymbol von jetzt
   neben der Temperatur (in einer eigenen Spalte, die Symbole aller Orte untereinander), Tag oder Nacht nach dem Sonnenstand am Ort (lange drücken zum Sortieren
   und Löschen; Nimbus öffnet mit dem Ort, der zuletzt zu sehen war);
-  Einheiten (beim ersten Start passend zum Land), Kacheln, Radar, Anzeige (Stationswerte, Vollbild,
+  Einheiten (beim ersten Start passend zum Land; Wind als Pfeil oder als Windfiedern – halber Strich
+  5 kn, ganzer 10 kn, Dreieck 50 kn), Kacheln, Radar, Anzeige (Stationswerte, Vollbild,
   Animationen), Pollen, Badestellen, Vorhersagemodell (eine Zeile, die Liste auf Antippen;
   voreingestellt: Automatisch – das feinste Modell je Ort und Zeitraum, die Datenquellen nennen es
   mit seiner Auflösung). Die Einstellungen einer ausgeblendeten Kachel (Pollen, Badestellen)

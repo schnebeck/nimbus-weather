@@ -1,1 +1,2 @@
-• Streuung der Vorhersage: Texte der Karte in Alltagssprache – „Mittlerer Verlauf“, „Wahrscheinlich (8 von 10)“, „Möglich“, Chance auf Niederschlag
+• Windfiedern (Einstellungen → Einheiten): statt Pfeilen Fiedern wie auf Wetterkarten – halber Strich 5 kn, ganzer 10 kn, Dreieck 50 kn – in den Tagesdiagrammen und auf dem Radar; die Windzahl im Radar in der gewählten Einheit
+• Streuung der Vorhersage: Texte der Karte in Alltagssprache

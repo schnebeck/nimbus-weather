@@ -1,0 +1,1 @@
+• Achsen in runden Schritten: Temperatur vom Gefrierpunkt aus (z. B. −10, 0, 10, 20°), die 0-°C-Linie gestrichelt in Eisblau; Luftdruck in runden hPa – in Tagesdiagrammen, Modellvergleich, Streuung und Luftdruck

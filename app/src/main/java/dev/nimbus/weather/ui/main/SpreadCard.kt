@@ -77,6 +77,12 @@ private val Grid = Color(0x1FFFFFFF)
 /** The days of [spread] still ahead at [now] – today from now on. */
 internal fun Spread.daysAhead(now: Long): List<SpreadDay> = days.filter { it.start + 24 * Spread.HOUR_MS > now && it.highs.isNotEmpty() }
 
+/** The temperature axis over all runs from hour [from] on (display unit); null: no values. */
+internal fun Spread.tempAxis(from: Int, unit: dev.nimbus.weather.data.model.TemperatureUnit): ChartAxis? {
+    val all = (from until times.size).flatMap { listOfNotNull(lowest[it], highest[it]) }.map { Units.temperature(it, unit) }
+    return if (all.isEmpty()) null else TempAxis.of(all.min(), all.max(), unit)
+}
+
 /** [day]'s high as the inner runs have it: from 10 % to 90 % of them. */
 internal fun SpreadDay.innerHighs(): Pair<Double, Double>? {
     val lo = Spread.quantile(highs, (1 - Spread.INNER) / 2) ?: return null
@@ -168,17 +174,19 @@ private fun DrawScope.drawSpread(
     val t1 = spread.times.last()
     fun x(t: Long) = gutter + (t - t0).toFloat() / (t1 - t0) * w
 
-    // temperature: the scale over all runs
+    // temperature: the scale over all runs, the marks counted from the freezing point (it stronger, in the blue of ice)
     val shown = from until spread.times.size
-    val all = shown.flatMap { listOfNotNull(spread.lowest[it], spread.highest[it]) }.map { Units.temperature(it, tempUnit) }
-    if (all.isEmpty()) return
-    val lo = floor(all.min() - 1)
-    val hi = ceil(all.max() + 1)
-    fun y(c: Double) = (tempH * (1 - (Units.temperature(c, tempUnit) - lo) / (hi - lo))).toFloat()
-    for (k in 0..4) drawLine(Grid, Offset(gutter, tempH * k / 4), Offset(size.width, tempH * k / 4), 1f)
-    listOf(hi to 0f, (hi + lo) / 2 to tempH / 2, lo to tempH).forEach { (v, yy) ->
-        val l = measurer.measure("${v.roundToInt()}°", axis)
-        drawText(l, topLeft = Offset(0f, (yy - l.size.height / 2f).coerceIn(0f, tempH - l.size.height)))
+    val tAxis = spread.tempAxis(from, tempUnit) ?: return
+    val lo = tAxis.lo
+    val hi = tAxis.hi
+    fun yd(v: Double) = (tempH * (1 - (v - lo) / (hi - lo))).toFloat()
+    fun y(c: Double) = yd(Units.temperature(c, tempUnit))
+    tAxis.ticks.forEach { v ->
+        val frost = tAxis.isAnchor(v)
+        if (frost) drawFrostLine(Offset(gutter, yd(v)), Offset(size.width, yd(v)))
+        else drawLine(Grid, Offset(gutter, yd(v)), Offset(size.width, yd(v)), 1f)
+        val l = measurer.measure("${v.roundToInt()}°", if (frost) axis.copy(color = TempAxis.FrostLabel) else axis)
+        drawText(l, topLeft = Offset(0f, (yd(v) - l.size.height / 2f).coerceIn(0f, tempH - l.size.height)))
     }
     fun band(lower: List<Double?>, upper: List<Double?>, color: Color) {
         val idx = shown.filter { lower[it] != null && upper[it] != null }

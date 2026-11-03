@@ -154,11 +154,10 @@ private fun PressureChart(
     val values = points.map { it.pressure!! }
     val hasMeasured = measured.isNotEmpty()
     val allValues = values
-    // At least 6 hPa span around the data; the axis in whole hPa
-    val mid = (allValues.min() + allValues.max()) / 2
-    val half = maxOf(3.0, (allValues.max() - allValues.min()) / 2 + 1.0)
-    val lo = floor(mid - half)
-    val hi = ceil(mid + half)
+    // round marks (1, 2, 5, 10 hPa), at least 6 hPa from the lowest to the highest
+    val axis = pressureAxis(allValues.min(), allValues.max())
+    val lo = axis.lo
+    val hi = axis.hi
     val fast = remember(points) { fastFallHours(values) }
     val span = (end - start).toFloat()
 
@@ -185,7 +184,7 @@ private fun PressureChart(
                 .pointerInput(points) { detectTapGestures(onTap = { if (cursorOn) { selected = indexAt(it.x); touched++ } }) },
         ) {
             val gap = 3.dp.toPx()
-            val axisL = listOf(lo, hi).maxOf { measurer.measure(it.roundToInt().toString(), labelStyle).size.width } + gap
+            val axisL = axis.ticks.maxOf { measurer.measure(it.roundToInt().toString(), labelStyle).size.width } + gap
             val unit = measurer.measure("hPa", unitStyle)
             val top = unit.size.height + measurer.measure("0", labelStyle).size.height / 2f + 4.dp.toPx()
             val labelH = measurer.measure("00", labelStyle).size.height
@@ -201,8 +200,7 @@ private fun PressureChart(
                 if (b > a) drawRect(NightShade, Offset(x(a), top), Size(x(b) - x(a), bottom - top))
             }
             drawText(unit, topLeft = Offset(0f, 0f))
-            for (k in 0..2) {
-                val v = lo + (hi - lo) * k / 2
+            axis.ticks.forEach { v ->
                 drawLine(Color(0x1FFFFFFF), Offset(l, y(v)), Offset(r, y(v)), 1f)
                 val t = measurer.measure(v.roundToInt().toString(), labelStyle)
                 drawText(t, topLeft = Offset(l - t.size.width - gap, y(v) - t.size.height / 2f))
@@ -276,3 +274,7 @@ private fun PressureChart(
         }
     }
 }
+
+/** The pressure chart's axis for values from [min] to [max] hPa: round marks, at least 6 hPa apart from top to bottom. */
+internal fun pressureAxis(min: Double, max: Double): ChartAxis =
+    ChartAxis.around(min, max, 0.0, listOf(1.0, 2.0, 5.0, 10.0, 20.0, 50.0), margin = 1.0, minSpan = 6.0)

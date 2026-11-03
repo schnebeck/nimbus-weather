@@ -104,15 +104,19 @@ fun ModelComparisonCard(models: List<ModelSeries>?, now: Long, onRequest: () -> 
         val times = models.first().times
         val start = times.indexOfFirst { it >= now - 3600_000L }.coerceAtLeast(0)
         val end = (start + 72).coerceAtMost(times.size)
-        val all = models.flatMap { m -> m.temperature.subList(start, end).filterNotNull() }
-        if (all.isEmpty()) return@GlassCard
-        val lo = floor(Units.temperature(all.min(), s.temperatureUnit) - 1)
-        val hi = Units.temperature(all.max(), s.temperatureUnit) + 1
+        // the marks counted from the freezing point
+        val axis = modelsTempAxis(models, start, end, s.temperatureUnit) ?: return@GlassCard
+        val lo = axis.lo
+        val hi = axis.hi
+        val axisStyle = TextStyle(fontSize = 11.sp, color = NimbusColors.Tertiary)
         Row {
-            Column(Modifier.height(170.dp).width(30.dp), verticalArrangement = Arrangement.SpaceBetween) {
-                Text("${hi.roundToInt()}°", fontSize = 11.sp, color = NimbusColors.Tertiary)
-                Text("${((hi + lo) / 2).roundToInt()}°", fontSize = 11.sp, color = NimbusColors.Tertiary)
-                Text("${lo.roundToInt()}°", fontSize = 11.sp, color = NimbusColors.Tertiary)
+            Canvas(Modifier.height(190.dp).width(30.dp)) {
+                val plotH = size.height - 20.dp.toPx()
+                axis.ticks.forEach { v ->
+                    val layout = measurer.measure("${v.roundToInt()}°", if (axis.isAnchor(v)) axisStyle.copy(color = TempAxis.FrostLabel) else axisStyle)
+                    val yy = (plotH * (1 - (v - lo) / (hi - lo))).toFloat()
+                    drawText(layout, topLeft = Offset(0f, (yy - layout.size.height / 2f).coerceIn(0f, plotH - layout.size.height / 2f)))
+                }
             }
             Canvas(Modifier.weight(1f).height(190.dp)) {
                 val n = (end - start).coerceAtLeast(2)
@@ -120,9 +124,10 @@ fun ModelComparisonCard(models: List<ModelSeries>?, now: Long, onRequest: () -> 
                 val labelBand = 20.dp.toPx()
                 val plotH = size.height - labelBand
                 fun y(v: Double) = (plotH * (1 - (v - lo) / (hi - lo))).toFloat()
-                for (k in 0..4) {
-                    val yy = plotH * k / 4
-                    drawLine(Color(0x1FFFFFFF), Offset(0f, yy), Offset(size.width, yy), 1f)
+                axis.ticks.forEach { v ->
+                    val yy = y(v)
+                    if (axis.isAnchor(v)) drawFrostLine(Offset(0f, yy), Offset(size.width, yy))
+                    else drawLine(Color(0x1FFFFFFF), Offset(0f, yy), Offset(size.width, yy), 1f)
                 }
                 // midnight separators and a weekday label centred on each day
                 val midnights = (start until end).filter { tf.zoned(times[it]).hour == 0 }
@@ -175,4 +180,10 @@ fun ModelComparisonCard(models: List<ModelSeries>?, now: Long, onRequest: () -> 
             }
         }
     }
+}
+
+/** The temperature axis over all [models] in hours [start] until [end] (display unit); null: no values. */
+internal fun modelsTempAxis(models: List<ModelSeries>, start: Int, end: Int, unit: dev.nimbus.weather.data.model.TemperatureUnit): ChartAxis? {
+    val all = models.flatMap { m -> m.temperature.subList(start, end.coerceAtMost(m.temperature.size)).filterNotNull() }.map { Units.temperature(it, unit) }
+    return if (all.isEmpty()) null else TempAxis.of(all.min(), all.max(), unit)
 }

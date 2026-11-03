@@ -104,7 +104,9 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   Networks and rules: [docs/STATIONS.en.md](docs/STATIONS.en.md).
 - **Meteogram** per day (00–24 h): temperature (forecast every 15 minutes, the DWD station's readings
   every 10 minutes), precipitation, sunshine and wind per hour, night shading, a legend with the
-  day's totals. The station's 10-minute readings as 30-minute means, the forecast continuing from the
+  day's totals. The temperature axis in round steps (1, 2, 5, 10°), always counted from the freezing
+  point; where 0 °C lies in the chart its line is dashed in the blue of ice – in the model comparison
+  and the spread too; the pressure in round hPa. The station's 10-minute readings as 30-minute means, the forecast continuing from the
   last reading without a step. Today the dashed curve ("Forecast so far") shows what had been
   forecast for the hours over; with the setting "Today: measured vs. forecast" the coloured curve
   shows the readings only and the dashed one the whole day's forecast, as the look-back's course of

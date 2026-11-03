@@ -200,15 +200,21 @@ fun Meteogram(
     }
     val dashCurve = if (!compare) emptyList() else if (forecastSoFar == null) expectCurve else expectCurve.filter { it.time <= forecastSoFar }
     val allT = temps + fTemps.filterNotNull() + (mainCurve + dashCurve).map { Units.temperature(it.value, s.temperatureUnit) }
-    val tLo = floor(allT.min() - 1).toInt()
-    // Even range, so the middle grid line is a whole degree as well.
-    val tHi = ceil(allT.max() + 1).toInt().let { if (it - tLo < 4) tLo + 4 else it }.let { if ((it - tLo) % 2 == 1) it + 1 else it }
+    // the marks counted from the freezing point, each a grid line
+    val tAxis = TempAxis.of(allT.min(), allT.max(), s.temperatureUnit)
+    val tLo = tAxis.lo
+    val tHi = tAxis.hi
     val inch = s.precipitationUnit == PrecipitationUnit.INCH
-    val precipMax = maxOf(
-        if (inch) 0.04 else 1.0,
-        pts.maxOf { Units.precipitationValue(maxOf(it.precipitation ?: 0.0, it.forecastPrecipitation ?: 0.0), s.precipitationUnit) },
+    // in the temperature chart its grid lines are the precipitation's too; a chart of its own has three
+    val precipParts = if (separatePrecip) 2 else tAxis.intervals
+    val precipStep = PrecipAxis.step(
+        maxOf(
+            if (inch) 0.04 else 1.0,
+            pts.maxOf { Units.precipitationValue(maxOf(it.precipitation ?: 0.0, it.forecastPrecipitation ?: 0.0), s.precipitationUnit) },
+        ),
+        precipParts, inch,
     )
-        .let { if (inch) ceil(it * 20) / 20 else ceil(it) }
+    val precipMax = precipStep * precipParts
     val labelStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Tertiary)
     val unitStyle = TextStyle(fontSize = 10.sp, color = NimbusColors.Secondary, fontWeight = FontWeight.SemiBold)
     val tUnit = if (s.temperatureUnit == TemperatureUnit.FAHRENHEIT) "°F" else "°C"
@@ -217,18 +223,11 @@ fun Meteogram(
 
     // Vertical layout: time labels | symbols | plot | wind arrows. Units sit in the top corners,
     // the axes carry numbers only and are exactly as wide as their widest label.
-    fun precipLabel(k: Int): String {
-        val pv = precipMax * k / 2
-        return when {
-            k == 0 -> "0"
-            inch -> String.format(Locale.getDefault(), "%.2f", pv)
-            else -> Units.oneDecimal(pv)
-        }
-    }
+    fun precipLabel(k: Int): String = PrecipAxis.label(k, precipStep, inch)
     val gap = 3.dp
     val axisL = with(density) {
         maxOf(
-            (0..2).maxOf { k -> measurer.measure("${(tLo + (tHi - tLo) * k / 2.0).roundToInt()}", labelStyle).size.width },
+            tAxis.ticks.maxOf { v -> measurer.measure("${v.roundToInt()}", labelStyle).size.width },
             if (separatePrecip) measurer.measure("100", labelStyle).size.width else 0,
         ).toDp()
     } + gap
@@ -245,7 +244,7 @@ fun Meteogram(
     val sunNotMeasured = over.isNotEmpty() && over.none { it.sunMeasured || it.sunBar().expected != null }
     val axisR = with(density) {
         listOf(
-            (0..2).maxOf { measurer.measure(precipLabel(it), labelStyle).size.width },
+            (0..precipParts).maxOf { measurer.measure(precipLabel(it), labelStyle).size.width },
             measurer.measure(pUnit, unitStyle).size.width,
         ).max().toDp()
     } + gap
@@ -319,13 +318,17 @@ fun Meteogram(
                     val pc = measurer.measure("%", unitStyle)
                     drawText(pc, topLeft = Offset(0f, pUnitY - pc.size.height))
                 }
-                for (k in 0..2) {
-                    val v = tLo + (tHi - tLo) * k / 2.0
-                    drawLine(GridLine, Offset(l, yT(v)), Offset(r, yT(v)), 1f)
-                    val lt = measurer.measure("${v.roundToInt()}", labelStyle)
+                // the temperature's marks, the freezing point stronger and in the blue of ice
+                tAxis.ticks.forEach { v ->
+                    val frost = tAxis.isAnchor(v)
+                    if (frost) drawFrostLine(Offset(l, yT(v)), Offset(r, yT(v)))
+                    else drawLine(GridLine, Offset(l, yT(v)), Offset(r, yT(v)), 1f)
+                    val lt = measurer.measure("${v.roundToInt()}", if (frost) labelStyle.copy(color = TempAxis.FrostLabel) else labelStyle)
                     drawText(lt, topLeft = Offset(l - lt.size.width - gap.toPx(), yT(v) - lt.size.height / 2f))
+                }
+                for (k in 0..precipParts) {
                     val lp = measurer.measure(precipLabel(k), labelStyle)
-                    drawText(lp, topLeft = Offset(r + gap.toPx(), yP(precipMax * k / 2) - lp.size.height / 2f))
+                    drawText(lp, topLeft = Offset(r + gap.toPx(), yP(precipStep * k) - lp.size.height / 2f))
                     if (separatePrecip) {
                         drawLine(GridLine, Offset(l, yChance(50.0 * k)), Offset(r, yChance(50.0 * k)), 1f)
                         val lc = measurer.measure("${50 * k}", labelStyle)

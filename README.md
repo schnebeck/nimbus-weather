@@ -106,7 +106,9 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   gemessen ist (und wo) oder vom Modell kommt. Netze und Regeln: [docs/STATIONS.md](docs/STATIONS.md).
 - **Meteogramm** je Tag (00–24 Uhr): Temperatur (Vorhersage alle 15 Minuten, Messwerte der
   DWD-Station alle 10 Minuten), Niederschlag, Sonnenscheindauer und Wind pro Stunde,
-  Nachtschattierung, Legende mit Tagessummen. Die 10-Minuten-Messwerte der Station als
+  Nachtschattierung, Legende mit Tagessummen. Die Temperaturachse in runden Schritten (1, 2, 5, 10°),
+  immer vom Gefrierpunkt aus gezählt; liegt 0 °C im Bild, ist die Linie gestrichelt in Eisblau
+  hervorgehoben – ebenso im Modellvergleich und in der Streuung; der Luftdruck in runden hPa. Die 10-Minuten-Messwerte der Station als
   30-Minuten-Mittel, die Vorhersage schließt ohne Sprung an die letzte Messung an. Heute zeigt die
   gestrichelte Kurve („Prognose bisher“), was für die vergangenen Stunden vorhergesagt war; mit der
   Einstellung „Heute: Messung gegen Prognose“ zeigt die farbige Kurve nur die Messwerte und die

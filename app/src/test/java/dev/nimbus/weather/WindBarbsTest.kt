@@ -88,16 +88,17 @@ class WindBarbsTest {
         assertTrue(WindBarbs.shape(1.0).calm)
     }
 
-    /** The radar's barbs: one picture each 5 kn, turned on their middle (the station), the strokes in it. */
+    /** The radar's barbs: one picture each 5 kn, turned on their middle (the station, a dot), the strokes in it. */
     @Test fun theRadarsBarbs() {
         val b = WeatherOverlays.barbBitmap(25)
-        assertEquals(64, b.width)
+        assertEquals(128, b.width)
         fun lit(x: Int, y: Int) = android.graphics.Color.alpha(b.getPixel(x, y)) > 0
-        assertTrue("the station", lit(32, 31))
-        assertTrue("the shaft's end at the top", lit(32, 5))
-        assertTrue("a stroke to the right at the top", (36..44).any { x -> (0..12).any { y -> lit(x, y) } })
-        assertFalse("nothing left of the shaft", (0..26).any { x -> (0..63).any { y -> lit(x, y) } })
-        assertFalse("nothing below the station", (0..63).any { x -> (40..63).any { y -> lit(x, y) } })
+        assertTrue("the station", lit(64, 63))
+        assertTrue("the shaft's end at the top", lit(64, 8))
+        assertTrue("a stroke to the right at the top", (72..90).any { x -> (0..24).any { y -> lit(x, y) } })
+        assertTrue("the station's dot, wider than the shaft", lit(58, 64) && lit(70, 64))
+        assertFalse("nothing left of the station", (0..50).any { x -> (0..127).any { y -> lit(x, y) } })
+        assertFalse("nothing below the station", (0..127).any { x -> (78..127).any { y -> lit(x, y) } })
         assertEquals(31, (0..WeatherOverlays.BARB_MAX_KN step 5).count())
     }
 

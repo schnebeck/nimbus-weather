@@ -528,6 +528,8 @@ internal fun androidx.compose.ui.graphics.drawscope.DrawScope.drawWindBarb(c: Of
     fun p(x: Float, y: Float) = Offset(c.x + x * length, c.y + (y + 0.5f) * length)
     rotate(fromDeg.toFloat(), c) {
         shape.shaft?.let { drawLine(color, p(it.x1, it.y1), p(it.x2, it.y2), stroke, StrokeCap.Round) }
+        // the station's end: a dot, as on the weather maps – the barb has no arrowhead to tell it
+        drawCircle(color, stroke * 1.4f, p(0f, 0f))
         shape.strokes.forEach { drawLine(color, p(it.x1, it.y1), p(it.x2, it.y2), stroke, StrokeCap.Round) }
         shape.pennants.forEach { t ->
             val path = Path().apply {

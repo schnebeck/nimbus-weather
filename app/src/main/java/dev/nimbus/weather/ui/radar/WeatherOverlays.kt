@@ -235,7 +235,7 @@ internal class WeatherOverlays(
                     // the shaft towards where the wind comes from, its strength in the strokes
                     addStringProperty("img", BARB + dev.nimbus.weather.util.WindBarbs.parts(v.toDouble()).knots.coerceAtMost(BARB_MAX_KN))
                     addNumberProperty("r", d % 360f)
-                    addNumberProperty("s", 1f)
+                    addNumberProperty("s", 1.2f)
                 } else {
                     addStringProperty("img", ARROW)
                     addNumberProperty("r", (d + 180f) % 360f)          // arrow points where the wind blows to
@@ -300,20 +300,23 @@ internal class WeatherOverlays(
          * the arrows have theirs), the shaft up to its edge ([dev.nimbus.weather.util.WindBarbs.shape]).
          */
         internal fun barbBitmap(knots: Int): Bitmap {
-            val s = 64
+            // twice the arrow's picture: the shaft is half of it (the station in the middle) and as long as an arrow
+            val s = 128
             val bmp = Bitmap.createBitmap(s, s, Bitmap.Config.ARGB_8888)
             val c = Canvas(bmp)
-            val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = android.graphics.Color.WHITE; strokeWidth = 4f; strokeCap = Paint.Cap.ROUND }
+            val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = android.graphics.Color.WHITE; strokeWidth = 7f; strokeCap = Paint.Cap.ROUND }
             val shape = dev.nimbus.weather.util.WindBarbs.shape(knots * 1.852)
-            val len = s / 2f - 3f
+            val len = s / 2f - 5f
             fun x(v: Float) = s / 2f + v * len
             fun y(v: Float) = s / 2f + v * len
             if (shape.calm) {
                 p.style = Paint.Style.STROKE
-                c.drawCircle(s / 2f, s / 2f, 7f, p)
+                c.drawCircle(s / 2f, s / 2f, 12f, p)
                 return bmp
             }
             listOfNotNull(shape.shaft).plus(shape.strokes).forEach { l -> c.drawLine(x(l.x1), y(l.y1), x(l.x2), y(l.y2), p) }
+            // the station: where the barb stands, as on the weather maps – no arrowhead tells it
+            c.drawCircle(s / 2f, s / 2f, 8f, p)
             shape.pennants.forEach { t ->
                 val path = Path().apply {
                     moveTo(x(t[0].first), y(t[0].second))

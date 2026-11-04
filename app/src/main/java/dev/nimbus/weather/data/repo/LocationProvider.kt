@@ -151,7 +151,16 @@ open class LocationProvider(private val context: Context, private val http: okht
                 cont.invokeOnCancellation { signal.cancel() }
                 lm.getCurrentLocation(provider, signal, ContextCompat.getMainExecutor(context)) { if (cont.isActive) cont.resume(it) }
             } else {
-                val listener = android.location.LocationListener { if (cont.isActive) cont.resume(it) }
+                // all four methods: up to Android 10 the others have no body of their own, and the
+                // system calling one (a provider's status changing) ends the app
+                val listener = object : android.location.LocationListener {
+                    override fun onLocationChanged(location: Location) { if (cont.isActive) cont.resume(location) }
+                    override fun onProviderDisabled(provider: String) { if (cont.isActive) { lm.removeUpdates(this); cont.resume(null) } }
+                    override fun onProviderEnabled(provider: String) {}
+                    @Deprecated("only called before Android 10")
+                    @Suppress("DEPRECATION")
+                    override fun onStatusChanged(provider: String?, status: Int, extras: android.os.Bundle?) {}
+                }
                 cont.invokeOnCancellation { lm.removeUpdates(listener) }
                 @Suppress("DEPRECATION")
                 lm.requestSingleUpdate(provider, listener, context.mainLooper)

@@ -48,16 +48,23 @@ const val NO_VALUE = "–"
  * "Forecast"). Every cell has a fixed width and holds one value only.
  */
 @Composable
-fun ReadoutTable(columns: List<String>, rows: List<Pair<String, List<String>>>, modifier: Modifier = Modifier) {
+fun ReadoutTable(
+    columns: List<String>, rows: List<Pair<String, List<String>>>, modifier: Modifier = Modifier,
+    /** The labels' column against a value column's 1: short labels leave the values more room. */
+    labelWeight: Float = 1.3f,
+    /** Each value column's share (null: alike) – a column of wider values gets more. */
+    weights: List<Float>? = null,
+) {
+    fun w(i: Int) = weights?.getOrNull(i) ?: 1f
     Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Row(Modifier.fillMaxWidth()) {
-            Spacer(Modifier.weight(1.3f))
-            columns.forEach { Text(it, Modifier.weight(1f), style = Head, textAlign = TextAlign.End, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            Spacer(Modifier.weight(labelWeight))
+            columns.forEachIndexed { i, c -> Text(c, Modifier.weight(w(i)), style = Head, textAlign = TextAlign.End, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         }
         rows.forEach { (label, values) ->
             Row(Modifier.fillMaxWidth()) {
-                Text(label, Modifier.weight(1.3f), style = Label, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                values.forEach { Text(it, Modifier.weight(1f), style = Value, textAlign = TextAlign.End, maxLines = 1, softWrap = false) }
+                Text(label, Modifier.weight(labelWeight), style = Label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                values.forEachIndexed { i, v -> Text(v, Modifier.weight(w(i)), style = Value, textAlign = TextAlign.End, maxLines = 1, softWrap = false) }
             }
         }
     }

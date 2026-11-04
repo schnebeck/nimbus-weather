@@ -116,15 +116,17 @@ class HourAxisTest {
     /**
      * Every chart with a long-press cursor, wherever it is: hourly charts (bars) take labels,
      * bars, points and cursor from HourAxis; charts of moments (pressure, water level) put the
-     * labels and the cursor on the same moment. A new chart with a cursor has to be put in one of
-     * the two lists – that is the point: nobody adds a cursor without this check.
+     * labels and the cursor on the same moment; charts of days (the spread) put the cursor on the
+     * hour's moment and each day's line on its midnight. A new chart with a cursor has to be put in
+     * one of the lists – that is the point: nobody adds a cursor without this check.
      */
     @Test fun everyCursorChartKeepsLabelsUnderTheCursor() {
         val hourly = mapOf("Meteogram.kt" to "fun Meteogram(")
         val moments = mapOf("PressureCard.kt" to "private fun PressureChart(", "GaugeCharts.kt" to "val cursorAlpha")
+        val days = mapOf("SpreadCard.kt" to "private fun DrawScope.drawSpread(")
         val ui = File("src/main/java/dev/nimbus/weather/ui")
         val withCursor = ui.walkTopDown().filter { it.extension == "kt" && "cursorAlpha" in it.readText() }.map { it.name }.toSet()
-        assertEquals("charts with a cursor", withCursor, hourly.keys + moments.keys)
+        assertEquals("charts with a cursor", withCursor, hourly.keys + moments.keys + days.keys)
         fun body(name: String, marker: String): String {
             val f = ui.walkTopDown().first { it.name == name }.readText()
             val from = f.indexOf(marker)
@@ -140,6 +142,11 @@ class HourAxisTest {
             val src = body(name, marker)
             assertTrue("$name: cursor on the moment", Regex("""val xc = x\(p\.time\)""").containsMatchIn(src))
             assertTrue("$name: labels on the moment", Regex("""val xm = x\(mark\)""").containsMatchIn(src))
+        }
+        for ((name, marker) in days) {
+            val src = body(name, marker)
+            assertTrue("$name: cursor on the hour's moment", Regex("""val xc = x\(spread\.times\[cursor\]\)""").containsMatchIn(src))
+            assertTrue("$name: days from their midnight", Regex("""x\(d\.start\)""").containsMatchIn(src))
         }
     }
 

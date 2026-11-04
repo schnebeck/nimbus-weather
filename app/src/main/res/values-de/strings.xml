@@ -69,6 +69,14 @@
     <string name="spread_all">Möglich</string>
     <string name="spread_rain">Balken: Niederschlag je Tag, der Strich, wie viel es werden könnte. Darüber: die Chance auf mindestens %1$s</string>
     <string name="spread_unavailable">Die Streuung ist gerade nicht abrufbar – neuer Versuch in Kürze.</string>
+    <string name="spread_cursor_hint">Lange drücken zeigt die Werte jeder Stunde und ihres Tages</string>
+    <string name="spread_col_middle">Mitte</string>
+    <string name="spread_col_inner">8 von 10</string>
+    <string name="spread_col_all">Möglich</string>
+    <string name="spread_row_temp">Temperatur</string>
+    <string name="spread_row_high">Höchstwert</string>
+    <string name="spread_row_precip">Niederschlag</string>
+    <string name="spread_wet_chance">Chance auf %1$s und mehr</string>
     <string name="community_sensors">Community-Messnetz</string>
     <string name="community_sensors_detail">Median von %1$d Bürger-Sensoren im Umkreis von %2$s km (Sensor.Community)</string>
     <string name="community_spread">Streuung ±%1$s</string>

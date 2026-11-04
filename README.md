@@ -144,7 +144,9 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
 - **Streuung der Vorhersage**: Die 51 Läufe des ECMWF-Ensembles über 10 Tage als Fächer – der mittlere
   Lauf, 80 % der Läufe und alle; darunter je Tag der Niederschlag des mittleren Laufs mit dem Bereich
   von 80 % der Läufe und dem Anteil der Läufe mit mindestens 1 mm. Je schmaler der Fächer, desto
-  sicherer die Vorhersage. Viermal am Tag geladen, mit jedem neuen Lauf; fällt der Server aus, bleibt
+  sicherer die Vorhersage. Lange drücken setzt einen Cursor auf eine Stunde; statt der Legende klappt
+  dann eine Tabelle auf: Temperatur der Stunde, Höchstwert und Niederschlag des Tages, je mittlerer
+  Lauf, 8 von 10 und alle Läufe, dazu die Chance auf 1 mm. Viermal am Tag geladen, mit jedem neuen Lauf; fällt der Server aus, bleibt
   der letzte bis zu einem Tag stehen (gelber Punkt).
 - **Gezeiten und Pegel**: Die Pegel im Umkreis von 10 km, je Gewässer einer (z. B. Weser, Fulda
   und Werra in Hann. Münden), freie Plätze mit weiteren Gewässern bis 15 km. An der Küste und an Tideflüssen zuerst die nächsten Hoch- und

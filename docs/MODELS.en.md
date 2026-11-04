@@ -111,6 +111,10 @@ everywhere – hence one for all places, whatever model is chosen.
 - Precipitation per day (a day begins at the place's midnight, the hour up to midnight counts to the
   day before): the middle run's sum as a bar, the line from 10 % to 90 % of the runs, above it the
   share of runs with at least 1 mm.
+- Long press and drag: a cursor on the hour, the day beneath it lighter; the legend folds away and
+  a table opens – the hour's temperature, the day's high and precipitation, each for the middle
+  run, 8 in 10 runs and all of them, above it the time and the chance of 1 mm. After 10 seconds
+  without a touch the cursor goes and the legend comes back.
 - Folded: tomorrow's high and the last day's, as 80 % of the runs have them.
 
 The ensemble runs four times a day; the app asks for it every 6 hours at most and stores it per

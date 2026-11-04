@@ -30,6 +30,13 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.longClick
+import androidx.compose.ui.geometry.Offset
+import dev.nimbus.weather.ui.main.hourAt
+import dev.nimbus.weather.ui.main.dayOf
+import dev.nimbus.weather.ui.main.spreadRange
+import kotlin.math.roundToInt
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -265,11 +272,11 @@ class SpreadTest {
     }
 
     @Composable
-    private fun Card(folded: Boolean = false, content: @Composable () -> Unit) = CompositionLocalProvider(
+    private fun Card(folded: Boolean = false, width: Int = 380, content: @Composable () -> Unit) = CompositionLocalProvider(
         LocalSettings provides Settings(), LocalTimeFormat provides TimeFormat("Europe/Berlin", true),
         LocalCardFold provides CardFold(folded) {},
     ) {
-        Box(Modifier.width(380.dp).background(Color(0xFF2B3A4E)).padding(12.dp)) { content() }
+        Box(Modifier.width(width.dp).background(Color(0xFF2B3A4E)).padding(12.dp)) { content() }
     }
 
     private val ctx get() = ApplicationProvider.getApplicationContext<Context>()
@@ -303,5 +310,86 @@ class SpreadTest {
         compose.setContent { Card { SpreadCard(null, true, now) {} } }
         compose.onNodeWithText(ctx.getString(R.string.spread_unavailable)).assertExists()
         assertNotNull(ctx.getString(R.string.term_spread_body))
+    }
+    /** The slider's hour: the one nearest the finger, from the hour of now on; its day the one it lies in. */
+    @Test fun theSlidersHourAndDay() {
+        val s = parsed()
+        val from = s.from(now)
+        assertEquals(from, s.hourAt(from, -0.2f))
+        assertEquals(s.times.lastIndex, s.hourAt(from, 1.3f))
+        val f = (37 - from).toFloat() / (s.times.lastIndex - from)
+        assertEquals(37, s.hourAt(from, f))
+        assertEquals(s.days[1], s.days.dayOf(s.times[37]))
+        assertEquals(s.days[1], s.days.dayOf(day0 + 24 * h))
+        assertEquals(s.days[0], s.days.dayOf(day0 + 24 * h - 1))
+        assertEquals("5°", spreadRange("5°", "5°"))
+        assertEquals("-3°\u2009–\u20092°", spreadRange("-3°", "2°"))
+    }
+
+    /**
+     * A long press: the cursor on its hour, the table animated in as the legend goes out – while
+     * they swap both are there; the cursor gone, back to the overview the same way. The table:
+     * the hour's temperature, the day's high and precipitation as the chart has them.
+     */
+    @Test fun theSliderSwapsLegendForTable() {
+        val s = parsed()
+        val tf = TimeFormat("Europe/Berlin", true)
+        compose.setContent { Card { SpreadCard(s, true, now) {} } }
+        compose.waitForIdle()
+        fun shown(tag: String) = compose.onAllNodes(androidx.compose.ui.test.hasTestTag(tag)).fetchSemanticsNodes().isNotEmpty()
+        assertTrue(shown("spread-legend")); assertFalse(shown("spread-table"))
+        compose.onNodeWithText(ctx.getString(R.string.spread_cursor_hint)).assertExists()
+
+        val from = s.from(now)
+        val at = 37                                                          // Wednesday 23:00 (the hours from the fetch at 10:00) – a wet day for 3 of 5 runs
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithTag("spread-chart").performTouchInput {
+            val g = 30.dp.toPx()
+            down(Offset(g + (width - g) * (at - from) / (s.times.lastIndex - from).toFloat(), height * 0.3f))
+        }
+        // the long press: the swap begins as it is recognised, the finger still down
+        var waited = 0
+        while (!shown("spread-table") && waited < 2_000) { compose.mainClock.advanceTimeBy(16); waited += 16 }
+        compose.mainClock.advanceTimeBy(80)
+        assertTrue("while they swap: both", shown("spread-legend") && shown("spread-table"))
+        compose.onNodeWithTag("spread-chart").performTouchInput { up() }
+        compose.mainClock.advanceTimeBy(400)
+        assertTrue(shown("spread-table")); assertFalse(shown("spread-legend"))
+
+        val t = dev.nimbus.weather.data.model.TemperatureUnit.CELSIUS
+        fun inTable(text: String) = compose.onAllNodes(androidx.compose.ui.test.hasText(text) and androidx.compose.ui.test.hasAnyAncestor(androidx.compose.ui.test.hasTestTag("spread-table")), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+        assertTrue(inTable("${tf.weekdayShort(s.times[at])} ${tf.time(s.times[at])}"))
+        assertTrue(inTable(dev.nimbus.weather.util.Units.temp(s.median[at], t)))
+        assertTrue(inTable(spreadRange(dev.nimbus.weather.util.Units.temp(s.low[at], t).trimEnd('°'), dev.nimbus.weather.util.Units.temp(s.high[at], t))))
+        val d = s.days[1]
+        assertTrue(inTable("${(d.wetShare()!! * 100).roundToInt()}${dev.nimbus.weather.util.NBSP}%"))
+        assertTrue(inTable(spreadRange(dev.nimbus.weather.util.Units.temp(d.highs.first(), t).trimEnd('°'), dev.nimbus.weather.util.Units.temp(d.highs.last(), t))))
+        assertTrue(inTable(spreadRange("0", dev.nimbus.weather.util.Units.precipitationNumber(d.sums.last(), dev.nimbus.weather.data.model.PrecipitationUnit.MM)) + dev.nimbus.weather.util.NBSP + "mm"))
+        compose.onRoot().captureRoboImage("src/test/screenshots/spread_slider.png")
+
+        // ten seconds on, the cursor goes: the legend back, the table out
+        compose.mainClock.advanceTimeBy(9_000)
+        assertTrue("before the ten seconds: the table", shown("spread-table") && !shown("spread-legend"))
+        waited = 0
+        while (!shown("spread-legend") && waited < 2_000) { compose.mainClock.advanceTimeBy(16); waited += 16 }
+        compose.mainClock.advanceTimeBy(80)
+        assertTrue("while they swap back: both", shown("spread-legend") && shown("spread-table"))
+        compose.mainClock.advanceTimeBy(1_000)
+        assertTrue(shown("spread-legend")); assertFalse(shown("spread-table"))
+    }
+
+    /** A narrow phone in German, a cold and wet day: every cell of the table whole in its column. */
+    @Test @Config(qualifiers = "de-rDE-w360dp-h800dp-xxhdpi") fun theTableOnANarrowPhone() {
+        val s = parsed().let { p -> p.copy(
+            lowest = p.lowest.map { it?.minus(22) }, low = p.low.map { it?.minus(18) }, median = p.median.map { it?.minus(16) },
+            high = p.high.map { it?.minus(14) }, highest = p.highest.map { it?.minus(12) },
+            days = p.days.map { d -> d.copy(highs = d.highs.map { it - 22 }, sums = d.sums.mapIndexed { i, v -> v * 6 + i * 3.7 }) },
+        ) }
+        compose.setContent { Card(width = 330) { SpreadCard(s, true, now) {} } }
+        compose.waitForIdle()
+        compose.onNodeWithTag("spread-chart").performTouchInput { longClick(Offset(width * 0.2f, height * 0.3f)) }
+        compose.waitForIdle()
+        compose.onNodeWithTag("spread-table").assertExists()
+        compose.onRoot().captureRoboImage("src/test/screenshots/spread_slider_narrow.png")
     }
 }

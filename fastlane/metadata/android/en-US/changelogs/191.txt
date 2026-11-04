@@ -1,0 +1,2 @@
+• Forecast spread with a slider: a long press shows a table for each hour – temperature, the day's high and precipitation, each for the middle, 8 in 10 and all runs
+• Android 8 to 10: no more crash when the location service reports in

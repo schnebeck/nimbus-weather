@@ -74,6 +74,14 @@
     <string name="spread_all">Possible</string>
     <string name="spread_rain">Bars: precipitation per day, the line how much it could be. Above: the chance of at least %1$s</string>
     <string name="spread_unavailable">The spread can\'t be fetched right now – trying again shortly.</string>
+    <string name="spread_cursor_hint">Long press for the values of each hour and its day</string>
+    <string name="spread_col_middle">Middle</string>
+    <string name="spread_col_inner">8 in 10</string>
+    <string name="spread_col_all">Possible</string>
+    <string name="spread_row_temp">Temperature</string>
+    <string name="spread_row_high">Day\'s high</string>
+    <string name="spread_row_precip">Precipitation</string>
+    <string name="spread_wet_chance">Chance of %1$s or more</string>
     <string name="community_sensors">Community Sensors</string>
     <string name="community_sensors_detail">Median of %1$d citizen sensors within %2$s km (Sensor.Community)</string>
     <string name="community_spread">Spread ±%1$s</string>

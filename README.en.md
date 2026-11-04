@@ -142,7 +142,9 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
 - **Forecast spread**: the 51 runs of the ECMWF ensemble over 10 days as a fan – the middle run, 80 %
   of the runs and all of them; below, per day, the middle run's precipitation with the range of 80 %
   of the runs and the share of runs with at least 1 mm. The narrower the fan, the more certain the
-  forecast. Fetched four times a day, with each new run; when the server fails, the last one stays
+  forecast. A long press sets a cursor on an hour; the legend folds away for a table: the hour's
+  temperature, the day's high and precipitation, each for the middle run, 8 in 10 and all runs, with
+  the chance of 1 mm. Fetched four times a day, with each new run; when the server fails, the last one stays
   for up to a day (yellow dot).
 - **Tides and water levels**: the gauges within 10 km, one per water body (e.g. Weser, Fulda and
   Werra in Hann. Münden), free places with further water bodies up to 15 km. At the coast and on

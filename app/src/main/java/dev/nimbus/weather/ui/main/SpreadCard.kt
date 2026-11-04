@@ -20,13 +20,19 @@ package dev.nimbus.weather.ui.main
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,9 +42,14 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -48,6 +59,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -68,11 +80,22 @@ import dev.nimbus.weather.util.Units
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
 
 private val AllRuns = Color(0x26FFFFFF)
 private val InnerRuns = Color(0x4DFFFFFF)
 private val DayMark = Color(0x40FFFFFF)
 private val Grid = Color(0x1FFFFFFF)
+/** The day the cursor stands in, a little lighter: the table's day rows are its. */
+private val CursorDay = Color(0x14FFFFFF)
+
+/** The cursor goes out this long after the last touch, as in the other charts. */
+private const val SPREAD_CURSOR_MS = 10_000L
+/** Table in, legend out – and back: as long as the day chart's table takes. */
+private const val SPREAD_SWAP_MS = 200
+
+/** The left gutter of the chart, where the axes' numbers stand. */
+private val SpreadGutter = 30.dp
 
 /** The days of [spread] still ahead at [now] – today from now on. */
 internal fun Spread.daysAhead(now: Long): List<SpreadDay> = days.filter { it.start + 24 * Spread.HOUR_MS > now && it.highs.isNotEmpty() }
@@ -126,20 +149,120 @@ fun SpreadCard(spread: Spread?, tried: Boolean, now: Long, onRequest: () -> Unit
         if (spread.times.size - from < 2) return@GlassCard
         val wet = millimetres(Spread.WET_MM, s.precipitationUnit) + NBSP + stringResource(Texts.precipUnit(s.precipitationUnit))
         val precipUnit = stringResource(Texts.precipUnit(s.precipitationUnit))
-        Canvas(Modifier.fillMaxWidth().height(286.dp).testTag("spread-chart")) {
-            drawSpread(spread, from, days, tf, s.temperatureUnit, s.precipitationUnit, precipUnit, measurer)
+        // the slider: a long press sets the cursor on an hour, dragging moves it, a tap too while it is on
+        var selected by remember(spread.fetchedAt) { mutableStateOf(from) }
+        var cursorOn by remember { mutableStateOf(false) }
+        var touched by remember { mutableIntStateOf(0) }
+        LaunchedEffect(touched, cursorOn) { if (cursorOn) { delay(SPREAD_CURSOR_MS); cursorOn = false } }
+        val cursorAlpha by animateFloatAsState(if (cursorOn) 1f else 0f, tween(if (cursorOn) 150 else 700), label = "cursor")
+        val at = selected.coerceIn(from, spread.times.lastIndex)
+        Canvas(
+            Modifier.fillMaxWidth().height(286.dp).testTag("spread-chart")
+                .pointerInput(spread, from) {
+                    fun indexAt(px: Float) = spread.hourAt(from, (px - SpreadGutter.toPx()) / (size.width - SpreadGutter.toPx()))
+                    detectDragGesturesAfterLongPress(
+                        onDragStart = { cursorOn = true; selected = indexAt(it.x); touched++ },
+                    ) { change, _ -> change.consume(); selected = indexAt(change.position.x); touched++ }
+                }
+                .pointerInput(spread, from) {
+                    fun indexAt(px: Float) = spread.hourAt(from, (px - SpreadGutter.toPx()) / (size.width - SpreadGutter.toPx()))
+                    detectTapGestures(onTap = { if (cursorOn) { selected = indexAt(it.x); touched++ } })
+                },
+        ) {
+            drawSpread(spread, from, days, tf, s.temperatureUnit, s.precipitationUnit, precipUnit, measurer, at.takeIf { cursorAlpha > 0f }, cursorAlpha)
         }
         Spacer(Modifier.height(10.dp))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Key(Modifier.width(14.dp).height(2.dp).background(Color.White), stringResource(R.string.spread_median))
-            // drawn over the band of all runs, as in the chart
-            Key(Modifier.size(14.dp, 10.dp).background(AllRuns).background(InnerRuns), stringResource(R.string.spread_inner))
-            Key(Modifier.size(14.dp, 10.dp).background(AllRuns), stringResource(R.string.spread_all))
+        // the slider's table in, the overview's legend out – and back when the cursor goes
+        androidx.compose.animation.AnimatedVisibility(
+            cursorOn,
+            enter = androidx.compose.animation.expandVertically(tween(SPREAD_SWAP_MS)) + androidx.compose.animation.fadeIn(tween(SPREAD_SWAP_MS)),
+            exit = androidx.compose.animation.shrinkVertically(tween(SPREAD_SWAP_MS)) + androidx.compose.animation.fadeOut(tween(SPREAD_SWAP_MS)),
+        ) {
+            SpreadTable(spread, at, days, wet, Modifier.testTag("spread-table"))
         }
-        Spacer(Modifier.height(6.dp))
-        Text(stringResource(R.string.spread_rain, wet), fontSize = 12.sp, color = NimbusColors.Tertiary)
+        androidx.compose.animation.AnimatedVisibility(
+            !cursorOn,
+            enter = androidx.compose.animation.expandVertically(tween(SPREAD_SWAP_MS)) + androidx.compose.animation.fadeIn(tween(SPREAD_SWAP_MS)),
+            exit = androidx.compose.animation.shrinkVertically(tween(SPREAD_SWAP_MS)) + androidx.compose.animation.fadeOut(tween(SPREAD_SWAP_MS)),
+        ) {
+            Column(Modifier.testTag("spread-legend")) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Key(Modifier.width(14.dp).height(2.dp).background(Color.White), stringResource(R.string.spread_median))
+                    // drawn over the band of all runs, as in the chart
+                    Key(Modifier.size(14.dp, 10.dp).background(AllRuns).background(InnerRuns), stringResource(R.string.spread_inner))
+                    Key(Modifier.size(14.dp, 10.dp).background(AllRuns), stringResource(R.string.spread_all))
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(stringResource(R.string.spread_rain, wet), fontSize = 12.sp, color = NimbusColors.Tertiary)
+                Text(stringResource(R.string.spread_cursor_hint), fontSize = 11.sp, lineHeight = 15.sp, color = NimbusColors.Tertiary, modifier = Modifier.padding(top = 4.dp).alpha(1f - cursorAlpha))
+            }
+        }
     }
 }
+
+/** The hour nearest to [fraction] (0..1) of the chart's width, the hours from [from] on. */
+internal fun Spread.hourAt(from: Int, fraction: Float): Int {
+    val t0 = times[from]
+    val t = t0 + (fraction.coerceIn(0f, 1f) * (times.last() - t0)).toLong()
+    return (from until times.size).minBy { kotlin.math.abs(times[it] - t) }
+}
+
+/** The day of [days] hour [t] lies in. */
+internal fun List<SpreadDay>.dayOf(t: Long): SpreadDay? = firstOrNull { t >= it.start && t < it.start + 24 * Spread.HOUR_MS }
+
+/**
+ * The slider's table: the cursor's hour and the chance of a wet day on top; below, as the chart
+ * draws them – the middle run, 8 in 10 runs, all of them – the hour's temperature, the day's high
+ * and the day's precipitation.
+ */
+@Composable
+internal fun SpreadTable(spread: Spread, at: Int, days: List<SpreadDay>, wet: String, modifier: Modifier = Modifier) {
+    val tf = LocalTimeFormat.current
+    val s = LocalSettings.current
+    val t = spread.times[at]
+    val day = days.dayOf(t)
+    fun temp(v: Double?) = Units.temp(v, s.temperatureUnit)
+    // the degree once, at the end: "-12 – -8°"
+    fun temps(a: Double?, b: Double?) = spreadRange(temp(a), temp(b)).let { r -> if (r.contains('–')) r.replaceFirst("°", "") else r }
+    val unit = stringResource(Texts.precipUnit(s.precipitationUnit))
+    fun mm(v: Double?) = Units.precipitationNumber(v, s.precipitationUnit)
+    fun sums(a: Double?, b: Double?) = spreadRange(mm(a), mm(b)) + NBSP + unit
+    val q = (1 - Spread.INNER) / 2
+    Column(modifier.fillMaxWidth()) {
+        ReadoutCells(
+            listOf(
+                stringResource(R.string.readout_time) to "${tf.weekdayShort(t)} ${tf.time(t)}",
+                stringResource(R.string.spread_wet_chance, wet) to (day?.wetShare()?.let { "${(it * 100).roundToInt()}$NBSP%" } ?: NO_VALUE),
+            ),
+        )
+        Spacer(Modifier.height(6.dp))
+        val highs = day?.highs.orEmpty()
+        val daySums = day?.sums.orEmpty()
+        fun sum(v: Double?) = v?.let { mm(it) + NBSP + unit } ?: NO_VALUE
+        // a row for each share of the runs, as the legend names them; the hour's temperature,
+        // the day's high and its precipitation side by side
+        ReadoutTable(
+            listOf(stringResource(R.string.spread_row_temp), stringResource(R.string.spread_row_high), stringResource(R.string.spread_row_precip)),
+            listOf(
+                stringResource(R.string.spread_col_middle) to listOf(temp(spread.median[at]), temp(Spread.quantile(highs, 0.5)), sum(Spread.quantile(daySums, 0.5))),
+                stringResource(R.string.spread_col_inner) to listOf(
+                    temps(spread.low[at], spread.high[at]),
+                    temps(Spread.quantile(highs, q), Spread.quantile(highs, 1 - q)),
+                    if (daySums.isEmpty()) NO_VALUE else sums(Spread.quantile(daySums, q), Spread.quantile(daySums, 1 - q)),
+                ),
+                stringResource(R.string.spread_col_all) to listOf(
+                    temps(spread.lowest[at], spread.highest[at]),
+                    temps(highs.firstOrNull(), highs.lastOrNull()),
+                    if (daySums.isEmpty()) NO_VALUE else sums(daySums.first(), daySums.last()),
+                ),
+            ),
+            labelWeight = 0.8f, weights = listOf(0.95f, 0.95f, 1.2f),
+        )
+    }
+}
+
+/** "5 – 9" (thin spaces: a minus stays apart from the dash); one value where both read alike. */
+internal fun spreadRange(a: String, b: String): String = if (a == b) a else "$a\u2009–\u2009$b"
 
 /** Whole millimetres as such ("5", not "5.0"); inches as always. */
 private fun millimetres(mm: Double, unit: dev.nimbus.weather.data.model.PrecipitationUnit): String =
@@ -162,9 +285,11 @@ private fun DrawScope.drawSpread(
     spread: Spread, from: Int, days: List<SpreadDay>, tf: TimeFormat,
     tempUnit: dev.nimbus.weather.data.model.TemperatureUnit, precipUnit: dev.nimbus.weather.data.model.PrecipitationUnit, precipLabel: String,
     measurer: androidx.compose.ui.text.TextMeasurer,
+    /** The slider's hour (null: no cursor), drawn at [cursorAlpha]. */
+    cursor: Int? = null, cursorAlpha: Float = 0f,
 ) {
     val axis = TextStyle(fontSize = 11.sp, color = NimbusColors.Tertiary)
-    val gutter = 30.dp.toPx()
+    val gutter = SpreadGutter.toPx()
     val w = size.width - gutter
     val tempH = 160.dp.toPx()
     val chanceTop = tempH + 12.dp.toPx()
@@ -173,6 +298,12 @@ private fun DrawScope.drawSpread(
     val t0 = spread.times[from]
     val t1 = spread.times.last()
     fun x(t: Long) = gutter + (t - t0).toFloat() / (t1 - t0) * w
+    // the cursor's day lighter, from top to the bars' foot: the table's day rows are its
+    val cursorDay = cursor?.let { days.dayOf(spread.times[it]) }
+    if (cursorDay != null) {
+        val a = x(maxOf(cursorDay.start, t0)); val b = x(minOf(cursorDay.start + 24 * Spread.HOUR_MS, t1))
+        drawRect(CursorDay.copy(alpha = CursorDay.alpha * cursorAlpha), Offset(a, 0f), Size(b - a, size.height - 20.dp.toPx()))
+    }
 
     // temperature: the scale over all runs, the marks counted from the freezing point (it stronger, in the blue of ice)
     val shown = from until spread.times.size
@@ -241,7 +372,18 @@ private fun DrawScope.drawSpread(
         d.wetShare()?.let { share ->
             // a dry day for most runs: the share faint, a wet one in the colour of rain
             val l = measurer.measure("${(share * 100).roundToInt()}$NBSP%", chanceStyle.copy(color = if (share >= 0.3) PrecipBlue else Color(0x99FFFFFF)))
+            // the rest of today on a narrow phone: no room beside the next day's
+            if (l.size.width > x(b) - x(a)) return@let
             drawText(l, topLeft = Offset(axisLabelLeft(cx - gutter, l.size.width, w) + gutter, chanceTop))
+        }
+    }
+    // the cursor: a line through both charts, a dot on the middle course
+    if (cursor != null) {
+        val xc = x(spread.times[cursor])
+        drawLine(Color.White.copy(alpha = 0.85f * cursorAlpha), Offset(xc, 0f), Offset(xc, barBottom), 1.5.dp.toPx())
+        spread.median[cursor]?.let { v ->
+            drawCircle(Color(0xFF1A2A40).copy(alpha = cursorAlpha), 5.dp.toPx(), Offset(xc, y(v)))
+            drawCircle(Color.White.copy(alpha = cursorAlpha), 3.dp.toPx(), Offset(xc, y(v)))
         }
     }
 }

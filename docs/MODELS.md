@@ -113,6 +113,10 @@ ECMWF 15 Tage und überall – darum eines für alle Orte, unabhängig vom gewä
 - Niederschlag je Tag (ein Tag beginnt um Mitternacht des Ortes, die Stunde bis Mitternacht zählt
   zum Tag davor): die Summe des mittleren Laufs als Balken, der Strich von 10 % bis 90 % der Läufe,
   darüber der Anteil der Läufe mit mindestens 1 mm.
+- Lange drücken und ziehen: ein Cursor auf der Stunde, der Tag darunter heller; die Legende klappt
+  zu und eine Tabelle auf – Temperatur der Stunde, Höchstwert und Niederschlag des Tages, je für den
+  mittleren Lauf, 8 von 10 Läufen und alle, darüber Zeit und Chance auf 1 mm. Nach 10 Sekunden ohne
+  Berührung geht der Cursor, und die Legende kommt zurück.
 - Eingeklappt: der Höchstwert von morgen und vom letzten Tag, wie ihn 80 % der Läufe haben.
 
 Das Ensemble rechnet viermal am Tag; die App fragt es höchstens alle 6 Stunden ab und speichert es je

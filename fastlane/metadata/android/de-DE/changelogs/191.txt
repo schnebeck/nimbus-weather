@@ -1,0 +1,2 @@
+• Streuung der Vorhersage mit Slider: lange drücken zeigt für jede Stunde eine Tabelle – Temperatur, Höchstwert und Niederschlag des Tages, je Mitte, 8 von 10 und alle Läufe
+• Android 8 bis 10: kein Absturz mehr, wenn sich der Standortdienst meldet

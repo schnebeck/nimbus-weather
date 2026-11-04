@@ -569,11 +569,16 @@ object WidgetViews {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             v.setViewLayoutMargin(R.id.widget_mid, RemoteViews.MARGIN_TOP, WidgetLayout.MID_TOP - l.tuckDp, TypedValue.COMPLEX_UNIT_DIP)
         }
+        v.visible(R.id.widget_pollen_dots_box, l.pollenDots || l.midRain)
         v.visible(R.id.widget_pollen_dots, l.pollenDots || l.midRain)
         if (l.midRain && rainText != null) v.setTextViewText(R.id.widget_pollen_dots, rainText)
         else if (dots != null) v.setTextViewText(R.id.widget_pollen_dots, dots)
-        v.setOnClickPendingIntent(R.id.widget_pollen_dots, open(if (l.midRain) PageSection.TODAY else PageSection.POLLEN))
-        v.setInt(R.id.widget_pollen_dots, "setGravity", (if (l.midRain && !l.alarm) android.view.Gravity.START else android.view.Gravity.END) or android.view.Gravity.CENTER_VERTICAL)
+        // the frame too: the line's whole width taps, not only its words
+        (if (l.midRain) PageSection.TODAY else PageSection.POLLEN).let { s ->
+            v.setOnClickPendingIntent(R.id.widget_pollen_dots, open(s))
+            v.setOnClickPendingIntent(R.id.widget_pollen_dots_box, open(s))
+        }
+        v.setInt(R.id.widget_pollen_dots_box, "setGravity", (if (l.midRain && !l.alarm) android.view.Gravity.START else android.view.Gravity.END) or android.view.Gravity.CENTER_VERTICAL)
         v.visible(R.id.widget_pollen, l.pollenRows > 0)
         POLLEN_ROWS.forEachIndexed { r, row -> v.visible(row, r < l.pollenRows) }
         POLLEN_CELLS.forEachIndexed { i, (cell, name, gauge) ->

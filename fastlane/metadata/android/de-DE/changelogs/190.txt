@@ -1,0 +1,1 @@
+• Das Widget lädt jetzt auch auf Android 8 bis 11 – dort zeigte es bisher nur „Probleme beim Laden des Widgets“

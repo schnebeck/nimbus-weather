@@ -49,7 +49,7 @@ import org.robolectric.annotation.Config
 import java.time.ZoneId
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = android.app.Application::class, qualifiers = "de-rDE")
+@Config(sdk = [28, 30, 35], application = android.app.Application::class, qualifiers = "de-rDE")
 class NoticeLooksTest {
     @get:Rule val compose = createComposeRule()
     private val app get() = RuntimeEnvironment.getApplication()

@@ -76,7 +76,7 @@ import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [35], application = android.app.Application::class, qualifiers = "de-rDE-w411dp-h891dp-xxhdpi")
+@Config(sdk = [28, 30, 35], application = android.app.Application::class, qualifiers = "de-rDE-w411dp-h891dp-xxhdpi")
 class WidgetTest {
     @get:Rule val compose = createComposeRule()
 
@@ -381,7 +381,8 @@ class WidgetTest {
      * 1. Oktober"); or, as chosen, the date in figures with the weekday short and the calendar week
      * ("Do., 01.10.2026 KW 40") – shown anew just after midnight, the week too.
      */
-    @Test fun theDateWrittenOutOrInFiguresWithItsWeek() {
+    // the platform's date patterns: Robolectric does not form them for Android 9 and 11 (the devices do)
+    @Config(sdk = [35]) @Test fun theDateWrittenOutOrInFiguresWithItsWeek() {
         java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("UTC"))
         val written = render(WidgetConfig(), WidgetSize(320, 200), data())
         assertTrue(written.findViewById<TextClock>(R.id.widget_date).format24Hour.toString().contains("MMMM"))
@@ -542,7 +543,8 @@ class WidgetTest {
      * does not vanish, and the chart gains the line it leaves. That line close under the clock's
      * figures, the chart close under it: the chart taller than without the alarm.
      */
-    @Test fun theTwoHoursLineBesideTheAlarm() {
+    // the line reaching up under the clock: from Android 12 on (before, a widget cannot set the margin)
+    @Config(sdk = [35]) @Test fun theTwoHoursLineBesideTheAlarm() {
         val config = WidgetConfig(dateWithWeek = true)
         val w = WidgetWeather.of(data(), now, config.pollen)
         for (height in 150..320 step 5) {
@@ -600,7 +602,8 @@ class WidgetTest {
      * refresh in the corner – the refresh on the line of the chart's times, the chart down to the
      * bottom. With the pollen beside it: as before.
      */
-    @Test fun asOfOverTheRefreshBesideTheChart() {
+    // the line reaching up under the clock: from Android 12 on (before, a widget cannot set the margin)
+    @Config(sdk = [35]) @Test fun asOfOverTheRefreshBesideTheChart() {
         alarmAt(day + 4 * 24 * h + 8 * h)
         val config = WidgetConfig(dateWithWeek = true)
         val size = WidgetSize(400, 190)
@@ -707,7 +710,7 @@ class WidgetTest {
         assertTrue(two.chart && two.alarm && !two.alarmBeside)
         // less height: the alarm's line reaching up under the clock's figures, the chart close under
         // it – it costs the chart nothing
-        val low = WidgetLayout.of(all, WidgetSize(320, 160), alarm = "06:30", weather = w)
+        val low = WidgetLayout.of(all, WidgetSize(320, 160), alarm = "06:30", weather = w, tuck = true)
         assertTrue(low.chart && low.alarm && !low.alarmBeside)
         // where it cannot reach up (before Android 12): beside the clock, so that the chart keeps its room
         val before12 = WidgetLayout.of(all, WidgetSize(320, 160), alarm = "06:30", weather = w, tuck = false)
@@ -791,7 +794,8 @@ class WidgetTest {
      * Nimbus in English on a German phone: the date in English all through ("Thursday, October 1"),
      * not the clock's German names in the English order; the same language: the clock's pattern.
      */
-    @Test fun theDateInNimbussLanguage() {
+    // the platform's date patterns: Robolectric does not form them for Android 9 and 11 (the devices do)
+    @Config(sdk = [35]) @Test fun theDateInNimbussLanguage() {
         java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("UTC"))
         val english = WidgetViews.datePattern("EEEEdMMMM", java.util.Locale.US, java.util.Locale.GERMANY, now)
         assertTrue(english, "'Thursday'" in english && "'October'" in english && "d" in english.replace("'Thursday'", "").replace("'October'", ""))
@@ -846,7 +850,9 @@ class WidgetTest {
         // the next alarm's own page, set by the clock app, before all
         val own = Intent("com.coloros.alarmclock.SHOW_ALARM").setPackage("com.coloros.alarmclock")
         am.setAlarmClock(android.app.AlarmManager.AlarmClockInfo(day + 30 * h, android.app.PendingIntent.getActivity(app, 7, own, android.app.PendingIntent.FLAG_IMMUTABLE)), ring)
-        assertEquals("com.coloros.alarmclock.SHOW_ALARM", tapClock().action)
+        // (the entry's kind is told from Android 12 on; before, the clock app opens)
+        if (android.os.Build.VERSION.SDK_INT >= 31) assertEquals("com.coloros.alarmclock.SHOW_ALARM", tapClock().action)
+        else assertEquals("org.example.timer.Main", tapClock().component?.className)
         am.cancel(ring)
         // a clock answering the standard request to anyone: that one
         installApp("com.google.android.deskclock", "com.android.deskclock.DeskClock", showAlarms)
@@ -941,20 +947,20 @@ class WidgetTest {
     }
 
     /** Its look in the system's light and dark: clock, date, weather, the rain bars, the pollen. */
-    @Test fun theWidgetLight() = look("widget_light")
+    @Config(sdk = [35]) @Test fun theWidgetLight() = look("widget_light")
 
-    @Config(qualifiers = "+night")
+    @Config(sdk = [35], qualifiers = "+night")
     @Test fun theWidgetDark() = look("widget_dark")
 
     /** The picture in the launcher's widget list: the widget as it is, without a wallpaper behind (drawable-nodpi/widget_preview.png). */
-    @Test fun theWidgetInThePicker() {
+    @Config(sdk = [35]) @Test fun theWidgetInThePicker() {
         val v = render(WidgetConfig(pollen = listOf(PollenType.BIRCH, PollenType.GRASS)), WidgetSize(320, 200), data(rainFrom = 40))
         v.fixClocks()
         v.picture(wallpaper = null).captureRoboImage("src/test/screenshots/widget_picker.png")
     }
 
     /** The same in English (drawable-nodpi; the German one in drawable-de-nodpi). */
-    @Config(qualifiers = "en-rGB-w411dp-h891dp-xxhdpi")
+    @Config(sdk = [35], qualifiers = "en-rGB-w411dp-h891dp-xxhdpi")
     @Test fun theWidgetInThePickerInEnglish() {
         val v = render(WidgetConfig(pollen = listOf(PollenType.BIRCH, PollenType.GRASS)), WidgetSize(320, 200), data(rainFrom = 40))
         v.fixClocks()
@@ -1019,7 +1025,7 @@ class WidgetTest {
     }
 
     /** One row of cells: clock, date, place and weather. */
-    @Test fun theWidgetInOneRow() {
+    @Config(sdk = [35]) @Test fun theWidgetInOneRow() {
         val v = render(WidgetConfig(), WidgetSize(320, 70), data(rainFrom = 40))
         assertEquals(View.GONE, v.findViewById<View>(R.id.widget_rain).visibility)
         assertEquals(View.VISIBLE, v.findViewById<View>(R.id.widget_clock).visibility)
@@ -1029,7 +1035,7 @@ class WidgetTest {
     }
 
     /** Four small cells, two rows: everything a little smaller, nothing cut. */
-    @Test fun theWidgetOnASmallPhone() {
+    @Config(sdk = [35]) @Test fun theWidgetOnASmallPhone() {
         val v = render(WidgetConfig(pollen = listOf(PollenType.BIRCH)), WidgetSize(250, 150), data(rainFrom = 40))
         v.fixClocks()
         val clock = v.findViewById<TextView>(R.id.widget_clock)

@@ -46,7 +46,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = android.app.Application::class)
+@Config(sdk = [28, 30, 35], application = android.app.Application::class)
 class NoBackgroundWorkTest {
     /** Stands in for background workers scheduled under BackgroundWork's names. */
     class Former(context: Context, params: WorkerParameters) : Worker(context, params) {

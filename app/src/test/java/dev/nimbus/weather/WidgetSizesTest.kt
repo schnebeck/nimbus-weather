@@ -53,7 +53,7 @@ import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [35], application = android.app.Application::class, qualifiers = "de-rDE-w411dp-h891dp-xxhdpi")
+@Config(sdk = [28, 30, 35], application = android.app.Application::class, qualifiers = "de-rDE-w411dp-h891dp-xxhdpi")
 class WidgetSizesTest {
     private val h = 3_600_000L
     private val q = 15 * 60_000L

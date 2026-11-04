@@ -40,7 +40,7 @@ import org.robolectric.annotation.Config
 import java.time.Duration
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = android.app.Application::class)
+@Config(sdk = [28, 30, 35], application = android.app.Application::class)
 class FreshFixTest {
     private fun fix(lat: Double, ageMs: Long) = Location(LocationManager.NETWORK_PROVIDER).apply {
         latitude = lat; longitude = 9.73; accuracy = 20f

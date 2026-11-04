@@ -46,7 +46,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], qualifiers = "de", application = android.app.Application::class)
+@Config(sdk = [28, 30, 35], qualifiers = "de", application = android.app.Application::class)
 class RadarHabitsTest {
     @get:Rule val compose = createComposeRule()
 

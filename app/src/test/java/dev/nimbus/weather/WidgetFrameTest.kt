@@ -36,7 +36,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = android.app.Application::class)
+@Config(sdk = [28, 30, 35], application = android.app.Application::class)
 class WidgetFrameTest {
     private val app get() = RuntimeEnvironment.getApplication()
 

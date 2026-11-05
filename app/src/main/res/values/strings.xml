@@ -251,7 +251,7 @@
     <string name="settings_animations">Animated backgrounds</string>
     <string name="settings_animations_desc">Show rain, snow, clouds and thunderstorms in the background</string>
     <string name="settings_language">Language</string>
-    <string name="settings_language_desc">Follows the system language (English or German). On Android 13+ you can pick it per app in the system settings.</string>
+    <string name="settings_language_desc">Follows the system language (English, German or Italian). On Android 13+ you can pick it per app in the system settings.</string>
     <string name="settings_about">About</string>
     <string name="settings_diagnostics">Diagnostics</string>
     <string name="activity_log">Activity log</string>

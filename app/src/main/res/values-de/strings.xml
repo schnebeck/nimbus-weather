@@ -241,7 +241,7 @@
     <string name="settings_animations">Animierte Hintergründe</string>
     <string name="settings_animations_desc">Regen, Schnee, Wolken und Gewitter im Hintergrund anzeigen</string>
     <string name="settings_language">Sprache</string>
-    <string name="settings_language_desc">Folgt der Systemsprache (Englisch oder Deutsch). Ab Android 13 kann sie in den Systemeinstellungen pro App gewählt werden.</string>
+    <string name="settings_language_desc">Folgt der Systemsprache (Englisch, Deutsch oder Italienisch). Ab Android 13 kann sie in den Systemeinstellungen pro App gewählt werden.</string>
     <string name="settings_about">Über</string>
     <string name="settings_diagnostics">Diagnose</string>
     <string name="activity_log">Aktivitätsprotokoll</string>

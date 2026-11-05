@@ -1,0 +1,853 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Nimbus - app/src/main/res/values-it/strings.xml
+  Italian texts of the app.
+
+    Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
+    Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
+    Written by Anthropic Claude Opus 5.5 - AI generated content.
+
+    Free software under the GNU General Public License, version 3 or later.
+    There is no warranty, to the extent permitted by law. The full text is in
+    LICENSES/GPL-3.0-or-later.txt.
+
+  SPDX-FileCopyrightText: (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
+  SPDX-FileContributor: Anthropic Claude Opus 5.5 (AI generated content)
+  SPDX-FileContributor: Marco Altomonte (Italian translation)
+  SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<resources>
+    <string name="app_name">Nimbus</string>
+
+    <!-- Conditions -->
+    <string name="cond_clear">Sereno</string>
+    <string name="cond_sunny">Soleggiato</string>
+    <string name="cond_mostly_clear">Prevalentemente sereno</string>
+    <string name="cond_mostly_sunny">Prevalentemente soleggiato</string>
+    <string name="cond_partly_cloudy">Parzialmente nuvoloso</string>
+    <string name="cond_cloudy">Nuvoloso</string>
+    <string name="cond_fog">Nebbia</string>
+    <string name="cond_drizzle">Pioviggine</string>
+    <string name="cond_rain">Pioggia</string>
+    <string name="cond_heavy_rain">Pioggia forte</string>
+    <string name="cond_freezing_rain">Pioggia gelata</string>
+    <string name="cond_sleet">Nevischio</string>
+    <string name="cond_snow">Neve</string>
+    <string name="cond_heavy_snow">Neve forte</string>
+    <string name="cond_showers">Rovesci</string>
+    <string name="cond_thunderstorm">Temporali</string>
+
+    <!-- Header -->
+    <string name="my_location">La mia posizione</string>
+    <string name="updated_at">Aggiornato %1$s</string>
+    <string name="offline_cached">Offline – dati del %1$s</string>
+    <string name="loading">Caricamento meteo…</string>
+    <string name="error_loading">Impossibile caricare i dati meteo.</string>
+    <string name="retry">Riprova</string>
+
+    <!-- Cards -->
+    <string name="hourly_forecast">Previsioni orarie</string>
+    <string name="ten_day_forecast">Previsioni a 10 giorni</string>
+    <string name="n_day_forecast">Previsioni a %1$d giorni</string>
+    <string name="now">Ora</string>
+    <string name="today">Oggi</string>
+    <string name="sunrise">Alba</string>
+    <string name="sunset">Tramonto</string>
+    <string name="feels_like">Percepita</string>
+    <string name="uv_index">Indice UV</string>
+    <string name="wind">Vento</string>
+    <string name="gusts">Raffiche</string>
+    <string name="precipitation">Precipitazioni</string>
+    <string name="humidity">Umidità</string>
+    <string name="visibility">Visibilità</string>
+    <string name="pressure">Pressione</string>
+    <string name="air_quality">Qualità dell\'aria</string>
+    <string name="pollen">Pollini</string>
+    <string name="precipitation_map">Mappa precipitazioni</string>
+    <string name="open_radar">Apri radar</string>
+    <string name="model_comparison">Confronto modelli</string>
+    <string name="model_comparison_hint">Previsione della temperatura di diversi modelli meteo per le prossime 72 ore</string>
+    <string name="community_sensors">Sensori della community</string>
+    <string name="community_sensors_detail">Mediana di %1$d sensori cittadini entro %2$s km (Sensor.Community)</string>
+    <string name="community_spread">Dispersione ±%1$s</string>
+    <string name="data_sources">Fonti dati</string>
+    <string name="now_sources_title">Qui ora:</string>
+    <string name="now_source_measured">%1$s: misurata, %2$s\u00A0(%3$s km)</string>
+    <string name="now_source_model">%1$s: modello di previsione</string>
+    <string name="now_sky_observed">Cielo: osservato dalla stazione, %1$s\u00A0(%2$s km)</string>
+    <string name="now_sky_measured_sunshine">Cielo: dal soleggiamento misurato, %1$s\u00A0(%2$s km)</string>
+    <string name="now_sky_measured_cloud">Cielo: dalla copertura nuvolosa misurata, %1$s\u00A0(%2$s km)</string>
+    <string name="now_sky_satellite">Cielo: dal soleggiamento rilevato dal satellite sul luogo nell\'ultima ora</string>
+    <string name="now_sky_mosmix">Cielo: previsione dell\'ora corrente, modello pesato con DWD MOSMIX</string>
+    <string name="now_sky_model_sunshine">Cielo: modello di previsione, dal suo soleggiamento nell\'ora corrente</string>
+    <string name="now_sky_model">Cielo: modello di previsione</string>
+    <string name="now_sky_radar">Cielo: precipitazioni dal radar DWD sul luogo</string>
+    <string name="now_value_temperature">Temperatura</string>
+    <string name="now_value_humidity">Umidità</string>
+    <string name="now_value_dew_point">Punto di rugiada</string>
+    <string name="now_value_pressure">Pressione</string>
+    <string name="now_value_wind">Vento</string>
+    <string name="now_value_gusts">Raffiche</string>
+    <string name="now_value_visibility">Visibilità</string>
+    <string name="measured_at_station">Misurata alla stazione %1$s %2$s\u00A0(%3$s km)</string>
+    <string name="alerts">Allerte meteo</string>
+    <string name="alert_valid">%1$s – %2$s</string>
+    <string name="alert_until">Fino a %1$s</string>
+    <string name="more_alerts">+altre %1$d</string>
+    <string name="show_more">Mostra di più</string>
+    <string name="moon_summary">%1$s · %2$d %% illuminata</string>
+    <string name="models_summary">Massima di domani da %1$s a %2$s per modello (%3$d modelli)</string>
+    <string name="card_fold">Comprimi</string>
+    <string name="card_unfold">Espandi</string>
+    <string name="show_less">Mostra meno</string>
+
+    <!-- Summaries -->
+    <string name="summary_gusts">Raffiche di vento fino a %1$s.</string>
+    <string name="summary_dew_point">Il punto di rugiada è %1$s in questo momento.</string>
+    <string name="summary_feels_warmer">L\'umidità fa percepire più caldo.</string>
+    <string name="summary_feels_colder">Il vento fa percepire più freddo.</string>
+    <string name="summary_feels_same">Simile alla temperatura reale.</string>
+    <string name="summary_uv_protect">Usa protezione solare fino alle %1$s.</string>
+    <string name="summary_uv_low">Basso per il resto della giornata.</string>
+    <string name="summary_visibility_clear">Visibilità ottima.</string>
+    <string name="summary_visibility_hazy">La foschia riduce la visibilità.</string>
+    <string name="summary_visibility_fog">La nebbia riduce la visibilità.</string>
+    <string name="summary_pressure_rising">In aumento</string>
+    <string name="summary_pressure_falling">In calo</string>
+    <string name="summary_pressure_steady">Stabile</string>
+    <string name="polar_day">Il sole rimane sopra l\'orizzonte tutto il giorno</string>
+    <string name="polar_night">Il sole rimane sotto l\'orizzonte tutto il giorno</string>
+
+    <string name="uv_low">Basso</string>
+    <string name="uv_moderate">Moderato</string>
+    <string name="uv_high">Alto</string>
+    <string name="uv_very_high">Molto alto</string>
+    <string name="uv_extreme">Estremo</string>
+
+    <string name="aqi_good">Buona</string>
+    <string name="aqi_fair">Accettabile</string>
+    <string name="aqi_moderate">Moderata</string>
+    <string name="aqi_poor">Scarsa</string>
+    <string name="aqi_very_poor">Molto scarsa</string>
+    <string name="aqi_extremely_poor">Estremamente scarsa</string>
+    <string name="aqi_detail">AQI Europeo · PM2.5 %1$s · PM10 %2$s µg/m³</string>
+
+    <string name="pollen_none">Assente</string>
+    <string name="pollen_alder">Ontano</string>
+    <string name="pollen_birch">Betulla</string>
+    <string name="pollen_grass">Graminacee</string>
+    <string name="pollen_mugwort">Assenzio</string>
+    <string name="pollen_ragweed">Ambrosia</string>
+    <string name="pollen_olive">Olivo</string>
+
+    <!-- Radar -->
+    <string name="radar">Radar</string>
+    <string name="radar_title">Radar precipitazioni</string>
+    <string name="satellite">Satellite</string>
+    <string name="lightning">Fulmini</string>
+    <string name="lightning_attribution">Fulmini: DWD/EUMETSAT</string>
+    <string name="lightning_near">Fulmini nelle vicinanze</string>
+    <string name="lightning_nearest_km">più vicino a %1$d km</string>
+    <string name="lightning_overhead">sopra la testa (entro 5 km)</string>
+    <string name="lightning_just_now">proprio ora</string>
+    <string name="lightning_minutes_ago">%1$d min fa</string>
+    <plurals name="lightning_flashes_more">
+        <item quantity="one">più di %d fulmine in 15 min</item>
+        <item quantity="many">più di %d fulmini in 15 min</item>
+        <item quantity="other">più di %d fulmini in 15 min</item>
+    </plurals>
+    <plurals name="lightning_flashes">
+        <item quantity="one">%d fulmine in 15 min</item>
+        <item quantity="many">%d fulmini in 15 min</item>
+        <item quantity="other">%d fulmini in 15 min</item>
+    </plurals>
+    <string name="warnings">Allerte</string>
+    <string name="play">Riproduci</string>
+    <string name="pause">Pausa</string>
+    <string name="forecast">Previsioni</string>
+    <string name="radar_scale_drizzle">pioviggine</string>
+    <string name="radar_scale_light">debole</string>
+    <string name="radar_scale_moderate">moderata</string>
+    <string name="radar_scale_heavy">forte</string>
+    <string name="radar_scale_severe">molto forte</string>
+    <string name="radar_forecast_partly">Previsione solo per la Germania – grigio: nessuna previsione</string>
+    <string name="radar_forecast_germany_only">Previsione radar (nowcast) disponibile solo per la Germania</string>
+    <string name="radar_minutes_ago">%1$d min fa</string>
+    <string name="radar_minutes_ahead">tra %1$d min</string>
+    <string name="radar_attribution">Radar: DWD · KNMI · MET Norway · RainViewer | Mappa: © OpenFreeMap © OpenMapTiles © OpenStreetMap</string>
+    <string name="radar_loading">Caricamento radar…</string>
+    <string name="radar_error">Dati radar al momento non disponibili</string>
+    <string name="my_position">La mia posizione</string>
+    <string name="close">Chiudi</string>
+
+    <!-- Places -->
+    <string name="weather">Meteo</string>
+    <string name="search_hint">Cerca una città</string>
+    <string name="no_results">Nessun risultato</string>
+    <string name="add">Aggiungi</string>
+    <string name="delete">Elimina</string>
+    <string name="places">Luoghi</string>
+    <string name="welcome_title">Benvenuto in Nimbus</string>
+    <string name="welcome_text">Meteo per la Germania e l\'Europa dal Servizio Meteorologico Tedesco (DWD) e altre fonti aperte.</string>
+    <string name="use_my_location">Usa la mia posizione</string>
+    <string name="search_city">Cerca città</string>
+    <string name="location_permission_denied">Accesso alla posizione negato. Puoi comunque cercare luoghi.</string>
+    <string name="location_unavailable">Posizione al momento non disponibile</string>
+    <string name="location_current">Posizione aggiornata</string>
+    <string name="location_not_current">Posizione non aggiornata – ricerca in corso</string>
+    <string name="location_searching">Ricerca della posizione…</string>
+    <string name="location_off">La localizzazione è disattivata – attiva</string>
+    <string name="location_locate">Rileva posizione di nuovo</string>
+
+    <!-- Settings -->
+    <string name="settings">Impostazioni</string>
+    <string name="settings_forecast_source">Fonte della previsione</string>
+    <string name="model_dwd_icon">DWD ICON (ICON-D2 / ICON-EU)</string>
+    <string name="model_dwd_icon_desc">Servizio Meteorologico Tedesco, risoluzione 2,2 km per la Germania</string>
+    <string name="model_best_match">Automatico (migliore corrispondenza)</string>
+    <string name="model_best_match_desc">Open-Meteo sceglie il modello più adatto per ciascun luogo e momento; le fonti dati lo indicano</string>
+    <string name="model_ecmwf">ECMWF IFS</string>
+    <string name="model_ecmwf_desc">Centro Europeo per le Previsioni Meteorologiche a Medio Raggio</string>
+    <string name="model_meteofrance">Météo-France AROME / ARPEGE</string>
+    <string name="model_meteofrance_desc">Alta risoluzione per Francia ed Europa occidentale</string>
+    <string name="model_metno">MET Nordic (1 km)</string>
+    <string name="model_metno_desc">MET Norway: Scandinavia e Germania settentrionale, 2½ giorni; altrove e successivamente la migliore corrispondenza di Open-Meteo</string>
+    <string name="model_knmi">KNMI Harmonie (2 km)</string>
+    <string name="model_knmi_desc">KNMI: Paesi Bassi e Germania nord-occidentale, quasi 3 giorni; altrove e successivamente la migliore corrispondenza</string>
+    <string name="model_dmi">DMI Harmonie (2 km)</string>
+    <string name="model_dmi_desc">DMI: gran parte dell\'Europa settentrionale, occidentale e centrale, quasi 3 giorni; successivamente la migliore corrispondenza</string>
+    <string name="model_ukmo">UK Met Office (2 km)</string>
+    <string name="model_ukmo_desc">Isole Britanniche e dintorni, circa 2½ giorni; altrove e successivamente la migliore corrispondenza</string>
+    <string name="model_ch1">MeteoSwiss ICON-CH1 (1 km)</string>
+    <string name="model_ch1_desc">Svizzera ed Alpi, 1½ giorni; altrove e successivamente la migliore corrispondenza</string>
+    <string name="model_ch2">MeteoSwiss ICON-CH2 (2 km)</string>
+    <string name="model_ch2_desc">Svizzera ed Alpi, 5 giorni; altrove e successivamente la migliore corrispondenza</string>
+    <string name="model_geosphere">GeoSphere AROME (2.5 km)</string>
+    <string name="model_geosphere_desc">GeoSphere Austria: Austria ed Alpi, quasi 3 giorni; altrove e successivamente la migliore corrispondenza</string>
+    <string name="model_italia">ItaliaMeteo ICON-2I (2.2 km)</string>
+    <string name="model_italia_desc">Italia ed Alpi, 3 giorni; altrove e successivamente la migliore corrispondenza</string>
+    <string name="settings_units">Unità di misura</string>
+    <string name="settings_temperature">Temperatura</string>
+    <string name="settings_wind">Velocità del vento</string>
+    <string name="settings_precipitation">Precipitazioni</string>
+    <string name="settings_stations">Valori attuali: misurati, non modellati</string>
+    <string name="settings_stations_desc">Le misurazioni della stazione più vicina all\'altitudine del luogo sostituiscono i valori del modello: DWD, GeoSphere, MeteoSwiss, DMI, altrimenti aeroporti (METAR)</string>
+    <string name="settings_animations">Sfondi animati</string>
+    <string name="settings_animations_desc">Mostra pioggia, neve, nuvole e temporali sullo sfondo</string>
+    <string name="settings_language">Lingua</string>
+    <string name="settings_language_desc">Segue la lingua di sistema (inglese, tedesco o italiano). Su Android 13+ puoi sceglierla per app nelle impostazioni di sistema.</string>
+    <string name="settings_about">Informazioni</string>
+    <string name="settings_diagnostics">Diagnostica</string>
+    <string name="activity_log">Registro attività</string>
+    <string name="activity_log_desc">Registra ciò che fa l\'app – chiamate di rete con relativi importi, mostrate o nascoste, schermo, tempo CPU, caricamento e preparazione del radar – per analisi di batteria e dati. Senza coordinate o nomi di luoghi; rimane sul telefono finché non lo condividi.</string>
+    <string name="activity_log_share">Condividi registro</string>
+    <string name="activity_log_clear">Cancella</string>
+    <string name="activity_log_empty">Nessuna attività registrata</string>
+    <string name="activity_log_cleared">Registro cancellato</string>
+    <string name="settings_about_text">Nimbus è un\'app meteo gratuita senza pubblicità né tracciamento. Dati: Deutscher Wetterdienst (DWD) tramite Open-Meteo e Bright Sky, ECMWF, Météo-France, MET Norway, KNMI, DMI, UK Met Office, MeteoSwiss, GeoSphere Austria, ItaliaMeteo e altri servizi meteorologici nazionali tramite Open-Meteo, qualità dell\'aria CAMS, RainViewer, EUMETSAT (Meteosat), Sensor.Community. Mappe © OpenFreeMap, OpenMapTiles, collaboratori di OpenStreetMap.</string>
+    <string name="version">Versione %1$s</string>
+
+    <!-- Directions -->
+    <string name="dir_n">N</string>
+    <string name="dir_ne">NE</string>
+    <string name="dir_e">E</string>
+    <string name="dir_se">SE</string>
+    <string name="dir_s">S</string>
+    <string name="dir_sw">SO</string>
+    <string name="dir_w">O</string>
+    <string name="dir_nw">NO</string>
+    <string name="dir_nne">NNE</string>
+    <string name="dir_ene">ENE</string>
+    <string name="dir_ese">ESE</string>
+    <string name="dir_sse">SSE</string>
+    <string name="dir_ssw">SSO</string>
+    <string name="dir_wsw">OSO</string>
+    <string name="dir_wnw">ONO</string>
+    <string name="dir_nnw">NNO</string>
+    <string name="from_direction">da %1$s</string>
+
+    <string name="unit_bft">Bft</string>
+    <string name="unit_kmh">km/⁠h</string>
+    <string name="unit_ms">m/⁠s</string>
+    <string name="unit_mph">mph</string>
+    <string name="unit_kn">kn</string>
+    <string name="unit_mm">mm</string>
+    <string name="unit_inch">in</string>
+
+    <string name="pm_values">PM2.5 %1$s · PM10 %2$s µg/m³</string>
+
+    <string name="moon">Luna</string>
+    <string name="moon_new">Luna nuova</string>
+    <string name="moon_waxing_crescent">Luna crescente</string>
+    <string name="moon_first_quarter">Primo quarto</string>
+    <string name="moon_waxing_gibbous">Gobba crescente</string>
+    <string name="moon_full">Luna piena</string>
+    <string name="moon_waning_gibbous">Gobba calante</string>
+    <string name="moon_last_quarter">Ultimo quarto</string>
+    <string name="moon_waning_crescent">Luna calante</string>
+    <string name="moon_illumination">%1$d%% illuminata</string>
+    <string name="moonrise">Sorge la luna</string>
+    <string name="moonset">Tramonta la luna</string>
+    <string name="next_full_moon">Prossima luna piena</string>
+    <string name="moon_always_up">La luna rimane sopra l\'orizzonte tutto il giorno</string>
+    <string name="moon_always_down">La luna rimane sotto l\'orizzonte tutto il giorno</string>
+    <string name="term_moon_title">Fasi lunari</string>
+    <string name="term_moon_body">La luna orbita attorno alla Terra in circa 29,5 giorni. A seconda della sua posizione rispetto al sole vediamo una diversa porzione della sua metà illuminata:\n• Luna nuova: la luna è tra la Terra e il sole ed è invisibile\n• Crescente: la parte illuminata cresce, nel cielo serale\n• Luna piena: opposta al sole, sorge al tramonto\n• Calante: la parte illuminata diminuisce, visibile nella seconda metà della notte e al mattino\n\nIl sorgere e il tramonto della luna slittano di circa 50 minuti ogni giorno, quindi in alcuni giorni la luna non sorge né tramonta affatto.\n\nLa curva mostra l\'altezza della luna sopra o sotto l\'orizzonte nel corso della giornata odierna per il luogo mostrato; la luna sulla curva si trova dove è ora. La scala è fissa per il luogo. Le ore dopo il tramonto sono ombreggiate scure. L\'asse del tempo mostra quando la luna si trova in quale direzione – è più alta a sud.\n\nL\'app calcola la fase, l\'illuminazione e gli orari di sorgere/tramonto astronomicamente sul dispositivo (secondo J. Meeus e SunCalc) – non è necessaria alcuna fonte dati. Di notte il cielo animato mostra la luna nella sua reale fase quando è sopra l\'orizzonte.</string>
+
+    <string name="src_dwd_icon">Previsione: DWD ICON-D2/EU (Open-Meteo)</string>
+    <string name="src_ecmwf">Previsione: ECMWF IFS (Open-Meteo)</string>
+    <string name="src_meteofrance">Previsione: Météo-France (Open-Meteo)</string>
+    <string name="src_regional">Previsione: %1$s (Open-Meteo)</string>
+    <string name="src_best_match">Previsione: Open-Meteo migliore corrispondenza</string>
+    <string name="src_gap_fill">Valori mancanti: Open-Meteo migliore corrispondenza</string>
+    <string name="src_gap_fill_from">Valori mancanti e a partire da %1$s: Open-Meteo migliore corrispondenza</string>
+    <string name="src_part">%1$s, %2$s km</string>
+    <string name="src_part_now">ora %1$s</string>
+    <string name="src_station">Misurazioni: stazione %1$s %2$s (%3$s)</string>
+    <string name="src_warnings">Allerte: DWD (Bright Sky)</string>
+    <string name="src_cams">Qualità dell\'aria e pollini: CAMS Europe</string>
+    <string name="src_community">Sensor.Community</string>
+    <string name="src_moon">Luna: calcolata sul dispositivo</string>
+
+    <string name="radar_range_hours">%1$d h</string>
+    <string name="radar_history_germany_only">Storico più lungo disponibile solo con il radar del servizio meteo</string>
+
+    <string name="radar_hours_ago">%1$d h fa</string>
+
+    <string name="overlay_temperature">Temperatura</string>
+    <string name="overlay_wind">Vento</string>
+    <string name="legend_rain">Pioggia</string>
+    <string name="legend_snow">Neve</string>
+
+    <string name="settings_radar_autoplay">Riproduci il radar automaticamente</string>
+    <string name="settings_radar_autoplay_desc">Il radar si apre sull\'immagine corrente e avvia la riproduzione una volta caricata la previsione; il passato si carica nel frattempo. Disattivato: rimane su "ora" finché non premi riproduci.</string>
+    <string name="settings_preload_radar">Precarica radar</string>
+    <string name="settings_preload_radar_desc">Carica in anticipo il loop radar dell\'ultimo luogo visto sul radar per aprirlo all\'istante: ogni 15 minuti circa ad app aperta, altrimenti ogni 30 minuti in background se la batteria non è scarica</string>
+
+    <string name="precip_title">Precipitazioni oggi</string>
+    <string name="precip_today_amount">%1$s oggi</string>
+    <string name="precip_next_amount">altri %1$s fino a mezzanotte</string>
+    <string name="precip_max_chance">Probabilità massima: %1$d%% intorno alle %2$s</string>
+    <string name="precip_min_chance">Probabilità minima: %1$d%% intorno alle %2$s</string>
+    <string name="precip_chance_falls">La probabilità scende a %1$d%% entro le %2$s</string>
+    <string name="precip_chance_rises">La probabilità sale a %1$d%% entro le %2$s</string>
+    <string name="precip_chance_steady">Probabilità intorno a %1$d%% fino a mezzanotte</string>
+    <string name="precip_no_chance">Nessuna precipitazione prevista fino a mezzanotte</string>
+    <string name="precip_dry_today">Oggi asciutto</string>
+    <string name="precip_next_wet">Prossima precipitazione %1$s a partire dalle %2$s circa (%3$d%%)</string>
+    <string name="precip_dry_ahead">Nessuna precipitazione nelle previsioni</string>
+    <string name="term_hourly_title">Previsioni orarie</string>
+    <string name="term_hourly_body">Le prossime 24 ore a colpo d\'occhio. Il simbolo mostra il meteo più probabile per l\'ora, il numero sottostante la temperatura.\n\n• Ora: il meteo attuale – dove disponibile misurato presso la stazione DWD più vicina, pertanto può differire leggermente dalla previsione per quest\'ora\n• Percentuali: probabilità di precipitazione – blu da 10 %, sotto oscurato – dettagli nella scheda “Precipitazioni” più in basso\n• Simboli del sole con un orario: alba e tramonto\n\nScorri lateralmente per altre ore.\n\nIl testo sopra le ore è una breve previsione per le prossime 12 ore, generata automaticamente dalle previsioni orarie del modello meteo selezionato (predefinito: Automatico). Non è scritta da un meteorologo.\n\nIndica il prossimo cambiamento meteo, l\'evoluzione della temperatura, se e quando sono probabili (da 60 %) o possibili (da 30 %) precipitazioni, forti raffiche da 50 km/h e – nel pomeriggio e di sera – una breve panoramica per domani.\n\nSe sta piovendo ora, la fine della precipitazione proviene dalla previsione a 15 minuti.</string>
+    <string name="term_daily_title">Previsioni a 10 giorni</string>
+    <string name="term_daily_body">Una riga per giorno: simbolo, temperatura minima e massima.\n\n• La barra mostra l\'intervallo di temperatura del giorno su una scala comune a tutti e dieci i giorni – così i giorni più caldi e più freddi sono facili da confrontare\n• I suoi colori vanno dal blu (freddo) al verde e giallo fino al rosso (caldo)\n• Il punto sulla barra di oggi è la temperatura attuale\n• Percentuali blu: probabilità di precipitazione in quel giorno\n\nTocca un giorno per vedere la sua curva di temperatura e le precipitazioni orarie. I giorni 9 e 10 hanno maggiore incertezza.\n\nGrafico di oggi: a sinistra della linea tratteggiata di ora la curva colorata mostra le rilevazioni della stazione, a destra la previsione. La curva bianca tratteggiata (“Previsione finora”) mostra quanto era stato previsto per le ore trascorse – così puoi vedere l\'accuratezza della previsione. Per precipitazioni e soleggiamento, le barre piene sono misurate (stazione, radar, satellite), i contorni sono previsti.\n\nCon l\'impostazione “Oggi: misurati vs. previsti” la curva colorata mostra solo le rilevazioni e quella tratteggiata la previsione per l\'intero giorno.</string>
+
+    <string name="models_unavailable">Dati dei modelli al momento non disponibili – riprova più tardi.</string>
+
+    <string name="visibility_measured">Misurata: %1$s %2$s</string>
+    <string name="visibility_model">Valore del modello</string>
+
+    <string name="pollen_forecast">Previsioni pollini</string>
+    <string name="pollen_hazel">Nocciolo</string>
+    <string name="pollen_ash">Frassino</string>
+    <string name="pollen_rye">Segale</string>
+    <string name="tomorrow">Domani</string>
+    <string name="pollen_level_0">Assente</string>
+    <string name="pollen_level_05">Da assente a debole</string>
+    <string name="pollen_level_1">Debole</string>
+    <string name="pollen_level_15">Da debole a moderato</string>
+    <string name="pollen_level_2">Moderato</string>
+    <string name="pollen_level_25">Da moderato ad alto</string>
+    <string name="pollen_level_3">Alto</string>
+    <string name="pollen_none_active">Nessuno dei %1$d tipi di polline è presente nell\'aria in quantità rilevanti</string>
+    <string name="pollen_composition">Composizione, prossime 24 ore</string>
+    <string name="pollen_composition_none">Troppo poco polline nell\'aria per mostrare una composizione.</string>
+    <string name="pollen_composition_total">Totale medio %1$s granuli/m³ (Copernicus CAMS)</string>
+    <string name="pollen_course">Andamento (granuli/m³, impilati)</string>
+    <string name="pollen_show_details">Mostra tutti i tipi e l\'andamento</string>
+    <string name="pollen_source_dwd">Livelli: previsione pollini DWD, regione %1$s</string>
+    <string name="pollen_source_cams">Livelli derivati dalle concentrazioni Copernicus CAMS</string>
+    <string name="src_dwd_pollen">Pollini: previsione pollini DWD</string>
+    <string name="outlook_change">%1$s all\'inizio, %2$s verso le %3$s.</string>
+    <string name="outlook_steady">%1$s per le prossime ore.</string>
+    <string name="outlook_temp_rise">Le temperature salgono a %1$s entro le %2$s.</string>
+    <string name="outlook_temp_fall">Le temperature scendono a %1$s entro le %2$s.</string>
+    <string name="outlook_temp_steady">Le temperature rimangono intorno a %1$s.</string>
+    <string name="outlook_dry">Nessuna precipitazione prevista.</string>
+    <string name="outlook_precip_likely">%1$s probabile dalle %2$s circa (%3$d %%).</string>
+    <string name="outlook_precip_likely_nochance">%1$s probabile dalle %2$s circa.</string>
+    <string name="outlook_precip_possible">%1$s possibile verso le %2$s (%3$d %%).</string>
+    <string name="outlook_precip_unlikely">%1$s possibile verso le %2$s, ma poco probabile (%3$s %%).</string>
+    <string name="outlook_precip_unlikely_nochance">%1$s possibile verso le %2$s, ma poco probabile.</string>
+    <string name="outlook_precip_unlikely_named">La probabilità è bassa (%1$s %%).</string>
+    <string name="outlook_precip_ends">La precipitazione termina verso le %1$s.</string>
+    <string name="outlook_precip_pause">La precipitazione cessa verso le %1$s, di nuovo %3$s dalle %2$s circa.</string>
+    <string name="outlook_precip_continues">La precipitazione continua per le prossime ore.</string>
+    <string name="outlook_tomorrow">Domani %1$s, da %2$s a %3$s.</string>
+    <string name="ph_sunny">soleggiato</string>
+    <string name="ph_clear">sereno</string>
+    <string name="ph_mostly_sunny">prevalentemente soleggiato</string>
+    <string name="ph_mostly_clear">prevalentemente sereno</string>
+    <string name="ph_partly_cloudy">parzialmente nuvoloso</string>
+    <string name="ph_cloudy">nuvoloso</string>
+    <string name="ph_fog">nebbioso</string>
+    <string name="ph_drizzle">pioviggine</string>
+    <string name="ph_rain">pioggia</string>
+    <string name="ph_heavy_rain">pioggia forte</string>
+    <string name="ph_freezing_rain">pioggia gelata</string>
+    <string name="ph_sleet">nevischio</string>
+    <string name="ph_snow">neve</string>
+    <string name="ph_heavy_snow">neve forte</string>
+    <string name="ph_showers">rovesci</string>
+    <string name="ph_thunderstorm">temporali</string>
+
+    <string name="history_today">Oggi finora</string>
+    <string name="history_yesterday">Ieri</string>
+    <string name="history_day_before">L\'altro ieri</string>
+    <string name="history_summary">Riepilogo del giorno</string>
+    <string name="history_summary_so_far">Riepilogo del giorno finora</string>
+    <string name="history_row_temp">Max / Min</string>
+    <string name="history_row_sun">Ore di sole</string>
+    <string name="history_row_gust">Raffiche più forti</string>
+    <string name="history_model_value">Previsione %1$s</string>
+    <string name="history_at">alle %1$s</string>
+    <string name="history_legend_measured">Misurato</string>
+    <string name="measured_word">misurato</string>
+    <string name="history_error_mean">Deviazione media della previsione: %1$s</string>
+    <string name="history_source_station">Misurato: stazione DWD %1$s (%2$s km) · Previsione: %3$s</string>
+    <string name="history_source_model">Nessuna stazione DWD nelle vicinanze – solo valori di previsione (%1$s)</string>
+    <string name="history_source_missed">Rilevazioni DWD non raggiungibili al momento – solo valori di previsione per ora (%1$s)</string>
+    <string name="history_loading">Caricamento dei giorni passati…</string>
+    <string name="history_error">Impossibile caricare i giorni passati.</string>
+    <string name="history_empty">Ancora nessun valore per questo giorno.</string>
+    <string name="term_history_title">Sguardo al passato</string>
+    <string name="term_history_body">Scorri a destra dal meteo attuale per vedere oggi finora, ieri e l\'altro ieri.\n\nIn Germania i valori sono misurazioni della stazione meteo DWD più vicina (tramite Bright Sky). Accanto ad essi l\'app mostra ciò che il modello meteo selezionato aveva previsto per le stesse ore – così puoi vedere la qualità della previsione. La deviazione media è la differenza media tra temperatura prevista e misurata, ora per ora.\n\nFuori dalla Germania, o senza una stazione nelle vicinanze, sono disponibili solo i valori del modello. Se le rilevazioni del DWD non possono essere raggiunte in questo momento, la scheda lo indica, conserva le rilevazioni già mostrate e riprova dopo un breve intervallo.\n\nI dati vengono caricati quando scorri e non vengono memorizzati permanentemente; si tratta sempre dello stato attuale delle fonti.</string>
+
+    <string name="meteogram_hint">Una pressione prolungata sul grafico mostra i valori di ciascuna ora</string>
+
+    <string name="history_course">Andamento del giorno</string>
+
+    <!-- Glossary -->
+    <string name="info_about">Informazioni su %1$s</string>
+    <string name="term_precip_prob_title">Precipitazioni</string>
+    <string name="term_precip_prob_body">La percentuale mostra quanto è probabile che cada almeno una piccola quantità misurabile di precipitazioni (circa 0,1 mm) nella tua posizione in quell\'ora o giorno.\n\nIl 30% non significa che piove il 30% del tempo o sul 30% della zona. Significa: in 3 situazioni meteo comparabili su 10 piove in questo luogo. Il valore deriva da previsioni ensemble – molte corse di modelli leggermente modificate – e conta quante di esse producono pioggia.\n\nIl simbolo mostra comunque il meteo più probabile – quindi una nuvola con il 40 % significa: probabilmente asciutto, ma con una reale possibilità di un rovescio. I valori inferiori al 10 % appaiono oscurati.\n\nSe sta piovendo ora o inizia nelle prossime 2 ore, la scheda ne indica il tipo, l\'intensità e l\'inizio o la fine in alto – dalla previsione a breve termine a passi di 15 minuti. In Germania proviene dal modello ICON-D2 ad alta risoluzione del DWD (griglia di 2,2 km), aggiornato ogni tre ore. Intensità della pioggia: debole sotto 2,5 mm all\'ora, moderata fino a 10 mm, forte sopra.\n\nPer il radar pioggia attuale, inclusa la previsione nowcast DWD per le prossime due ore, apri la mappa delle precipitazioni.\n\nIl grafico mostra oggi da mezzanotte a mezzanotte: le barre la quantità oraria (asse destro) e la linea la probabilità (asse sinistro); una pressione prolungata mostra i valori di ciascuna ora.</string>
+    <string name="term_feels_like_title">Temperatura percepita</string>
+    <string name="term_feels_like_body">La temperatura percepita (apparente) descrive come il caldo o il freddo vengono avvertiti dal corpo umano, non ciò che misura un termometro all\'ombra.\n\nIl vento asporta il calore corporeo più velocemente, facendolo percepire più freddo della temperatura dell\'aria (effetto wind chill). L\'elevata umidità impedisce al sudore di evaporare, rendendo l\'aria calda ancora più soffocante. Anche il forte soleggiamento può far percepire più caldo.\n\nQuando la temperatura attuale è misurata presso una stazione DWD, il valore percepito viene traslato della stessa differenza.</string>
+    <string name="term_dew_point_title">Umidità e Punto di rugiada</string>
+    <string name="term_dew_point_body">L\'umidità relativa è la quantità di vapore acqueo contenuta nell\'aria rispetto al massimo che potrebbe contenere alla sua temperatura attuale. Poiché l\'aria calda può contenere più acqua, la stessa quantità di umidità dà una percentuale inferiore nel pomeriggio rispetto alla notte.\n\nIl punto di rugiada è la temperatura alla quale l\'aria dovrebbe raffreddarsi affinché il vapore acqueo si condensi – in rugiada, nebbia o condensa sulle finestre. Descrive il contenuto effettivo di umidità meglio dell\'umidità relativa:\n• sotto i 10°: secco e piacevole\n• 10–⁠16°: confortevole\n• 16–⁠20°: umidità percepibile\n• sopra i 20°: afoso ed opprimente\n\nSe la temperatura e il punto di rugiada sono vicini, sono probabili nebbia o nubi basse.</string>
+    <string name="term_uv_title">Indice UV</string>
+    <string name="term_uv_body">L\'indice UV misura la forza della radiazione ultravioletta del sole, che causa scottature e danni alla pelle. Dipende dall\'altezza del sole, dalle nuvole, dall\'ozono e dall\'altitudine.\n\n• 0–⁠2 basso: nessuna protezione necessaria\n• 3–⁠5 moderato: protezione raccomandata a metà giornata\n• 6–⁠7 alto: protezione necessaria, cerca l\'ombra a metà giornata\n• 8–⁠10 molto alto: evita il sole a metà giornata\n• 11+ estremo\n\nNeve, acqua e sabbia riflettono i raggi UV aumentando l\'esposizione. Le nuvole la riducono, ma nubi sottili lasciano passare la maggior parte dei raggi UV.</string>
+    <string name="term_wind_title">Vento e Raffiche</string>
+    <string name="term_wind_body">La velocità del vento è la media di circa 10 minuti, misurata a un\'altezza di 10 m. Le raffiche sono brevi picchi della durata di pochi secondi e possono essere molto più forti della media.\n\nLa direzione è quella da cui proviene il vento: un vento da ovest soffia da ovest verso est. La freccia nella bussola indica dove soffia il vento.\n\nScala Beaufort (esempi): 3 = brezza leggera (12–⁠19 km/h), 5 = brezza tesa (29–⁠38), 7 = vento forte (50–⁠61), 9 = forte tempesta (75–⁠88), 12 = uragano (≥ 118 km/h). Lo sfondo animato mostra anche vento e raffiche – nuvole, pioggia e foglie si muovono di conseguenza.</string>
+    <string name="term_visibility_title">Visibilità</string>
+    <string name="term_visibility_body">La visibilità è la distanza alla quale gli oggetti possono ancora essere distinti chiaramente. È ridotta da nebbia, foschia, precipitazioni, polvere o fumo.\n\nI meteorologi parlano di nebbia quando la visibilità è inferiore a 1 km. Valori superiori a 20 km indicano aria molto limpida. La visibilità viene misurata automaticamente presso le stazioni DWD; altrimenti proviene dal modello di previsione.\n\nUn\'elevata umidità e una buona visibilità non sono in contraddizione: il vapore acqueo stesso è invisibile. La visibilità diminuisce solo quando si condensa in minuscole goccioline (foschia, nebbia – di solito sopra il 95 %) o quando polvere e particelle di fuliggine si rigonfiano nell\'aria umida. Dopo che la pioggia ha pulito l\'aria, 40 km con l\'80–90 % di umidità sono del tutto normali.</string>
+    <string name="term_pressure_title">Pressione atmosferica</string>
+    <string name="term_pressure_body">La pressione atmosferica è il peso della colonna d\'aria sopra di noi, espressa in ettopascal (hPa) e ridotta al livello del mare per poter confrontare valori ad altitudini diverse. La media è di circa 1013 hPa.\n\nL\'alta pressione (sopra ~1020 hPa) porta di solito tempo calmo e asciutto. La bassa pressione (sotto ~1000 hPa) porta spesso nuvole, vento e precipitazioni.\n\nLa tendenza conta più del valore: una pressione in rapido calo indica l\'avvicinarsi di una bassa pressione e un peggioramento del tempo, una pressione in aumento indica un miglioramento. La freccia mostra il cambiamento nelle prossime tre ore.</string>
+    <string name="term_aqi_title">Qualità dell\'aria</string>
+    <string name="term_aqi_body">L\'Indice Europeo di Qualità dell\'Aria (EAQI) dell\'Agenzia Europea dell\'Ambiente combina polveri sottili (PM2.5, PM10), biossido di azoto, ozono e biossido di zolfo in un unico numero. L\'inquinante peggiore determina l\'indice.\n\n• 0–⁠20 buona • 20–⁠40 accettabile • 40–⁠60 moderata • 60–⁠80 scarsa • 80–⁠100 molto scarsa • sopra 100 estremamente scarsa\n\nPM2.5 e PM10 sono particelle inferiori a 2,5 e 10 micrometri; le più piccole penetrano in profondità nei polmoni. I valori provengono dal modello Copernicus CAMS per l\'Europa.</string>
+    <string name="term_pollen_title">Pollini</string>
+    <string name="term_pollen_body">La previsione dei pollini mostra con quale intensità i tipi di polline rilevanti per le allergie sono presenti nell\'aria.\n\nLivelli (scala del Servizio Meteorologico Tedesco): assente, debole, moderato e alto, con livelli intermedi.\n\n• Germania: previsione ufficiale pollini DWD per 8 tipi (nocciolo, ontano, frassino, betulla, graminacee, segale, assenzio, ambrosia) e 27 regioni, emessa giornalmente verso le 11:00 per oggi, domani e dopodomani\n• Resto d\'Europa: livelli derivati dal modello Copernicus CAMS (6 tipi)\n\nComposizione e andamento provengono da CAMS in granuli per metro cubo d\'aria. Mostrano quale polline domina – utile se reagisci solo ad alcuni tipi. Le persone sensibili possono reagire anche a livelli bassi.\n\nQuando c\'è polline nell\'aria ed è asciutto, lo sfondo animato lo mostra come minuscole particelle fluttuanti.</string>
+    <string name="term_radar_title">Radar precipitazioni</string>
+    <string name="term_radar_body">Il radar meteo emette impulsi di microonde e misura con quale forza le gocce di pioggia, i fiocchi di neve e la grandine li riflettono (riflettività in dBZ). Echi più forti indicano precipitazioni più intense.\n\nGermania: composito radar DWD a passi di 5 minuti più una previsione nowcast che estrapola il movimento delle precipitazioni per le prossime due ore. Paesi Bassi, Mare del Nord e Germania nord-occidentale oltre i radar DWD: composito radar KNMI a passi di 5 minuti (passato). Norvegia, Svezia, Finlandia e Danimarca: composito radar nordico MET Norway a passi di 5 minuti. Resto d\'Europa: RainViewer (solo ultime due ore, ogni 10 minuti).\n\nTutte le fonti sono mostrate in un\'unica scala di colori. Inizia con il livello più debole del DWD, circa 0,1 mm all\'ora (pioviggine); i livelli sotto la legenda indicano indicativamente 1, 5, 20 e 50 mm all\'ora.\n\nIl radar vede le precipitazioni nell\'aria, non al suolo. La pioviggine da nubi basse ha gocce così piccole che il radar spesso non la rileva – la mappa rimane vuota anche se pioviggina. La stazione meteo la misura comunque.</string>
+    <string name="term_models_title">Modelli meteorologici</string>
+    <string name="term_models_body">I modelli meteorologici sono simulazioni informatiche che calcolano lo stato futuro dell\'atmosfera su una griglia tridimensionale. Griglie più fini risolvono meglio gli effetti locali come temporali, valli e coste.\n\n• ICON-D2 (DWD): 2,2 km, Germania e paesi limitrofi, 2 giorni\n• ICON-EU (DWD): 7 km, Europa, 5 giorni\n• ECMWF IFS: 9–⁠25 km, globale, uno dei migliori modelli globali\n• MET Nordic (MET Norway): 1 km, Scandinavia e Germania settentrionale, 2½ giorni\n• AROME/ARPEGE (Météo-France), UK Met Office, KNMI Harmonie, MET Norway, NOAA GFS\n\nSe le linee sono vicine tra loro, la previsione è abbastanza certa. Se divergono, la situazione meteo è incerta – tipico per temporali o a diversi giorni di distanza. Tocca un modello per evidenziarlo.</string>
+    <string name="term_community_title">Sensori della community</string>
+    <string name="term_community_body">Sensor.Community è una rete aperta di migliaia di sensori autocostruiti gestiti da cittadini – simile ad OpenStreetMap, ma per misurazioni. I dati sono liberamente accessibili.\n\nI sensori privati non sono calibrati e sono spesso montati su balconi o pareti di case, talvolta al sole. L\'app mostra quindi la mediana di tutti i sensori esterni nelle vicinanze e rimuove i valori anomali. La dispersione mostra quanto i sensori differiscono tra loro.\n\nUtilizza questi valori come ulteriore impressione locale; la stazione ufficiale DWD è più affidabile.</string>
+    <string name="term_station_title">Misurato o Previsto?</string>
+    <string name="term_station_body">Vicino a una stazione meteo i valori attuali (temperatura, umidità, vento, pressione, visibilità) sono misurazioni reali della stazione più vicina entro 30 km: le stazioni DWD in Germania (tramite Bright Sky), GeoSphere Austria, MeteoSwiss e DMI (Danimarca) ogni 10 minuti – dove nessuna di esse misura, un aeroporto (METAR, ogni mezz\'ora). Conta solo una stazione all\'altitudine del luogo (al massimo 300 m di differenza). Altrimenti i valori provengono dal modello di previsione per la posizione esatta.\n\nIl cielo (soleggiato, nuvoloso …) segue il soleggiamento misurato dalla stazione nell\'ultima mezz\'ora. Pioggia, neve o nebbia osservate dalla stazione hanno la priorità sulla previsione. Ma ciò che viene misurato sopra il luogo stesso prevale su qualsiasi stazione: il soleggiamento visto dal satellite sul luogo nell\'ultima ora, le precipitazioni dal radar.</string>
+    <string name="term_alerts_title">Allerte meteo DWD</string>
+    <string name="term_alerts_body">Allerte ufficiali del Deutscher Wetterdienst per il tuo comune, codificate per colore in base alla gravità:\n\n• Giallo – avviso meteo: potenziale pericolo, es. gelata, forti raffiche\n• Arancione – avviso di meteo significativo: meteo pericoloso, es. raffiche di tempesta, pioggia forte\n• Rosso – allerta meteo grave: molto pericoloso, es. raffiche di uragano, forti temporali\n• Viola – allerta meteo estrema: estremamente pericoloso, adotta misure di protezione\n\nLe allerte sono disponibili solo per la Germania.</string>
+
+    <string name="sun">Sole</string>
+    <string name="day_length">Durata del giorno</string>
+    <string name="duration_h_min">%1$d:%2$02d\u00A0h</string>
+    <string name="day_length_delta">%1$s rispetto a ieri</string>
+    <string name="horizon">Orizzonte</string>
+    <string name="sun_now_up">Sole ora %1$s sopra l\'orizzonte</string>
+    <string name="sun_now_down">Sole ora %1$s sotto l\'orizzonte</string>
+    <string name="sun_highest">massimo %1$s alle\u00A0%2$s</string>
+    <string name="moon_now_up">Luna ora %1$s sopra l\'orizzonte, verso %2$s</string>
+    <string name="moon_now_down">Luna ora %1$s sotto l\'orizzonte</string>
+    <string name="sunrise_tomorrow">alba domani alle\u00A0%1$s</string>
+    <string name="phase_day">Giorno</string>
+    <string name="phase_golden">Ora d\'oro</string>
+    <string name="phase_golden_morning">Ora d\'oro</string>
+    <string name="phase_golden_evening">Ora d\'oro</string>
+    <string name="phase_blue">Ora blu</string>
+    <string name="phase_night">Notte</string>
+    <string name="sun_phases_morning">Questa mattina: %1$s</string>
+    <string name="sun_phases_evening">Questa sera: %1$s</string>
+    <string name="sun_phases_tomorrow">Domani mattina: %1$s</string>
+    <string name="term_sun_title">Sole e Fasi di luce</string>
+    <string name="term_sun_body">La curva mostra l\'altezza del sole sopra l\'orizzonte nel corso della giornata odierna, calcolata sul dispositivo. La scala è fissa per il luogo – dal sole più alto a metà estate al punto più basso a metà inverno a mezzanotte – così l\'arco mostra la stagione a colpo d\'occhio.\n\nLo sfondo mostra le fasi di luce:\n• Giorno: sole più di 6° sopra l\'orizzonte\n• Ora d\'oro (alba e tramonto): da 6° sopra a 4° sotto l\'orizzonte – luce calda e morbida con ombre lunghe\n• Ora blu: da 4° a 8° sotto l\'orizzonte – il sole è tramontato, il cielo diventa blu intenso\n• Notte: sole più di 8° sotto l\'orizzonte\n\nSotto la curva l\'asse mostra in quale direzione si trova il sole (N, NE, E … NO). Sotto l\'alba e il tramonto è indicato il punto dell\'orizzonte in cui sorge e tramonta.</string>
+
+    <string name="max_label">Max</string>
+    <string name="min_label">Min</string>
+    <string name="history_source_pending">Ancora nessuna rilevazione dalla stazione DWD %1$s per questo giorno – valori previsti (%2$s)</string>
+    <string name="sunshine_short">Sole</string>
+    <string name="legend_precip">Precipitazioni %1$s</string>
+    <string name="legend_sunshine">Sole %1$s</string>
+    <string name="privacy_title">Informativa sulla privacy</string>
+    <string name="privacy_settings_desc">Cosa invia l\'app, a chi – e cosa rimane sul telefono</string>
+    <string name="privacy_url">https://schnebeck.github.io/nimbus-weather/PRIVACY.en.html</string>
+    <string name="licenses_title">Licenze open source</string>
+    <string name="licenses_settings_desc">Licenze di Nimbus e delle librerie utilizzate</string>
+    <string name="licenses_app_text">Nimbus è un software libero: può essere condiviso e modificato secondo i termini della Licenza Pubblica Generica GNU, versione 3 o successiva. Non vi è alcuna garanzia, nei limiti consentiti dalla legge.</string>
+    <string name="licenses_credits">Idea, decisioni e test: Thorsten Schnebeck. Scritto da Anthropic Claude Opus 5.5 (contenuto generato da IA).</string>
+    <string name="licenses_source">Codice sorgente su GitHub</string>
+    <string name="licenses_show_text">Mostra testo della licenza</string>
+    <string name="licenses_libraries">Librerie (%1$d)</string>
+    <string name="licenses_data">Dati e mappe</string>
+    <string name="licenses_data_text">Dati meteo: Deutscher Wetterdienst (DWD), CC BY 4.0, in parte tramite Bright Sky · Open-Meteo.com, CC BY 4.0 · Copernicus Atmosphere Monitoring Service (CAMS) · Radar: DWD, KNMI, MET Norway (CC BY 4.0), RainViewer · Misurazioni: GeoSphere Austria, MeteoSwiss, DMI (CC BY 4.0), NOAA aviationweather.gov (METAR, pubblico dominio) · Satellite: Contiene dati modificati EUMETSAT Meteosat, CC BY 4.0 · Precipitazioni sul luogo: DWD RADOLAN, CC BY 4.0 · Soleggiamento sul luogo: DWD da dati EUMETSAT MTG, tramite Open-Meteo.com, CC BY 4.0 · Sensori cittadini: Sensor.Community, ODbL · Livelli idrometrici: PEGELONLINE dell\'Amministrazione Federale delle Vie Navigabili e della Navigazione (WSV), DL-DE Zero 2.0; Agenzia per la gestione delle acque, la difesa costiera e la protezione della natura della Bassa Sassonia (NLWKN); Agenzia statale per la natura, l\'ambiente e il clima della Renania Settentrionale-Vestfalia (LANUK); Ufficio statale per l\'ambiente, l\'agricoltura e la geologia della Sassonia (LfULG); Agenzia per la conservazione della natura, l\'ambiente e la geologia dell\'Assia (HLNUG); classificazione ed allerte alluvioni: Portale interstatale alluvioni della Germania (LHP), CC BY 4.0 · Nomi dei luoghi: Nominatim, © collaboratori di OpenStreetMap, ODbL · Mappe: © OpenFreeMap, © OpenMapTiles, © collaboratori di OpenStreetMap, ODbL.</string>
+    <string name="radar_loading_frames">Caricamento immagini radar %1$d/%2$d</string>
+    <string name="radar_partly_cached">Problemi di connessione – alcune immagini radar sono copie precedenti in memoria.</string>
+    <string name="radar_partly_missing">Alcune immagini radar non sono state caricate.</string>
+    <string name="radar_reload">Ricarica</string>
+    <string name="pollen_choose">Scegli tipi</string>
+    <string name="pollen_choose_title">Tipi di polline da mostrare</string>
+    <string name="pollen_pick_groups">Gruppi</string>
+    <string name="pollen_pick_types">Tipi singoli</string>
+    <string name="pollen_group_all">Tutti</string>
+    <string name="pollen_group_trees">Alberi</string>
+    <string name="pollen_group_grasses">Graminacee e cereali</string>
+    <string name="pollen_group_herbs">Erbacee</string>
+    <string name="settings_pollen_desc">La scheda pollini mostra solo questi tipi – es. solo alberi se le graminacee non ti danno fastidio.</string>
+    <plurals name="pollen_hidden">
+        <item quantity="one">%1$d tipo nascosto (Scegli tipi)</item>
+        <item quantity="many">%1$d tipi nascosti (Scegli tipi)</item>
+        <item quantity="other">%1$d tipi nascosti (Scegli tipi)</item>
+    </plurals>
+
+    <string name="gauge_title_tides">Marea</string>
+    <string name="gauge_title_level">Livello dell\'acqua</string>
+    <string name="gauge_station">Idrometro %1$s (%2$s), a %3$s km</string>
+    <string name="gauge_zero">zero idrometrico a %1$s m s.l.m.</string>
+    <string name="gauge_tide_note">Calcolato dalle rilevazioni idrometriche, circa ±30 min – non per navigazione o escursioni su secche.</string>
+    <string name="tide_flood">Flusso – l\'acqua sta salendo</string>
+    <string name="tide_ebb">Riflusso – l\'acqua sta calando</string>
+    <string name="tide_next_high">Alta marea alle %1$s (tra %2$s)</string>
+    <string name="tide_next_low">Bassa marea alle %1$s (tra %2$s)</string>
+    <string name="tide_hw">Alta</string>
+    <string name="tide_lw">Bassa</string>
+    <string name="tide_range">escursione marea circa %1$s m</string>
+    <string name="gauge_now">Livello ora %1$d cm (%2$s)</string>
+    <string name="mark_mthw">alta marea media</string>
+    <string name="mark_mtnw">bassa marea media</string>
+    <string name="mark_mnw">magra media</string>
+    <string name="mark_mw">livello medio</string>
+    <string name="mark_mhw">piena media</string>
+    <string name="gauge_state_low">Magra</string>
+    <string name="gauge_state_normal">Livello normale</string>
+    <string name="gauge_state_high">Piena</string>
+    <string name="gauge_mark_exceeded">Sopra il livello di guardia %1$s</string>
+    <string name="gauge_above_mw">%1$d cm sopra il livello medio</string>
+    <string name="gauge_below_mw">%1$d cm sotto il livello medio</string>
+    <string name="gauge_discharge">portata %1$d m³/s</string>
+    <string name="gauge_measured_at">rilevazione delle %1$s</string>
+    <string name="src_pegelonline">Livello dell\'acqua: PEGELONLINE (WSV), %1$s</string>
+    <string name="term_tides_title">Maree</string>
+    <string name="term_tides_body">Le maree sorgono dall\'attrazione della luna e del sole sul mare. In Germania si verificano principalmente sulla costa del Mare del Nord due volte al giorno con un ciclo di circa 12,5 ore.\n\nL\'app calcola l\'andamento dai dati di misurazione dell\'idrometro selezionato.</string>
+
+    <string name="bathing_title">Acque di balneazione</string>
+    <string name="bathing_off_season">Fuori dalla stagione balneare (15 maggio – 15 settembre): i valori provengono dagli ultimi campioni della stagione.</string>
+    <string name="bathing_all">Tutte le %1$d acque di balneazione entro %2$d km</string>
+    <string name="bathing_fewer">Mostra meno</string>
+    <string name="bathing_footer">Siti ufficiali di balneazione UE entro %1$d km (regolabile) · ★ preferiti a qualsiasi distanza</string>
+    <string name="bathing_lake">Lago</string>
+    <string name="bathing_river">Fiume</string>
+    <string name="bathing_coast">Costa</string>
+    <string name="bathing_transitional">Estuario</string>
+    <string name="bathing_q_excellent">eccellente</string>
+    <string name="bathing_q_good">buona</string>
+    <string name="bathing_q_sufficient">sufficiente</string>
+    <string name="bathing_q_poor">scarsa</string>
+    <string name="bathing_q_none">non ancora classificata</string>
+    <string name="bathing_algae">Alghe azzurre (cianobatteri)</string>
+    <string name="bathing_sea_short">Mare</string>
+    <string name="bathing_status_ok">Nessuna obiezione</string>
+    <string name="bathing_status_warning">Limitata – attenzione agli avvisi</string>
+    <string name="bathing_status_closed">Balneazione sconsigliata</string>
+    <string name="bathing_visibility">visibilità %1$s m</string>
+    <string name="bathing_last_sample">Ultimo campione del %1$s</string>
+    <string name="bathing_sample_old">Il campione è più vecchio di 10 giorni.</string>
+    <string name="bathing_sea_temp">Temperatura del mare oggi %1$s (modello oceanico)</string>
+    <string name="bathing_eu_quality">Classificazione UE delle ultime quattro stagioni: %1$s</string>
+    <string name="bathing_favorite">Aggiungi ai preferiti</string>
+    <string name="bathing_unfavorite">Rimuovi dai preferiti</string>
+    <string name="bathing_profile">Profilo acque di balneazione ›</string>
+    <string name="settings_bathing_desc">Raggio della scheda acque di balneazione. I preferiti (stella nella scheda) appaiono a qualsiasi distanza.</string>
+    <string name="src_bathing">Acque di balneazione: EEA%1$s; temperatura del mare: Open-Meteo</string>
+    <string name="term_bathing_title">Acque di balneazione</string>
+    <string name="term_bathing_body">I siti di balneazione ufficiali dell\'UE entro il raggio scelto – laghi, fiumi, coste ed estuari – i più vicini per primi. La stella conserva un sito come preferito; appare così in alto, anche se più lontano.\n\n• Punto: valutazione attuale dell\'ufficio sanitario ove pubblicata (rosso: balneazione non consigliata, giallo: attenzione agli avvisi, es. cianobatteri); altrimenti classificazione UE (blu eccellente, verde buona, giallo sufficiente, rosso scarsa)\n• Classificazione UE: qualità igienica delle ultime quattro stagioni secondo la direttiva UE sulle acque di balneazione\n\nNella stagione (di solito dal 15 maggio al 15 settembre) i campioni vengono prelevati ogni due o quattro settimane. Le alghe azzurre (cianobatteri) possono moltiplicarsi in poche ore quando fa caldo e irritare la pelle e le mucose – non fare il bagno in acqua verdastra o torbida.</string>
+
+    <string name="gauge_chart_hint">Pressione prolungata per i valori</string>
+    <string name="gauge_chart_predicted">previsione</string>
+    <string name="settings_cards_arrange">Mostra e nascondi schede</string>
+    <string name="settings_cards_count">%1$d di %2$d schede mostrate</string>
+    <string name="settings_cards_fixed">rimane in alto</string>
+    <string name="settings_cards_reset">Ordine predefinito</string>
+    <string name="settings_cards_tiles">Riquadri piccoli</string>
+    <string name="settings_cards_tiles_expand">Espandi o comprimi i riquadri piccoli</string>
+    <string name="move_up">Sposta su</string>
+    <string name="move_down">Sposta giù</string>
+    <string name="hour_sunrise">Alba</string>
+    <string name="hour_sunset">Tramonto</string>
+    <string name="pressure_chart_title">Tendenza pressione</string>
+    <string name="pressure_chart_rising">in aumento, %1$s hPa in 3 h</string>
+    <string name="pressure_chart_falling">in calo, %1$s hPa in 3 h</string>
+    <string name="pressure_chart_steady">stabile, %1$s hPa in 3 h</string>
+    <string name="pressure_chart_hint">Tratteggiato: previsione · pressione prolungata per i valori di ciascuna ora</string>
+    <string name="pressure_chart_hint_fall">Arancione: rapido calo (3 hPa o più in 3 h) · pressione prolungata per i valori</string>
+    <string name="undo">Annulla</string>
+    <string name="cards_undo_order">Posizione modificata</string>
+    <string name="cards_undo_reset">Ordine predefinito ripristinato</string>
+    <string name="cards_undo_shown">"%1$s" mostrata</string>
+    <string name="cards_undo_hidden">"%1$s" nascosta</string>
+    <string name="card_menu">Menu scheda</string>
+    <string name="card_menu_fold">Comprimi</string>
+    <string name="card_menu_unfold">Espandi</string>
+    <string name="card_menu_hide">Nascondi</string>
+    <string name="card_menu_arrange">Disponi</string>
+    <string name="arrange_hint">Trascina la scheda nella nuova posizione</string>
+    <string name="arrange_tiles_hint">Trascina il riquadro piccolo nella nuova posizione</string>
+    <string name="arrange_cancel">Annulla</string>
+    <string name="view_compact">Compatta</string>
+    <string name="view_normal">Normale</string>
+    <string name="view_full">Dettagliata</string>
+    <string name="settings_view">Vista pagina meteo</string>
+    <string name="settings_view_desc">Compatta: precipitazioni, ore, 10 giorni, radar e pollini. Normale: tutte le schede, sole, luna, qualità dell\'aria e quelle speciali compresse. Dettagliata: tutto aperto. Ogni scheda può essere modificata singolarmente in seguito.</string>
+    <string name="cards_undo_view">Vista “%1$s”</string>
+    <string name="view_hint_title">Troppo in una volta?</string>
+    <string name="view_hint_text">Prova una vista più breve – può essere modificata in qualsiasi momento in Impostazioni → Schede. Schede singole: tieni premuto per comprimere, nascondere o disporre.</string>
+    <string name="view_hint_keep">Va bene così</string>
+    <string name="settings_display">Schermo</string>
+    <string name="settings_models_expand">Mostra tutti i modelli di previsione</string>
+    <string name="places_undo_order">Ordine dei luoghi modificato</string>
+    <string name="precip_measured_so_far">%1$s misurati finora (%2$s)</string>
+    <string name="pressure_chart_hint_measured">Continuo: misurato · tratteggiato: previsto · pressione prolungata per i valori</string>
+    <string name="settings_radar_colors">Colori radar</string>
+    <string name="settings_radar_colors_desc">Contrasto: pioggia verde → giallo → rosso → magenta, neve turchese → bianco → viola – molti livelli facili da distinguere. Blu (predefinito): più calmo, pioggia azzurro → blu → viola → magenta, neve grigio → bianco; ben visibile anche in caso di daltonismo rosso-verde.</string>
+    <string name="radar_colors_contrast">Contrasto</string>
+    <string name="radar_colors_blue">Blu</string>
+    <string name="readout_temperature">Temperatura</string>
+    <string name="readout_feels">Percepita</string>
+    <string name="readout_chance">Probabilità</string>
+    <string name="readout_whole_day">Intero giorno</string>
+    <string name="readout_high">Max</string>
+    <string name="readout_low">Min</string>
+    <string name="readout_time">Ora</string>
+    <string name="radar_step_back">5 minuti indietro</string>
+    <string name="radar_step_forward">5 minuti avanti</string>
+    <string name="legend_precip_measured">Precip. misurate %1$s</string>
+    <string name="legend_precip_forecast">Precip. previste %1$s</string>
+    <string name="legend_sun_measured">Sole misurato %1$s</string>
+    <string name="legend_sun_forecast">Sole previsto %1$s</string>
+    <string name="readout_measured">misurato</string>
+    <string name="readout_expected">previsto</string>
+    <string name="legend_sun_not_measured">Sole non misurato</string>
+    <string name="legend_precip_not_measured">Precip. non misurate</string>
+    <string name="measured_by">Misurato: %1$s</string>
+    <string name="measured_by_station">stazione DWD %1$s</string>
+    <string name="measured_by_radar">precipitazioni dal radar DWD sul luogo</string>
+    <string name="measured_by_satellite">soleggiamento dal satellite sul luogo</string>
+    <string name="measured_by_lightning">fulmini dal satellite</string>
+    <string name="history_row_lightning">Fulmini entro 15 km</string>
+    <string name="radar_over_place">radar DWD sul luogo</string>
+    <string name="legend_temperature">Temperatura</string>
+    <string name="legend_temp_forecast">Previsione temp.</string>
+    <string name="legend_temp_forecast_so_far">Previsione finora</string>
+    <string name="legend_chance">Probabilità precip.</string>
+    <string name="radar_preparing">Preparazione del radar…</string>
+    <string name="settings_card_hidden">Scheda nascosta</string>
+    <string name="settings_card_hidden_desc">Mostrandola verrà inserita nella pagina meteo – e le sue impostazioni qui</string>
+    <string name="settings_today_apart">Oggi: misurati vs. previsti</string>
+    <string name="settings_today_apart_desc">Oggi nelle previsioni a 10 giorni: la curva colorata mostra solo le rilevazioni fino ad ora, quella tratteggiata la previsione per l\'intero giorno – come nell\'Andamento del giorno in “Oggi finora”. Disattivato: la curva colorata prosegue come previsione dall\'ultima rilevazione in poi.</string>
+    <string name="settings_show_dry_precip">Scheda precipitazioni nei giorni asciutti</string>
+    <string name="settings_show_dry_precip_desc">Mostra “Oggi asciutto” e le prossime precipitazioni previste. Disattivato: nei giorni asciutti la scheda è nascosta.</string>
+    <string name="settings_separate_precip">Precipitazioni come grafico separato</string>
+    <string name="settings_separate_precip_desc">Nelle previsioni a 10 giorni e nello storico: quantità e probabilità in un grafico dedicato sotto la temperatura – altrimenti un grafico combinato.</string>
+    <string name="card_status_fresh">Dati aggiornati</string>
+    <string name="card_status_stale">Dati precedenti – caricamento in corso o la fonte non ha risposto</string>
+    <string name="day_part_early">Primo mattino</string>
+    <string name="day_part_morning">Mattino</string>
+    <string name="day_part_forenoon">Tarda mattina</string>
+    <string name="day_part_afternoon">Pomeriggio</string>
+    <string name="day_part_evening">Sera</string>
+    <string name="day_part_night">Notte</string>
+    <string name="sunrise_short">Sorge</string>
+    <string name="sunset_short">Tramonta</string>
+    <string name="day_length_short">Durata</string>
+    <string name="precipitation_short">Precip.</string>
+    <string name="history_row_temp_short">Max / Min</string>
+    <string name="history_row_sun_short">Sole</string>
+    <string name="history_row_gust_short">Raffiche max</string>
+    <string name="radar_title_short">Radar</string>
+    <string name="forecast_short">Prev.</string>
+    <string name="fullscreen_enter">Schermo intero</string>
+    <string name="fullscreen_leave">Esci da schermo intero</string>
+    <string name="settings_fullscreen">Schermo intero</string>
+    <string name="settings_fullscreen_desc">Nascondi le barre di stato e di navigazione; uno scorrimento dal bordo le mostra un momento. Tocca due volte il cielo sopra le schede per attivarlo e disattivarlo.</string>
+    <string name="settings_fullscreen_button">Pulsante schermo intero</string>
+    <string name="settings_fullscreen_button_desc">Un pulsante nella barra in alto attiva lo schermo intero così come il doppio tocco.</string>
+
+    <string-array name="day_kind_adjective">
+        <item>soleggiato</item>
+        <item>luminoso</item>
+        <item>nuvoloso</item>
+        <item>molto nuvoloso</item>
+        <item>nebbioso</item>
+        <item>pioviggina</item>
+        <item>piovoso</item>
+        <item>pioggia continua</item>
+        <item>rovesci</item>
+        <item>temporalesco</item>
+        <item>nevoso</item>
+        <item>nevischio</item>
+        <item>pioggia gelata</item>
+    </string-array>
+    <string-array name="day_kind_noun">
+        <item>sole</item>
+        <item>sole</item>
+        <item>nuvole</item>
+        <item>nuvole</item>
+        <item>nebbia</item>
+        <item>pioviggine</item>
+        <item>pioggia</item>
+        <item>pioggia continua</item>
+        <item>rovesci</item>
+        <item>temporali</item>
+        <item>neve</item>
+        <item>nevischio</item>
+        <item>pioggia gelata</item>
+    </string-array>
+    <string-array name="day_kind_some">
+        <item>un po\' di sole</item>
+        <item>un po\' di sole</item>
+        <item>nuvole</item>
+        <item>nuvole</item>
+        <item>nebbia</item>
+        <item>qualche pioviggina</item>
+        <item>qualche pioggia</item>
+        <item>pioggia</item>
+        <item>rovesci</item>
+        <item>temporali</item>
+        <item>qualche nevicata</item>
+        <item>nevischio</item>
+        <item>pioggia gelata</item>
+    </string-array>
+    <string-array name="day_term">
+        <item>dopo mezzanotte</item>
+        <item>prima dell\'alba</item>
+        <item>di prima mattina</item>
+        <item>a metà mattina</item>
+        <item>al mattino</item>
+        <item>a tarda mattina</item>
+        <item>intorno a mezzogiorno</item>
+        <item>nel pomeriggio</item>
+        <item>a tardo pomeriggio</item>
+        <item>a prima sera</item>
+        <item>di sera</item>
+        <item>a tarda sera</item>
+        <item>di notte</item>
+        <item>durante la notte</item>
+        <item>di giorno</item>
+        <item>fino a mezzogiorno</item>
+        <item>da mezzogiorno</item>
+    </string-array>
+    <string name="day_mostly">prevalentemente %1$s</string>
+    <string name="day_with">%1$s con %2$s</string>
+    <string name="day_first">%2$s %1$s, poi %3$s</string>
+    <string name="day_later">%3$s, %2$s %1$s</string>
+    <string name="day_afternoon">%3$s di giorno, %2$s %1$s</string>
+    <string name="day_overnight">%2$s %1$s, %3$s di giorno</string>
+    <string name="day_otherwise">%3$s %1$s, %2$s per il resto</string>
+    <string name="settings_radar_overlays">Livelli all\'apertura</string>
+    <string name="settings_radar_overlays_desc">Questi livelli sono attivi all\'apertura del radar – comunque modificabili sul radar.</string>
+    <string name="settings_preload_radar_mobile">Anche su rete mobile</string>
+    <string name="settings_preload_radar_mobile_desc">Altrimenti solo Wi-Fi; circa 1–2 MB ogni volta</string>
+    <string name="settings_radar">Radar</string>
+
+    <!-- Widget -->
+    <string name="widget_label">Orologio &amp; meteo</string>
+    <string name="widget_description">Ora, data, sveglia, meteo, precipitazioni e soleggiamento nelle prossime due ore, pollini – ciascuna parte a tua scelta</string>
+    <string name="widget_no_data">Apri Nimbus</string>
+    <string name="widget_rain_dry">Nessuna precipitazione fino alle %1$s</string>
+    <string name="widget_rain_dry_dull">Nessuna precipitazione, niente sole fino alle %1$s</string>
+    <string name="widget_as_of">Alle %1$s</string>
+    <string name="widget_updating">Aggiornamento…</string>
+    <string name="widget_refresh">Aggiorna meteo ora</string>
+    <string name="widget_alarm_desc">Prossima sveglia %1$s</string>
+    <string name="widget_setup_title">Configura il widget</string>
+    <string name="widget_setup_place">Luogo</string>
+    <string name="widget_setup_follow_app">Ultimo luogo visto in Nimbus</string>
+    <string name="widget_setup_follow_app_hint">Segue l\'ultimo luogo consultato in Nimbus – cambia luogo lì e il widget lo seguirà.</string>
+    <string name="widget_setup_my_location_hint">Il luogo in cui Nimbus ti ha trovato l\'ultima volta. Il widget non cerca la posizione autonomamente: dopo esserti spostato altrove, apri Nimbus una volta o tocca il meteo nel widget.</string>
+    <string name="widget_setup_parts">Mostra</string>
+    <string name="widget_part_clock">Ora</string>
+    <string name="widget_part_clock_desc">Un tocco apre le sveglie</string>
+    <string name="widget_part_date">Data</string>
+    <string name="widget_part_date_desc">Un tocco apre il calendario</string>
+    <string name="widget_week">Sett. %1$d</string>
+    <string name="widget_date_written">Giorno della settimana e mese</string>
+    <string name="widget_date_figures">In cifre con la settimana del calendario</string>
+    <string name="widget_pollen_quiet">Pollini: %1$s</string>
+    <string name="widget_part_alarm">Prossima sveglia</string>
+    <string name="widget_part_weather">Meteo ora</string>
+    <string name="widget_part_weather_desc">Con le temperature massima e minima del giorno; un tocco apre le previsioni orarie</string>
+    <string name="widget_part_rain">Precipitazioni e soleggiamento, prossime due ore</string>
+    <string name="widget_part_rain_desc">Sui quarti d\'ora dell\'orologio, con il radar ove copre il luogo; un tocco apre oggi nelle previsioni giornaliere</string>
+    <string name="widget_setup_pollen">Pollini</string>
+    <string name="widget_setup_pollen_desc">I tipi scelti con il livello di oggi; in poco spazio solo quelli con volo rilevante, come punti. Nessuno scelto: nessun polline. Un tocco apre la scheda pollini.</string>
+    <string name="widget_setup_opacity">Sfondo: %1$d\u00A0%%</string>
+    <string name="widget_setup_updates">Il widget aggiorna il meteo circa ogni 30 minuti, sia su Wi-Fi che su rete mobile. Ciò che non rientra nelle sue dimensioni viene omesso. Un tocco altrove apre l\'inizio della pagina.</string>
+    <string name="widget_setup_done">Fatto</string>
+    <string name="notice_channel_warnings">Allerte meteo</string>
+    <string name="notice_channel_warnings_desc">Allerte ufficiali del Deutscher Wetterdienst (Servizio Meteorologico Tedesco) per il luogo, dal livello scelto; avvisi di alluvione regionali se desiderati</string>
+    <string name="notice_channel_gauges">Livelli dell\'acqua</string>
+    <string name="notice_channel_gauges_desc">Idrometri del luogo e quelli contrassegnati dalla stella, quando raggiungono un livello di allerta</string>
+    <string name="notice_channel_rain">Pioggia imminente</string>
+    <string name="notice_channel_rain_desc">Precipitazioni dal radar pioggia dopo tre ore asciutte</string>
+    <string name="operator_wsv">Amministrazione Federale delle Vie Navigabili e della Navigazione (WSV)</string>
+    <string name="operator_nlwkn">Bassa Sassonia (NLWKN)</string>
+    <string name="operator_lanuk">Renania Settentrionale-Vestfalia (LANUK)</string>
+    <string name="operator_lfulg">Sassonia (LfULG)</string>
+    <string name="operator_hlnug">Assia (HLNUG)</string>
+    <string name="operator_lhp">Portale interstatale alluvioni della Germania (LHP)</string>
+    <string name="notice_flood_class">alluvione classe %1$d</string>
+    <string name="notice_source">Fonte: %1$s</string>
+    <string name="notice_source_dwd">Fonte: Deutscher Wetterdienst (Servizio Meteorologico Tedesco)</string>
+    <string name="notice_source_lhp">Fonte: portale interstatale alluvioni della Germania</string>
+    <string name="notice_source_radar">Fonte: radar pioggia del Deutscher Wetterdienst</string>
+    <string name="notice_gauge_where">%1$s a %2$s</string>
+    <string name="notice_gauge_reached">%1$s: %2$s raggiunto</string>
+    <string name="notice_gauge_below">%1$s: di nuovo sotto %2$s</string>
+    <string name="notice_rising">, in aumento</string>
+    <string name="notice_falling">, in calo</string>
+    <string name="notice_rain_text">Finora asciutto a %1$s – dal radar pioggia fino a %2$s circa.</string>
+    <string name="settings_notices">Notifiche</string>
+    <string name="settings_notices_on">Invia notifiche</string>
+    <string name="settings_notices_on_desc">Nimbus controlla l\'ultimo luogo mostrato ogni 15–30 minuti in background. Non disturbare e le fasce orarie riposo si applicano come impostate nel sistema.</string>
+    <string name="settings_notices_place">Per: %1$s (ultimo mostrato)</string>
+    <string name="settings_notices_denied">Le notifiche sono disattivate per Nimbus – autorizzale nelle impostazioni di sistema.</string>
+    <string name="settings_notices_warnings">Allerte meteo</string>
+    <string name="settings_notices_warnings_desc">Nuove allerte del Deutscher Wetterdienst dal livello inferiore – una notifica per allerta, di nuovo solo a un livello superiore</string>
+    <string name="settings_warning_level">Allerte meteo dal livello (scheda e notifiche)</string>
+    <string name="warning_level_1">1 Avviso</string>
+    <string name="warning_level_2">2 Marcato</string>
+    <string name="warning_level_3">3 Grave</string>
+    <string name="warning_level_4">4 Estremo</string>
+    <string name="settings_notices_gauges">Livelli dell\'acqua</string>
+    <string name="settings_notices_gauges_desc">Idrometri del luogo e quelli con la stella: quando raggiungono il livello inferiore, e una notifica discreta quando tornano sotto di esso</string>
+    <string name="settings_gauge_stage">Dal livello</string>
+    <string name="settings_notices_floods">Avvisi alluvioni regionali</string>
+    <string name="settings_notices_floods_desc">Avvisi dei centri alluvioni per il luogo</string>
+    <string name="settings_notices_rain">Pioggia imminente</string>
+    <string name="settings_notices_rain_desc">Solo dopo tre ore asciutte e quando il radar mostra con certezza pioggia entro l\'ora successiva – al massimo due volte al giorno. Android non controlla al minuto: un rovescio a dieci minuti potrebbe sfuggire.</string>
+    <string name="settings_notices_disclaimer">Le notifiche di Nimbus potrebbero arrivare in ritardo o non arrivare. Per gli avvisi di protezione civile utilizza NINA e Cell Broadcast.</string>
+    <string name="gauge_watch">Monitora questo idrometro</string>
+    <string name="gauge_watch_desc">Una notifica a un livello di allerta, anche mentre è mostrato un altro luogo</string>
+    <plurals name="alerts_weaker">
+        <item quantity="one">%1$d avviso di livello inferiore</item>
+        <item quantity="many">%1$d avvisi di livello inferiore</item>
+        <item quantity="other">%1$d avvisi di livello inferiore</item>
+    </plurals>
+</resources>

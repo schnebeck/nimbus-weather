@@ -251,7 +251,7 @@ fun Meteogram(
     val labelsH = 14.dp
     val iconsH = 30.dp
     val plotH = 120.dp
-    val windH = 26.dp
+    val windH = WIND_ROW
     // The sunshine row keeps a small gap to the plot, where the lowest axis numbers reach down.
     val sunGap = 6.dp
     val sunH = if (sunShown) 20.dp + sunGap else 0.dp
@@ -429,7 +429,7 @@ fun Meteogram(
                     val dir = h.windDirection ?: return@forEach
                     val kmh = h.windSpeed ?: 0.0
                     val c = Offset(x(centre), windY)
-                    if (s.windBarbs) { drawWindBarb(c, dir, kmh, (windH - 4.dp).toPx()); return@forEach }
+                    if (s.windBarbs) { drawWindBarb(c, dir, kmh, BARB_LENGTH.toPx()); return@forEach }
                     val len = (7 + (kmh / 50.0).coerceAtMost(1.0) * 6).dp.toPx()
                     rotate((dir + 180).toFloat(), c) {
                         val tip = c + Offset(0f, -len)
@@ -515,24 +515,37 @@ fun Meteogram(
 }
 
 /** Small "wind" symbol (three strokes, two with a curl) as the label of the wind row. */
+/** The wind row under the meteogram: it holds a barb of [BARB_LENGTH] in any direction and of any speed. */
+internal val WIND_ROW = 28.dp
+
+/** A wind barb's shaft in the meteogram. */
+internal val BARB_LENGTH = 20.dp
+
+/** A barb's line width. */
+internal val BARB_STROKE = 1.6.dp
+
 /**
- * A wind barb centred on [c], [length] long, its shaft towards [fromDeg] (where the wind comes
- * from), coloured by the speed as the arrows are ([windColor]).
+ * A wind barb [length] long, its shaft towards [fromDeg] (where the wind comes from), coloured by
+ * the speed as the arrows are ([windColor]). Its outline is centred on [c] in height – turned,
+ * the strokes at the shaft's end reach farther to one side than the station to the other – and
+ * on [c]'s time in width (the shaft's middle).
  */
-internal fun androidx.compose.ui.graphics.drawscope.DrawScope.drawWindBarb(c: Offset, fromDeg: Double, kmh: Double, length: Float) {
+internal fun androidx.compose.ui.graphics.drawscope.DrawScope.drawWindBarb(c0: Offset, fromDeg: Double, kmh: Double, length: Float) {
     val shape = dev.nimbus.weather.util.WindBarbs.shape(kmh)
     val color = windColor(kmh)
-    val stroke = 1.6.dp.toPx()
+    val stroke = BARB_STROKE.toPx()
     if (shape.calm) {
-        drawCircle(color, length / 5, c, style = Stroke(stroke))
+        drawCircle(color, length / 5, c0, style = Stroke(stroke))
         return
     }
+    val (top, bottom) = dev.nimbus.weather.util.WindBarbs.extent(kmh, fromDeg, length, stroke)
+    val c = Offset(c0.x, c0.y - (top + bottom) / 2)
     // the station at the lower end, the shaft's middle on [c]
     fun p(x: Float, y: Float) = Offset(c.x + x * length, c.y + (y + 0.5f) * length)
     rotate(fromDeg.toFloat(), c) {
         shape.shaft?.let { drawLine(color, p(it.x1, it.y1), p(it.x2, it.y2), stroke, StrokeCap.Round) }
         // the station's end: a dot, as on the weather maps – the barb has no arrowhead to tell it
-        drawCircle(color, stroke * 1.4f, p(0f, 0f))
+        drawCircle(color, stroke * dev.nimbus.weather.util.WindBarbs.DOT, p(0f, 0f))
         shape.strokes.forEach { drawLine(color, p(it.x1, it.y1), p(it.x2, it.y2), stroke, StrokeCap.Round) }
         shape.pennants.forEach { t ->
             val path = Path().apply {

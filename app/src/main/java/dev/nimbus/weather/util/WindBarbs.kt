@@ -46,6 +46,34 @@ object WindBarbs {
     /** How far a stroke's outer end leans to the shaft's end. */
     private const val LEAN = 0.14f
 
+    /** The station's dot, of the line's width. */
+    const val DOT = 1.4f
+
+    /**
+     * How far the barb for [kmh], [length] long and turned to [fromDeg] (clockwise, as drawn),
+     * reaches up and down from its shaft's middle (y down): the lines with half their [stroke],
+     * the station's dot with its radius.
+     */
+    fun extent(kmh: Double, fromDeg: Double, length: Float, stroke: Float): Pair<Float, Float> {
+        val s = shape(kmh)
+        if (s.calm) return -length / 5 - stroke / 2 to length / 5 + stroke / 2
+        val a = Math.toRadians(fromDeg)
+        val sin = kotlin.math.sin(a).toFloat()
+        val cos = kotlin.math.cos(a).toFloat()
+        var top = Float.MAX_VALUE
+        var bottom = -Float.MAX_VALUE
+        fun at(x: Float, y: Float, pad: Float) {
+            val yy = (x * sin + (y + 0.5f) * cos) * length
+            top = minOf(top, yy - pad)
+            bottom = maxOf(bottom, yy + pad)
+        }
+        at(0f, 0f, stroke * DOT)
+        s.shaft?.let { at(it.x2, it.y2, stroke / 2) }
+        s.strokes.forEach { at(it.x1, it.y1, stroke / 2); at(it.x2, it.y2, stroke / 2) }
+        s.pennants.forEach { t -> t.forEach { (x, y) -> at(x, y, stroke / 2) } }
+        return top to bottom
+    }
+
     fun parts(kmh: Double): Parts {
         val knots = ((kmh / 1.852) / 5).roundToInt() * 5
         return Parts(knots, knots / 50, knots % 50 / 10, knots % 10 == 5)

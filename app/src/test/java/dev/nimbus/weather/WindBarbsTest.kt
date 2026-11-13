@@ -102,6 +102,41 @@ class WindBarbsTest {
         assertEquals(31, (0..WeatherOverlays.BARB_MAX_KN step 5).count())
     }
 
+    /**
+     * Every barb stays in its row, whatever the speed and direction: turned, the strokes at the
+     * shaft's end reach farther than the station – from the north-west up into the sunshine row,
+     * from the south-east down under the chart, unless the barb is centred on its outline.
+     */
+    @Test fun everyBarbStaysInItsRow() {
+        val row = dev.nimbus.weather.ui.main.WIND_ROW.value
+        val length = dev.nimbus.weather.ui.main.BARB_LENGTH.value
+        val stroke = dev.nimbus.weather.ui.main.BARB_STROKE.value
+        for (kmh in (0..220 step 5).map { it.toDouble() }) for (deg in 0 until 360) {
+            val (top, bottom) = WindBarbs.extent(kmh, deg.toDouble(), length, stroke)
+            assertTrue("$kmh km/h from $deg°: ${bottom - top} dp in a row of $row", bottom - top <= row)
+        }
+        // north-west, strong: uncentred its strokes stood 3.5 dp over the row's top
+        val (top, bottom) = WindBarbs.extent(kn(30.0), 315.0, length, stroke)
+        assertTrue(-top > row / 2 && bottom < row / 2)
+    }
+
+    /** North-west wind, strong, under a sunny day: the barbs below the sunshine bars, not in them. */
+    @Test fun theBarbsUnderTheSunshine() {
+        val day = 1_790_812_800_000L
+        val h = 3_600_000L
+        val pts = (0..25).map { k ->
+            MeteoPoint(day + k * h, 10.0, Condition.CLEAR, k in 7..17, 0.0, precipitationChance = 0.0,
+                windSpeed = listOf(30.0, 45.0, 60.0, 75.0, 90.0, 110.0, 60.0, 45.0, 30.0)[k / 3], windDirection = 300.0 + (k % 4) * 10,
+                sunshine = if (k in 8..17) 60.0 else 0.0)
+        }
+        compose.setContent {
+            CompositionLocalProvider(LocalSettings provides Settings(windBarbs = true), LocalTimeFormat provides TimeFormat("UTC", true)) {
+                Box(Modifier.width(380.dp).background(Color(0xFF2B3A4E)).padding(12.dp)) { Meteogram(pts, day, day + 24 * h, emptyList(), day + 10 * h) }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/wind_barbs_north_west.png")
+    }
+
     /** The day chart: barbs instead of arrows when the setting asks for them – their colour by strength as the arrows'. */
     @Test fun theDayChartWithBarbs() {
         val day = 1_790_812_800_000L

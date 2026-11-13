@@ -114,9 +114,16 @@ hour's average stays below. The page
 does not wait for it, the radar follows. When an answer does not come, the last one holds for
 another half hour: the sky does not change its source with every load.
 
-When no radar measures over the place – one out of service, say – the DWD answers "no data"
-(RY −1, analysis and nowcast −999 dBZ; dry is about −64 dBZ). That counts as dry nowhere: now,
-the look-back and the next two hours then take the station and the model.
+When no DWD radar measures over the place – one out of service, say – the DWD answers "no data"
+(RY −1, analysis and nowcast −999 dBZ; dry is about −64 dBZ). That counts as dry nowhere. Where
+the KNMI's radar measures then (the Netherlands and their neighbours, north-western Germany to
+about 9.5° east), it stands in: its reflectivity every 5 minutes (1 km, the same rules as the
+DWD's; dry −32 dBZ, "no data" 95.5) for now and the look-back, its radar nowcast (pySTEPS, 1 km,
+5-minute steps for two hours) for the hours ahead. Without a key the KNMI allows 1000 requests an
+hour for everybody together, so Nimbus asks it in this case only. Where it does not measure
+either, the station and the model take the place. The precipitation card says so ("DWD radar out
+of service here – precipitation from the KNMI radar" or "… values from station and model, less
+precise"), the data sources name the KNMI.
 
 For the next two hours Nimbus takes the DWD's radar nowcast (WN, reflectivity every 5 minutes,
 turned into rain by Marshall–Palmer, Z = 200·R^1.6; weaker than 8 dBZ: none). With the measured

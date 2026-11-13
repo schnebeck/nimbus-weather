@@ -179,12 +179,28 @@ class HistorySource(
                 parseSynop(http.getJson(url.toString()))
             }.getOrNull()
         }.orEmpty()
+        val (radarSums, radarEchoes) = knmiFilled(lat, lon, inGermany, radarJob.await(), echoJob.await(), now)
         // the satellite's sunshine needs the model's low cloud of the same hours
         combine(
-            modelRoot, obsRoot, used, now, synop, radarJob.await(), SatelliteSunshine.minutes(sunJob.await(), lat, lon, lowCloud(modelRoot)),
-            lightningJob.await(), echoJob.await(),
+            modelRoot, obsRoot, used, now, synop, radarSums, SatelliteSunshine.minutes(sunJob.await(), lat, lon, lowCloud(modelRoot)),
+            lightningJob.await(), radarEchoes,
         ).copy(stationMissed = obs?.isFailure == true)
     } }
+
+    /**
+     * The DWD radar's hours over the place ([sums], [echoes]) – those it has no data for (one of its
+     * radars out of service) from the KNMI's radar, where that measures.
+     */
+    private suspend fun knmiFilled(
+        lat: Double, lon: Double, inGermany: Boolean, sums: Map<Long, Double>, echoes: Map<Long, Double>, now: Long,
+    ): Pair<Map<Long, Double>, Map<Long, Double>> {
+        val knmi = spot?.knmi ?: return sums to echoes
+        if (!inGermany) return sums to echoes
+        val gap = KnmiSpot.gapFrom(echoes.keys, now - SPOT_BACK_MS, now) ?: return sums to echoes
+        val steps = withTimeoutOrNull(spotWaitMs) { knmi.steps(lat, lon, gap, now) } ?: return sums to echoes
+        val (kSums, kEchoes) = KnmiSpot.hours(steps)
+        return (kSums.filterKeys { it !in sums } + sums) to (kEchoes.filterKeys { it !in echoes } + echoes)
+    }
 
     private fun modelUrl(lat: Double, lon: Double, model: String) = "$openMeteoUrl/v1/forecast".toHttpUrl().newBuilder()
         .addQueryParameter("latitude", OpenMeteoSource.fmt(lat))

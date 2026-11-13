@@ -75,6 +75,19 @@ class PrivacyPolicyTest {
         }
     }
 
+    /**
+     * The services that get a place's coordinates are listed in their table – the KNMI too, which
+     * gets them where the DWD's radar has no data over the place.
+     */
+    @Test fun theKnmiGetsTheCoordinatesWhereTheDwdHasNoData() {
+        for (f in listOf("../docs/PRIVACY.md", "../docs/PRIVACY.en.md")) {
+            val rows = File(f).readLines().filter { it.startsWith("| KNMI (knmi.nl) |") }
+            assertEquals(f, 1, rows.size)
+            assertTrue(f, Regex("DWD").containsMatchIn(rows.single()))
+        }
+        assertTrue(File("src/main/java/dev/nimbus/weather/data/remote/KnmiSpot.kt").readText().contains("GetFeatureInfo"))
+    }
+
     /** Settings → About: the policy opens on the project's page, in the app's language. */
     @Test fun theAppLinksToIt() {
         var opened: String? = null

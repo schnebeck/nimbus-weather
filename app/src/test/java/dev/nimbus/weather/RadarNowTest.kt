@@ -33,6 +33,9 @@ import dev.nimbus.weather.data.remote.CommunitySource
 import dev.nimbus.weather.data.remote.OpenMeteoSource
 import dev.nimbus.weather.data.remote.PollenSource
 import dev.nimbus.weather.data.remote.SpotSource
+import org.junit.Assert.assertFalse
+import dev.nimbus.weather.data.model.RadarSource
+import dev.nimbus.weather.data.remote.KnmiSpot
 import dev.nimbus.weather.data.repo.NowWeather
 import dev.nimbus.weather.data.repo.WeatherRepository
 import kotlinx.coroutines.runBlocking
@@ -124,13 +127,26 @@ class RadarNowTest {
     private val fixtureNow = Instant.parse("2026-09-28T20:45:00Z").toEpochMilli()
     private val berlin = Place("b", "Berlin", latitude = 52.52, longitude = 13.40)
 
-    /** RY at the place: 0.25 mm in each of the last three 5-minute steps – 3 mm/h. */
+    /** The DWD's radar out of service over the place: "no data" at every step. */
+    private var dwdNoData = false
+    /** Whether the KNMI's radar measures over the place (else its "no data", 95.5). */
+    private var knmiMeasures = true
+
+    /** RY at the place: 0.25 mm in each of the last three 5-minute steps – 3 mm/h; out of service −1. */
     private fun ry(): String {
         val steps = (1..3).joinToString(",") { k ->
             val time = Instant.ofEpochMilli(fixtureNow - k * 5 * min)
-            """{"type":"Feature","properties":{"GRAY_INDEX":0.25,"TIME":"$time"}}"""
+            """{"type":"Feature","properties":{"GRAY_INDEX":${if (dwdNoData) -1 else 0.25},"TIME":"$time"}}"""
         }
         return """{"type":"FeatureCollection","features":[$steps]}"""
+    }
+
+    /** The KNMI's reflectivity at the place for the last hour: 30 dBZ (about 2.7 mm/h), or "no data". */
+    private fun knmi(): String {
+        val steps = (0..12).joinToString(",") { k ->
+            "\"${Instant.ofEpochMilli((fixtureNow - k * 5 * min) / (5 * min) * (5 * min))}\":\"${if (knmiMeasures) "30.000000" else "95.500000"}\""
+        }
+        return """[{"name":"Reflectivity","units":"dBZ","dims":"time","data":{$steps}}]"""
     }
 
     @Before fun setUp() {
@@ -140,6 +156,8 @@ class RadarNowTest {
                 fun ok(name: String) = MockResponse.Builder().code(200).body(Fixtures.text(name)).build()
                 return when {
                     url.encodedPath == "/radar" && radarFails -> MockResponse.Builder().code(500).build()
+                    url.encodedPath == "/knmi-radar" -> MockResponse.Builder().code(200).body(knmi()).build()
+                    url.encodedPath == "/knmi-nowcast" -> MockResponse.Builder().code(422).build()
                     url.encodedPath == "/radar" -> MockResponse.Builder().code(200).body(ry())
                         .headersDelay(radarDelayMs, java.util.concurrent.TimeUnit.MILLISECONDS).build()
                     url.encodedPath == "/v1/forecast" -> MockResponse.Builder().code(200)
@@ -161,7 +179,8 @@ class RadarNowTest {
         return WeatherRepository(
             OpenMeteoSource(http, base, base, base), BrightSkySource(http, base), CommunitySource(http, base),
             PollenSource(http, "$base/pollen.json", "$base/wms", base),
-            clock = { fixtureNow }, spot = SpotSource(http, wms = "$base/radar"),
+            clock = { fixtureNow },
+            spot = SpotSource(http, wms = "$base/radar", knmi = KnmiSpot(http, "$base/knmi-radar", "$base/knmi-nowcast", againMs = 0)),
         )
     }
 
@@ -202,6 +221,30 @@ class RadarNowTest {
         val pages = load(previous = before)
         pages.forEach { assertEquals(SkyBasis.RADAR, it.current.sky) }
         assertEquals(before.radarNow, pages.last().radarNow)
+    }
+
+    /** The DWD's radar out of service over Berlin: the KNMI's in its place – the page says so, its sources name it. */
+    @Test fun theKnmiWhereTheDwdsRadarIsOut() {
+        dwdNoData = true
+        val last = load().last()
+        assertEquals(RadarSource.KNMI, last.radarNow?.source)
+        assertEquals(SkyBasis.RADAR, last.current.sky)
+        assertTrue(last.dwdRadarOut)
+        assertTrue(last.sources.any { it.kind == SourceKind.RADAR_NOW_KNMI })
+        assertTrue(last.sources.none { it.kind == SourceKind.RADAR_NOW })
+    }
+
+    /** Neither radar measures: no radar now, the station's sky – and the page says the radar is out. */
+    @Test fun noRadarAtAllIsSaid() {
+        dwdNoData = true
+        knmiMeasures = false
+        val last = load().last()
+        assertNull(last.radarNow)
+        assertTrue(last.current.sky != SkyBasis.RADAR)
+        assertTrue(last.dwdRadarOut)
+        // back in service: said no more
+        dwdNoData = false
+        assertFalse(load(previous = last).last().dwdRadarOut)
     }
 
     /** The last answer older than half an hour stands for nothing: the sky without it. */

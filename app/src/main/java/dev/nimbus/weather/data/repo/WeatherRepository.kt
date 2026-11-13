@@ -25,6 +25,7 @@ import dev.nimbus.weather.data.model.modelFor
 import dev.nimbus.weather.data.model.ModelSeries
 import dev.nimbus.weather.data.model.Place
 import dev.nimbus.weather.data.model.RadarNow
+import dev.nimbus.weather.data.model.RadarSource
 import dev.nimbus.weather.data.model.Settings
 import dev.nimbus.weather.data.model.Source
 import dev.nimbus.weather.data.model.SourceKind
@@ -132,9 +133,10 @@ class WeatherRepository(
             if (spot == null) Fetched(emptyMap<Long, dev.nimbus.weather.data.remote.SatelliteHour>())
             else fetch(SATELLITE_WAIT_MS, "satellite") { spot.satelliteAnswer(lat, lon, pastDays = 0) }
         }
-        // what the radar sees falling over the place now (Germany): the page does not wait for it
+        // what the radar sees falling over the place now (Germany; the KNMI's where the DWD's has
+        // no data): the page does not wait for it
         val radarJob = async {
-            if (spot == null || !inDwdArea) null else fetch(RADAR_NOW_WAIT_MS, "radar now") { spot.radarNow(lat, lon, clock()) }
+            if (spot == null || !inDwdArea) null else fetch(RADAR_NOW_WAIT_MS, "radar now") { spot.radarHere(lat, lon, clock()) }
         }
         val alertsJob = async {
             if (inDwdArea) fetch(Long.MAX_VALUE, "warnings") { brightSky.alerts(lat, lon) } else Fetched(emptyList<dev.nimbus.weather.data.model.WeatherAlert>())
@@ -272,8 +274,11 @@ class WeatherRepository(
         // the last one stands in
         val radarAsked = spot != null && inDwdArea
         var nowcastAt: Long? = if (radarAsked) null else coreAt
-        fun radarCame(r: Fetched<RadarNow?>, at: Long): RadarNow? {
-            val fresh = r.value
+        // the DWD's radar out of service over the place: as the last answer said, until this load's comes
+        var dwdRadarOut = radarAsked && near?.dwdRadarOut == true
+        fun radarCame(r: Fetched<dev.nimbus.weather.data.remote.SpotSource.RadarHere>, at: Long): RadarNow? {
+            val fresh = r.value.radar
+            dwdRadarOut = r.value.dwdNoData && inGermany(place)
             if (fresh == null || fresh.steps.keys.any { it > fresh.time }) nowcastAt = at
             return NowWeather.radarCarried(fresh, lastRadar, at)
         }
@@ -302,14 +307,17 @@ class WeatherRepository(
             gauges = gauges,
             bathing = bathing,
             sources = sources + listOfNotNull(
-                Source(SourceKind.RADAR_NOW).takeIf { now.sky == dev.nimbus.weather.data.model.SkyBasis.RADAR },
+                Source(if (radarNow?.source == RadarSource.KNMI) SourceKind.RADAR_NOW_KNMI else SourceKind.RADAR_NOW)
+                    .takeIf { now.sky == dev.nimbus.weather.data.model.SkyBasis.RADAR },
                 Source(SourceKind.SATELLITE_NOW).takeIf { now.sky == dev.nimbus.weather.data.model.SkyBasis.SATELLITE },
-                Source(SourceKind.RADAR_NOWCAST).takeIf { hourly.any { it.radar } },
+                Source(if (radarNow?.source == RadarSource.KNMI) SourceKind.RADAR_NOWCAST_KNMI else SourceKind.RADAR_NOWCAST)
+                    .takeIf { hourly.any { it.radar } },
             ) + extraSources,
             fetchedAt = coreAt,
             stale = outdated,
             partsAt = partsAt,
             radarNow = radarNow,
+            dwdRadarOut = dwdRadarOut,
             last = answers,
         ) }
         // when each part was fetched: the forecast now, an extra when its answer came – one not
@@ -463,6 +471,12 @@ class WeatherRepository(
 
         /** Rough bounding box of the DWD station network / warning area. */
         fun isInDwdArea(lat: Double, lon: Double) = lat in 47.2..55.1 && lon in 5.8..15.1
+
+        /**
+         * A place in Germany, where the DWD's radars cover everything: "no data" there is a radar out
+         * of service (beyond the border it may be their reach). Without a country: its area.
+         */
+        fun inGermany(place: Place) = place.countryCode?.equals("DE", ignoreCase = true) ?: isInDwdArea(place.latitude, place.longitude)
     }
 }
 

@@ -221,6 +221,12 @@ data class WeatherData(
     val partsAt: Map<DataPart, Long> = emptyMap(),
     /** What the radar saw falling over the place lately (Germany); null: nothing known. */
     val radarNow: RadarNow? = null,
+    /**
+     * The DWD's radar answered "no data" over this place in Germany – one of its radars out of
+     * service; the precipitation then comes from the KNMI's radar ([RadarNow.source]) or, beyond
+     * it, from the station and the model.
+     */
+    val dwdRadarOut: Boolean = false,
     /** The sources' last answers: they stand in for one that fails. */
     val last: LastAnswers = LastAnswers(),
 ) {
@@ -231,10 +237,18 @@ data class WeatherData(
 /**
  * The radar over the place: [mmPerHour] from its 5-minute steps up to [time] (RY, measured);
  * [steps]: mm in each 5 minutes by their ends – measured up to [time], the nowcast after it
- * (WN, computed from the analysis at [issue]).
+ * (WN, computed from the analysis at [issue]). [source]: whose radar – the KNMI's where the DWD's
+ * has no data over the place.
  */
 @Serializable
-data class RadarNow(val time: Long, val mmPerHour: Double, val steps: Map<Long, Double> = emptyMap(), val issue: Long? = null)
+data class RadarNow(
+    val time: Long, val mmPerHour: Double, val steps: Map<Long, Double> = emptyMap(), val issue: Long? = null,
+    val source: RadarSource = RadarSource.DWD,
+)
+
+/** Whose radar measured over the place. */
+@Serializable
+enum class RadarSource { DWD, KNMI }
 
 /**
  * The parts of [WeatherData] that come from sources of their own (and can be older than the rest).
@@ -318,7 +332,7 @@ data class BathingSite(
 
 /** A data source that contributed to a forecast; rendered localized in the UI. */
 @Serializable
-enum class SourceKind { MODEL_DWD_ICON, MODEL_ECMWF, MODEL_METEO_FRANCE, MODEL_REGIONAL, MODEL_BEST_MATCH, GAP_FILL, DWD_STATION, STATION, DWD_WARNINGS, CAMS, COMMUNITY, DWD_POLLEN, PEGELONLINE, NLWKN, GAUGES, LHP_ALERTS, BATHING, RADAR_NOW, RADAR_NOWCAST, MOSMIX, SATELLITE_NOW }
+enum class SourceKind { MODEL_DWD_ICON, MODEL_ECMWF, MODEL_METEO_FRANCE, MODEL_REGIONAL, MODEL_BEST_MATCH, GAP_FILL, DWD_STATION, STATION, DWD_WARNINGS, CAMS, COMMUNITY, DWD_POLLEN, PEGELONLINE, NLWKN, GAUGES, LHP_ALERTS, BATHING, RADAR_NOW, RADAR_NOWCAST, MOSMIX, SATELLITE_NOW, RADAR_NOW_KNMI, RADAR_NOWCAST_KNMI }
 
 @Serializable
 data class Source(

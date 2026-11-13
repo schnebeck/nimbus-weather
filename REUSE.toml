@@ -168,7 +168,7 @@ SPDX-FileCopyrightText = "NOAA National Weather Service, Aviation Weather Center
 SPDX-License-Identifier = "LicenseRef-US-Government-Public-Domain"
 
 [[annotations]]
-path = "app/src/test/resources/fixtures/knmi_*.asc.gz"
+path = ["app/src/test/resources/fixtures/knmi_*.asc.gz", "app/src/test/resources/fixtures/knmi_*.json"]
 SPDX-FileCopyrightText = "Royal Netherlands Meteorological Institute (KNMI)"
 SPDX-License-Identifier = "CC-BY-4.0"
 
@@ -179,7 +179,7 @@ SPDX-License-Identifier = "CC-BY-4.0"
 
 # The DWD's radar (RADOLAN RW, RY; the radar map's analysis WN) at a point, recorded
 [[annotations]]
-path = ["app/src/test/resources/fixtures/radolan_*.json", "app/src/test/resources/fixtures/radar_wn_*.json"]
+path = ["app/src/test/resources/fixtures/radolan_*.json", "app/src/test/resources/fixtures/radar_*.json"]
 SPDX-FileCopyrightText = "Deutscher Wetterdienst (DWD), RADOLAN"
 SPDX-License-Identifier = "CC-BY-4.0"
 

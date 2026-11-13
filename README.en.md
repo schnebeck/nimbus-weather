@@ -306,7 +306,7 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
 | Current readings | DWD stations via [Bright Sky](https://brightsky.dev), [GeoSphere Austria](https://data.hub.geosphere.at), [MeteoSwiss](https://opendatadocs.meteoswiss.ch), [DMI](https://www.dmi.dk/friedata), airports (METAR, [aviationweather.gov](https://aviationweather.gov)) |
 | Sun and cloud of the forecast | the model weighed with DWD MOSMIX (station forecast, Europe) via Bright Sky |
 | Alerts, look-back | DWD alerts and stations via Bright Sky |
-| Measured over the place | Precipitation: DWD radar RADOLAN (RW, RY), Germany · sunshine: DWD from EUMETSAT MTG satellite data via [Open-Meteo](https://open-meteo.com/en/docs/satellite-radiation-api), Europe |
+| Measured over the place | Precipitation: DWD radar RADOLAN (RW, RY), Germany; where it has no data, the [KNMI radar](https://dataplatform.knmi.nl/dataset/radar-forecast-2-0) with its nowcast · sunshine: DWD from EUMETSAT MTG satellite data via [Open-Meteo](https://open-meteo.com/en/docs/satellite-radiation-api), Europe |
 | Radar, warning map | DWD GeoServer, [KNMI](https://english.knmidata.nl/open-data) (Netherlands), [MET Norway](https://www.met.no/en/free-meteorological-data) (Nordic composite); rest of Europe: [RainViewer](https://www.rainviewer.com/api.html) |
 | Satellite | Meteosat (MTG, GeoColour) via [EUMETView](https://view.eumetsat.int) – "Contains modified EUMETSAT Meteosat data", CC BY 4.0 |
 | Lightning | DWD GeoServer: flashes of Meteosat Third Generation's Lightning Imager (EUMETSAT), Europe and Africa |

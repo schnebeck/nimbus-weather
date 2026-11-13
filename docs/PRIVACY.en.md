@@ -19,7 +19,7 @@
 
 # Privacy policy – Nimbus
 
-Last updated: 3 November 2026
+Last updated: 13 November 2026
 
 ## In short
 
@@ -57,6 +57,7 @@ sends no device identifiers, no cookies and no device data; as its program name 
 | Open-Meteo (open-meteo.com) | forecast, model comparison, forecast spread (ensemble), air quality, pollen (CAMS), satellite sunshine in the look-back, the radar's temperature and wind layer (only to a grid of 1° to 0.125°) |
 | Bright Sky (brightsky.dev) | readings of DWD stations, warnings, look-back – Germany only |
 | Deutscher Wetterdienst (dwd.de) | radar values at the place, pollen region, lightning nearby |
+| KNMI (knmi.nl) | radar values and radar nowcast at the place – only where the DWD radar has no data there (one out of service, say) |
 | Sensor.Community | readings of citizen sensors around |
 | PEGELONLINE (WSV) | gauges nearby |
 | Saxon State Office for Environment, Agriculture and Geology | gauges in Saxony – here with the coordinates at full precision |

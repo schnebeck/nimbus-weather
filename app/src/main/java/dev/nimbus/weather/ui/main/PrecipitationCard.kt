@@ -30,6 +30,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
@@ -149,6 +151,7 @@ fun PrecipitationCard(data: WeatherData, now: Long, raining: Boolean = false, me
                 ),
                 fontSize = 14.sp, color = NimbusColors.Secondary,
             )
+            RadarOutLine(data)
         }
         return
     }
@@ -190,10 +193,26 @@ fun PrecipitationCard(data: WeatherData, now: Long, raining: Boolean = false, me
             },
             fontSize = 14.sp, color = Color.White,
         )
+        RadarOutLine(data)
         // The hour-by-hour chart is part of the 10-day forecast (in the temperature chart, or as
         // a chart of its own – setting "precipitation as its own chart")
     }
 }
+
+/** The DWD's radar out of service over the place: where the precipitation comes from instead. */
+@Composable
+private fun RadarOutLine(data: WeatherData) {
+    if (!data.dwdRadarOut) return
+    val knmi = data.radarNow?.source == dev.nimbus.weather.data.model.RadarSource.KNMI
+    Text(
+        stringResource(if (knmi) R.string.radar_out_knmi else R.string.radar_out_none),
+        fontSize = 12.sp, lineHeight = 16.sp, color = RadarOutColor,
+        modifier = Modifier.padding(top = 6.dp).testTag("radar-out"),
+    )
+}
+
+/** The colour of the card's status dot when it shows older values: something to know, not an alarm. */
+private val RadarOutColor = Color(0xFFFFD54F)
 
 /**
  * Umbrellas for the precipitation line, drawn in one style (24 × 24): same tip, shaft and hooked

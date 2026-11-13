@@ -19,7 +19,7 @@
 
 # Datenschutzerklärung – Nimbus
 
-Stand: 3. November 2026
+Stand: 13. November 2026
 
 ## Kurz gesagt
 
@@ -59,6 +59,7 @@ gröber) gehen an:
 | Open-Meteo (open-meteo.com) | Vorhersage, Modellvergleich, Streuung der Vorhersage (Ensemble), Luftqualität, Pollen (CAMS), Satelliten-Sonnenschein im Rückblick, Temperatur- und Windebene des Radars (nur auf ein Raster von 1° bis 0,125° genau) |
 | Bright Sky (brightsky.dev) | Messwerte der DWD-Stationen, Warnungen, Rückblick – nur in Deutschland |
 | Deutscher Wetterdienst (dwd.de) | Radarwerte am Ort, Pollenregion, Blitze in der Nähe |
+| KNMI (knmi.nl) | Radarwerte und Radarvorhersage am Ort – nur, wo das DWD-Radar dort keine Daten hat (etwa bei einem Ausfall) |
 | Sensor.Community | Messwerte von Bürger-Sensoren im Umkreis |
 | PEGELONLINE (WSV) | Pegel in der Nähe |
 | Landesamt für Umwelt, Landwirtschaft und Geologie Sachsen | Pegel in Sachsen – hier mit den Koordinaten in voller Genauigkeit |

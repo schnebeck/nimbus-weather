@@ -41,7 +41,11 @@ class SpotSource(
     private val http: OkHttpClient,
     private val wms: String = "https://maps.dwd.de/geoserver/dwd/wms",
     private val satellite: String = "https://satellite-api.open-meteo.com",
+    /** The KNMI's radar, asked where the DWD's has no data over the place (null: none). */
+    val knmi: KnmiSpot? = null,
 ) {
+    /** The radar over the place ([radar], null: none measures there) – [dwdNoData]: the DWD's answered "no data". */
+    data class RadarHere(val radar: RadarNow?, val dwdNoData: Boolean)
     /** Precipitation (mm) at the place, by the hour's end, for the hours ending [from] … [to]; empty outside the radar's area. */
     suspend fun radarPrecipitation(lat: Double, lon: Double, from: Long, to: Long): Map<Long, Double> = coroutineScope {
         // RW at its full hours only: the whole span (it keeps about 3½ days) in one request – asked
@@ -85,6 +89,16 @@ class SpotSource(
         val r = now(ry) ?: return@coroutineScope null.also { wn.cancel() }
         val ahead = wn.await()
         r.copy(steps = ry + ahead?.second.orEmpty().filterKeys { it > r.time }, issue = ahead?.first)
+    }
+
+    /**
+     * [radarNow] – and where the DWD's radar has no data over the place (one of its radars out of
+     * service, or beyond their reach), the KNMI's, where it measures.
+     */
+    suspend fun radarHere(lat: Double, lon: Double, now: Long): RadarHere {
+        radarNow(lat, lon, now)?.let { return RadarHere(it, dwdNoData = false) }
+        val knmiNow = knmi?.let { k -> runCatching { k.radarNow(lat, lon, now) }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }.getOrNull() }
+        return RadarHere(knmiNow, dwdNoData = true)
     }
 
     /** The satellite's hours at the place, by the hour's end, for the last [pastDays] days and today ([SatelliteSunshine]). */

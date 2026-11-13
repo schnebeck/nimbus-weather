@@ -115,9 +115,16 @@ der Mittelwert der Viertelstunde darunter bleibt. Die Seite
 wartet nicht darauf, das Radar kommt nach. Bleibt eine Antwort aus, gilt die letzte noch eine halbe
 Stunde: Der Himmel wechselt seine Quelle nicht mit jedem Laden.
 
-Misst kein Radar über dem Ort – etwa wenn eines ausgefallen ist –, meldet der DWD „keine Daten“
+Misst kein DWD-Radar über dem Ort – etwa wenn eines ausgefallen ist –, meldet der DWD „keine Daten“
 (RY −1, Analyse und Vorhersage −999 dBZ; trocken ist rund −64 dBZ). Das zählt nirgends als
-trocken: Jetzt, Rückblick und die nächsten zwei Stunden nehmen dann Station und Modell.
+trocken. Wo dann das Radar des KNMI misst (die Niederlande und ihre Nachbarn, der Nordwesten
+Deutschlands bis etwa 9,5° Ost), springt es ein: seine Reflektivität alle 5 Minuten (1 km,
+gleiche Regeln wie beim DWD; trocken −32 dBZ, „keine Daten“ 95,5) für jetzt und den Rückblick,
+seine Radarvorhersage (pySTEPS, 1 km, 5-Minuten-Schritte für zwei Stunden) für die nächsten
+Stunden. Ohne Schlüssel erlaubt der KNMI für alle zusammen 1000 Anfragen pro Stunde; Nimbus fragt
+ihn deshalb nur in diesem Fall. Wo auch er nicht misst, nehmen Station und Modell die Stelle ein.
+Die Niederschlagskarte sagt es dann („DWD-Radar hier ausgefallen – Niederschlag vom KNMI-Radar“
+bzw. „… Werte von Station und Modell, weniger genau“), die Datenquellen nennen das KNMI.
 
 Für die nächsten zwei Stunden nimmt Nimbus die Radarvorhersage des DWD (WN, Reflektivität alle
 5 Minuten, in Regen umgerechnet nach Marshall–Palmer, Z = 200·R^1,6; schwächer als 8 dBZ: nichts).

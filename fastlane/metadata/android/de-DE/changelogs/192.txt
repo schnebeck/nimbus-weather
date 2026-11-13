@@ -1,0 +1,3 @@
+• Widget: Hintergrund in eigener Farbe, die Schrift wird von selbst hell oder dunkel – passend zur Farbe und, je durchsichtiger, zum Hintergrundbild
+• Radar: Fällt ein DWD-Radar aus, füllen KNMI und RainViewer die Lücke, statt dass sie trocken aussieht
+• Ohne Radardaten über dem Ort gilt der Rückblick nicht mehr als trocken

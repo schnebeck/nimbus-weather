@@ -291,8 +291,9 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   Datum den Kalender; die übrigen Teile führen zu ihrer Stelle in Nimbus beim Ort des Widgets: das
   Wetter zur stündlichen Vorhersage, der Niederschlag zur Tagesvorhersage mit aufgeklapptem Heute,
   die Pollen zum Pollenflug (eingeklappt für den Moment geöffnet), alles andere – oder eine
-  ausgeblendete Kachel – zum Kopf der Seite. Farben des Systems (hell/dunkel,
-  ab Android 12 aus dem Hintergrundbild), Deckkraft einstellbar. Ort: „Mein Standort“ – wo die App
+  ausgeblendete Kachel – zum Kopf der Seite. Hintergrund in den Farben des Systems (hell/dunkel,
+  ab Android 12 aus dem Hintergrundbild) oder in einer eigenen Farbe, Deckkraft einstellbar; die
+  Schrift wird von selbst hell oder dunkel – passend zur Farbe und, je durchsichtiger, zum Hintergrundbild. Ort: „Mein Standort“ – wo die App
   das Handy zuletzt gefunden hat; das Widget sucht nicht selbst (keine Standortabfrage im
   Hintergrund), nach einem Ortswechsel einmal Nimbus öffnen oder aufs Wetter tippen –, ein
   gespeicherter Ort oder „Zuletzt in Nimbus angesehen“: der Ort, den die App zuletzt zeigte. Es holt das Wetter etwa alle 30 Minuten und auf ↻; was die App gerade geladen

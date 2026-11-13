@@ -1046,16 +1046,31 @@ class WidgetTest {
         v.picture().captureRoboImage("src/test/screenshots/widget_small.png")
     }
 
-    private fun look(name: String) {
+    /**
+     * A chosen colour, and the system's nearly clear over a light wallpaper: the writing dark or
+     * light by what shows behind it.
+     */
+    @Config(sdk = [35]) @Test fun theWidgetInAColour() = look("widget_colour", WidgetConfig(background = 0xFF2F64B5.toInt(), opacity = 1f))
+
+    @Config(sdk = [35], qualifiers = "+night")
+    @Test fun theWidgetClearOnALightWallpaper() = look("widget_clear_light_wallpaper", WidgetConfig(opacity = 0.1f), wallpaper = 0xFFE3DCCB.toInt())
+
+    private fun look(name: String, chosen: WidgetConfig = WidgetConfig(), wallpaper: Int = 0xFF6E7F8F.toInt()) {
         alarmAt(day + 30 * h)                                          // tomorrow 06:00
-        val v = render(WidgetConfig(pollen = listOf(PollenType.BIRCH, PollenType.GRASS, PollenType.HAZEL)), WidgetSize(320, 200), data(rainFrom = 40))
+        dev.nimbus.weather.widget.WidgetTint.wallpaper = { wallpaper }
+        val config = chosen.copy(pollen = listOf(PollenType.BIRCH, PollenType.GRASS, PollenType.HAZEL))
+        val v = try {
+            render(config, WidgetSize(320, 200), data(rainFrom = 40))
+        } finally {
+            dev.nimbus.weather.widget.WidgetTint.wallpaper = { null }
+        }
         assertEquals(View.VISIBLE, v.findViewById<View>(R.id.widget_chart).visibility)
         assertTrue(listOf(R.id.widget_pollen, R.id.widget_pollen_dots, R.id.widget_side).any { v.findViewById<View>(it).visibility == View.VISIBLE })
         assertNotNull(v.findViewById<TextView>(R.id.widget_rain_text).text)
         assertEquals("06:00", v.text(R.id.widget_alarm))
         assertTrue(v.findViewById<View>(R.id.widget_alarm_line).visibility == View.VISIBLE || v.findViewById<View>(R.id.widget_alarm_beside).visibility == View.VISIBLE)
         v.fixClocks()
-        v.picture().captureRoboImage("src/test/screenshots/$name.png")
+        v.picture(wallpaper).captureRoboImage("src/test/screenshots/$name.png")
     }
 
     /** The clock app's next alarm at [t]. */

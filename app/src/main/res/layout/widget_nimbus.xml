@@ -155,6 +155,7 @@
                         android:orientation="horizontal">
 
                         <ImageView
+                            android:id="@+id/widget_alarm_beside_icon"
                             android:layout_width="12dp"
                             android:layout_height="12dp"
                             android:importantForAccessibility="no"
@@ -278,6 +279,7 @@
                 android:orientation="horizontal">
 
                 <ImageView
+                    android:id="@+id/widget_alarm_icon"
                     android:layout_width="13dp"
                     android:layout_height="13dp"
                     android:importantForAccessibility="no"

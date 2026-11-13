@@ -857,6 +857,10 @@
     <string name="widget_setup_pollen">Pollen</string>
     <string name="widget_setup_pollen_desc">Die gewählten Arten mit ihrer Belastung heute; ist wenig Platz, nur die nennenswert fliegenden als Punkte. Keine gewählt: keine Pollen. Tippen öffnet den Pollenflug.</string>
     <string name="widget_setup_opacity">Hintergrund: %1$d\u00A0%%</string>
+    <string name="widget_color_system">Farbe des Systems</string>
+    <string name="widget_color_custom">Eigene Farbe</string>
+    <string name="widget_color_pick_title">Hintergrundfarbe</string>
+    <string name="widget_color_hint">Die Farbe des Systems ist tagsüber hell und nachts dunkel. Die Schrift wird von selbst hell oder dunkel: passend zur Farbe und, je durchsichtiger der Hintergrund, zum Hintergrundbild dahinter.</string>
     <string name="widget_setup_updates">Das Widget holt das Wetter etwa alle 30 Minuten, über WLAN wie mobile Daten. Was nicht in seine Größe passt, blendet es aus. Tippen anderswo öffnet den Kopf der Seite.</string>
     <string name="widget_setup_done">Fertig</string>
     <string name="notice_channel_warnings">Wetterwarnungen</string>

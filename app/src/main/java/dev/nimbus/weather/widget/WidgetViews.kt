@@ -421,6 +421,8 @@ object WidgetViews {
         )
 
         v.setInt(R.id.widget_bg, "setImageAlpha", (config.opacity.coerceIn(0f, 1f) * 255).toInt())
+        // the writing coloured for what lies behind it (null: the layout's own colours)
+        val ink = WidgetTint.apply(context, v, config)
 
         // left: the date, the time, the next alarm – the system keeps the clock and the date going
         v.visible(R.id.widget_clock_block, l.clock || l.date)
@@ -541,7 +543,7 @@ object WidgetViews {
                     l.statusStack -> l.widthDp - 6f - stackDp
                     else -> l.widthDp
                 }
-                v.setImageViewBitmap(R.id.widget_chart, chart(rain, (chartW.coerceAtLeast(60f) * density).toInt(), chartPx, density, scales(context, precip, locale, rainTop(rain, precip)), tf, fontScale))
+                v.setImageViewBitmap(R.id.widget_chart, chart(rain, (chartW.coerceAtLeast(60f) * density).toInt(), chartPx, density, scales(context, precip, locale, rainTop(rain, precip)), tf, fontScale, ink?.dim ?: TIME_GREY))
             }
         }
 
@@ -837,7 +839,7 @@ object WidgetViews {
      * much of the quarter hour is sunny (all of it fills the height), on the right the precipitation
      * per hour, linear from 0 to [Scales.rainTopMm] ([rainTop]); their units over them.
      */
-    fun chart(rain: WidgetWeather.Rain, w: Int, h: Int, density: Float, s: Scales, tf: TimeFormat, fontScale: Float = 1f): Bitmap {
+    fun chart(rain: WidgetWeather.Rain, w: Int, h: Int, density: Float, s: Scales, tf: TimeFormat, fontScale: Float = 1f, labels: Int = TIME_GREY): Bitmap {
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
         val plot = plot(s, density, fontScale)
@@ -847,7 +849,7 @@ object WidgetViews {
         fun x(t: Long) = x0 + ((t - rain.from) / span).coerceIn(0f, 1f) * (x1 - x0)
         val gap = density * 2f
         val narrower = density * 1.5f
-        val times = labelPaint(TIME_GREY, density, fontScale * 1.1f).apply { textAlign = Paint.Align.CENTER }
+        val times = labelPaint(labels, density, fontScale * 1.1f).apply { textAlign = Paint.Align.CENTER }
         val top = plot.top + density * 2
         val base = h - AXIS_DP * fontScale * density - density
         fun sunY(m: Double) = base - (m / SUN_TOP).toFloat().coerceIn(0f, 1f) * (base - top)
@@ -888,7 +890,7 @@ object WidgetViews {
         // the units in the colours of their bars, the values grey; the middle values only where the drawing has the height
         val sunText = labelPaint(sunFrame, density, fontScale)
         val rainText = labelPaint(rainFrame, density, fontScale).apply { textAlign = Paint.Align.LEFT }
-        val values = labelPaint(TIME_GREY, density, fontScale)
+        val values = labelPaint(labels, density, fontScale)
         val half = -(sunText.ascent() + sunText.descent()) / 2
         val roomy = base - top >= 34 * density
         fun tick(x: Float, y: Float, toLeft: Boolean) = c.drawLine(x, y, x + if (toLeft) -3 * density else 3 * density, y, line)

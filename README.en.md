@@ -279,8 +279,9 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   on the date the calendar; the
   other parts lead to their place in Nimbus at the widget's place: the weather to the hourly
   forecast, the precipitation to the daily forecast with today opened, the pollen to the pollen card
-  (opened for the moment if folded), anything else – or a card switched off – to the page's head. The system's colours (light/dark, from Android 12 on
-  from the wallpaper), adjustable opacity. Place: "My Location" – where the app last found the
+  (opened for the moment if folded), anything else – or a card switched off – to the page's head. The background in the system's colours (light/dark, from Android 12 on
+  from the wallpaper) or a colour of your own, adjustable opacity; the writing turns light or dark
+  by itself – to suit the colour and, the more transparent, the wallpaper. Place: "My Location" – where the app last found the
   phone; the widget does not look for it itself (no location in the background): after moving
   elsewhere open Nimbus once or tap the weather –, a saved place, or "Last looked at in Nimbus":
   the place the app showed last. It fetches the weather about

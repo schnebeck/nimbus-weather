@@ -54,7 +54,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -232,12 +231,7 @@ internal fun WidgetSetup(id: Int, store: Store, configs: WidgetConfigs, onDone: 
                 }
             }
         }
-        item {
-            Column {
-                Heading(stringResource(R.string.widget_setup_opacity, (c.opacity * 100).toInt()))
-                Slider(c.opacity, { config = c.copy(opacity = it) }, valueRange = 0f..1f, steps = 9)
-            }
-        }
+        item { WidgetBackgroundChoice(c) { config = it } }
         item { Text(stringResource(R.string.widget_setup_updates), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         item {
             Button(

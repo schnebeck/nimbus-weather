@@ -868,6 +868,10 @@
     <string name="widget_setup_pollen">Pollen</string>
     <string name="widget_setup_pollen_desc">The chosen types with today\'s level; with little room only those flying noteworthily, as points. None chosen: no pollen. A tap opens the pollen card.</string>
     <string name="widget_setup_opacity">Background: %1$d\u00A0%%</string>
+    <string name="widget_color_system">The system\'s colour</string>
+    <string name="widget_color_custom">A colour of your own</string>
+    <string name="widget_color_pick_title">Background colour</string>
+    <string name="widget_color_hint">The system\'s colour is light by day and dark by night. The writing turns light or dark by itself: to suit the colour and, the more transparent the background, the wallpaper behind it.</string>
     <string name="widget_setup_updates">The widget fetches the weather about every 30 minutes, over Wi-Fi and mobile data alike. What does not fit its size it leaves out. A tap elsewhere opens the head of the page.</string>
     <string name="widget_setup_done">Done</string>
     <string name="notice_channel_warnings">Weather warnings</string>

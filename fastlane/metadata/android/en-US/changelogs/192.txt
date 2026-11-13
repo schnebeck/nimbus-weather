@@ -1,0 +1,3 @@
+• Widget: a background in a colour of your own, the writing light or dark by itself – to suit the colour and, the more transparent, the wallpaper
+• Radar: when a DWD radar is out of service, KNMI and RainViewer fill the gap instead of it looking dry
+• Without radar data over the place the look-back no longer counts as dry

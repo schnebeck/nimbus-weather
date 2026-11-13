@@ -160,7 +160,8 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
 - **Rain radar**: DWD radar with a 2-hour nowcast for Germany, KNMI radar for the Netherlands, MET
   Norway's radar for Norway, Sweden, Finland and Denmark (1 km, zoomed out an overview in coarser
   cells), RainViewer for the rest of Europe (every 10 minutes, the steps between computed from the
-  motion; the time line follows the place's radar), one colour scale for
+  motion; the time line follows the place's radar; where a DWD radar is out of service, KNMI and
+  RainViewer fill the gap – Nimbus reads the radars' reach anew every hour), one colour scale for
   rain or snow per pixel by the temperature: by default calm in blue (rain sky blue → blue →
   violet → magenta, snow grey → white; readable with red-green colour blindness too), optionally
   contrast (rain green → yellow → red → magenta, snow turquoise → white → violet); the legend

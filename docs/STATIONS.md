@@ -115,6 +115,10 @@ der Mittelwert der Viertelstunde darunter bleibt. Die Seite
 wartet nicht darauf, das Radar kommt nach. Bleibt eine Antwort aus, gilt die letzte noch eine halbe
 Stunde: Der Himmel wechselt seine Quelle nicht mit jedem Laden.
 
+Misst kein Radar über dem Ort – etwa wenn eines ausgefallen ist –, meldet der DWD „keine Daten“
+(RY −1, Analyse und Vorhersage −999 dBZ; trocken ist rund −64 dBZ). Das zählt nirgends als
+trocken: Jetzt, Rückblick und die nächsten zwei Stunden nehmen dann Station und Modell.
+
 Für die nächsten zwei Stunden nimmt Nimbus die Radarvorhersage des DWD (WN, Reflektivität alle
 5 Minuten, in Regen umgerechnet nach Marshall–Palmer, Z = 200·R^1,6; schwächer als 8 dBZ: nichts).
 Mit den gemessenen Schritten der laufenden Stunde ersetzt sie das Modell in den Viertelstunden und

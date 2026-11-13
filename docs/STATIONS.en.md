@@ -114,6 +114,10 @@ hour's average stays below. The page
 does not wait for it, the radar follows. When an answer does not come, the last one holds for
 another half hour: the sky does not change its source with every load.
 
+When no radar measures over the place – one out of service, say – the DWD answers "no data"
+(RY −1, analysis and nowcast −999 dBZ; dry is about −64 dBZ). That counts as dry nowhere: now,
+the look-back and the next two hours then take the station and the model.
+
 For the next two hours Nimbus takes the DWD's radar nowcast (WN, reflectivity every 5 minutes,
 turned into rain by Marshall–Palmer, Z = 200·R^1.6; weaker than 8 dBZ: none). With the measured
 steps of the running hour it replaces the model in the quarter hours and hours it covers in full:

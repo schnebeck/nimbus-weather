@@ -156,11 +156,11 @@ class SpotSource(
         fun fullHours(from: Long, to: Long): String =
             ((from + HOUR_MS - 1) / HOUR_MS * HOUR_MS..to step HOUR_MS).joinToString(",") { iso(it) }
 
-        /** The analysis' answer: the time of each step → its rate (mm/h, 0: no echo); a step without a value left out. */
+        /** The analysis' answer: the time of each step → its rate (mm/h, 0: no echo); a step without a value or "no data" left out. */
         fun analysis(root: JsonElement): Map<Long, Double> = root.obj()?.a("features").orEmpty().mapNotNull { e ->
             val p = (e as? JsonObject)?.o("properties") ?: return@mapNotNull null
             val t = runCatching { Instant.parse(p.s("TIME")).toEpochMilli() }.getOrNull() ?: return@mapNotNull null
-            val dbz = p.keys.firstOrNull { it != "TIME" && it != "REFERENCE_TIME" }?.let { p.d(it) } ?: return@mapNotNull null
+            val dbz = p.keys.firstOrNull { it != "TIME" && it != "REFERENCE_TIME" }?.let { p.d(it) }?.takeIf { it > NO_DATA_DBZ } ?: return@mapNotNull null
             t to kotlin.math.round(rate(dbz) * 100) / 100
         }.toMap()
 
@@ -189,6 +189,11 @@ class SpotSource(
         const val TRY_MS = 7_000L
         /** Weaker echoes are no precipitation (as on the radar map). */
         const val WET_DBZ = 8.0
+        /**
+         * The reflectivity layers' "no data" (-999: beyond the radars, or a radar out of service)
+         * lies below this; a dry pixel is about -64 dBZ.
+         */
+        const val NO_DATA_DBZ = -100.0
         /** The steps [radarNow] averages: a quarter of an hour. */
         const val NOW_STEPS = 3
 
@@ -205,14 +210,14 @@ class SpotSource(
          */
         fun rate(dbz: Double): Double = if (dbz < WET_DBZ) 0.0 else Math.pow(Math.pow(10.0, dbz / 10) / 200, 1 / 1.6)
 
-        /** The nowcast's answer: its analysis, and the mm of each 5 minutes by their ends; null: none. */
+        /** The nowcast's answer: its analysis, and the mm of each 5 minutes by their ends ("no data" left out); null: none. */
         fun nowcast(root: JsonElement): Pair<Long?, Map<Long, Double>>? {
             var issue: Long? = null
             val steps = root.obj()?.a("features").orEmpty().mapNotNull { e ->
                 val p = (e as? JsonObject)?.o("properties") ?: return@mapNotNull null
                 val t = runCatching { Instant.parse(p.s("TIME")).toEpochMilli() }.getOrNull() ?: return@mapNotNull null
                 p.s("REFERENCE_TIME")?.let { r -> runCatching { Instant.parse(r).toEpochMilli() }.getOrNull() }?.let { issue = it }
-                val dbz = p.keys.firstOrNull { it != "TIME" && it != "REFERENCE_TIME" }?.let { p.d(it) } ?: return@mapNotNull null
+                val dbz = p.keys.firstOrNull { it != "TIME" && it != "REFERENCE_TIME" }?.let { p.d(it) }?.takeIf { it > NO_DATA_DBZ } ?: return@mapNotNull null
                 t to kotlin.math.round(rate(dbz) * STEP_MS / HOUR_MS * 1000) / 1000
             }.toMap()
             return if (steps.isEmpty()) null else issue to steps

@@ -33,9 +33,16 @@ internal object DwdCoverage {
     const val LAT0 = 45.6
     const val LAT1 = 56.3
 
-    /** One DWD image of the newest step (~20 kB), at most once a month. */
-    private val mask = CoverageMask("dwd_coverage.png", LON0, LAT0, LON1, LAT1, W, H, url = { http ->
-        (RadarLatest.known(DwdRadar) ?: RadarLatest.check(http, DwdRadar))?.let { time ->
+    /**
+     * A radar out of service leaves a hole of "no data" grey in the composite, open to the grey
+     * around it: the mask is renewed every hour, so KNMI and RainViewer fill the hole.
+     */
+    const val RENEW_MS = 3_600_000L
+
+    /** One DWD image of the newest step (~20 kB), at most once an hour. */
+    private val mask = CoverageMask("dwd_coverage.png", LON0, LAT0, LON1, LAT1, W, H, maxAgeMs = RENEW_MS, url = { http ->
+        val known = RadarLatest.known(DwdRadar)?.takeIf { System.currentTimeMillis() - it < RENEW_MS }
+        (known ?: RadarLatest.check(http, DwdRadar))?.let { time ->
             DwdRadar.WMS + "?service=WMS&version=1.1.1&request=GetMap&layers=${DwdRadar.LAYER}" +
                 "&styles=&format=image/png&transparent=true&srs=EPSG:4326&bbox=$LON0,$LAT0,$LON1,$LAT1" +
                 "&width=$W&height=$H&time=${RadarSources.isoTime(time)}"

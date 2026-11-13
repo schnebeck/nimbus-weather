@@ -252,6 +252,8 @@ class MainViewModel(
                 maybePrefetchRadar(place, st.settings)
             }
         }
+        // the radars' reach, renewed by its age – the radar opens with it at hand
+        viewModelScope.launch { dev.nimbus.weather.ui.radar.RadarComposites.prepare(container.http) }
         if (!_state.value.initialized) return
         // what went out of date while the app was away: at once, before anything is fetched
         shelf.checkAll()

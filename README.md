@@ -162,7 +162,8 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
 - **Regenradar**: DWD-Radar mit 2-h-Vorhersage für Deutschland, KNMI-Radar für die Niederlande,
   MET-Norway-Radar für Norwegen, Schweden, Finnland und Dänemark (1 km, herausgezoomt als Übersicht in
   gröberen Zellen), RainViewer für das übrige Europa (alle 10 Minuten, die Schritte dazwischen aus der
-  Bewegung berechnet; die Zeitachse richtet sich nach dem Radar des Ortes), einheitliche
+  Bewegung berechnet; die Zeitachse richtet sich nach dem Radar des Ortes; wo ein DWD-Radar
+  ausfällt, füllen KNMI und RainViewer die Lücke – die Reichweite der Radare liest Nimbus stündlich neu), einheitliche
   Farbskala, pro Pixel nach der Temperatur Regen oder Schnee: voreingestellt ruhig in Blau (Regen
   himmelblau → blau → violett → magenta, Schnee grau → weiß; auch bei Rot-Grün-Schwäche lesbar),
   wahlweise Kontrast (Regen grün → gelb → rot → magenta, Schnee türkis → weiß → violett); die

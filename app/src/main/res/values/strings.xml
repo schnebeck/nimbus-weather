@@ -184,6 +184,7 @@
     <string name="radar_scale_heavy">heavy</string>
     <string name="radar_scale_severe">severe</string>
     <string name="radar_forecast_partly">Forecast for Germany only – grey: no forecast</string>
+    <string name="radar_dwd_out">A DWD radar is out of service – KNMI and RainViewer there, without a forecast</string>
     <string name="radar_forecast_germany_only">Radar forecast (nowcast) only available for Germany</string>
     <string name="radar_minutes_ago">%1$d min ago</string>
     <string name="radar_minutes_ahead">in %1$d min</string>
@@ -581,14 +582,14 @@
     <string name="src_gauges">Water levels: %1$s</string>
     <string name="src_lhp_alerts">Flood alerts: LHP</string>
     <string name="src_radar_now">Precipitation now: DWD radar over the place</string>
-    <string name="src_satellite_now">Sky now: the DWD\'s sunshine from satellite data over the place</string>
     <string name="src_radar_now_knmi">Precipitation now: KNMI radar over the place</string>
+    <string name="src_satellite_now">Sky now: the DWD\'s sunshine from satellite data over the place</string>
     <string name="src_mosmix">Sun and cloud: weighed with DWD MOSMIX, station %1$s\u00A0(%2$s km)</string>
     <string name="src_radar_nowcast">Precipitation of the next 2 hours: DWD radar nowcast</string>
-    <string name="outlook_precip_chance">Chance of precipitation %1$d %%.</string>
     <string name="src_radar_nowcast_knmi">Precipitation of the next 2 hours: KNMI radar nowcast</string>
     <string name="radar_out_knmi">DWD radar out of service here – precipitation from the KNMI radar</string>
     <string name="radar_out_none">Radar out of service here – values from station and model, less precise</string>
+    <string name="outlook_precip_chance">Chance of precipitation %1$d %%.</string>
     <string name="settings_cards">Cards</string>
     <string name="settings_cards_desc">The switch shows or hides a card. Folding, hiding and arranging work right on the page too: hold a card on the weather page.</string>
     <string name="places_edit_done">Done</string>

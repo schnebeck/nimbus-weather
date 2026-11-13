@@ -183,6 +183,12 @@ path = ["app/src/test/resources/fixtures/radolan_*.json", "app/src/test/resource
 SPDX-FileCopyrightText = "Deutscher Wetterdienst (DWD), RADOLAN"
 SPDX-License-Identifier = "CC-BY-4.0"
 
+# The DWD radars' full reach, read from their composite (tools/dwd_reach_reference.py)
+[[annotations]]
+path = "app/src/main/resources/dev/nimbus/weather/ui/radar/dwd_reach_reference.bin"
+SPDX-FileCopyrightText = ["(C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>", "Derived from data of Deutscher Wetterdienst (DWD), radar composite"]
+SPDX-License-Identifier = "CC-BY-4.0"
+
 # The sunshine models, learnt by tools/sunshine_calibration.py from DWD stations (via Bright Sky),
 # the satellite (DWD SIS from EUMETSAT MTG) and archived forecasts, via Open-Meteo
 [[annotations]]

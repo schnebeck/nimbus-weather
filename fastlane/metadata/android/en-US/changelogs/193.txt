@@ -1,0 +1,3 @@
+• When a DWD radar over the place is out of service, the KNMI radar stands in – now, in the look-back and with its two-hour nowcast; the precipitation card says so
+• Radar map: a note when a DWD radar is out of service
+• Wind barbs from the north-west no longer reach into the sunshine row

@@ -66,6 +66,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -214,6 +215,7 @@ fun RadarScreen(
     val nowcastHere by player.nowcastHere.collectAsState()
     val compositeHere by player.compositeHere.collectAsState()
     val nowcastEverywhere by player.nowcastEverywhere.collectAsState()
+    val dwdOut by player.dwdOut.collectAsState()
     var frame by remember { mutableIntStateOf(0) }
     var playing by remember { mutableStateOf(false) }
     /** How long "now" was seen while the loop loaded, until it started by itself (ms). */
@@ -609,6 +611,16 @@ fun RadarScreen(
                     }
                 }
                 if (!archive) Spacer(Modifier.height(8.dp))
+                // a DWD radar out of service: its area from the neighbours, and without a forecast
+                if (!archive && dwdOut) {
+                    Text(
+                        stringResource(R.string.radar_dwd_out),
+                        Modifier.clip(RoundedCornerShape(8.dp)).background(Color(0x66000000)).padding(horizontal = 8.dp, vertical = 4.dp)
+                            .testTag("radar-dwd-out"),
+                        fontSize = 12.sp, color = Color(0xFFFFD27A),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
                 // the forecast part greyed out: said why – and in a step of the forecast, what is grey
                 val partly = !archive && f.isForecast && nowcastHere && !nowcastEverywhere
                 if (!archive && !nowcastHere && tl.lastShown(false) < tl.frames.lastIndex || partly) {

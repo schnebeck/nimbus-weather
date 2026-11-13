@@ -91,6 +91,10 @@ class RadarPlayer(
     private val _nowcastEverywhere = MutableStateFlow(true)
     /** Whether the nowcast covers the whole picture area – else its forecast steps are grey beyond it. */
     val nowcastEverywhere: StateFlow<Boolean> = _nowcastEverywhere
+
+    /** One of the DWD's radars is out of service in the picture area ([DwdReach]). */
+    private val _dwdOut = MutableStateFlow(false)
+    val dwdOut: StateFlow<Boolean> = _dwdOut
     /** The picture area's pixels beyond every nowcast: grey in the forecast steps. */
     @Volatile private var noForecast: BooleanArray? = null
     private val _compositeHere = MutableStateFlow(true)
@@ -354,6 +358,8 @@ class RadarPlayer(
             val nowcasts = inArea.filterKeys { it.hasNowcast }.values
             noForecast = BooleanArray(g.w * g.h) { i -> nowcasts.none { it[i] } }.also { m -> _nowcastEverywhere.value = m.none { it } }
             _compositeHere.value = inArea.values.any { mask -> mask.any { it } }
+            _dwdOut.value = DwdReach.outIn(g.west, g.east, g.south, g.north)
+            if (dev.nimbus.weather.BuildConfig.DEBUG) android.util.Log.d("NimbusRadar", "DWD radar out in the area: ${_dwdOut.value} (${DwdReach.state()}, area ${g.west}..${g.east} E, ${g.south}..${g.north} N)")
             val builder = FrameBuilder(http, tl, g, inArea, screenSmooth)
             wake.trySend(Unit)
             val strides = Progressive.strides(stepMinutes(tl))

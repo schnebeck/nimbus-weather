@@ -72,6 +72,9 @@ class CoverageMask(
         takenAt = kept.at
     }
 
+    /** The mask in use (null: none loaded). */
+    internal val current: BooleanArray? get() = mask
+
     /** For tests: the mask as given. */
     internal fun set(m: BooleanArray) { mask = m }
 }

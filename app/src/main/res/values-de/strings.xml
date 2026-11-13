@@ -176,6 +176,7 @@
     <string name="radar_scale_heavy">stark</string>
     <string name="radar_scale_severe">Unwetter</string>
     <string name="radar_forecast_partly">Vorhersage nur für Deutschland – grau: ohne Vorhersage</string>
+    <string name="radar_dwd_out">Ein DWD-Radar ist ausgefallen – dort KNMI und RainViewer, ohne Vorhersage</string>
     <string name="radar_forecast_germany_only">Radarvorhersage (Nowcast) nur für Deutschland verfügbar</string>
     <string name="radar_minutes_ago">vor %1$d Min.</string>
     <string name="radar_minutes_ahead">in %1$d Min.</string>
@@ -570,14 +571,14 @@
     <string name="src_gauges">Pegel: %1$s</string>
     <string name="src_lhp_alerts">Hochwasserwarnungen: LHP</string>
     <string name="src_radar_now">Niederschlag jetzt: DWD-Radar über dem Ort</string>
-    <string name="src_satellite_now">Himmel jetzt: Sonnenschein des DWD aus Satellitendaten über dem Ort</string>
     <string name="src_radar_now_knmi">Niederschlag jetzt: KNMI-Radar über dem Ort</string>
+    <string name="src_satellite_now">Himmel jetzt: Sonnenschein des DWD aus Satellitendaten über dem Ort</string>
     <string name="src_mosmix">Sonne und Wolken: mit DWD MOSMIX abgeglichen, Station %1$s\u00A0(%2$s km)</string>
     <string name="src_radar_nowcast">Niederschlag der nächsten 2 Stunden: DWD-Radarvorhersage</string>
-    <string name="outlook_precip_chance">Niederschlagswahrscheinlichkeit %1$d %%.</string>
     <string name="src_radar_nowcast_knmi">Niederschlag der nächsten 2 Stunden: KNMI-Radarvorhersage</string>
     <string name="radar_out_knmi">DWD-Radar hier ausgefallen – Niederschlag vom KNMI-Radar</string>
     <string name="radar_out_none">Radar hier ausgefallen – Werte von Station und Modell, weniger genau</string>
+    <string name="outlook_precip_chance">Niederschlagswahrscheinlichkeit %1$d %%.</string>
     <string name="settings_cards">Kacheln</string>
     <string name="settings_cards_desc">Der Schalter blendet eine Kachel ein oder aus. Einklappen, ausblenden und anordnen geht auch direkt: auf der Wetterseite eine Kachel lange drücken.</string>
     <string name="places_edit_done">Fertig</string>

@@ -54,7 +54,11 @@ internal object DwdCoverage {
 
     val ready: Boolean get() = mask.ready
 
-    suspend fun ensure(http: OkHttpClient) = mask.ensure(http)
+    /** The mask loaded or renewed – and joined to the widest reach seen ([DwdReach]). */
+    suspend fun ensure(http: OkHttpClient) {
+        mask.ensure(http)
+        mask.current?.let(DwdReach::join)
+    }
 
     /**
      * Covered pixels from a DWD composite image ([argb], row by row): everything that is not the

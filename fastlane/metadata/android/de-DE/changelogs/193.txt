@@ -1,0 +1,3 @@
+• Fällt ein DWD-Radar über dem Ort aus, springt das KNMI-Radar ein – jetzt, im Rückblick und mit seiner Vorhersage für zwei Stunden; die Niederschlagskarte sagt es
+• Radarkarte: Hinweis, wenn ein DWD-Radar ausgefallen ist
+• Windfiedern ragen bei Nordwest nicht mehr in die Sonnenzeile

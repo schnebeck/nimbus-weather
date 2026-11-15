@@ -240,6 +240,12 @@ class OpenMeteoSource(
     }
 
     companion object {
+        /** The languages the app has texts in: the place names come in the one shown. */
+        private val APP_LANGUAGES = setOf("en", "de", "it")
+
+        /** The place search's language for the app's [language]: that one where the app speaks it, else English. */
+        fun searchLanguage(language: String): String = language.takeIf { it in APP_LANGUAGES } ?: "en"
+
         const val CURRENT = "temperature_2m,apparent_temperature,relative_humidity_2m,dew_point_2m,is_day," +
             "precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m," +
             "wind_gusts_10m,visibility,uv_index"

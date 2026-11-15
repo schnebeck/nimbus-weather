@@ -46,6 +46,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.job
 import kotlinx.coroutines.isActive
+import dev.nimbus.weather.data.remote.OpenMeteoSource
 import java.util.Locale
 
 /** What the view model works with: the app's own ([of]) – or stand-ins in a test. */
@@ -195,8 +196,9 @@ class MainViewModel(
         }
     }
 
-    private val german: Boolean
-        get() = getApplication<Application>().resources.configuration.locales[0].language == Locale.GERMAN.language
+    /** The place search answers in the app's language – one it has texts in, else English. */
+    private val searchLanguage: String
+        get() = OpenMeteoSource.searchLanguage(getApplication<Application>().resources.configuration.locales[0].language)
 
     /**
      * A record went out of date (its time was up, or a failed one is to be asked again): fetched
@@ -590,7 +592,7 @@ class MainViewModel(
     // ---- places -------------------------------------------------------------
 
     suspend fun search(query: String): List<Place> =
-        runCatching { repo.search(query, if (german) "de" else "en") }.getOrDefault(emptyList())
+        runCatching { repo.search(query, searchLanguage) }.getOrDefault(emptyList())
 
     fun addPlace(place: Place) {
         viewModelScope.launch {

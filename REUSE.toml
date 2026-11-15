@@ -52,7 +52,7 @@ SPDX-License-Identifier = "GPL-3.0-or-later"
 # Reference images of the screenshot tests: the charts rendered from made-up test data; the
 # widget's picture in the launcher's list is one of them
 [[annotations]]
-path = ["app/src/test/screenshots/*.png", "app/src/main/res/drawable-nodpi/widget_preview.png", "app/src/main/res/drawable-de-nodpi/widget_preview.png"]
+path = ["app/src/test/screenshots/*.png", "app/src/main/res/drawable-nodpi/widget_preview.png", "app/src/main/res/drawable-de-nodpi/widget_preview.png", "app/src/main/res/drawable-it-nodpi/widget_preview.png"]
 SPDX-FileCopyrightText = "(C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>"
 SPDX-License-Identifier = "GPL-3.0-or-later"
 

@@ -968,13 +968,22 @@ class WidgetTest {
         v.picture(wallpaper = null).captureRoboImage("src/test/screenshots/widget_picker_en.png")
     }
 
+    /** And in Italian (drawable-it-nodpi). */
+    @Config(sdk = [35], qualifiers = "it-rIT-w411dp-h891dp-xxhdpi")
+    @Test fun theWidgetInThePickerInItalian() {
+        val v = render(WidgetConfig(pollen = listOf(PollenType.BIRCH, PollenType.GRASS)), WidgetSize(320, 200), data(rainFrom = 40))
+        v.fixClocks()
+        assertEquals("Pioggia debole dalle 11:00 circa", v.text(R.id.widget_rain_text))
+        v.picture(wallpaper = null).captureRoboImage("src/test/screenshots/widget_picker_it.png")
+    }
+
     /**
      * The pictures in the launcher's list are the widget of now: its reference pictures at two
      * thirds – compared in blocks of 20 px, so a chart of another kind or length shows.
      */
     @Test fun thePickersPictureIsTheWidgetOfNow() {
         fun img(path: String) = javax.imageio.ImageIO.read(java.io.File(path))
-        for ((ref, res) in listOf("widget_picker.png" to "drawable-de-nodpi", "widget_picker_en.png" to "drawable-nodpi")) {
+        for ((ref, res) in listOf("widget_picker.png" to "drawable-de-nodpi", "widget_picker_en.png" to "drawable-nodpi", "widget_picker_it.png" to "drawable-it-nodpi")) {
             val shown = img("src/main/res/$res/widget_preview.png")
             val made = img("src/test/screenshots/$ref")
             assertEquals(made.width * 2 / 3, shown.width)

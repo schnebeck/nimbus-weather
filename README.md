@@ -23,7 +23,7 @@ Nimbus symbolisiert das aktuelle Wetter mit passenden kleinen Hintergrundanimati
 Regen, Schnee oder ein Sternenhimmel. Die Daten kommen von den Wetterdiensten Europas – Messwerte der
 nächsten Wetterstation (DWD, GeoSphere Austria, MeteoSwiss, DMI, sonst ein Flughafen), die Vorhersage
 des feinsten Modells für den Ort oder eines Modells nach Wahl, auch je Ort, und das Regenradar von DWD
-und KNMI. Keine Werbung, kein Konto, keine Google-Dienste.
+und KNMI. Keine Werbung, kein Konto, keine Google-Dienste. Die App spricht Deutsch, Englisch und Italienisch.
 
 <p align="center">
   <img src="docs/screenshots/scenes.png" width="820" alt="Animierte Wetterszenen: Sonne, Herbstlaub, Gewitter, Schnee, Regen, klare Nacht">

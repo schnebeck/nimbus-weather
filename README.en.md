@@ -23,7 +23,7 @@ Nimbus reflects the current weather with small matching background animations â€
 rain, snow or a starry sky. The data comes from Europe's weather services â€“ readings from the
 nearest weather station (DWD, GeoSphere Austria, MeteoSwiss, DMI, else an airport), the forecast of
 the finest model for the place or of a model of your choice, per place too, and the rain radar of
-the DWD and the KNMI. No ads, no account, no Google services. The app speaks English and German.
+the DWD and the KNMI. No ads, no account, no Google services. The app speaks English, German and Italian.
 
 <p align="center">
   <img src="docs/screenshots/scenes.png" width="820" alt="Animated weather scenes: sun, autumn leaves, thunderstorm, snow, rain, clear night">

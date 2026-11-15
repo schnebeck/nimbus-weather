@@ -13,7 +13,7 @@
 
   SPDX-FileCopyrightText: (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
   SPDX-FileContributor: Anthropic Claude Opus 5.5 (AI generated content)
-  SPDX-FileContributor: Marco Altomonte (Italian translation)
+  SPDX-FileContributor: Marco Altomonte (first Italian translation)
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
 <resources>
@@ -67,6 +67,22 @@
     <string name="open_radar">Apri radar</string>
     <string name="model_comparison">Confronto modelli</string>
     <string name="model_comparison_hint">Previsione della temperatura di diversi modelli meteo per le prossime 72 ore</string>
+    <string name="spread_card">Dispersione delle previsioni</string>
+    <string name="spread_hint">Quanto sono certi i prossimi giorni – più larga è la fascia, meno certa è la previsione</string>
+    <string name="spread_summary">Massima di domani probabilmente tra %1$s e %2$s, %3$s tra %4$s e %5$s</string>
+    <string name="spread_median">Andamento medio</string>
+    <string name="spread_inner">Probabile (8 su 10)</string>
+    <string name="spread_all">Possibile</string>
+    <string name="spread_rain">Barre: precipitazioni del giorno, la linea quanto potrebbero essere. Sopra: la probabilità di almeno %1$s</string>
+    <string name="spread_unavailable">Al momento non è possibile caricare la dispersione – nuovo tentativo a breve.</string>
+    <string name="spread_cursor_hint">Tieni premuto per i valori di ogni ora e del suo giorno</string>
+    <string name="spread_col_middle">Medio</string>
+    <string name="spread_col_inner">8 su 10</string>
+    <string name="spread_col_all">Possibile</string>
+    <string name="spread_row_temp">Temperatura</string>
+    <string name="spread_row_high">Massima del giorno</string>
+    <string name="spread_row_precip">Precipitazioni</string>
+    <string name="spread_wet_chance">Probabilità di %1$s o più</string>
     <string name="community_sensors">Sensori della community</string>
     <string name="community_sensors_detail">Mediana di %1$d sensori cittadini entro %2$s km (Sensor.Community)</string>
     <string name="community_spread">Dispersione ±%1$s</string>
@@ -171,6 +187,7 @@
     <string name="radar_scale_heavy">forte</string>
     <string name="radar_scale_severe">molto forte</string>
     <string name="radar_forecast_partly">Previsione solo per la Germania – grigio: nessuna previsione</string>
+    <string name="radar_dwd_out">Un radar DWD è fuori servizio – lì KNMI e RainViewer, senza previsione</string>
     <string name="radar_forecast_germany_only">Previsione radar (nowcast) disponibile solo per la Germania</string>
     <string name="radar_minutes_ago">%1$d min fa</string>
     <string name="radar_minutes_ahead">tra %1$d min</string>
@@ -229,6 +246,8 @@
     <string name="settings_units">Unità di misura</string>
     <string name="settings_temperature">Temperatura</string>
     <string name="settings_wind">Velocità del vento</string>
+    <string name="settings_wind_barbs">Barbe del vento</string>
+    <string name="settings_wind_barbs_desc">Al posto delle frecce (dove soffia il vento): barbe che indicano da dove proviene, la forza in tratti – mezzo 5 kn, intero 10 kn, bandierina 50 kn. Nei grafici giornalieri e sul radar.</string>
     <string name="settings_precipitation">Precipitazioni</string>
     <string name="settings_stations">Valori attuali: misurati, non modellati</string>
     <string name="settings_stations_desc">Le misurazioni della stazione più vicina all\'altitudine del luogo sostituiscono i valori del modello: DWD, GeoSphere, MeteoSwiss, DMI, altrimenti aeroporti (METAR)</string>
@@ -437,7 +456,7 @@
     <string name="term_uv_title">Indice UV</string>
     <string name="term_uv_body">L\'indice UV misura la forza della radiazione ultravioletta del sole, che causa scottature e danni alla pelle. Dipende dall\'altezza del sole, dalle nuvole, dall\'ozono e dall\'altitudine.\n\n• 0–⁠2 basso: nessuna protezione necessaria\n• 3–⁠5 moderato: protezione raccomandata a metà giornata\n• 6–⁠7 alto: protezione necessaria, cerca l\'ombra a metà giornata\n• 8–⁠10 molto alto: evita il sole a metà giornata\n• 11+ estremo\n\nNeve, acqua e sabbia riflettono i raggi UV aumentando l\'esposizione. Le nuvole la riducono, ma nubi sottili lasciano passare la maggior parte dei raggi UV.</string>
     <string name="term_wind_title">Vento e Raffiche</string>
-    <string name="term_wind_body">La velocità del vento è la media di circa 10 minuti, misurata a un\'altezza di 10 m. Le raffiche sono brevi picchi della durata di pochi secondi e possono essere molto più forti della media.\n\nLa direzione è quella da cui proviene il vento: un vento da ovest soffia da ovest verso est. La freccia nella bussola indica dove soffia il vento.\n\nScala Beaufort (esempi): 3 = brezza leggera (12–⁠19 km/h), 5 = brezza tesa (29–⁠38), 7 = vento forte (50–⁠61), 9 = forte tempesta (75–⁠88), 12 = uragano (≥ 118 km/h). Lo sfondo animato mostra anche vento e raffiche – nuvole, pioggia e foglie si muovono di conseguenza.</string>
+    <string name="term_wind_body">La velocità del vento è la media di circa 10 minuti, misurata a un\'altezza di 10 m. Le raffiche sono brevi picchi della durata di pochi secondi e possono essere molto più forti della media.\n\nLa direzione è quella da cui proviene il vento: un vento da ovest soffia da ovest verso est. La freccia nella bussola indica dove soffia il vento.\n\nScala Beaufort (esempi): 3 = brezza leggera (12–⁠19 km/h), 5 = brezza tesa (29–⁠38), 7 = vento forte (50–⁠61), 9 = forte tempesta (75–⁠88), 12 = uragano (≥ 118 km/h). Lo sfondo animato mostra anche vento e raffiche – nuvole, pioggia e foglie si muovono di conseguenza.\n\nBarbe del vento (impostazione): l\'asta indica da dove proviene il vento; alla sua estremità un mezzo tratto significa 5 nodi (9 km/h), uno intero 10 nodi (19 km/h), una bandierina 50 nodi (93 km/h); un cerchio: calma.</string>
     <string name="term_visibility_title">Visibilità</string>
     <string name="term_visibility_body">La visibilità è la distanza alla quale gli oggetti possono ancora essere distinti chiaramente. È ridotta da nebbia, foschia, precipitazioni, polvere o fumo.\n\nI meteorologi parlano di nebbia quando la visibilità è inferiore a 1 km. Valori superiori a 20 km indicano aria molto limpida. La visibilità viene misurata automaticamente presso le stazioni DWD; altrimenti proviene dal modello di previsione.\n\nUn\'elevata umidità e una buona visibilità non sono in contraddizione: il vapore acqueo stesso è invisibile. La visibilità diminuisce solo quando si condensa in minuscole goccioline (foschia, nebbia – di solito sopra il 95 %) o quando polvere e particelle di fuliggine si rigonfiano nell\'aria umida. Dopo che la pioggia ha pulito l\'aria, 40 km con l\'80–90 % di umidità sono del tutto normali.</string>
     <string name="term_pressure_title">Pressione atmosferica</string>
@@ -450,6 +469,8 @@
     <string name="term_radar_body">Il radar meteo emette impulsi di microonde e misura con quale forza le gocce di pioggia, i fiocchi di neve e la grandine li riflettono (riflettività in dBZ). Echi più forti indicano precipitazioni più intense.\n\nGermania: composito radar DWD a passi di 5 minuti più una previsione nowcast che estrapola il movimento delle precipitazioni per le prossime due ore. Paesi Bassi, Mare del Nord e Germania nord-occidentale oltre i radar DWD: composito radar KNMI a passi di 5 minuti (passato). Norvegia, Svezia, Finlandia e Danimarca: composito radar nordico MET Norway a passi di 5 minuti. Resto d\'Europa: RainViewer (solo ultime due ore, ogni 10 minuti).\n\nTutte le fonti sono mostrate in un\'unica scala di colori. Inizia con il livello più debole del DWD, circa 0,1 mm all\'ora (pioviggine); i livelli sotto la legenda indicano indicativamente 1, 5, 20 e 50 mm all\'ora.\n\nIl radar vede le precipitazioni nell\'aria, non al suolo. La pioviggine da nubi basse ha gocce così piccole che il radar spesso non la rileva – la mappa rimane vuota anche se pioviggina. La stazione meteo la misura comunque.</string>
     <string name="term_models_title">Modelli meteorologici</string>
     <string name="term_models_body">I modelli meteorologici sono simulazioni informatiche che calcolano lo stato futuro dell\'atmosfera su una griglia tridimensionale. Griglie più fini risolvono meglio gli effetti locali come temporali, valli e coste.\n\n• ICON-D2 (DWD): 2,2 km, Germania e paesi limitrofi, 2 giorni\n• ICON-EU (DWD): 7 km, Europa, 5 giorni\n• ECMWF IFS: 9–⁠25 km, globale, uno dei migliori modelli globali\n• MET Nordic (MET Norway): 1 km, Scandinavia e Germania settentrionale, 2½ giorni\n• AROME/ARPEGE (Météo-France), UK Met Office, KNMI Harmonie, MET Norway, NOAA GFS\n\nSe le linee sono vicine tra loro, la previsione è abbastanza certa. Se divergono, la situazione meteo è incerta – tipico per temporali o a diversi giorni di distanza. Tocca un modello per evidenziarlo.</string>
+    <string name="term_spread_title">Dispersione delle previsioni</string>
+    <string name="term_spread_body">Un ensemble calcola lo stesso modello meteorologico molte volte, ogni corsa da valori iniziali leggermente modificati – incerti quanto le misurazioni dell\'atmosfera. L\'ensemble dell\'ECMWF ha 51 corse su 15 giorni; la scheda mostra i prossimi 10.\n\n• Andamento medio (linea bianca): metà delle corse è più calda, metà più fredda\n• Probabile (fascia chiara): 8 corse su 10 vi rientrano\n• Possibile (fascia tenue): tutte le corse, dalla più fredda alla più calda\n• Barre: le precipitazioni del giorno nella corsa media, la linea arriva fin dove arrivano 8 corse su 10; la percentuale sopra: quante corse portano almeno 1 mm quel giorno\n\nUn ventaglio stretto significa che le corse concordano – la previsione è abbastanza certa. Dove si allarga, piccole differenze iniziali sono cresciute: il tempo può ancora andare in un senso o nell\'altro. L\'ensemble è più grossolano (25 km) dei modelli di previsione della pagina; i suoi valori possono differire da questi di un grado o due. Viene caricato quattro volte al giorno, a ogni nuova corsa.</string>
     <string name="term_community_title">Sensori della community</string>
     <string name="term_community_body">Sensor.Community è una rete aperta di migliaia di sensori autocostruiti gestiti da cittadini – simile ad OpenStreetMap, ma per misurazioni. I dati sono liberamente accessibili.\n\nI sensori privati non sono calibrati e sono spesso montati su balconi o pareti di case, talvolta al sole. L\'app mostra quindi la mediana di tutti i sensori esterni nelle vicinanze e rimuove i valori anomali. La dispersione mostra quanto i sensori differiscono tra loro.\n\nUtilizza questi valori come ulteriore impressione locale; la stazione ufficiale DWD è più affidabile.</string>
     <string name="term_station_title">Misurato o Previsto?</string>
@@ -546,6 +567,67 @@
     <string name="src_pegelonline">Livello dell\'acqua: PEGELONLINE (WSV), %1$s</string>
     <string name="term_tides_title">Maree</string>
     <string name="term_tides_body">Le maree sorgono dall\'attrazione della luna e del sole sul mare. In Germania si verificano principalmente sulla costa del Mare del Nord due volte al giorno con un ciclo di circa 12,5 ore.\n\nL\'app calcola l\'andamento dai dati di misurazione dell\'idrometro selezionato.</string>
+    <string name="term_gauge_title">Livello dell\'acqua</string>
+    <string name="term_gauge_body">Livelli dell\'acqua degli idrometri entro 10 km, uno per fiume o lago, fino a quattro; i posti liberi vengono riempiti con altre acque fino a 15 km. Se non c\'è alcun idrometro nelle vicinanze, viene mostrato il più vicino fino a 20 km. I valori misurati provengono dalle vie navigabili federali (PEGELONLINE) e dai Länder che li pubblicano apertamente: Bassa Sassonia (NLWKN), Renania Settentrionale-Vestfalia (LANUK), Sassonia (LfULG) e Assia (HLNUG, con la sua previsione). Per tutti gli altri idrometri il portale interregionale delle piene (Länderübergreifendes Hochwasserportal, LHP) fornisce la classificazione attuale della piena e un link alla pagina dell\'idrometro del Land.\n\nIl livello è indicato in centimetri sopra lo zero idrometrico – un\'altezza di riferimento fissa che varia da idrometro a idrometro. Perciò non dice nulla sulla profondità dell\'acqua; è confrontabile solo allo stesso idrometro.\n\nValori di riferimento: magra media (MNW), livello medio (MW) e piena media (MHW). I Länder avvisano a livelli – chiamati livelli di allerta (Meldestufen, Bassa Sassonia e Assia), livelli informativi (NRW) o livelli di allarme (Sassonia) da 1 a 3 o 4; più è alto, maggiore è la piena. Sulle vie navigabili federali, le soglie di piena I–III limitano la navigazione.\n\nPer avvisi e decisioni, segui i servizi di informazione sulle piene dei Länder.</string>
+    <string name="gauge_alert_none">Nessun %1$s</string>
+    <string name="gauge_alert_stage">%1$s %2$d raggiunto</string>
+    <string name="gauge_next_alert">%1$s %2$d a %3$d cm (mancano %4$d cm)</string>
+    <string name="src_nlwkn">Livello dell\'acqua: NLWKN Pegelonline (pegelonline.nlwkn.niedersachsen.de), %1$s</string>
+    <string name="alert_kind_ms">livello di allerta</string>
+    <string name="alert_kind_iw">livello informativo</string>
+    <string name="alert_kind_as">livello di allarme</string>
+    <string name="alert_kind_ms_short">LA</string>
+    <string name="alert_kind_iw_short">LI</string>
+    <string name="alert_kind_as_short">All</string>
+    <string name="gauge_data_by">dati: %1$s</string>
+    <string name="gauge_no_data">Nessun dato attuale</string>
+    <string name="gauge_values_at_state">Il Land pubblica i valori misurati di questo idrometro solo sul proprio sito web.</string>
+    <string name="gauge_forecast_note">Tratteggiato: previsione del centro piene del Land</string>
+    <string name="gauge_open_state_page">Pagina dell\'idrometro del Land ›</string>
+    <string name="src_gauges">Livelli dell\'acqua: %1$s</string>
+    <string name="src_lhp_alerts">Allerte piene: LHP</string>
+    <string name="src_radar_now">Precipitazioni ora: radar DWD sul luogo</string>
+    <string name="src_radar_now_knmi">Precipitazioni ora: radar KNMI sul luogo</string>
+    <string name="src_satellite_now">Cielo ora: il soleggiamento del DWD dai dati satellitari sul luogo</string>
+    <string name="src_mosmix">Sole e nuvole: ponderati con DWD MOSMIX, stazione %1$s (%2$s km)</string>
+    <string name="src_radar_nowcast">Precipitazioni delle prossime 2 ore: nowcast radar DWD</string>
+    <string name="src_radar_nowcast_knmi">Precipitazioni delle prossime 2 ore: nowcast radar KNMI</string>
+    <string name="radar_out_knmi">Radar DWD fuori servizio qui – precipitazioni dal radar KNMI</string>
+    <string name="radar_out_none">Radar fuori servizio qui – valori da stazione e modello, meno precisi</string>
+    <string name="outlook_precip_chance">Probabilità di precipitazioni %1$d %%.</string>
+    <string name="settings_cards">Schede</string>
+    <string name="settings_cards_desc">L\'interruttore mostra o nasconde una scheda. Comprimere, nascondere e ordinare funziona anche direttamente nella pagina: tieni premuta una scheda nella pagina meteo.</string>
+    <string name="places_edit_done">Fatto</string>
+    <string name="places_edit_hint">Tieni premuto e trascina ≡ per ordinare, ⊖ per eliminare, tocca il modello per cambiarlo, ⧉ per aggiungere di nuovo il luogo con un altro modello</string>
+    <string name="places_long_press_hint">Tieni premuto un luogo per ordinarlo, eliminarlo o sceglierne il modello di previsione</string>
+    <string name="places_model">Modello: %1$s</string>
+    <string name="places_model_app">Come nelle impostazioni dell\'app</string>
+    <string name="places_model_app_desc">attualmente: %1$s – cambia insieme a esse</string>
+    <string name="places_model_own">Un modello proprio per questo luogo</string>
+    <string name="places_model_own_desc">solo per %1$s</string>
+    <string name="places_model_follows_app">%1$s (impostazione dell\'app)</string>
+    <string name="model_auto_short">Automatico</string>
+    <string name="places_model_title">Modello di previsione per %1$s</string>
+    <string name="places_duplicate">Di nuovo, per un altro modello</string>
+    <string name="places_drag">Sposta</string>
+    <string name="pn_rain_light">Pioggia debole</string>
+    <string name="pn_rain_moderate">Pioggia moderata</string>
+    <string name="pn_rain_heavy">Pioggia forte</string>
+    <string name="pn_drizzle">Pioviggine</string>
+    <string name="pn_drizzle_maybe">Forse un po\' di pioviggine</string>
+    <string name="pn_snow_light">Neve debole</string>
+    <string name="pn_snow_moderate">Neve moderata</string>
+    <string name="pn_snow_heavy">Neve forte</string>
+    <string name="pn_sleet">Pioggia mista a neve</string>
+    <string name="pn_thunderstorm">Temporali</string>
+    <string name="pn_starts">%1$s dalle %2$s circa</string>
+    <string name="pn_until">%1$s fino alle %2$s circa</string>
+    <string name="pn_continues">%1$s almeno fino alle %2$s</string>
+    <string name="pn_hail">Temporali con grandine</string>
+    <string name="history_radar_title">Radar del giorno</string>
+    <string name="history_radar_text">Radar delle precipitazioni di %1$s, 0–24 in passi di 5 minuti</string>
+    <string name="history_radar_text_so_far">Radar delle precipitazioni di %1$s, da mezzanotte a ora in passi di 5 minuti</string>
+    <string name="history_radar_hint">Riproduci, sposta e ingrandisci · dove misura il radar di un servizio meteorologico (DWD, KNMI, MET Norway)</string>
 
     <string name="bathing_title">Acque di balneazione</string>
     <string name="bathing_off_season">Fuori dalla stagione balneare (15 maggio – 15 settembre): i valori provengono dagli ultimi campioni della stagione.</string>
@@ -695,7 +777,7 @@
         <item>nuvoloso</item>
         <item>molto nuvoloso</item>
         <item>nebbioso</item>
-        <item>pioviggina</item>
+        <item>piovigginoso</item>
         <item>piovoso</item>
         <item>pioggia continua</item>
         <item>rovesci</item>
@@ -725,7 +807,7 @@
         <item>nuvole</item>
         <item>nuvole</item>
         <item>nebbia</item>
-        <item>qualche pioviggina</item>
+        <item>qualche pioviggine</item>
         <item>qualche pioggia</item>
         <item>pioggia</item>
         <item>rovesci</item>
@@ -798,6 +880,10 @@
     <string name="widget_setup_pollen">Pollini</string>
     <string name="widget_setup_pollen_desc">I tipi scelti con il livello di oggi; in poco spazio solo quelli con volo rilevante, come punti. Nessuno scelto: nessun polline. Un tocco apre la scheda pollini.</string>
     <string name="widget_setup_opacity">Sfondo: %1$d\u00A0%%</string>
+    <string name="widget_color_system">Il colore del sistema</string>
+    <string name="widget_color_custom">Un colore a tua scelta</string>
+    <string name="widget_color_pick_title">Colore di sfondo</string>
+    <string name="widget_color_hint">Il colore del sistema è chiaro di giorno e scuro di notte. Il testo diventa chiaro o scuro da sé: in base al colore e, più lo sfondo è trasparente, allo sfondo della schermata dietro di esso.</string>
     <string name="widget_setup_updates">Il widget aggiorna il meteo circa ogni 30 minuti, sia su Wi-Fi che su rete mobile. Ciò che non rientra nelle sue dimensioni viene omesso. Un tocco altrove apre l\'inizio della pagina.</string>
     <string name="widget_setup_done">Fatto</string>
     <string name="notice_channel_warnings">Allerte meteo</string>

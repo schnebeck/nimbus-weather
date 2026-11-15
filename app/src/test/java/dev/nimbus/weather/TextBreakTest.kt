@@ -23,7 +23,7 @@ import org.junit.Test
 import java.io.File
 
 class TextBreakTest {
-    private val files = listOf("values", "values-de").map { File("src/main/res/$it/strings.xml") }
+    private val files = listOf("values", "values-de", "values-it").map { File("src/main/res/$it/strings.xml") }
 
     private fun strings(f: File): Map<String, String> =
         Regex("""<string name="([^"]+)"[^>]*>(.*?)</string>""", RegexOption.DOT_MATCHES_ALL).findAll(f.readText())

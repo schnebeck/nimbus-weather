@@ -28,7 +28,6 @@ import android.view.MotionEvent
 import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -84,13 +83,16 @@ import dev.nimbus.weather.data.model.PollenType
 import dev.nimbus.weather.data.model.Settings
 import dev.nimbus.weather.data.repo.LocationProvider
 import dev.nimbus.weather.data.repo.Store
+import dev.nimbus.weather.ui.drawBehindSystemBars
+import dev.nimbus.weather.ui.inNightMode
 import dev.nimbus.weather.ui.main.pollenName
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class WidgetSetupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
+        // the system's look: dark icons on its light one
+        drawBehindSystemBars(darkIcons = !inNightMode())
         super.onCreate(savedInstanceState)
         val id = intent?.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID) ?: AppWidgetManager.INVALID_APPWIDGET_ID
         // left without "Done" on placing it: the launcher removes the widget again

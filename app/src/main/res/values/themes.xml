@@ -15,15 +15,19 @@
   SPDX-FileContributor: Anthropic Claude Opus 5.5 (AI generated content)
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
-<resources>
-    <style name="Theme.Nimbus" parent="android:Theme.Material.NoActionBar">
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.Nimbus" parent="Nimbus.Window.Dark">
         <item name="android:windowBackground">@color/splash_bg</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:enforceStatusBarContrast" tools:targetApi="29">false</item>
+        <item name="android:enforceNavigationBarContrast" tools:targetApi="29">false</item>
     </style>
     <!-- the widget's setup: in the system's look, light or dark (values-night) as the widget -->
-    <style name="Theme.Nimbus.WidgetSetup" parent="android:Theme.Material.Light.NoActionBar">
+    <style name="Theme.Nimbus.WidgetSetup" parent="Nimbus.Window.Light">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:enforceStatusBarContrast" tools:targetApi="29">false</item>
+        <item name="android:enforceNavigationBarContrast" tools:targetApi="29">false</item>
     </style>
 </resources>

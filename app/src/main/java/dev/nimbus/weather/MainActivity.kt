@@ -17,17 +17,15 @@
 
 package dev.nimbus.weather
 
-import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import dev.nimbus.weather.data.model.Condition
 import dev.nimbus.weather.ui.Demo
 import dev.nimbus.weather.ui.MainViewModel
 import dev.nimbus.weather.ui.background.Season
+import dev.nimbus.weather.ui.drawBehindSystemBars
 import dev.nimbus.weather.ui.NimbusRoot
 import dev.nimbus.weather.ui.theme.NimbusTheme
 
@@ -35,10 +33,8 @@ class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels { MainViewModel.Factory }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
-        )
+        // light icons over the animated sky
+        drawBehindSystemBars(darkIcons = false)
         super.onCreate(savedInstanceState)
         applyDemoExtras()
         // recreated (the phone turned): the tap was taken the first time

@@ -46,6 +46,12 @@ interface RadarComposite {
      */
     val windowed: Boolean get() = false
 
+    /**
+     * Its steps are fetched whole, whatever window is asked for: a window is cut from the step
+     * kept, and the step serves every other view of it.
+     */
+    val wholeSteps: Boolean get() = false
+
     /** Whether it draws a picture area [g] – a coarse and a fine grid of one service share them by scale. */
     fun serves(g: FieldGeo): Boolean = true
 

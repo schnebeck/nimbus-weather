@@ -18,6 +18,7 @@
 
 package dev.nimbus.weather
 
+import dev.nimbus.weather.ui.radar.DwdFiles
 import dev.nimbus.weather.ui.radar.DwdRadar
 import dev.nimbus.weather.ui.radar.GridWindow
 import dev.nimbus.weather.ui.radar.KnmiRadar
@@ -96,10 +97,12 @@ class RadarPreviewSpeedTest {
 
     /** A client counting the composites' requests running at once (each takes 300 ms, then fails). */
     private class Counting {
+        /** A step's archive on the open data server. */
+        private val STEP_ARCHIVE = Regex("""composite_wn_\d{8}_\d{4}\.tar""")
         val running = AtomicInteger(); val most = AtomicInteger(); val count = AtomicInteger()
         val http: OkHttpClient = OkHttpClient.Builder().addInterceptor { chain ->
             val url = chain.request().url.toString()
-            if ("request=GetMap" in url || "request=GetCoverage" in url) {
+            if ("request=GetMap" in url || "request=GetCoverage" in url || STEP_ARCHIVE.containsMatchIn(url)) {
                 count.incrementAndGet()
                 most.accumulateAndGet(running.incrementAndGet(), ::maxOf)
                 try { Thread.sleep(300) } finally { running.decrementAndGet() }
@@ -122,7 +125,7 @@ class RadarPreviewSpeedTest {
         assertEquals(1, net.most.get())
     }
 
-    /** "Sichtbare Karte zuerst": the card does not queue behind the prefetching – and its picture, asked for twice, is fetched once. */
+    /** "Sichtbare Karte zuerst": the card does not queue behind the prefetching - and the step, asked for by all at once, is fetched once. */
     @Test fun theCardDoesNotWaitAndSharesThePicture() = runBlocking {
         RadarPreview.cardSize = 380 to 220
         val net = Counting()
@@ -134,28 +137,31 @@ class RadarPreviewSpeedTest {
             async(Dispatchers.Default) { kotlinx.coroutines.delay(50); RadarPreview.fetchOverlay(net.http, tl, now, 52.3759, 9.732, 380, 220) },
         )
         card.awaitAll()
-        // Munich's prefetch and Hannover's card at once; Hannover's picture once
-        assertEquals(2, net.count.get())
-        assertEquals(2, net.most.get())
+        // Munich's prefetch and Hannover's card at once: the step both show is fetched once for all three
+        assertEquals(1, net.count.get())
+        assertEquals(1, net.most.get())
     }
 
     /**
-     * "Sichtbare Karte zuerst": while the radar loop's whole grids load (12 steps, 1.5 s each), the
-     * preview's area is fetched at once – not after them.
+     * "Sichtbare Karte zuerst": while the radar loop's steps load (12 of them, 1.5 s each), the
+     * preview's step is fetched at once - not after them.
      */
     @Test fun thePreviewDoesNotQueueBehindWholeGrids() = runBlocking {
+        DwdFiles.clock = { frame.time + 180_000L }
+        val own = DwdFiles.url(frame.time).substringAfterLast('/')
         val http = OkHttpClient.Builder().addInterceptor { chain ->
-            Thread.sleep(if ("width=${DwdRadar.W}" in chain.request().url.toString()) 1500 else 100)
+            Thread.sleep(if (own in chain.request().url.toString()) 100 else 1500)
             throw java.io.IOException("offline in the test")
         }.build()
-        val bulk = (0 until 12).map { i ->
-            async(Dispatchers.Default) { RadarStore.grid(http, DwdRadar, RadarFrame(1_700_000_000_000L + i * 300_000L, false, null, null)) }
+        val bulk = (1..12).map { i ->
+            async(Dispatchers.Default) { RadarStore.grid(http, DwdRadar, RadarFrame(frame.time - i * 300_000L, false, null, null)) }
         }
         kotlinx.coroutines.delay(300)
         val started = System.nanoTime()
         RadarStore.window(http, DwdRadar, frame, DwdRadar.window(hannover.west, hannover.east, hannover.south, hannover.north)!!)
         val ms = (System.nanoTime() - started) / 1_000_000
         bulk.awaitAll()
+        DwdFiles.clock = System::currentTimeMillis
         assertTrue("the preview waited $ms ms", ms < 1000)
     }
 }

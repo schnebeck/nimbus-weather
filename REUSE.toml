@@ -29,6 +29,7 @@ SPDX-License-Identifier = "CC-BY-4.0"
 path = [
     "app/src/test/resources/fixtures/brightsky_*.json",
     "app/src/test/resources/fixtures/dwd_pollen*.json",
+    "app/src/test/resources/fixtures/dwd_wn_*.hd5",
 ]
 SPDX-FileCopyrightText = "Deutscher Wetterdienst (DWD), partly via Bright Sky"
 SPDX-License-Identifier = "CC-BY-4.0"

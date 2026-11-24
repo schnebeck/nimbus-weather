@@ -80,10 +80,14 @@ object RadarStore {
     /**
      * The cells [window] of the step [frame] of [composite]: cut from the whole step if it is here
      * (the radar loop's), else fetched alone – a few kB instead of the whole grid. Not kept: the
-     * preview keeps its picture.
+     * preview keeps its picture. A composite whose steps come whole ([RadarComposite.wholeSteps])
+     * is fetched and kept whole, in the small requests' lane.
      */
     suspend fun window(http: OkHttpClient, composite: RadarComposite, frame: RadarFrame, window: GridWindow): ByteArray? {
         withContext(Dispatchers.IO) { peek(composite.key(frame)) }?.let { return composite.cut(it, window) }
+        if (composite.wholeSteps) {
+            return get(composite.key(frame), composite.w * composite.h, small) { composite.fetch(http, frame) }?.let { composite.cut(it, window) }
+        }
         return small.withPermit { runCatching { composite.fetch(http, frame, window) }.getOrNull() }?.takeIf { it.size == window.size }
     }
 

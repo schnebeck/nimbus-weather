@@ -17,15 +17,21 @@
 
 package dev.nimbus.weather.ui.radar
 
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
+import java.io.File
 
 /**
  * DWD and RainViewer stacked, each at 85 %, show the same rain over Germany twice as opaque as
- * the forecast (DWD only). The area the DWD composite covers is read once from a DWD image (its
- * "no data" grey surrounds it) and kept on disk; inside it RainViewer pixels are dropped.
+ * the forecast (DWD only). The area the DWD composite covers - every cell its newest step has
+ * data for ([WnStep.reach]) - is kept on disk; inside it RainViewer pixels are dropped.
  */
 internal object DwdCoverage {
-    // Lat/lon grid over the DWD bounds, 0.025° per pixel
+    // Lat/lon grid over the DWD bounds, 0.025 degrees per cell
     const val W = 696
     const val H = 428
     const val LON0 = 1.4
@@ -34,52 +40,73 @@ internal object DwdCoverage {
     const val LAT1 = 56.3
 
     /**
-     * A radar out of service leaves a hole of "no data" grey in the composite, open to the grey
-     * around it: the mask is renewed every hour, so KNMI and RainViewer fill the hole.
+     * A radar out of service leaves a hole without data in the composite: the mask is renewed
+     * every hour, so KNMI and RainViewer fill the hole.
      */
     const val RENEW_MS = 3_600_000L
+    private const val FILE = "dwd_coverage.bin"
 
-    /** One DWD image of the newest step (~20 kB), at most once an hour. */
-    private val mask = CoverageMask("dwd_coverage.png", LON0, LAT0, LON1, LAT1, W, H, maxAgeMs = RENEW_MS, url = { http ->
-        val known = RadarLatest.known(DwdRadar)?.takeIf { System.currentTimeMillis() - it < RENEW_MS }
-        (known ?: RadarLatest.check(http, DwdRadar))?.let { time ->
-            DwdRadar.WMS + "?service=WMS&version=1.1.1&request=GetMap&layers=${DwdRadar.LAYER}" +
-                "&styles=&format=image/png&transparent=true&srs=EPSG:4326&bbox=$LON0,$LAT0,$LON1,$LAT1" +
-                "&width=$W&height=$H&time=${RadarSources.isoTime(time)}"
-        }
-    }, classify = ::compute)
+    @Volatile private var mask: BooleanArray? = null
+    /** The time of the analysis behind [mask]. */
+    @Volatile private var takenAt = 0L
+    private val mutex = Mutex()
+    @Volatile internal var clock: () -> Long = System::currentTimeMillis
 
     /** Inside the DWD radar area (false while the mask is not loaded). */
-    fun covers(lat: Double, lon: Double): Boolean = mask.covers(lat, lon)
-
-    val ready: Boolean get() = mask.ready
-
-    /** The mask loaded or renewed – and joined to the widest reach seen ([DwdReach]). */
-    suspend fun ensure(http: OkHttpClient) {
-        mask.ensure(http)
-        mask.current?.let(DwdReach::join)
+    fun covers(lat: Double, lon: Double): Boolean {
+        val m = mask ?: return false
+        val x = ((lon - LON0) / (LON1 - LON0) * W).toInt()
+        val y = ((LAT1 - lat) / (LAT1 - LAT0) * H).toInt()
+        if (x !in 0 until W || y !in 0 until H) return false
+        return m[y * W + x]
     }
 
+    val ready: Boolean get() = mask != null
+
     /**
-     * Covered pixels from a DWD composite image ([argb], row by row): everything that is not the
-     * semi-transparent "no data" grey and cannot be reached from the image border without
-     * crossing it – the area inside the grey ring (rain or valid "no rain").
+     * The mask loaded or renewed - and joined to the widest reach seen ([DwdReach]): from the
+     * device first, then from the newest analysis once the one behind it is [RENEW_MS] old. When
+     * that cannot be had, the mask in use stays.
      */
-    fun compute(argb: IntArray, w: Int, h: Int): BooleanArray {
-        fun grey(i: Int) = (argb[i] ushr 24) in 1..199
-        val outside = BooleanArray(w * h)
-        val stack = ArrayDeque<Int>()
-        fun push(i: Int) { if (!outside[i] && !grey(i)) { outside[i] = true; stack.addLast(i) } }
-        for (x in 0 until w) { push(x); push((h - 1) * w + x) }
-        for (y in 0 until h) { push(y * w); push(y * w + w - 1) }
-        while (stack.isNotEmpty()) {
-            val i = stack.removeLast()
-            val x = i % w; val y = i / w
-            if (x > 0) push(i - 1)
-            if (x < w - 1) push(i + 1)
-            if (y > 0) push(i - w)
-            if (y < h - 1) push(i + w)
+    suspend fun ensure(http: OkHttpClient) = mutex.withLock {
+        if (mask == null) kept()?.let { (at, m) -> take(m, at) }
+        if (clock() - takenAt >= RENEW_MS) newest(http)?.let { (at, m) ->
+            take(m, at)
+            withContext(Dispatchers.IO) { MaskFile.write(file(), m, at) }
         }
-        return BooleanArray(w * h) { !grey(it) && !outside[it] }
+        mask?.let { DwdReach.join(it) }
+        Unit
+    }
+
+    private fun take(m: BooleanArray, at: Long) {
+        mask = m
+        takenAt = at
+    }
+
+    private fun file(): File? = RadarComposites.dir?.let { File(it, FILE) }
+
+    /** The mask on the device with the time of its analysis. */
+    private suspend fun kept(): Pair<Long, BooleanArray>? = withContext(Dispatchers.IO) {
+        val f = file()
+        MaskFile.read(f, W * H)?.let { (f?.lastModified() ?: 0L) to it }
+    }
+
+    /** The reach of the newest analysis, with its time; null if it cannot be had. */
+    private suspend fun newest(http: OkHttpClient): Pair<Long, BooleanArray>? {
+        val time = RadarLatest.known(DwdRadar)?.takeIf { clock() - it < RENEW_MS } ?: RadarLatest.check(http, DwdRadar) ?: return null
+        val step = try {
+            DwdFiles.step(http, RadarFrame(time, false, null, null))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        } ?: return null
+        return time to withContext(Dispatchers.Default) { step.reach() }
+    }
+
+    /** For tests: the mask as given, or none. */
+    internal fun set(m: BooleanArray?, at: Long = 0L) {
+        mask = m
+        takenAt = at
     }
 }

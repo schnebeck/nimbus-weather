@@ -44,6 +44,9 @@ object RadarLatest {
             withContext(Dispatchers.IO) { runCatching { dir?.let { it.mkdirs(); file(it, c).writeText(t.toString()) } } }
         }
 
+    /** For tests: nothing known. */
+    internal fun forget() = known.clear()
+
     private fun file(dir: File, c: RadarComposite) = File(dir, "radar_latest_${c.id}")
     private fun stored(c: RadarComposite): Long? = runCatching { dir?.let { file(it, c).readText().trim().toLong() } }.getOrNull()
 }

@@ -102,24 +102,16 @@ internal object DwdReach {
 
     private fun file(): File? = RadarComposites.dir?.let { File(it, FILE) }
 
-    /** The stored mask: one bit per cell. */
-    private fun read(): BooleanArray? = runCatching { file()?.takeIf { it.exists() }?.readBytes()?.let(::bits) }.getOrNull()
+    /** The stored mask ([MaskFile]). */
+    private fun read(): BooleanArray? = MaskFile.read(file(), DwdCoverage.W * DwdCoverage.H)
 
     /** The reach shipped with the app. */
     internal fun reference(): BooleanArray? =
-        runCatching { DwdReach::class.java.getResourceAsStream(REFERENCE)?.use { it.readBytes() }?.let(::bits) }.getOrNull()
+        runCatching {
+            DwdReach::class.java.getResourceAsStream(REFERENCE)?.use { it.readBytes() }?.let { MaskFile.unpack(it, DwdCoverage.W * DwdCoverage.H) }
+        }.getOrNull()
 
-    private fun bits(bytes: ByteArray): BooleanArray? {
-        val n = DwdCoverage.W * DwdCoverage.H
-        if (bytes.size != (n + 7) / 8) return null
-        return BooleanArray(n) { (bytes[it / 8].toInt() shr (it % 8)) and 1 == 1 }
-    }
-
-    private fun write(mask: BooleanArray) {
-        val bytes = ByteArray((mask.size + 7) / 8)
-        for (i in mask.indices) if (mask[i]) bytes[i / 8] = (bytes[i / 8].toInt() or (1 shl (i % 8))).toByte()
-        runCatching { file()?.let { it.parentFile?.mkdirs(); it.writeBytes(bytes) } }
-    }
+    private fun write(mask: BooleanArray) = MaskFile.write(file(), mask)
 
     /** For the debug log: what is known. */
     fun state(): String = "widest ${widest?.count { it }} cells, now ${now?.count { it }}"

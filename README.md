@@ -320,7 +320,7 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
 | Sonne und Wolken der Vorhersage | Modell abgeglichen mit DWD MOSMIX (Stationsvorhersage, Europa) via Bright Sky |
 | Warnungen, Rückblick | DWD-Warnungen und -Stationen via Bright Sky |
 | Gemessen über dem Ort | Niederschlag: DWD-Radar RADOLAN (RW, RY), Deutschland; wo es keine Daten hat, das [KNMI-Radar](https://dataplatform.knmi.nl/dataset/radar-forecast-2-0) samt Vorhersage · Sonnenschein: DWD aus EUMETSAT-MTG-Satellitendaten via [Open-Meteo](https://open-meteo.com/en/docs/satellite-radiation-api), Europa |
-| Radar, Warnkarte | DWD GeoServer, [KNMI](https://english.knmidata.nl/open-data) (Niederlande), [MET Norway](https://www.met.no/en/free-meteorological-data) (Nordic-Komposit); übriges Europa: [RainViewer](https://www.rainviewer.com/api.html) |
+| Radar, Warnkarte | DWD ([Open Data](https://opendata.dwd.de/weather/radar/composite/wn/), GeoServer), [KNMI](https://english.knmidata.nl/open-data) (Niederlande), [MET Norway](https://www.met.no/en/free-meteorological-data) (Nordic-Komposit); übriges Europa: [RainViewer](https://www.rainviewer.com/api.html) |
 | Satellit | Meteosat (MTG, GeoColour) via [EUMETView](https://view.eumetsat.int) – „Contains modified EUMETSAT Meteosat data“, CC BY 4.0 |
 | Blitze | DWD GeoServer: Blitze des Lightning Imagers von Meteosat Third Generation (EUMETSAT), Europa und Afrika |
 | Luftqualität, Pollen Europa | Copernicus CAMS via Open-Meteo |

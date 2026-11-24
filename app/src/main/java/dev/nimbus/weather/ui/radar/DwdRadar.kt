@@ -1,7 +1,7 @@
 /*
  * Nimbus - app/src/main/java/dev/nimbus/weather/ui/radar/DwdRadar.kt
  * The DWD radar composite (Germany and around it): reflectivity every 5 minutes plus a 2-hour
- * nowcast, read back from the colours of its map service.
+ * nowcast, from the files of its open data server.
  *
  *   Copyright (C) 2026 Thorsten Schnebeck <thorsten.schnebeck@gmx.net>
  *   Produced by Thorsten Schnebeck - the idea, the decisions, the testing.
@@ -20,14 +20,17 @@ package dev.nimbus.weather.ui.radar
 
 import dev.nimbus.weather.data.remote.USER_AGENT
 import dev.nimbus.weather.data.remote.getText
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.time.Instant
 
 /**
  * The DWD composite as the app keeps it: one byte per cell of 0.01° over the DWD area (about
- * 0.7 km east–west and 1.1 km north–south, close to the radar's own 1 km) – read back from the
- * colours of its WMS picture. Where its radars reach: [DwdCoverage] (the "no data" grey around it).
+ * 0.7 km east-west and 1.1 km north-south, close to the radar's own 1 km). Its steps come from the
+ * files of the open data server ([DwdFiles]): the reflectivity as measured, laid from the
+ * composite's own grid under this one. A step older than those files is read back from the
+ * colours of the map service's picture. Where its radars reach: [DwdCoverage].
  */
 object DwdRadar : RadarComposite {
     const val WMS = "https://maps.dwd.de/geoserver/dwd/wms"
@@ -44,6 +47,7 @@ object DwdRadar : RadarComposite {
     override val h = H
     override val hasNowcast = true
     override val exactCoverage = true
+    override val wholeSteps = true
 
     private const val ANALYSIS_KEEP_MS = 4L * 24 * 3_600_000L
     private const val NOWCAST_KEEP_MS = 30 * 60_000L
@@ -52,8 +56,13 @@ object DwdRadar : RadarComposite {
     override fun covers(lat: Double, lon: Double): Boolean =
         if (DwdCoverage.ready) DwdCoverage.covers(lat, lon) else lat in lat0..lat1 && lon in lon0..lon1
 
-    /** The newest analysis: the default time of its analysis layer (a small capabilities request). */
-    override suspend fun latest(http: OkHttpClient): Long? {
+    /**
+     * The newest analysis: the one the open data server's newest archive names; where it names
+     * none, the default time of the map service's analysis layer.
+     */
+    override suspend fun latest(http: OkHttpClient): Long? = DwdFiles.latest(http) ?: mapServiceLatest(http)
+
+    private suspend fun mapServiceLatest(http: OkHttpClient): Long? {
         val url = "https://maps.dwd.de/geoserver/dwd/$ANALYSIS_LAYER/ows?service=WMS&version=1.3.0&request=GetCapabilities"
         val body = http.getText(Request.Builder().url(url).header("User-Agent", USER_AGENT).build())
         val m = Regex("""<Dimension name="time"[^>]*default="([^"]+)"""").find(body) ?: return null
@@ -71,8 +80,16 @@ object DwdRadar : RadarComposite {
         "$WMS?service=WMS&version=1.1.1&request=GetMap&layers=$LAYER&styles=&format=image/png&transparent=true" +
             "&srs=EPSG:4326&bbox=${bbox(window)}&width=${window.w}&height=${window.h}&time=${RadarSources.isoTime(time)}"
 
-    override suspend fun fetch(http: OkHttpClient, frame: RadarFrame, window: GridWindow): ByteArray? =
-        RadarDecode.png(http, url(frame.time, window), window.w, window.h, RadarPalette.Source.DWD)
+    /**
+     * The step out of its file while the open data server keeps that: the whole grid, [window]
+     * cut from it. A step the server does not have comes as the map service's picture of [window].
+     */
+    override suspend fun fetch(http: OkHttpClient, frame: RadarFrame, window: GridWindow): ByteArray? {
+        val step = if (DwdFiles.has(frame.issue ?: frame.time)) DwdFiles.step(http, frame) else null
+        val codes = step?.let { withContext(RadarDecode.decoding) { it.codes() } }
+            ?: return RadarDecode.png(http, url(frame.time, window), window.w, window.h, RadarPalette.Source.DWD)
+        return if (window == whole) codes else cut(codes, window)
+    }
 
     override suspend fun prepare(http: OkHttpClient) = DwdCoverage.ensure(http)
 

@@ -88,6 +88,28 @@ suspend fun OkHttpClient.getText(req: Request): String {
 }
 
 /**
+ * [length] bytes of the stored file at [url] from [from] on (null: all of it), the whole call
+ * given [timeoutS] seconds - the file whole where the server does not cut it; null where it has no
+ * such file. Never from or into the HTTP store, and asked for as it is stored, not packed anew.
+ */
+suspend fun OkHttpClient.getFilePart(url: String, from: Int, length: Int?, timeoutS: Long): ByteArray? = withContext(Dispatchers.IO) {
+    val request = Request.Builder().url(url).header("User-Agent", USER_AGENT).header("Accept-Encoding", "identity")
+        .cacheControl(okhttp3.CacheControl.Builder().noStore().build())
+    if (length != null) request.header("Range", "bytes=$from-${from + length - 1}")
+    val call = newCall(request.build())
+    call.timeout().timeout(timeoutS, java.util.concurrent.TimeUnit.SECONDS)
+    call.await().use { r ->
+        when {
+            r.code == 404 || r.code == 416 -> null
+            !r.isSuccessful -> throw HttpException(r.code, "HTTP ${r.code} for ${r.request.url.host}")
+            // the whole file where a later part was asked for: not that part
+            r.code == 200 && from > 0 -> null
+            else -> r.body.bytes()
+        }
+    }
+}
+
+/**
  * Data asked for anew (the forced reload): in a coroutine with this element no answer comes from a
  * store – the HTTP cache asks the server again ([AskAgain]), the sources skip their own stores,
  * data of a moment and lists alike (stations, bathing waters, the tide fit); a stored one only

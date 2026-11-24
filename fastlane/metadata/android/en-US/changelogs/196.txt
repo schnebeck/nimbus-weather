@@ -1,0 +1,3 @@
+• The DWD radar now comes from the files of the open data server: the radar loop loads much faster and shows the measured values in fine steps
+• Less battery use in the background: widget and notices wait 10 seconds at most for the radar, the radar preload runs only once an hour
+• The look-back keeps the radar values of the last three days and asks for the new hours only

@@ -19,7 +19,6 @@ package dev.nimbus.weather
 
 import android.graphics.Bitmap
 import dev.nimbus.weather.ui.radar.CoverageMask
-import dev.nimbus.weather.ui.radar.DwdCoverage
 import dev.nimbus.weather.ui.radar.RadarComposites
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
@@ -84,8 +83,15 @@ class CoverageMaskTest {
 
     private fun mask() = CoverageMask(
         "test_coverage.png", 0.0, 0.0, 7.0, 5.0, 7, 5,
-        url = { server.url("/mask").toString() }, classify = DwdCoverage::compute, maxAgeMs = hour, clock = { now },
+        url = { server.url("/mask").toString() }, classify = ::enclosed, maxAgeMs = hour, clock = { now },
     )
+
+    /** Covered: not grey, with grey to its left and to its right in its row. */
+    private fun enclosed(argb: IntArray, w: Int, h: Int) = BooleanArray(w * h) { i ->
+        fun grey(k: Int) = (argb[k] ushr 24) in 1..199
+        val row = i / w * w
+        !grey(i) && (row until i).any(::grey) && (i + 1 until row + w).any(::grey)
+    }
 
     /** The middle of the radar's area. */
     private fun CoverageMask.middle() = covers(2.5, 3.5)

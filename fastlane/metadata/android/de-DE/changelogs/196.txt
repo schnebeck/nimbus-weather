@@ -1,0 +1,3 @@
+• Das DWD-Radar kommt jetzt aus den Dateien des offenen Datenservers: Die Radarschleife lädt deutlich schneller und zeigt die gemessenen Werte fein abgestuft
+• Weniger Akkuverbrauch im Hintergrund: Widget und Hinweise warten höchstens 10 Sekunden auf das Radar, das Radar-Vorladen läuft nur noch stündlich
+• Der Rückblick merkt sich die Radarwerte der letzten drei Tage und fragt nur die neuen Stunden ab

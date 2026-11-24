@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Work in the background: the radar loop ahead ([RadarAheadWorker]) – switched in the settings,
- * about every half hour while the battery is not low, over Wi-Fi or any network as set – and the
+ * about every hour while the battery is not low, over Wi-Fi or any network as set - and the
  * widgets' weather while there is one on the home screen ([dev.nimbus.weather.widget.Widgets]).
  * Work scheduled under former names (hourly weather, the 15-minute radar) is called off at the
  * start: opened, the app loads what is out of date anyway.
@@ -40,7 +40,9 @@ object BackgroundWork {
     /** The names background work was scheduled under – called off wherever it is still there. */
     val formerNames = listOf("hourly-refresh", "radar-prefetch")
     const val RADAR_AHEAD = "radar-ahead"
-    const val RADAR_AHEAD_MINUTES = 30L
+    const val RADAR_AHEAD_MINUTES = 60L
+    /** A run in the background ends after this long at the latest: the phone sleeps again, the next run goes on. */
+    const val RUN_LIMIT_MS = 45_000L
 
     fun stopAll(context: Context) {
         val wm = runCatching { WorkManager.getInstance(context) }.getOrNull() ?: return
@@ -67,8 +69,13 @@ class RadarAheadWorker(context: Context, params: WorkerParameters) : CoroutineWo
         if (!RadarPrefetcher.usedRecently(ctx)) return Result.success().also { ActivityLog.note("radar ahead: skipped, the radar not opened within a week") }
         val (lat, lon) = RadarPrefetcher.lastPlace(ctx) ?: return Result.success()
         val t0 = android.os.SystemClock.elapsedRealtime()
-        val ok = runCatching { RadarPrefetcher.loadSteps(ctx, lat, lon) }.getOrDefault(false)
-        ActivityLog.note("radar ahead: " + (if (ok) "past steps loaded" else "no time line") + " in ${(android.os.SystemClock.elapsedRealtime() - t0) / 1000} s")
+        val ok = runCatching { kotlinx.coroutines.withTimeoutOrNull(BackgroundWork.RUN_LIMIT_MS) { RadarPrefetcher.loadSteps(ctx, lat, lon, background = true) } }.getOrNull()
+        val outcome = when (ok) {
+            true -> "past steps loaded"
+            false -> "no time line"
+            null -> "not finished"
+        }
+        ActivityLog.note("radar ahead: $outcome in ${(android.os.SystemClock.elapsedRealtime() - t0) / 1000} s")
         return Result.success()
     }
 }

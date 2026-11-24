@@ -192,8 +192,8 @@ Was die App an wen sendet und was auf dem Handy bleibt: [Datenschutzerklärung](
   Öffnen an sind, legen die Einstellungen fest. Abgespielt wird mit 20 Bildern/s; nach 2 Minuten ohne
   Berührung schließt das Radar und kehrt dorthin zurück, wo es geöffnet wurde. Wer das Radar in der
   letzten Woche geöffnet hat, dem lädt die App die vergangenen Bilder der 2-Stunden-Schleife des
-  zuletzt im Radar gezeigten Orts vor – bei offener App etwa alle 15 Minuten, sonst etwa alle 30
-  Minuten im Hintergrund, solange der Akku nicht knapp ist; im WLAN oder, wenn eingestellt, auch über
+  zuletzt im Radar gezeigten Orts vor – bei offener App etwa alle 15 Minuten, sonst etwa stündlich
+  im Hintergrund, solange der Akku nicht knapp ist; im WLAN oder, wenn eingestellt, auch über
   mobile Daten (die Radarvorhersage holt das Radar selbst – sie ist alle 5 Minuten neu). Die Auflösung des
   Radarbilds richtet sich nach dem Speicher des Geräts. Ohne Verbindung zeigt das Radar die
   gespeicherten Bilder; nichts wartet endlos. Die Niederschlagskarte auf der Wetterseite zeigt dasselbe

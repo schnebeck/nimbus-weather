@@ -92,7 +92,7 @@ class RadarHabitsTest {
         dev.nimbus.weather.data.repo.BackgroundWork.radarAhead(ctx, on = true, mobile = false)
         assertEquals(androidx.work.NetworkType.UNMETERED, info().constraints.requiredNetworkType)
         assertTrue(info().constraints.requiresBatteryNotLow())
-        assertEquals(30 * 60_000L, info().periodicityInfo!!.repeatIntervalMillis)
+        assertEquals(60 * 60_000L, info().periodicityInfo!!.repeatIntervalMillis)
         dev.nimbus.weather.data.repo.BackgroundWork.radarAhead(ctx, on = true, mobile = true)
         assertEquals(androidx.work.NetworkType.CONNECTED, info().constraints.requiredNetworkType)
         dev.nimbus.weather.data.repo.BackgroundWork.radarAhead(ctx, on = false, mobile = true)

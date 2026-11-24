@@ -59,6 +59,8 @@ class WeatherRepository(
     private val stations: dev.nimbus.weather.data.remote.StationNetworks? = null,
     /** The radar over the place (null: none asked for). */
     private val spot: dev.nimbus.weather.data.remote.SpotSource? = null,
+    /** How long a load without the app shown waits for the radar over the place and for each extra. */
+    private val backgroundWaitMs: Long = BACKGROUND_WAIT_MS,
 ) {
 
     /**
@@ -82,6 +84,12 @@ class WeatherRepository(
         refresh: Set<DataPart> = DataPart.entries.toSet(),
         /** Asked for anew (forced reload): nothing from a store – see [dev.nimbus.weather.data.remote.FreshData]. */
         fresh: Boolean = false,
+        /**
+         * Loaded while the app is not shown (the widgets, the notices): the radar over the place
+         * and every extra are waited for [backgroundWaitMs] at most, so the run ends and the phone
+         * sleeps again. What has not come by then stays as it was; the next run asks for it.
+         */
+        background: Boolean = false,
         onProgress: (WeatherData) -> Unit = {},
     ): WeatherData = kotlinx.coroutines.withContext(
         kotlinx.coroutines.Dispatchers.Default + (if (fresh) dev.nimbus.weather.data.remote.FreshData else kotlin.coroutines.EmptyCoroutineContext),
@@ -92,6 +100,8 @@ class WeatherRepository(
         val model = settings.modelFor(place)
         val primaryModel = model.openMeteoId
         val inDwdArea = isInDwdArea(lat, lon)
+        val radarWait = if (background) backgroundWaitMs else RADAR_NOW_WAIT_MS
+        val sourceWait = if (background) backgroundWaitMs else SOURCE_TIMEOUT_MS
 
         val started = System.nanoTime()
         val primaryJob = async {
@@ -136,7 +146,7 @@ class WeatherRepository(
         // what the radar sees falling over the place now (Germany; the KNMI's where the DWD's has
         // no data): the page does not wait for it
         val radarJob = async {
-            if (spot == null || !inDwdArea) null else fetch(RADAR_NOW_WAIT_MS, "radar now") { spot.radarHere(lat, lon, clock()) }
+            if (spot == null || !inDwdArea) null else fetch(radarWait, "radar now") { spot.radarHere(lat, lon, clock()) }
         }
         val alertsJob = async {
             if (inDwdArea) fetch(Long.MAX_VALUE, "warnings") { brightSky.alerts(lat, lon) } else Fetched(emptyList<dev.nimbus.weather.data.model.WeatherAlert>())
@@ -144,33 +154,33 @@ class WeatherRepository(
         // The extras: each an answer (its value may be "nothing here") – or null when it failed or
         // took too long; then the place's last value stays (a refresh does not empty a card).
         // Only the ones asked for: a part still current keeps its value and is not asked again.
-        val aqJob = async { if (DataPart.AIR_QUALITY !in refresh) null else fetch(SOURCE_TIMEOUT_MS, "air quality") { openMeteo.airQuality(lat, lon) } }
+        val aqJob = async { if (DataPart.AIR_QUALITY !in refresh) null else fetch(sourceWait, "air quality") { openMeteo.airQuality(lat, lon) } }
         val communityJob = async {
             if (DataPart.COMMUNITY !in refresh) null
             else if (!settings.shows(dev.nimbus.weather.data.model.WeatherCard.COMMUNITY)) Fetched(null)
             else {
                 // the sensors at the place's height: the forecast knows it
                 val elevation = primaryJob.await().getOrNull()?.elevation ?: fillJob.await()?.value?.elevation
-                fetch(SOURCE_TIMEOUT_MS, "citizen sensors") { community.nearby(lat, lon, elevation) }
+                fetch(sourceWait, "citizen sensors") { community.nearby(lat, lon, elevation) }
             }
         }
-        val pollenJob = async { if (DataPart.POLLEN !in refresh) null else fetch(SOURCE_TIMEOUT_MS, "pollen") { pollen.forecast(lat, lon, inDwdArea) } }
+        val pollenJob = async { if (DataPart.POLLEN !in refresh) null else fetch(sourceWait, "pollen") { pollen.forecast(lat, lon, inDwdArea) } }
         // Water levels and state flood alerts (Germany). Optional – never fail the forecast.
         val gaugeJob = async {
             if (DataPart.GAUGES !in refresh) null
             else if (gauges == null || !inDwdArea || !settings.shows(dev.nimbus.weather.data.model.WeatherCard.GAUGES)) Fetched(emptyList())
-            else fetch(SOURCE_TIMEOUT_MS, "gauges") { gauges.nearby(lat, lon) }
+            else fetch(sourceWait, "gauges") { gauges.nearby(lat, lon) }
         }
         // Bathing waters (EEA, Europe-wide) – only when the card is shown; optional like the gauges
         val bathingJob = async {
             if (DataPart.BATHING !in refresh) null
             else if (bathing == null || !settings.shows(dev.nimbus.weather.data.model.WeatherCard.BATHING)) Fetched(emptyList())
-            else fetch(SOURCE_TIMEOUT_MS, "bathing waters") { bathing.nearby(lat, lon, settings.bathingRadiusKm, settings.bathingFavorites) }
+            else fetch(sourceWait, "bathing waters") { bathing.nearby(lat, lon, settings.bathingRadiusKm, settings.bathingFavorites) }
         }
         val floodJob = async {
             if (DataPart.FLOOD !in refresh) null
             else if (gauges?.lhp == null || !inDwdArea) Fetched(emptyList())
-            else fetch(SOURCE_TIMEOUT_MS, "flood alerts") { gauges.lhp.alerts(lat, lon) }
+            else fetch(sourceWait, "flood alerts") { gauges.lhp.alerts(lat, lon) }
         }
 
         // the same spot's last load (within a radar pixel: "my location" moves by a few metres):
@@ -372,7 +382,7 @@ class WeatherRepository(
             fun <T> arrive(job: kotlinx.coroutines.Deferred<Fetched<T>?>, part: DataPart, take: (T) -> Unit) {
                 if (part !in asked) return
                 launch {
-                    val left = extrasDeadlineMs - (System.nanoTime() - started) / 1_000_000
+                    val left = minOf(extrasDeadlineMs, sourceWait) - (System.nanoTime() - started) / 1_000_000
                     val r = kotlinx.coroutines.withTimeoutOrNull(left.coerceAtLeast(1)) { job.await() }
                     lock.withLock {
                         // no answer: the last value stays; a stored value standing in: shown, but yellow
@@ -457,6 +467,8 @@ class WeatherRepository(
         private const val DAY_MS = 24 * HOUR_MS
         /** How long the radar over the place may take: its answer comes after the page, never holds it. */
         private const val RADAR_NOW_WAIT_MS = 30_000L
+        /** See [backgroundWaitMs]. */
+        const val BACKGROUND_WAIT_MS = 10_000L
         /** How long the forecast waits for the best match's single models (they only name a source). */
         private const val PARTS_WAIT_MS = 3_000L
         /**

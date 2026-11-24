@@ -111,18 +111,20 @@ object RadarPrefetcher {
 
     /**
      * The past steps of the radar at [lat]/[lon] into the store, with the temperature and wind
-     * grid – what the screen needs besides the nowcast; false without a time line.
+     * grid - what the screen needs besides the nowcast; false without a time line. In the
+     * [background] only the steps of the place's own composite ([RadarComposites.anchorFor]): its
+     * neighbours' and the grid are loaded when the app is shown.
      */
-    suspend fun loadSteps(context: Context, lat: Double, lon: Double): Boolean {
+    suspend fun loadSteps(context: Context, lat: Double, lon: Double, background: Boolean = false): Boolean {
         val container = (context.applicationContext as dev.nimbus.weather.NimbusApp).container
-        WeatherGridStore.ensure(container.mapHttp, lat, lon)
+        if (!background) WeatherGridStore.ensure(container.mapHttp, lat, lon)
         val anchor = RadarComposites.anchorFor(lat, lon)
         val tl = runCatching { RadarSources.timeline(container.mapHttp, HistoryRange.H2, anchor = anchor) }.getOrNull() ?: return false
         kotlinx.coroutines.coroutineScope {
             // the steps of every composite the place lies in (a windowed one only for a picture
             // area – the radar view loads it); raw images through the plain client (the map
             // client recolours them)
-            val here = RadarComposites.all.filter { it.covers(lat, lon) && !it.windowed }
+            val here = if (background) listOf(anchor).filter { !it.windowed } else RadarComposites.all.filter { it.covers(lat, lon) && !it.windowed }
             stepsAhead(tl, here).map { (c, f) -> this.async { RadarStore.grid(container.http, c, f) } }.forEach { it.await() }
         }
         withContext(Dispatchers.IO) { RadarStore.prune() }

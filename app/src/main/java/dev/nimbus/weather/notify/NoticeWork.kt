@@ -237,7 +237,7 @@ class NoticeWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         val cached = store.cachedWeather(place.id)
         val due = NoticeWork.due(settings, { cached?.fetchedAt(it)?.takeIf { t -> t > 0 } }, now)
         val data = if (due.isEmpty()) cached else runCatching {
-            container.repository.load(place, settings, previous = cached, refresh = due).also { store.cacheWeather(it) }
+            container.repository.load(place, settings, previous = cached, refresh = due, background = true).also { store.cacheWeather(it) }
         }.onFailure { ActivityLog.note("notices: ${place.name} not fetched – ${it.javaClass.simpleName}") }.getOrNull() ?: cached
         data ?: return Result.success()
         val zone = runCatching { ZoneId.of(data.timezone) }.getOrDefault(ZoneId.systemDefault())
@@ -264,7 +264,9 @@ class NoticeWorker(context: Context, params: WorkerParameters) : CoroutineWorker
 
         // precipitation coming after hours without
         if (settings.noticeRain) {
-            val recent = container.spot.radarSteps(place.latitude, place.longitude, now - Notices.DRY_MS, now)
+            val recent = kotlinx.coroutines.withTimeoutOrNull(dev.nimbus.weather.data.repo.WeatherRepository.BACKGROUND_WAIT_MS) {
+                container.spot.radarSteps(place.latitude, place.longitude, now - Notices.DRY_MS, now)
+            }.orEmpty()
             val dayStart = Instant.ofEpochMilli(now).atZone(zone).toLocalDate().atStartOfDay(zone).toInstant().toEpochMilli()
             Notices.rain(data.minutely, data.hourly, data.current.condition, recent, memory.rainTold, now, dayStart, NoticePoster.quiet(ctx))?.let { r ->
                 steps += r

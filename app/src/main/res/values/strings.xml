@@ -338,7 +338,7 @@
     <string name="settings_radar_autoplay">Play the radar automatically</string>
     <string name="settings_radar_autoplay_desc">The radar opens on the current picture and starts playing once the forecast is loaded; the past loads meanwhile. Off: it stays on “now” until you tap play.</string>
     <string name="settings_preload_radar">Preload radar</string>
-    <string name="settings_preload_radar_desc">Load the radar loop of the place last seen on the radar ahead, so it opens instantly: about every 15 minutes while the app is open, otherwise about every 30 minutes in the background while the battery is not low</string>
+    <string name="settings_preload_radar_desc">Load the radar loop of the place last seen on the radar ahead, so it opens instantly: about every 15 minutes while the app is open, otherwise about every hour in the background while the battery is not low</string>
 
     <string name="precip_title">Precipitation today</string>
     <string name="precip_today_amount">%1$s today</string>

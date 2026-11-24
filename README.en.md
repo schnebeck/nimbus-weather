@@ -190,7 +190,7 @@ What the app sends to whom and what stays on the phone: [privacy policy](https:/
   opens is set in the settings. It plays at 20 pictures per second; after 2 minutes untouched the
   radar closes and goes back where it was opened. For someone who opened the radar within the last
   week, the app loads the past images of the 2-hour loop of the place last seen on the radar ahead –
-  about every 15 minutes while it is open, otherwise about every 30 minutes in the background while
+  about every 15 minutes while it is open, otherwise about every hour in the background while
   the battery is not low; on Wi-Fi or, if so set, over mobile data too (the radar forecast is fetched
   by the radar itself – it is new every 5 minutes). The radar resolution follows the device's memory. Without a connection the radar shows the
   stored images; nothing waits forever. The precipitation map on the weather page shows the same

@@ -341,7 +341,7 @@
     <string name="settings_radar_autoplay">Riproduci il radar automaticamente</string>
     <string name="settings_radar_autoplay_desc">Il radar si apre sull\'immagine corrente e avvia la riproduzione una volta caricata la previsione; il passato si carica nel frattempo. Disattivato: rimane su "ora" finché non premi riproduci.</string>
     <string name="settings_preload_radar">Precarica radar</string>
-    <string name="settings_preload_radar_desc">Carica in anticipo il loop radar dell\'ultimo luogo visto sul radar per aprirlo all\'istante: ogni 15 minuti circa ad app aperta, altrimenti ogni 30 minuti in background se la batteria non è scarica</string>
+    <string name="settings_preload_radar_desc">Carica in anticipo il loop radar dell\'ultimo luogo visto sul radar per aprirlo all\'istante: ogni 15 minuti circa ad app aperta, altrimenti ogni ora circa in background se la batteria non è scarica</string>
 
     <string name="precip_title">Precipitazioni oggi</string>
     <string name="precip_today_amount">%1$s oggi</string>

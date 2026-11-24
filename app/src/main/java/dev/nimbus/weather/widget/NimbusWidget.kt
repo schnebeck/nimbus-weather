@@ -375,7 +375,7 @@ class WidgetWorker(context: Context, params: WorkerParameters) : CoroutineWorker
             if (due.isEmpty()) continue
             val t0 = android.os.SystemClock.elapsedRealtime()
             runCatching {
-                val d = container.repository.load(place, settings, previous = cached, refresh = due)
+                val d = container.repository.load(place, settings, previous = cached, refresh = due, background = true)
                 store.cacheWeather(d)
             }.onSuccess {
                 ActivityLog.note("widget: ${place.name} fetched in ${(android.os.SystemClock.elapsedRealtime() - t0) / 1000} s")

@@ -84,11 +84,10 @@ Für die Verarbeitung bei diesen Diensten gelten deren eigene Datenschutzbestimm
 
 ## Im Hintergrund
 
-Die Einstellung „Radar vorladen“ (voreingestellt an) lädt etwa alle 30 Minuten die Radarbilder des
+Die Einstellung „Radar vorladen“ (voreingestellt an) lädt etwa stündlich die Radarbilder des
 Ortes vor, an dem du das Radar zuletzt geöffnet hast – nur im WLAN (oder mobil, wenn du es
 erlaubst), nur bei ausreichendem Akku und nur, wenn du das Radar in den letzten 7 Tagen geöffnet
-hast. Diese Anfragen enthalten keine genaue Position: nur ganze Radarbilder und das Temperatur- und
-Windraster (auf 1° gerundet).
+hast. Diese Anfragen enthalten keine Position: nur ganze Radarbilder.
 
 Liegt ein **Nimbus-Widget** auf dem Startbildschirm, holt es etwa alle 30 Minuten (und wenn du es
 antippst) das Wetter für seinen Ort – dieselben Abrufe wie die App beim Öffnen, also mit den

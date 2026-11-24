@@ -83,9 +83,9 @@ Processing at these services is governed by their own privacy policies.
 ## In the background
 
 The setting "Preload radar" (on by default) loads the radar pictures of the place where you last
-opened the radar about every 30 minutes – only on Wi-Fi (or mobile data if you allow it), only with
+opened the radar about every hour – only on Wi-Fi (or mobile data if you allow it), only with
 enough battery, and only if you opened the radar in the last 7 days. These requests contain no
-precise position: only whole radar pictures and the temperature and wind grid (rounded to 1°).
+position: only whole radar pictures.
 
 If a **Nimbus widget** is on your home screen, it fetches the weather for its place about every 30
 minutes (and when you tap it) – the same requests the app makes when opened, so with the coordinates

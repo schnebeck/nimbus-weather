@@ -109,6 +109,7 @@ class AppContainer(app: Application) {
     val gauges = dev.nimbus.weather.data.remote.GaugeSource(http, File(app.cacheDir, "tides"))
     val history = dev.nimbus.weather.data.remote.HistorySource(
         http, spot = spot, lightning = dev.nimbus.weather.data.remote.LightningSource(http),
+        ring = dev.nimbus.weather.data.remote.SpotRing(File(app.cacheDir, "lookback")),
     )
     val repository = WeatherRepository(
         openMeteo, BrightSkySource(http), CommunitySource(http), PollenSource(http),

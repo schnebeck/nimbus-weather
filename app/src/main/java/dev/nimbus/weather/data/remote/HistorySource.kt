@@ -128,19 +128,35 @@ class HistorySource(
      * asks again.
      */
     private val spotWaitMs: Long = SPOT_WAIT_MS,
+    /** The radar's hours over each place kept on the device (null: none kept, every hour asked for). */
+    private val ring: SpotRing? = null,
 ) {
+    /** Where the radar's answers go on arriving after the look-back stopped waiting for them. */
+    private val arriving = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default)
+
     suspend fun load(lat: Double, lon: Double, model: String, inGermany: Boolean, now: Long = System.currentTimeMillis()): History =
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { coroutineScope {
         val modelJob = async { runCatching { http.getJson(modelUrl(lat, lon, model)) } }
+        val radar = spot != null && inGermany
+        // the radar's hours kept from the last look: not asked for again - but when all is asked for anew
+        val kept = if (radar && !freshData()) ring?.read(lat, lon)?.since(now - SPOT_BACK_MS) ?: SpotHours() else SpotHours()
         // over the place itself: the radar's precipitation (Germany), the satellite's sunshine (Europe)
+        val from = now - SPOT_BACK_MS
+        // with a ring the radar's answers are waited for [spotWaitMs] and then left to arrive: kept for the next look
+        val late = if (ring != null) arriving else null
+        val sumsAsked = if (!radar) null else (late ?: this).async {
+            withTimeoutOrNull(SpotSource.LATE_MS) { spot!!.radarSums(lat, lon, from, now, kept.sums) }?.also { ring?.add(lat, lon, SpotHours(sums = it.adjusted), from) }
+        }
         val radarJob = async {
-            if (spot == null || !inGermany) emptyMap()
-            else withTimeoutOrNull(spotWaitMs) { spot.radarPrecipitation(lat, lon, now - SPOT_BACK_MS, now) }.orEmpty()
+            sumsAsked?.let { asked -> withTimeoutOrNull(spotWaitMs) { asked.await() } ?: SpotSource.RadarSums(kept.sums, kept.sums).also { if (late == null) asked.cancel() } }
         }
         val sunJob = async { spot?.let { withTimeoutOrNull(spotWaitMs) { it.satelliteHours(lat, lon, pastDays = 2) } }.orEmpty() }
         val lightningJob = async { lightning?.let { withTimeoutOrNull(spotWaitMs) { it.hourly(lat, lon, now - SPOT_BACK_MS) } } }
         // the radar map's steps over the place: whether a shower fell where the sums see none
-        val echoJob = async { if (spot == null || !inGermany) emptyMap() else spot.radarEchoes(lat, lon, now - SPOT_BACK_MS, now, spotWaitMs) }
+        val echoJob = async {
+            if (!radar) emptyMap()
+            else spot!!.radarEchoes(lat, lon, from, now, spotWaitMs, kept.echoes, late) { ring?.add(lat, lon, SpotHours(echoes = it), from) }
+        }
         // null outside Germany; a failure: the readings did not come, which is not "no station near"
         val obsJob = async {
             if (!inGermany) null else runCatching {
@@ -179,7 +195,7 @@ class HistorySource(
                 parseSynop(http.getJson(url.toString()))
             }.getOrNull()
         }.orEmpty()
-        val (radarSums, radarEchoes) = knmiFilled(lat, lon, inGermany, radarJob.await(), echoJob.await(), now)
+        val (radarSums, radarEchoes) = knmiFilled(lat, lon, inGermany, radarJob.await()?.hours.orEmpty(), echoJob.await(), now)
         // the satellite's sunshine needs the model's low cloud of the same hours
         combine(
             modelRoot, obsRoot, used, now, synop, radarSums, SatelliteSunshine.minutes(sunJob.await(), lat, lon, lowCloud(modelRoot)),

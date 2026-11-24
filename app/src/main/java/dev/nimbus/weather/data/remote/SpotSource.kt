@@ -21,6 +21,7 @@ package dev.nimbus.weather.data.remote
 import dev.nimbus.weather.data.model.RadarNow
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -37,6 +38,8 @@ import java.time.Instant
  * - sunshine from the satellite (the DWD's from EUMETSAT MTG, 2.5 km, about 20 minutes late, all of
  *   Europe), via Open-Meteo.
  */
+private val lateLane = kotlinx.coroutines.sync.Semaphore(SpotSource.LATE_AT_ONCE)
+
 class SpotSource(
     private val http: OkHttpClient,
     private val wms: String = "https://maps.dwd.de/geoserver/dwd/wms",
@@ -47,29 +50,60 @@ class SpotSource(
     /** The radar over the place ([radar], null: none measures there) – [dwdNoData]: the DWD's answered "no data". */
     data class RadarHere(val radar: RadarNow?, val dwdNoData: Boolean)
     /** Precipitation (mm) at the place, by the hour's end, for the hours ending [from] … [to]; empty outside the radar's area. */
-    suspend fun radarPrecipitation(lat: Double, lon: Double, from: Long, to: Long): Map<Long, Double> = coroutineScope {
-        // RW at its full hours only: the whole span (it keeps about 3½ days) in one request – asked
-        // for as a range, every 10-minute sum of it came and took seconds longer
-        val rw = async { runCatching { http.getJson(pointUrl(RW, lat, lon, fullHours(from, to))) }.getOrNull()?.let(::series) }
-        val ry = async { runCatching { http.getJson(pointUrl(RY, lat, lon, maxOf(from, to - RY_SPAN_MS), to)) }.getOrNull()?.let(::series) }
-        hourly(rw.await().orEmpty(), ry.await().orEmpty())
+    suspend fun radarPrecipitation(lat: Double, lon: Double, from: Long, to: Long): Map<Long, Double> = radarSums(lat, lon, from, to).hours
+
+    /** The radar's sums: [adjusted] RW's hours, which stay as they are; [hours] those and, where RW has none yet, RY's. */
+    class RadarSums(val adjusted: Map<Long, Double>, val hours: Map<Long, Double>)
+
+    /**
+     * [radarPrecipitation] with the hours already [known] (RW's, by their ends) left out of the
+     * request: RW is asked for the full hours it lacks alone, RY only while one of the last hours
+     * is among them - and nothing at all once every full hour is known.
+     */
+    suspend fun radarSums(lat: Double, lon: Double, from: Long, to: Long, known: Map<Long, Double> = emptyMap()): RadarSums = coroutineScope {
+        val kept = known.filterKeys { it in from..to }
+        val lacking = SpotRing.missing(kept.keys, from, to)
+        // RW at its full hours only: asked for as a range, every 10-minute sum of it came and took seconds longer
+        val rw = async {
+            if (lacking.isEmpty()) null
+            else runCatching { http.getJson(pointUrl(RW, lat, lon, lacking.joinToString(",") { iso(it) })) }.getOrNull()?.let(::series)
+        }
+        val ry = async {
+            if (lacking.none { it > to - RY_SPAN_MS }) null
+            else runCatching { http.getJson(pointUrl(RY, lat, lon, maxOf(from, to - RY_SPAN_MS), to)) }.getOrNull()?.let(::series)
+        }
+        val adjusted = kept + rw.await().orEmpty().filterKeys { it % HOUR_MS == 0L }
+        RadarSums(adjusted, hourly(adjusted, ry.await().orEmpty()))
     }
 
     /**
      * The radar's 5-minute steps over the place, hour by hour ([hourEchoes]): for each hour ending
      * [from] … [to] its strongest step (mm/h, 0: no echo); the steps the radar map shows (WN
-     * analysis, about 3½ days back). Asked for in stretches of [ECHO_STRETCH_MS] at once, each
-     * waiting at most [waitMs]: an hour missing (not all its steps come) is not known.
+     * analysis, about 3.5 days back). Asked for in stretches ([SpotRing.stretches]: the blocks of
+     * the day that lack an hour, the hours [known] left out) at once, each waiting at most
+     * [waitMs]: an hour missing (not all its steps come) is not known. With [late] a stretch not
+     * answered in that time is not called off: its request goes on there, and its hours are handed
+     * to [arrived] as every stretch's are - there for the next look. Of those stretches
+     * [LATE_AT_ONCE] are asked for at a time, so that requests left running leave the service's
+     * connections to the others; what has not come [LATE_MS] after the look is given up.
      */
-    suspend fun radarEchoes(lat: Double, lon: Double, from: Long, to: Long, waitMs: Long): Map<Long, Double> = coroutineScope {
-        val start = from / HOUR_MS * HOUR_MS
-        (start until to step ECHO_STRETCH_MS).map { s ->
-            async {
-                kotlinx.coroutines.withTimeoutOrNull(waitMs) {
-                    runCatching { analysis(http.getJson(pointUrl(WN_ANALYSIS, lat, lon, s + STEP_MS, minOf(s + ECHO_STRETCH_MS, to)))) }.getOrNull()
-                }.orEmpty()
+    suspend fun radarEchoes(
+        lat: Double, lon: Double, from: Long, to: Long, waitMs: Long, known: Map<Long, Double> = emptyMap(),
+        late: kotlinx.coroutines.CoroutineScope? = null, arrived: suspend (Map<Long, Double>) -> Unit = {},
+    ): Map<Long, Double> = coroutineScope {
+        val kept = known.filterKeys { it in from..to }
+        suspend fun ask(stretch: LongRange) = runCatching { analysis(http.getJson(pointUrl(WN_ANALYSIS, lat, lon, stretch.first, stretch.last))) }.getOrNull()
+        // the newest stretch first: today's hours are the ones looked at first
+        val asked = SpotRing.stretches(kept.keys, from, to).asReversed().map { stretch ->
+            val request = (late ?: this).async {
+                kotlinx.coroutines.withTimeoutOrNull(LATE_MS) { if (late == null) ask(stretch) else lateLane.withPermit { ask(stretch) } }
+                    .orEmpty().let(::hourEchoes).also { if (it.isNotEmpty()) arrived(it) }
             }
-        }.flatMap { it.await().entries }.associate { it.key to it.value }.let(::hourEchoes)
+            async {
+                kotlinx.coroutines.withTimeoutOrNull(waitMs) { request.await() } ?: emptyMap<Long, Double>().also { if (late == null) request.cancel() }
+            }
+        }
+        kept + asked.flatMap { it.await().entries }.associate { it.key to it.value }
     }
 
     /** RY's measured 5-minute steps over the place (mm by their ends) from [from] to [to]; empty outside the radar's area or without an answer. */
@@ -154,11 +188,12 @@ class SpotSource(
         /** The DWD's sunshine from the satellite (SIS, Europe and Africa). */
         const val SATELLITE_MODEL = "dwd_sis_europe_africa_v4"
         private const val HOUR_MS = 3_600_000L
+        /** How long the requests left running after their wait ([radarEchoes]) may take at most. */
+        const val LATE_MS = 120_000L
+        const val LATE_AT_ONCE = 2
         private const val STEP_MS = 5 * 60_000L
         /** The radar map's analysis: reflectivity every 5 minutes, kept about 3½ days. */
         private const val WN_ANALYSIS = "Radar_wn-analysis_1x1km_ger"
-        /** The analysis is asked for in stretches of 6 hours: a day at once took the service too long. */
-        const val ECHO_STRETCH_MS = 6 * HOUR_MS
         /** RY is asked for the last hours only: those RW does not have yet. */
         private const val RY_SPAN_MS = 3 * HOUR_MS
         /** RW at the full hours of 3½ days, RY every 5 minutes for three hours – and room to spare. */

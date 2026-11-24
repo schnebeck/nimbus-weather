@@ -57,6 +57,8 @@ object Housekeeping {
         "tides" -> LIST_KEEP_MS
         // radar coverage and the state of the radar sources
         "radar" -> LIST_KEEP_MS
+        // the radar's hours over a place, written with every look back
+        "lookback" -> MOMENT_KEEP_MS
         else -> null
     }
 

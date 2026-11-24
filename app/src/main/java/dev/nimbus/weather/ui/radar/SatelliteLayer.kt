@@ -172,7 +172,7 @@ class SatelliteLayer(
 
     private suspend fun load(g: FieldGeo, time: Long): ByteArray? = withContext(Dispatchers.IO) {
         runCatching {
-            http.newCall(Request.Builder().url(url(g, time, wms)).build()).execute().use { r -> if (r.isSuccessful) r.body.bytes() else null }
+            http.newCall(Request.Builder().url(url(g, time, wms)).header("User-Agent", dev.nimbus.weather.data.remote.USER_AGENT).build()).execute().use { r -> if (r.isSuccessful) r.body.bytes() else null }
         }.getOrNull()
     }
 

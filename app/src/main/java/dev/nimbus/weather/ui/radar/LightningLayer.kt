@@ -152,7 +152,7 @@ class LightningLayer(
 
     private suspend fun load(g: FieldGeo, start: Long, now: Long): Quarter? = withContext(Dispatchers.IO) {
         runCatching {
-            http.newCall(Request.Builder().url(url(g, start)).build()).execute().use { r ->
+            http.newCall(Request.Builder().url(url(g, start)).header("User-Agent", dev.nimbus.weather.data.remote.USER_AGENT).build()).execute().use { r ->
                 if (!r.isSuccessful) return@use null
                 val flashes = flashes(r.body.string()) ?: return@use null
                 Quarter(flashes, now, complete = start + QUARTER_MS + LATENCY_MS < now)

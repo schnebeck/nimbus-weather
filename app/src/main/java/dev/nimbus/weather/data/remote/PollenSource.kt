@@ -82,7 +82,7 @@ class PollenSource(
         if (!freshData()) mutex.withLock { if (regions.containsKey(key)) return regions[key] }
         val bbox = String.format(Locale.US, "%.4f,%.4f,%.4f,%.4f", lat - 0.01, lon - 0.01, lat + 0.01, lon + 0.01)
         val url = "$dwdWmsUrl?service=WMS&version=1.3.0&request=GetFeatureInfo&layers=dwd:Pollenfluggebiete" +
-            "&query_layers=dwd:Pollenfluggebiete&crs=EPSG:4326&bbox=$bbox&width=3&height=3&i=1&j=1&info_format=application/json"
+            "&query_layers=dwd:Pollenfluggebiete&crs=EPSG:4326&bbox=$bbox&width=3&height=3&i=1&j=1&info_format=application/json&propertyName=GF,GEN"
         val r = parseRegion(http.getJson(url))
         mutex.withLock { regions[key] = r }
         return r
